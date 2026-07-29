@@ -6,7 +6,7 @@
     'title' => 'EVENTS',
     'subtitle' => 'Celebrate birthdays, gatherings, and special moments—made effortless.',
     'cta' => ['href' => '#event-packages', 'label' => 'Explore Packages'],
-'backgroundImage' => 'images/Royal-Suite-room.jpg',
+'backgroundImage' => 'image/Royal-Suite-room.jpg',
 ])
 
 

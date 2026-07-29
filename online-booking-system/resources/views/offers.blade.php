@@ -6,7 +6,7 @@
     'title' => 'OFFERS',
     'subtitle' => 'Save more with limited-time packages and special guest perks.',
     'cta' => ['href' => '#offers', 'label' => 'See Deals'],
-'backgroundImage' => 'images/Royal-Suite-room.jpg',
+'backgroundImage' => 'image/Royal-Suite-room.jpg',
 ])
 
 

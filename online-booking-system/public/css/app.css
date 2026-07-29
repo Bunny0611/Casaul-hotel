@@ -48,6 +48,15 @@ nav{
     font-size:22px;
     font-weight:800;
     letter-spacing:.6px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.logo-img{
+    height:36px;
+    width:auto;
+    display:block;
 }
 
 nav ul{
@@ -206,18 +215,120 @@ nav a:hover{
 footer{
     background: #0b1220;
     color:white;
-    text-align:center;
-    padding:42px 16px;
     margin-top: 20px;
+    padding: 56px 0 40px;
 }
 
-footer h3{
-    font-weight:900;
-    margin-bottom:6px;
+.footer-container{
+    width: min(1100px, 92%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 40px;
+    text-align: left;
 }
 
-footer p{
-    color: rgba(255,255,255,.8);
+.footer-col h4{
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: .5px;
+    margin-bottom: 14px;
+    color: rgba(255,255,255,.9);
+    text-transform: uppercase;
+}
+
+.footer-logo{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.footer-logo img{
+    height: 38px;
+    width: auto;
+    display: block;
+}
+
+.footer-logo span{
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: .6px;
+    color: #fff;
+}
+
+.footer-hotel-name{
+    font-weight: 700;
+    font-size: 14px;
+    color: rgba(255,255,255,.9);
+    margin-bottom: 10px;
+}
+
+.footer-contact{
+    font-size: 13.5px;
+    color: rgba(255,255,255,.7);
+    margin-bottom: 6px;
+    line-height: 1.6;
+}
+
+.footer-contact strong{
+    color: rgba(255,255,255,.85);
+    font-weight: 600;
+}
+
+.footer-address{
+    font-size: 13.5px;
+    color: rgba(255,255,255,.7);
+    margin-top: 6px;
+    line-height: 1.6;
+}
+
+.footer-brand-list{
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-brand-list li{
+    font-size: 13.5px;
+    color: rgba(255,255,255,.7);
+    padding: 4px 0;
+    position: relative;
+    padding-left: 14px;
+}
+
+.footer-brand-list li::before{
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: var(--brand);
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.footer-brand-list li:hover{
+    color: rgba(255,255,255,.95);
+}
+
+/* Responsive */
+@media (max-width: 768px){
+    .footer-container{
+        grid-template-columns: 1fr;
+        gap: 32px;
+        text-align: center;
+    }
+
+    .footer-logo{
+        justify-content: center;
+    }
+
+    .footer-brand-list li{
+        padding-left: 0;
+    }
+
+    .footer-brand-list li::before{
+        display: none;
+    }
 }
 
 @media (max-width: 768px){
@@ -229,7 +340,7 @@ footer p{
    CHATBOT
    ==================================================== */
 
-/* ---- Toggle Button ---- */
+
 .chat-toggle {
     position: fixed;
     bottom: 24px;
@@ -265,7 +376,7 @@ footer p{
     50% { box-shadow: 0 8px 48px rgba(193, 18, 31, 0.55); }
 }
 
-/* ---- Chat Widget Container ---- */
+
 .chat-widget {
     position: fixed;
     bottom: 100px;
@@ -297,7 +408,6 @@ footer p{
     visibility: visible;
 }
 
-/* ---- Header ---- */
 .chat-header {
     background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
     color: #fff;
@@ -379,7 +489,7 @@ footer p{
     height: 20px;
 }
 
-/* ---- Messages Area ---- */
+
 .chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -458,7 +568,7 @@ footer p{
     text-align: right;
 }
 
-/* ---- Typing Indicator ---- */
+
 .typing-indicator {
     display: flex;
     align-items: center;
@@ -490,7 +600,7 @@ footer p{
     30% { transform: translateY(-8px); }
 }
 
-/* ---- Quick Replies ---- */
+
 .chat-quick-replies {
     display: flex;
     flex-wrap: wrap;
@@ -605,7 +715,7 @@ footer p{
     background: #9ca3af;
 }
 
-/* ---- Mobile Responsive ---- */
+
 @media (max-width: 520px) {
     .chat-toggle {
         bottom: 16px;

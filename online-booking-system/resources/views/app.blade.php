@@ -11,14 +11,28 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-    @vite('resources/js/app.js')
+    <script src="{{ asset('js/app.js') }}"></script>
 
 </head>
 <body>
 
+
+<div class="page-loader" id="page-loader">
+    <div class="loader-content">
+        <div class="loader-logo">CASAUL HOTEL</div>
+        <div class="loader-spinner"></div>
+    </div>
+</div>
+
+
+<div class="floating-element floating-element-1"></div>
+<div class="floating-element floating-element-2"></div>
+<div class="floating-element floating-element-3"></div>
+
 <nav>
 
     <div class="logo">
+        <img src="{{ asset('image/LOGO.png') }}" alt="Casaul Hotel Logo" class="logo-img">
         CASAUL HOTEL
     </div>
 
@@ -36,6 +50,8 @@
 
         <li><a href="{{ route('events') }}">EVENTS</a></li>
 
+        <li><a href="{{ route('admin.dashboard') }}" class="admin-link">ADMIN</a></li>
+
     </ul>
 
 </nav>
@@ -43,16 +59,45 @@
 @yield('content')
 
 <footer>
+    <div class="footer-container">
+       
+        <div class="footer-col footer-col-brand">
+            <div class="footer-logo">
+                <img src="{{ asset('image/LOGO.png') }}" alt="CASAUL Hotel Logo">
+                <span>CASAUL Hotel</span>
+            </div>
+            <h4>TABACO CITY, ALBAY</h4>
+            <p class="footer-hotel-name">CASAUL Hotel Tabaco</p>
+            <p class="footer-contact"><strong>Mobile:</strong> (+63) 935 017 7564</p>
+            <p class="footer-contact"><strong>Email:</strong> taba-roomsreservation@casahotels.com</p>
+            <p class="footer-address">Tomas Cabiles St., Tabaco City</p>
+        </div>
 
-    <h3>Casaul Hotel</h3>
+       
+        <div class="footer-col footer-col-office">
+            <h4>Corporate Office</h4>
+            <p class="footer-contact"><strong>Tel. No.:</strong> (052) 203-0244 / (052) 203-0243</p>
+            <p class="footer-contact"><strong>Email:</strong> inquiry@casaulhotels.com</p>
+        </div>
 
-    <p>Luxury • Comfort • Hospitality</p>
-
+        
+        <div class="footer-col footer-col-brands">
+            <h4>Our Brand</h4>
+            <ul class="footer-brand-list">
+                <li>CASAUL Hotel Tabaco</li>
+                <li>CASAUL Hotel Bataan</li>
+                <li>CASAUL Hotel Luxury Suites Tagaytay</li>
+                <li>PROXY by CASAUL Hotel Albay</li>
+                <li>The Inns by CASAUL Hotel Bacolod</li>
+                <li>PROXY Plus by CASAUL Hotel Pangasinan</li>
+            </ul>
+        </div>
+    </div>
 </footer>
 
-<!-- ============ CHATBOT ============ -->
 
-<!-- Chat Toggle Button -->
+
+
 <button id="chat-toggle" class="chat-toggle" aria-label="Open chat">
     <svg id="chat-icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -63,9 +108,9 @@
     </svg>
 </button>
 
-<!-- Chat Widget -->
+
 <div id="chat-widget" class="chat-widget">
-    <!-- Header -->
+   
     <div class="chat-header">
         <div class="chat-header-avatar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -85,7 +130,7 @@
         </button>
     </div>
 
-    <!-- Messages -->
+   
     <div id="chat-messages" class="chat-messages">
         <div class="chat-msg bot">
             <div class="chat-msg-content">
@@ -96,7 +141,7 @@
         </div>
     </div>
 
-    <!-- Quick Replies -->
+  
     <div id="chat-quick-replies" class="chat-quick-replies">
         <button class="quick-reply" data-action="book">Book a Room</button>
         <button class="quick-reply" data-action="inquiries">Inquiries</button>
@@ -105,19 +150,30 @@
         <button class="quick-reply" data-action="contact">Contact Us</button>
     </div>
 
-    <!-- Input Area -->
+  
     <div class="chat-input-area">
-        <input type="text" id="chat-input" class="chat-input" placeholder="Type your message..." autocomplete="off">
-        <button id="chat-send-btn" class="chat-send-btn" aria-label="Send message">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"/>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-            </svg>
-        </button>
+        <form id="message-form" action="{{ route('send.message') }}" method="POST">
+            @csrf
+            <input type="hidden" name="name" id="customer-name" value="Guest">
+            <input type="hidden" name="email" id="customer-email" value="guest@example.com">
+            <input type="text" id="chat-input" name="message" class="chat-input" placeholder="Type your message..." autocomplete="off" required>
+            <button type="submit" id="chat-send-btn" class="chat-send-btn" aria-label="Send message">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+            </button>
+        </form>
     </div>
 </div>
 
-<!-- ============ END CHATBOT ============ -->
+@if(session('success'))
+<script>
+    alert('{{ session('success') }}');
+</script>
+@endif
+
+
 
 </body>
 </html>

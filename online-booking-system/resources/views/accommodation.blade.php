@@ -6,14 +6,21 @@
     'title' => 'ACCOMMODATION',
     'subtitle' => 'Comfortable stays with premium rooms and unforgettable views.',
     'cta' => ['href' => '#rooms', 'label' => 'Explore Rooms'],
-'backgroundImage' => 'images/Royal-Suite-room.jpg',
+'backgroundImage' => 'image/Royal-Suite-room.jpg',
 ])
 
 
-<section class="offers" id="rooms">
+<section class="offers animate-on-scroll" id="rooms">
     <h2>Featured Rooms</h2>
 
     <div class="cards">
+        @forelse($rooms as $room)
+        <div class="card">
+            <img src="{{ $room->image ? asset('images/' . $room->image) : asset('images/room1.jpg') }}" alt="{{ $room->room_type }}">
+            <h3>{{ $room->room_type }}</h3>
+            <p>₱{{ number_format($room->price, 2) }}/night • {{ $room->description ?? 'Comfortable and spacious room.' }}</p>
+        </div>
+        @empty
         <div class="card">
             <img src="{{ asset('images/room1.jpg') }}" alt="Deluxe Room">
             <h3>Deluxe Room</h3>
@@ -31,10 +38,11 @@
             <h3>Presidential Suite</h3>
             <p>₱12,000/night • Luxury experience for special occasions.</p>
         </div>
+        @endforelse
     </div>
 </section>
 
-<section class="recommendation">
+<section class="recommendation animate-on-scroll">
     <h2>Why Guests Love Us</h2>
 
     <div class="cards">

@@ -3,10 +3,10 @@
 @section('content')
 
 @include('partials.section-hero', [
-    'title' => 'CASA HOTEL',
+    'title' => 'CASAUL HOTEL',
     'subtitle' => 'Experience comfort, elegance, and unforgettable hospitality.',
     'cta' => ['href' => route('accommodation'), 'label' => 'Book Now'],
-    'backgroundImage' => 'images/Royal-Suite-room.jpg',
+'backgroundImage' => 'image/HM.jpg',
 ])
 
 <section class="offers">
@@ -17,7 +17,7 @@
 
         <div class="card">
 
-            <img src="{{ asset('images/offer1.jpg') }}">
+            <img src="{{ asset('images/Royal-Suite-room.jpg') }}">
 
             <h3>Weekend Escape</h3>
 
@@ -50,12 +50,23 @@
 </section>
 
 
-<section class="recommendation">
+<section class="recommendation animate-on-scroll">
 
     <h2>Recommended Rooms</h2>
 
     <div class="cards">
 
+        @forelse($rooms as $room)
+        <div class="card">
+
+            <img src="{{ $room->image ? asset('images/' . $room->image) : asset('images/room1.jpg') }}" alt="{{ $room->room_type }}">
+
+            <h3>{{ $room->room_type }}</h3>
+
+            <p>₱{{ number_format($room->price, 2) }}/night</p>
+
+        </div>
+        @empty
         <div class="card">
 
             <img src="{{ asset('images/room1.jpg') }}">
@@ -85,6 +96,7 @@
             <p>₱12,000/night</p>
 
         </div>
+        @endforelse
 
     </div>
 

@@ -6,7 +6,7 @@
     'title' => 'DINING',
     'subtitle' => 'Delicious cuisine served with a warm, welcoming atmosphere.',
     'cta' => ['href' => '#menu', 'label' => 'View Menu'],
-'backgroundImage' => 'images/Royal-Suite-room.jpg',
+'backgroundImage' => 'image/Royal-Suite-room.jpg',
 ])
 
 

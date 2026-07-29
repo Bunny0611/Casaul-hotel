@@ -4,9 +4,9 @@
 
 @include('partials.section-hero', [
     'title' => 'GALLERY',
-    'subtitle' => 'Explore the ambiance, rooms, and moments that make CASA HOTEL special.',
+    'subtitle' => 'Explore the ambiance, rooms, and moments that make CASAUL HOTEL special.',
     'cta' => ['href' => '#photo-grid', 'label' => 'View Photos'],
-'backgroundImage' => 'images/Royal-Suite-room.jpg',
+'backgroundImage' => 'image/Royal-Suite-room.jpg',
 ])
 
 

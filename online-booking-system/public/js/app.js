@@ -1,111 +1,6 @@
-import './bootstrap';
-
-
-
-document.addEventListener('DOMContentLoaded', function () {
-    
-   
-    const pageLoader = document.getElementById('page-loader');
-    if (pageLoader) {
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                pageLoader.classList.add('hidden');
-            }, 800);
-        });
-    }
-    
- 
-    const observerOptions = {
-        root: null,
-        rootMargin: '0px',
-        threshold: 0.1
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-                observer.unobserve(entry.target);
-            }
-        });
-    }, observerOptions);
-
-   
-    document.querySelectorAll('.animate-on-scroll').forEach(el => {
-        observer.observe(el);
-    });
-
-  
-    document.querySelectorAll('.offers h2, .recommendation h2').forEach(el => {
-        el.classList.add('animate-on-scroll');
-        observer.observe(el);
-    });
-
-  
-    const heroMedia = document.querySelector('.hero .media');
-    const heroImage = document.querySelector('.hero .bg-image, .hero .bg-video');
-    
-    if (heroMedia && heroImage) {
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            const rate = scrolled * 0.3;
-            
-            if (scrolled < window.innerHeight) {
-                heroImage.style.transform = `scale(1.1) translateY(${rate}px)`;
-            }
-        });
-    }
-
-    
-    document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        });
-    });
-
-
-    const nav = document.querySelector('nav');
-    let lastScroll = 0;
-
-    window.addEventListener('scroll', () => {
-        const currentScroll = window.pageYOffset;
-        
-        if (currentScroll > 100) {
-            nav.style.boxShadow = '0 8px 32px rgba(30, 58, 95, 0.25)';
-        } else {
-            nav.style.boxShadow = '0 4px 20px rgba(30, 58, 95, 0.15)';
-        }
-
-        lastScroll = currentScroll;
-    });
-
-   
-    document.querySelectorAll('.btn').forEach(btn => {
-        btn.addEventListener('mousemove', (e) => {
-            const rect = btn.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            btn.style.setProperty('--x', `${x}px`);
-            btn.style.setProperty('--y', `${y}px`);
-        });
-    });
-
-    console.log('✨ Dynamic animations loaded!');
-});
-
-
-
 document.addEventListener('DOMContentLoaded', function () {
 
-   
+    // ---- DOM refs ----
     const toggleBtn   = document.getElementById('chat-toggle');
     const closeBtn    = document.getElementById('chat-close-btn');
     const widget      = document.getElementById('chat-widget');
@@ -118,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let isOpen = false;
 
- 
+   
     const botResponses = {
         book: {
             text: 'I\'d be happy to help you book a room! 🏨\n\nCould you please tell me:\n• Your preferred check-in and check-out dates\n• Number of guests\n• Room type preference (Deluxe, Executive, or Presidential Suite)',
@@ -146,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-   
+    // ---- Helpers ----
     function scrollToBottom() {
         requestAnimationFrame(() => {
             messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -161,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function addMessage(text, type, keepQuick = false) {
-    
+        // Remove typing indicator if present
         const typing = messagesEl.querySelector('.typing-indicator');
         if (typing) typing.remove();
 
@@ -181,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
         messagesEl.appendChild(msgDiv);
         scrollToBottom();
 
-      
+        
         const quickRepliesEl = document.getElementById('chat-quick-replies');
         if (type === 'user') {
             quickRepliesEl.style.display = 'none';
@@ -225,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const response = botResponses[responseKey] || botResponses.fallback;
         const typingEl = showTypingIndicator();
 
-       
+      
         const delay = 800 + Math.random() * 700;
 
         setTimeout(() => {
@@ -241,6 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
         addMessage(message, 'user');
         inputEl.value = '';
 
+        // Find matching quick reply action
         const lower = message.toLowerCase();
         let action = 'fallback';
 
@@ -263,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function handleQuickReply(label, action) {
         addMessage(label, 'user');
 
-        
+        // Map label-based actions to bot response keys
         const lower = label.toLowerCase();
         let responseKey = 'fallback';
 
@@ -278,12 +174,12 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (lower.includes('contact') || lower.includes('call') || lower.includes('email') || lower.includes('address') || lower.includes('location') || lower.includes('agent')) {
             responseKey = 'contact';
         } else if (lower.includes('view') || lower.includes('explore') || lower.includes('all')) {
-           
+            // Redirect to offers/rooms info
             responseKey = 'offers';
         } else if (lower.includes('check') || lower.includes('time') || lower.includes('pet') || lower.includes('amenit') || lower.includes('dining') || lower.includes('breakfast')) {
             responseKey = 'inquiries';
         } else {
-            
+          
             const actionMap = {
                 'book': 'book',
                 'book-a-room': 'book',
@@ -315,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
         botReply(responseKey);
     }
 
-   
+ 
     function toggleChat(open) {
         isOpen = open;
         widget.classList.toggle('open', open);
@@ -333,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function () {
     toggleBtn.addEventListener('click', () => toggleChat(!isOpen));
     closeBtn.addEventListener('click', () => toggleChat(false));
 
-  
+    // ---- Send message ----
     function handleSend() {
         const text = inputEl.value.trim();
         if (text) sendUserMessage(text);
@@ -347,14 +243,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
- 
+   
     quickBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             handleQuickReply(btn.textContent, btn.dataset.action);
         });
     });
-
-
 
     console.log('🤖 Casaul Hotel Virtual Assistant loaded!');
 });
