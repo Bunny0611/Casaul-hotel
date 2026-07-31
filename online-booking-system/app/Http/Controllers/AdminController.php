@@ -118,7 +118,7 @@ class AdminController extends Controller
             'capacity' => 'required|integer|min:1',
             'description' => 'nullable|string',
             'image' => 'nullable|string',
-            'status' => 'required|in:available,occupied,maintenance',
+            'status' => 'required|in:available,occupied,reserved,maintenance',
         ]);
 
         $room->update($validated);
@@ -204,18 +204,36 @@ class AdminController extends Controller
 
     public function reports()
     {
-        $totalRevenue = Reservation::where('status', 'completed')->sum('total_amount');
-        $averagePayment = Reservation::where('status', 'completed')->avg('total_amount');
-        $highestPayment = Reservation::where('status', 'completed')->max('total_amount');
-        $lowestPayment = Reservation::where('status', 'completed')->min('total_amount');
         $reservations = Reservation::with('room')->latest()->get();
+        $completedReservations = $reservations->where('status', 'completed');
+
+        $totalRevenue = (float) $completedReservations->sum('total_amount');
+        $averagePayment = $completedReservations->count() > 0 ? (float) $completedReservations->avg('total_amount') : 0;
+        $highestPayment = $completedReservations->count() > 0 ? (float) $completedReservations->max('total_amount') : 0;
+        $lowestPayment = $completedReservations->count() > 0 ? (float) $completedReservations->min('total_amount') : 0;
+
+        $availableRooms = Room::where('status', 'available')->count();
+        $occupiedRooms = Room::where('status', 'occupied')->count();
+        $maintenanceRooms = Room::where('status', 'maintenance')->count();
+
+        $pendingReservations = $reservations->where('status', 'pending')->count();
+        $confirmedReservations = $reservations->where('status', 'confirmed')->count();
+        $completedCount = $completedReservations->count();
+        $cancelledReservations = $reservations->where('status', 'cancelled')->count();
 
         return view('admin.reports', compact(
             'totalRevenue',
             'averagePayment',
             'highestPayment',
             'lowestPayment',
-            'reservations'
+            'reservations',
+            'availableRooms',
+            'occupiedRooms',
+            'maintenanceRooms',
+            'pendingReservations',
+            'confirmedReservations',
+            'completedCount',
+            'cancelledReservations'
         ));
     }
 

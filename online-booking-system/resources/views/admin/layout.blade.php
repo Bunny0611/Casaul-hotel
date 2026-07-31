@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -15,9 +15,16 @@
             font-family: 'Poppins', sans-serif;
         }
         
-        .sidebar {
-            background: linear-gradient(180deg, #800000 0%, #5c0000 100%);
-        }
+       
+         .sidebar {
+    background-color: #800000 !important;
+    background-image: none !important;
+}
+.sidebar nav,
+.sidebar .mt-auto,
+.sidebar .p-6 {
+    background: transparent !important;
+}
         
         .header {
             background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);

@@ -196,6 +196,7 @@
                     <select name="status" id="editStatus" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="available">Available</option>
                         <option value="occupied">Occupied</option>
+                        <option value="reserved">Reserved</option>
                         <option value="maintenance">Maintenance</option>
                     </select>
                 </div>
@@ -228,6 +229,7 @@
                 <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <option value="available">Available</option>
                     <option value="occupied">Occupied</option>
+                    <option value="reserved">Reserved</option>
                     <option value="maintenance">Maintenance</option>
                 </select>
             </div>
