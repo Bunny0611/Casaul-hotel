@@ -149,10 +149,47 @@
     // Payment Method Chart
     const paymentCtx = document.getElementById('paymentMethodChart').getContext('2d');
     new Chart(paymentCtx, {
-       
+        type: 'doughnut',
+        data: {
+            labels: ['Cash', 'Credit Card', 'Bank Transfer', 'Online Payment'],
+            datasets: [{
+                label: 'Payments',
+                data: [35, 40, 15, 10],
+                backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#f97316'],
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
     // Room Type Chart
-    const roomTypeCtx = document.getElementById('roomTypeChart').getContext('2d');
-    new Chart(roomTypeCtx, {
+    const roomTypeCtx2 = document.getElementById('roomTypeChart').getContext('2d');
+    new Chart(roomTypeCtx2, {
+        type: 'bar',
+        data: {
+            labels: ['Deluxe', 'Executive', 'Presidential', 'Standard'],
+            datasets: [{
+                label: 'Revenue (₱)',
+                data: [45000, 68000, 92000, 28000],
+                backgroundColor: ['#8b5cf6', '#ec4899', '#f97316', '#06b6d4'],
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: function(value) { return '₱' + value.toLocaleString(); } }
+                }
+            }
+        }
     });
 </script>
 @endsection

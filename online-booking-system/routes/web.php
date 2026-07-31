@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/accommodation', [HomeController::class, 'accommodation'])->name('accommodation');
+Route::get('/accommodation/{slug}', [HomeController::class, 'roomDetail'])->name('accommodation.room');
 Route::post('/send-message', [HomeController::class, 'sendMessage'])->name('send.message');
 Route::view('/offers', 'offers')->name('offers');
 Route::view('/gallery', 'gallery')->name('gallery');
