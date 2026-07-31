@@ -142,7 +142,27 @@ class AdminController extends Controller
     public function reservations()
     {
         $reservations = Reservation::with('room')->latest()->get();
-        return view('admin.reservations', compact('reservations'));
+        $rooms = Room::orderBy('room_number')->get();
+        return view('admin.reservations', compact('reservations', 'rooms'));
+    }
+
+    public function storeReservation(Request $request)
+    {
+        $validated = $request->validate([
+            'room_id' => ['required', 'exists:rooms,id'],
+            'guest_name' => ['required', 'string', 'max:255'],
+            'guest_email' => ['required', 'email', 'max:255'],
+            'guest_phone' => ['required', 'string', 'max:20'],
+            'check_in' => ['required', 'date'],
+            'check_out' => ['required', 'date', 'after_or_equal:check_in'],
+            'status' => ['required', 'in:pending,confirmed,cancelled,completed'],
+            'total_amount' => ['required', 'numeric', 'min:0'],
+            'special_requests' => ['nullable', 'string'],
+        ]);
+
+        Reservation::create($validated);
+
+        return redirect()->route('admin.reservations')->with('success', 'Reservation created successfully!');
     }
 
     public function updateReservationStatus(Request $request, $id)

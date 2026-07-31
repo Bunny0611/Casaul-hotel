@@ -21,6 +21,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::patch('/rooms/{id}/status', [AdminController::class, 'updateRoomStatus'])->name('rooms.status');
     Route::delete('/rooms/{id}', [AdminController::class, 'destroyRoom'])->name('rooms.destroy');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations');
+    Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
     Route::get('/guests', [AdminController::class, 'guests'])->name('guests');
     Route::get('/messages', [AdminController::class, 'messages'])->name('messages');
