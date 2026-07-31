@@ -141,7 +141,7 @@
 </div>
 
 <div id="addReservationModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="relative w-full max-w-2xl rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         <button type="button" onclick="closeAddReservationModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
             <i class="fas fa-times text-xl"></i>
         </button>

@@ -31,31 +31,7 @@
             </form>
         </div>
         
-        <!-- Company Information -->
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-4 border-b">Company Information</h3>
-            <form class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
-                    <input type="text" value="CASAUL Hotel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <input type="email" value="info@casaulhotel.com" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                    <input type="tel" value="+63 912 345 6789" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                    <textarea rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">123 Hotel Street, City, Philippines</textarea>
-                </div>
-                <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg">
-                    <i class="fas fa-save mr-2"></i>SAVE
-                </button>
-            </form>
-        </div>
+       
         
         <!-- Notification Settings -->
         <div class="bg-white rounded-xl shadow-lg p-6">
@@ -94,38 +70,7 @@
             </div>
         </div>
         
-        <!-- System Settings -->
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="text-xl font-semibold text-gray-800 mb-6 pb-4 border-b">System Settings</h3>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Currency</label>
-                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                        <option selected>Philippine Peso (₱)</option>
-                        <option>US Dollar ($)</option>
-                        <option>Euro (€)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
-                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                        <option selected>Asia/Manila (UTC+8)</option>
-                        <option>UTC</option>
-                        <option>America/New_York</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Format</label>
-                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                        <option selected>MM/DD/YYYY</option>
-                        <option>DD/MM/YYYY</option>
-                        <option>YYYY-MM-DD</option>
-                    </select>
-                </div>
-                <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg">
-                    <i class="fas fa-save mr-2"></i>SAVE
-                </button>
-            </div>
+        
         </div>
     </div>
 </div>
