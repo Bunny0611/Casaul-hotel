@@ -1,4 +1,4 @@
-@extends('app')
+    @extends('app')
 
 @section('content')
 
@@ -9,7 +9,9 @@
 'backgroundImage' => 'image/HM.jpg',
 ])
 
-<section class="offers">
+<section class="offers animate-on-scroll">
+
+
 
     <h2>Special Offers</h2>
 
@@ -17,7 +19,7 @@
 
         <div class="card">
 
-            <img src="{{ asset('images/Royal-Suite-room.jpg') }}">
+            <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="Weekend Escape">
 
             <h3>Weekend Escape</h3>
 
@@ -27,7 +29,7 @@
 
         <div class="card">
 
-            <img src="{{ asset('images/offer2.jpg') }}">
+            <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="Family Package">
 
             <h3>Family Package</h3>
 
@@ -37,7 +39,7 @@
 
         <div class="card">
 
-            <img src="{{ asset('images/offer3.jpg') }}">
+            <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="Romantic Getaway">
 
             <h3>Romantic Getaway</h3>
 
@@ -50,9 +52,43 @@
 </section>
 
 
-<section class="recommendation animate-on-scroll">
+<section class="recommendation accommodation animate-on-scroll">
 
-    <h2>Recommended Rooms</h2>
+    <h2>Premier Room with Private Garden</h2>
+
+    <div class="accommodation-card">
+        <div class="accommodation-image">
+            <span class="accommodation-image-badge">Featured</span>
+            <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="Premier Room with Private Garden">
+        </div>
+        <div class="accommodation-content">
+            <div class="accommodation-content-inner">
+                <p class="accommodation-meta">
+                    <i class="fas fa-ruler-combined"></i>
+                    81 square metres &nbsp;|&nbsp; 1 King Bed or 2 Twin Beds
+                </p>
+                <p>Discover the spacious comfort of this light-filled guest room. Relax on the <strong>plush sofa</strong> or unwind in your <strong>sculptural bathtub</strong>. Floor-to-ceiling windows lead out to a large private terrace and landscaped semiprivate garden with sun loungers.</p>
+                <div class="accommodation-amenities">
+                    <span><i class="fas fa-wifi"></i> Free Wi-Fi</span>
+                    <span><i class="fas fa-tv"></i> Smart TV</span>
+                    <span><i class="fas fa-snowflake"></i> A/C</span>
+                    <span><i class="fas fa-coffee"></i> Breakfast</span>
+                </div>
+                <div class="accommodation-price">
+                    <span class="amount">₱5,999</span>
+                    <span class="per-night">/ night</span>
+                </div>
+            </div>
+            <a href="{{ route('accommodation') }}" class="btn">Book Now <i class="fas fa-arrow-right"></i></a>
+        </div>
+    </div>
+
+</section>
+
+
+<section class="offers accommodation animate-on-scroll">
+
+    <h2>Available Rooms</h2>
 
     <div class="cards">
 

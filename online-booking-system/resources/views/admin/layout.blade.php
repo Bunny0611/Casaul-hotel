@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASAUL Hotel Management - Admin</title>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -58,13 +59,13 @@
 <body class="bg-gray-100">
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto md:static">
+<aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto md:static flex flex-col">
             <div class="p-6">
                 <h1 class="text-2xl font-bold tracking-wider">CASAUL</h1>
                 <p class="text-sm text-gray-300 mt-1">Hotel Management</p>
             </div>
             
-            <nav class="mt-6">
+            <nav class="mt-20">
                 <a href="{{ route('admin.dashboard') }}" class="nav-item flex items-center px-6 py-3 transition-all duration-300 {{ request()->is('admin') || request()->is('admin/') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt w-6"></i>
                     <span>Dashboard</span>
@@ -99,7 +100,7 @@
                 </a>
             </nav>
             
-            <div class="absolute bottom-0 w-64 p-6">
+            <div class="mt-auto pt-8 px-6 pb-6">
                 <a href="{{ route('home') }}" class="flex items-center px-6 py-3 text-gray-300 hover:text-white transition-colors">
                     <i class="fas fa-sign-out-alt w-6"></i>
                     <span>Logout</span>
