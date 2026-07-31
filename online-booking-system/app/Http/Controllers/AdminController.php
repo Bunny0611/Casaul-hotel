@@ -28,26 +28,11 @@ class AdminController extends Controller
         $completedReservations = Reservation::where('status', 'completed')->count();
         $cancelledReservations = Reservation::where('status', 'cancelled')->count();
 
-        // === Monthly Revenue (Last 6 Months) ===
-        $monthlyRevenue = [];
-        $monthlyLabels = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $month = now()->subMonths($i);
-            $monthStart = $month->copy()->startOfMonth();
-            $monthEnd = $month->copy()->endOfMonth();
-            
-            $revenue = Reservation::where('status', 'completed')
-                ->whereBetween('created_at', [$monthStart, $monthEnd])
-                ->sum('total_amount');
-            
-            $monthlyLabels[] = $month->format('M');
-            $monthlyRevenue[] = (float) $revenue;
-        }
-
         // === Average Daily Revenue (Last 30 Days) ===
+        // Use updated_at so recent completions/payments count toward the average.
         $thirtyDaysAgo = now()->subDays(30);
         $last30DaysRevenue = Reservation::where('status', 'completed')
-            ->where('created_at', '>=', $thirtyDaysAgo)
+            ->where('updated_at', '>=', $thirtyDaysAgo)
             ->sum('total_amount');
         $avgDailyRevenue = $last30DaysRevenue > 0 ? round($last30DaysRevenue / 30, 2) : 0;
 
@@ -77,8 +62,6 @@ class AdminController extends Controller
             'confirmedReservations',
             'completedReservations',
             'cancelledReservations',
-            'monthlyLabels',
-            'monthlyRevenue',
             'avgDailyRevenue',
             'roomTypes',
             'recentReservations'
@@ -221,6 +204,28 @@ class AdminController extends Controller
         $completedCount = $completedReservations->count();
         $cancelledReservations = $reservations->where('status', 'cancelled')->count();
 
+        $completedRevenueByMonth = Reservation::where('status', 'completed')
+            ->orderBy('updated_at')
+            ->get(['updated_at', 'total_amount'])
+            ->groupBy(function ($reservation) {
+                return $reservation->updated_at->format('Y-m');
+            })
+            ->map(function ($group) {
+                return $group->sum('total_amount');
+            });
+
+        $completedRevenueByMonth = $completedRevenueByMonth->slice(
+            max(0, $completedRevenueByMonth->count() - 6)
+        );
+
+        $monthlyLabels = $completedRevenueByMonth->keys()
+            ->map(fn($month) => \Illuminate\Support\Carbon::createFromFormat('Y-m', $month)->format('M Y'))
+            ->all();
+
+        $monthlyRevenue = $completedRevenueByMonth->values()
+            ->map(fn($revenue) => (float) $revenue)
+            ->all();
+
         return view('admin.reports', compact(
             'totalRevenue',
             'averagePayment',
@@ -233,8 +238,86 @@ class AdminController extends Controller
             'pendingReservations',
             'confirmedReservations',
             'completedCount',
-            'cancelledReservations'
+            'cancelledReservations',
+            'monthlyLabels',
+            'monthlyRevenue'
         ));
+    }
+
+    public function exportReportsCsv(Request $request)
+    {
+        $from = $request->query('from');
+        $to = $request->query('to');
+
+        $query = Reservation::with('room')->latest();
+        if ($from) $query->whereDate('created_at', '>=', $from);
+        if ($to) $query->whereDate('created_at', '<=', $to);
+
+        $reservations = $query->get();
+
+        $filename = 'reports_' . now()->format('Ymd_His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $columns = ['Guest', 'Email', 'Phone', 'Room', 'Check In', 'Check Out', 'Status', 'Amount'];
+
+        $callback = function () use ($reservations, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            foreach ($reservations as $r) {
+                fputcsv($file, [
+                    $r->guest_name,
+                    $r->guest_email,
+                    $r->guest_phone,
+                    $r->room ? $r->room->room_number : 'N/A',
+                    $r->check_in,
+                    $r->check_out,
+                    $r->status,
+                    number_format($r->total_amount, 2),
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function printReports(Request $request)
+    {
+        $from = $request->query('from');
+        $to = $request->query('to');
+
+        $reservations = Reservation::with('room')->latest();
+        if ($from) $reservations->whereDate('created_at', '>=', $from);
+        if ($to) $reservations->whereDate('created_at', '<=', $to);
+        $reservations = $reservations->get();
+
+        $completedRevenueByMonth = Reservation::where('status', 'completed')
+            ->orderBy('updated_at')
+            ->get(['updated_at', 'total_amount'])
+            ->groupBy(function ($reservation) {
+                return $reservation->updated_at->format('Y-m');
+            })
+            ->map(function ($group) {
+                return $group->sum('total_amount');
+            });
+
+        $completedRevenueByMonth = $completedRevenueByMonth->slice(
+            max(0, $completedRevenueByMonth->count() - 6)
+        );
+
+        $monthlyLabels = $completedRevenueByMonth->keys()
+            ->map(fn($month) => \Illuminate\Support\Carbon::createFromFormat('Y-m', $month)->format('M Y'))
+            ->all();
+
+        $monthlyRevenue = $completedRevenueByMonth->values()
+            ->map(fn($revenue) => (float) $revenue)
+            ->all();
+
+        return view('admin.reports_print', compact('reservations', 'monthlyLabels', 'monthlyRevenue', 'from', 'to'));
     }
 
     public function notifications()

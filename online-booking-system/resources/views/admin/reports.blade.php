@@ -6,32 +6,34 @@
     
     <!-- Date Range & Actions -->
     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center space-x-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">From</label>
-                    <input type="date" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+        <form id="reportsFilterForm" method="GET" action="{{ route('admin.reports') }}">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">From</label>
+                        <input id="reportFrom" name="from" type="date" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" value="{{ request('from') }}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
+                        <input id="reportTo" name="to" type="date" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" value="{{ request('to') }}">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
-                    <input type="date" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                <div class="flex space-x-3">
+                    <button id="reportsRefresh" type="button" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
+                    <button id="exportCsvBtn" type="button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                        <i class="fas fa-file-csv mr-2"></i>Export Excel
+                    </button>
+                     <button id="exportPdfBtn" type="button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                        <i class="fas fa-file-pdf mr-2"></i>Export PDF
+                    </button>
+                    <button id="printBtn" type="button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                        <i class="fas fa-print mr-2"></i>Print
+                    </button>
                 </div>
             </div>
-            <div class="flex space-x-3">
-                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                    <i class="fas fa-sync-alt mr-2"></i>Refresh
-                </button>
-                <button class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                    <i class="fas fa-file-csv mr-2"></i>Export Excel
-                </button>
-                 <button class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                    <i class="fas fa-file-csv mr-2"></i>Export PDF
-                </button>
-                <button class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                    <i class="fas fa-print mr-2"></i>Print
-                </button>
-            </div>
-        </div>
+        </form>
     </div>
     
     <!-- Report Tabs -->
@@ -283,6 +285,50 @@
                 });
             });
         });
+        // Actions: Refresh, Export CSV, Export PDF (print view), Print
+        const refreshBtn = document.getElementById('reportsRefresh');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
+        const printBtn = document.getElementById('printBtn');
+
+        function buildQuery() {
+            const from = document.getElementById('reportFrom')?.value || '';
+            const to = document.getElementById('reportTo')?.value || '';
+            const params = new URLSearchParams();
+            if (from) params.set('from', from);
+            if (to) params.set('to', to);
+            return params.toString() ? ('?' + params.toString()) : '';
+        }
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function () {
+                document.getElementById('reportsFilterForm').submit();
+            });
+        }
+
+        if (exportCsvBtn) {
+            exportCsvBtn.addEventListener('click', function () {
+                const q = buildQuery();
+                const url = "{{ route('admin.reports.export.csv') }}" + q;
+                window.location.href = url;
+            });
+        }
+
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener('click', function () {
+                const q = buildQuery();
+                const url = "{{ route('admin.reports.print') }}" + q;
+                window.open(url, '_blank');
+            });
+        }
+
+        if (printBtn) {
+            printBtn.addEventListener('click', function () {
+                const q = buildQuery();
+                const url = "{{ route('admin.reports.print') }}" + q;
+                window.open(url, '_blank');
+            });
+        }
     });
 
     // Payment Method Chart
@@ -331,42 +377,46 @@
         }
     });
     // Monthly Revenue Chart
-const monthlyRevenueCtx = document.getElementById('monthlyRevenue').getContext('2d');
+    const monthlyRevenueCtx = document.getElementById('monthlyRevenue').getContext('2d');
+    const monthlyRevenueLabels = @json($monthlyLabels);
+    const monthlyRevenueData = @json($monthlyRevenue);
 
-new Chart(monthlyRevenueCtx, {
-    type: 'line',
-    data: {
-        labels: [
-            'Jan','Feb','Mar','Apr',
-            'May','Jun','Jul','Aug',
-            'Sep','Oct','Nov','Dec'
-        ],
-        datasets: [{
-            label: 'Revenue',
-            data: [
-                12000,
-                18000,
-                15000,
-                22000,
-                30000,
-                28000,
-                35000,
-                40000,
-                25000,
-                32000,
-                45000,
-                50000
-            ],
-            borderColor: '#f97316',
-            backgroundColor: 'rgba(249,115,22,0.2)',
-            fill: true,
-            tension: 0.4
-        }]
-    },
-    options: {
-        responsive: true
-    }
-});
+    new Chart(monthlyRevenueCtx, {
+        type: 'line',
+        data: {
+            labels: monthlyRevenueLabels,
+            datasets: [{
+                label: 'Monthly Revenue',
+                data: monthlyRevenueData,
+                borderColor: '#f97316',
+                backgroundColor: 'rgba(249,115,22,0.2)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return '₱' + context.raw.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₱' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
 
     const reservationStatusChart = new Chart(
 document.getElementById('reservationStatusChart'),

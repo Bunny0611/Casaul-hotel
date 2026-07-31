@@ -27,6 +27,23 @@
         </button>
     </div>
 
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr]">
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500">Search</label>
+            <input id="reservationSearch" type="search" placeholder="Search by guest, email, or room" class="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200" />
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500">Status filter</label>
+            <select id="reservationStatusFilter" class="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                <option value="">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+    </div>
+
     <div class="grid gap-4 md:grid-cols-4">
         <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-sm text-gray-500">Total</p>
@@ -43,6 +60,10 @@
         <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
             <p class="text-sm text-gray-500">Completed</p>
             <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['completed'] }}</p>
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <p class="text-sm text-gray-500">Cancelled</p>
+            <p class="mt-2 text-2xl font-semibold text-red-600">{{ $reservations->where('status', 'cancelled')->count() }}</p>
         </div>
     </div>
 
@@ -62,7 +83,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($reservations as $reservation)
-                        <tr class="transition-colors hover:bg-gray-50">
+                        <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
                             <td class="px-6 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -107,7 +128,7 @@
 
         <div class="space-y-4 p-4 md:hidden">
             @forelse($reservations as $reservation)
-                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <div class="reservation-item rounded-2xl border border-gray-200 bg-gray-50 p-4" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <h3 class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</h3>
@@ -264,15 +285,32 @@
             });
         }
 
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape') {
-                closeAddReservationModal();
-            }
-        });
+            const searchInput = document.getElementById('reservationSearch');
+            const statusFilter = document.getElementById('reservationStatusFilter');
+            const reservationItems = document.querySelectorAll('.reservation-item');
 
-        @if($errors->any())
-            openAddReservationModal();
-        @endif
-    });
+            function filterReservations() {
+                const query = searchInput.value.trim().toLowerCase();
+                const status = statusFilter.value;
+
+                reservationItems.forEach(item => {
+                    const itemStatus = item.getAttribute('data-status') || '';
+                    const itemSearch = item.getAttribute('data-search') || '';
+
+                    const matchesQuery = query === '' || itemSearch.includes(query);
+                    const matchesStatus = status === '' || itemStatus === status;
+
+                    item.style.display = matchesQuery && matchesStatus ? '' : 'none';
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', filterReservations);
+            }
+
+            if (statusFilter) {
+                statusFilter.addEventListener('change', filterReservations);
+            }
+
 </script>
 @endsection

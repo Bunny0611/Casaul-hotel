@@ -18,12 +18,12 @@
         </button>
     </div>
 
-    <div class="mb-6 flex space-x-4">
-        <button class="rounded-lg bg-orange-500 px-6 py-3 font-medium text-white">ROOMS</button>
-        <button class="rounded-lg bg-white px-6 py-3 font-medium text-gray-600 hover:bg-gray-100">MAINTENANCE</button>
+    <div class="mb-6 flex flex-wrap gap-4">
+        <button type="button" data-tab="rooms" class="tab-button rounded-lg bg-orange-500 px-6 py-3 font-medium text-white transition hover:bg-orange-600">ROOMS</button>
+        <button type="button" data-tab="maintenance" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">MAINTENANCE</button>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
@@ -52,8 +52,8 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status))" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Edit">
-                                    <i class="fas fa-edit"></i>
+                                <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status))' class='rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800' title='Edit'>
+                                    <i class='fas fa-edit'></i>
                                 </button>
                                 <button type="button" onclick="changeStatus({{ $room->id }})" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Status">
                                     <i class="fas fa-exchange-alt"></i>
@@ -81,9 +81,93 @@
         </div>
     </div>
 
-    <button type="button" class="mt-6 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
+    <div data-panel="maintenance" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="border-b border-gray-200 px-6 py-5">
+            <h3 class="text-lg font-semibold text-gray-800">Maintenance Rooms</h3>
+            <p class="mt-1 text-sm text-gray-500">View rooms currently marked for maintenance and return them to available status.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Room No</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Capacity</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    @forelse($rooms->where('status', 'maintenance') as $maintenanceRoom)
+                    <tr class="transition-colors hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $maintenanceRoom->room_number }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenanceRoom->room_type }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenanceRoom->floor }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenanceRoom->capacity }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="rounded-full px-3 py-1 text-xs font-medium text-white status-{{ $maintenanceRoom->status }}">
+                                {{ ucfirst($maintenanceRoom->status) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button type="button" onclick="returnRoomFromMaintenance({{ $maintenanceRoom->id }})" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition hover:bg-green-100">
+                                Return Available
+                            </button>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            <i class="fas fa-tools mb-4 text-4xl text-gray-300"></i>
+                            <p class="text-lg font-medium">No rooms currently in maintenance.</p>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button type="button" onclick="openScheduleMaintenanceModal()" class="mt-6 w-full rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700 sm:w-auto">
         <i class="fas fa-tools mr-2"></i>Schedule Maintenance
     </button>
+</div>
+
+<div id="scheduleMaintenanceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+        <button type="button" onclick="closeScheduleMaintenanceModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+
+        <div class="mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">Schedule Maintenance</h3>
+            <p class="mt-1 text-sm text-gray-500">Select a room and set it to maintenance mode.</p>
+        </div>
+
+        <form id="scheduleMaintenanceForm" action="" method="POST" class="space-y-4">
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="status" value="maintenance">
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Room</label>
+                <select id="scheduleRoomId" name="room_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <option value="">Choose a room</option>
+                    @foreach($rooms->where('status', '!=', 'maintenance') as $roomOption)
+                        <option value="{{ $roomOption->id }}">{{ $roomOption->room_number }} - {{ $roomOption->room_type }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Maintenance Notes</label>
+                <textarea name="maintenance_notes" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Optional note"></textarea>
+            </div>
+            <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button type="button" onclick="closeScheduleMaintenanceModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Schedule</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div id="addRoomModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
@@ -284,12 +368,35 @@
         document.getElementById('statusModal').classList.remove('flex');
     }
 
+    function openScheduleMaintenanceModal() {
+        document.getElementById('scheduleMaintenanceModal').classList.remove('hidden');
+        document.getElementById('scheduleMaintenanceModal').classList.add('flex');
+    }
+
+    function closeScheduleMaintenanceModal() {
+        document.getElementById('scheduleMaintenanceModal').classList.add('hidden');
+        document.getElementById('scheduleMaintenanceModal').classList.remove('flex');
+    }
+
+    function returnRoomFromMaintenance(id) {
+        var statusRoute = "{{ route('admin.rooms.status', ['id' => '__ID__']) }}";
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = statusRoute.replace('__ID__', id);
+        form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}">' +
+                         '<input type="hidden" name="_method" value="PATCH">' +
+                         '<input type="hidden" name="status" value="available">';
+        document.body.appendChild(form);
+        form.submit();
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const addModal = document.getElementById('addRoomModal');
         const editModal = document.getElementById('editRoomModal');
         const statusModal = document.getElementById('statusModal');
+        const scheduleModal = document.getElementById('scheduleMaintenanceModal');
 
-        [addModal, editModal, statusModal].forEach(function (modal) {
+        [addModal, editModal, statusModal, scheduleModal].forEach(function (modal) {
             if (modal) {
                 modal.addEventListener('click', function (event) {
                     if (event.target === modal) {
@@ -297,8 +404,10 @@
                             closeAddRoomModal();
                         } else if (modal === editModal) {
                             closeEditRoomModal();
-                        } else {
+                        } else if (modal === statusModal) {
                             closeStatusModal();
+                        } else if (modal === scheduleModal) {
+                            closeScheduleMaintenanceModal();
                         }
                     }
                 });
@@ -310,8 +419,62 @@
                 closeAddRoomModal();
                 closeEditRoomModal();
                 closeStatusModal();
+                closeScheduleMaintenanceModal();
             }
         });
+
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const panels = document.querySelectorAll('[data-panel]');
+        const scheduleMaintenanceForm = document.getElementById('scheduleMaintenanceForm');
+        const scheduleRoomSelect = document.getElementById('scheduleRoomId');
+
+        function setScheduleFormAction(roomId) {
+            if (!scheduleMaintenanceForm || !roomId) {
+                return;
+            }
+            const statusRoute = "{{ route('admin.rooms.status', ['id' => '__ID__']) }}";
+            scheduleMaintenanceForm.action = statusRoute.replace('__ID__', roomId);
+        }
+
+        function activateTab(targetName) {
+            tabButtons.forEach(function(btn) {
+                const isActive = btn.getAttribute('data-tab') === targetName;
+                btn.classList.toggle('bg-orange-500', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('bg-white', !isActive);
+                btn.classList.toggle('text-gray-600', !isActive);
+            });
+            panels.forEach(function(panel) {
+                panel.classList.toggle('hidden', panel.getAttribute('data-panel') !== targetName);
+            });
+        }
+
+        tabButtons.forEach(function(button) {
+            button.addEventListener('click', function () {
+                activateTab(this.getAttribute('data-tab'));
+            });
+        });
+
+        activateTab('rooms');
+
+        if (scheduleMaintenanceForm && scheduleRoomSelect) {
+            if (scheduleRoomSelect.value) {
+                setScheduleFormAction(scheduleRoomSelect.value);
+            }
+
+            scheduleRoomSelect.addEventListener('change', function () {
+                setScheduleFormAction(this.value);
+            });
+
+            scheduleMaintenanceForm.addEventListener('submit', function(event) {
+                const roomId = scheduleRoomSelect.value;
+                if (!roomId) {
+                    event.preventDefault();
+                    return;
+                }
+                setScheduleFormAction(roomId);
+            });
+        }
 
         @if($errors->any())
             openAddRoomModal();
