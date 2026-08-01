@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('room_type');
             $table->decimal('price', 10, 2);
             $table->string('floor');
-            $table->enum('status', ['available', 'occupied', 'maintenance'])->default('available');
+            $table->enum('status', ['available', 'occupied', 'reserved', 'maintenance'])->default('available');
             $table->text('description')->nullable();
             $table->string('image')->nullable();
             $table->integer('capacity')->default(2);

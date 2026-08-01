@@ -15,9 +15,16 @@
             font-family: 'Poppins', sans-serif;
         }
         
-        .sidebar {
-            background: linear-gradient(180deg, #800000 0%, #5c0000 100%);
-        }
+       
+         .sidebar {
+    background-color: #800000 !important;
+    background-image: none !important;
+}
+.sidebar nav,
+.sidebar .mt-auto,
+.sidebar .p-6 {
+    background: transparent !important;
+}
         
         .header {
             background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);
@@ -67,6 +74,7 @@
         .status-available { background: #10b981; }
         .status-occupied { background: #ef4444; }
         .status-maintenance { background: #f59e0b; }
+        .status-reserved { background: #04d9ff; }
         
         .status-pending { background: #f59e0b; }
         .status-confirmed { background: #10b981; }
