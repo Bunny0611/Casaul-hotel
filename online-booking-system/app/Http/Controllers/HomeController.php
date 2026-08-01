@@ -8,83 +8,69 @@ use App\Models\Message;
 
 class HomeController extends Controller
 {
-    private function roomCatalog(): array
+    protected function featuredRooms(): array
     {
         return [
             [
                 'slug' => 'deluxe-room',
                 'name' => 'Deluxe Room',
-                'tag' => 'Featured Stay',
                 'price' => '₱3,500',
-                'image' => asset('image/Royal-Suite-room.jpg'),
-                'intro' => 'A refined retreat for guests who value elegance, comfort, and a restorative stay.',
-                'description' => 'Our Deluxe Room blends contemporary styling with warm hospitality, creating a restful place to recharge. Each room includes plush bedding, a spa-inspired bath, generous storage space, and a calming palette that feels both modern and inviting. Perfect for couples, family weekends, and short city escapes.',
-                'amenities' => ['King-sized bed', 'Rain shower', 'Complimentary Wi‑Fi', 'Smart TV', 'In-room coffee setup'],
-                'rooms' => array_map(fn($i) => 'Deluxe Room ' . $i, range(101, 110)),
+                'tagline' => 'Elegant comfort for a restful getaway.',
+                'image' => 'image/Royal-Suite-room.jpg',
+                'description' => 'Our Deluxe Room pairs a warm, modern aesthetic with airy interiors, plush bedding, and a convenient layout designed for both relaxation and productivity.',
+                'features' => ['King or twin beds', 'Private bath', 'High-speed Wi‑Fi', 'Room service'],
+            ],
+            [
+                'slug' => 'executive-room',
+                'name' => 'Executive Room',
+                'price' => '₱6,500',
+                'tagline' => 'Sophisticated luxury for work and leisure.',
+                'image' => 'image/Royal-Suite-room.jpg',
+                'description' => 'The Executive Room is crafted for guests who want a more elevated experience, with generous space, refined finishes, and a tranquil atmosphere throughout the stay.',
+                'features' => ['Executive lounge access', 'Large workspace', 'Premium amenities', 'City view'],
+            ],
+            [
+                'slug' => 'presidential-room',
+                'name' => 'Presidential Room',
+                'price' => '₱12,000',
+                'tagline' => 'A grand stay with a sense of occasion.',
+                'image' => 'image/Royal-Suite-room.jpg',
+                'description' => 'Designed for memorable stays, the Presidential Room offers a luxurious ambiance, refined details, and spacious comfort that effortlessly balances elegance and practicality.',
+                'features' => ['VIP service', 'Luxury furnishings', 'Premium toiletries', 'Private seating area'],
             ],
             [
                 'slug' => 'standard-room',
                 'name' => 'Standard Room',
-                'tag' => 'Essential Comfort',
-                'price' => '₱2,200',
-                'image' => asset('image/HM.jpg'),
-                'intro' => 'A clean, welcoming stay designed for practical comfort and easy convenience.',
-                'description' => 'The Standard Room is a versatile choice for guests seeking a relaxed and efficient accommodation. It offers a cozy sleeping arrangement, thoughtfully placed lighting, and a streamlined design that keeps everything comfortable and uncluttered. Ideal for business trips, family stays, or easy weekend getaways.',
-                'amenities' => ['Queen bed', 'Workspace area', 'Air conditioning', 'Desk lamp', 'Complimentary toiletries'],
-                'rooms' => array_map(fn($i) => 'Standard Room ' . $i, range(201, 210)),
-            ],
-            [
-                'slug' => 'executive-suite',
-                'name' => 'Executive Suite',
-                'tag' => 'Executive Escape',
-                'price' => '₱6,800',
-                'image' => asset('image/Royal-Suite-room.jpg'),
-                'intro' => 'An elevated suite for business travelers and guests who prefer extra space and polish.',
-                'description' => 'The Executive Suite offers a more expansive experience with a refined atmosphere and generous room to unwind. Designed with both work and leisure in mind, it includes a comfortable lounge arrangement, elegant finishes, and a premium in-room experience for guests expecting a more elevated stay.',
-                'amenities' => ['Lounge corner', 'Premium linens', 'Work desk', 'Mini bar', 'Priority housekeeping'],
-                'rooms' => array_map(fn($i) => 'Executive Suite ' . $i, range(301, 310)),
-            ],
-            [
-                'slug' => 'presidential-suite',
-                'name' => 'Presidential Suite',
-                'tag' => 'Signature Luxury',
-                'price' => '₱12,500',
-                'image' => asset('image/HM.jpg'),
-                'intro' => 'The grandest stay, crafted for signature occasions, dignified comfort, and unforgettable luxury.',
-                'description' => 'The Presidential Suite delivers an indulgent hospitality experience with layered textures, grand proportions, and curated details that make every moment feel special. Ideal for milestone occasions, executive stays, or guests seeking a truly exceptional retreat with a flawless balance of privacy and elegance.',
-                'amenities' => ['King suite layout', 'Luxury bath amenities', 'Private lounge', 'Butler assistance', 'Dining area'],
-                'rooms' => array_map(fn($i) => 'Presidential Suite ' . $i, range(401, 410)),
+                'price' => '₱2,800',
+                'tagline' => 'Simple comfort with a polished finish.',
+                'image' => 'image/Royal-Suite-room.jpg',
+                'description' => 'A well-appointed Standard Room brings together comfort and clarity, making it ideal for guests seeking a fresh, restful base in the heart of the city.',
+                'features' => ['Complimentary breakfast', 'Air-conditioned', 'Smart TV', 'Daily housekeeping'],
             ],
         ];
     }
 
     public function index()
     {
-        $rooms = Room::where('status', 'available')->take(3)->get();
+        $rooms = $this->featuredRooms();
         return view('index', compact('rooms'));
     }
     
     public function accommodation()
     {
-        try {
-            $rooms = Room::where('status', 'available')->get();
-        } catch (\Throwable $e) {
-            $rooms = collect([]);
-        }
-
-        $featuredRooms = $this->roomCatalog();
-
-        return view('accommodation', compact('rooms', 'featuredRooms'));
+        $rooms = Room::where('status', 'available')->get();
+        return view('accommodation', compact('rooms'));
     }
 
     public function roomDetail($slug)
     {
-        $catalog = $this->roomCatalog();
-        $room = collect($catalog)->firstWhere('slug', $slug);
+        $room = collect($this->featuredRooms())->firstWhere('slug', $slug);
 
-        abort_if(!$room, 404);
+        if (!$room) {
+            abort(404);
+        }
 
-        return view('accommodation-room', compact('room'));
+        return view('room-detail', compact('room'));
     }
     
     public function sendMessage(Request $request)

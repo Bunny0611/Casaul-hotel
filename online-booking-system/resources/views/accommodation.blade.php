@@ -2,55 +2,62 @@
 
 @section('content')
 
-@php
-    $displayRooms = [
-        ['name' => 'Deluxe Room', 'slug' => 'deluxe-room', 'active' => true],
-        ['name' => 'Standard Room', 'slug' => 'standard-room'],
-        ['name' => 'Executive Suite', 'slug' => 'executive-suite'],
-        ['name' => 'Presidential Suite', 'slug' => 'presidential-suite'],
-    ];
-@endphp
+@include('partials.section-hero', [
+    'title' => 'ACCOMMODATION',
+    'subtitle' => 'Comfortable stays with premium rooms and unforgettable views.',
+    'cta' => ['href' => '#rooms', 'label' => 'Explore Rooms'],
+'backgroundImage' => 'image/Royal-Suite-room.jpg',
+])
 
-<section class="accommodation-page animate-on-scroll">
-    <div class="accommodation-shell">
-        <div class="accommodation-feature">
-            <div class="feature-image-wrap">
-                <img src="{{ $featuredRooms[0]['image'] ?? asset('image/Royal-Suite-room.jpg') }}" alt="{{ $featuredRooms[0]['name'] ?? 'Deluxe Room' }}">
-            </div>
-            <div class="feature-caption">
-                <div>
-                    <span class="feature-tag">{{ $featuredRooms[0]['tag'] ?? 'Featured Stay' }}</span>
-                    <h3>{{ $featuredRooms[0]['name'] ?? 'Deluxe Room' }}</h3>
-                </div>
-                <div class="feature-price">{{ $featuredRooms[0]['price'] ?? '₱3,500' }}<span>/night</span></div>
-            </div>
-            <p class="feature-description">{{ $featuredRooms[0]['description'] ?? 'A refined stay with thoughtful details and timeless comfort.' }}</p>
+
+<section class="offers animate-on-scroll" id="rooms">
+    <h2>Featured Rooms</h2>
+
+    <div class="cards">
+        @forelse($rooms as $room)
+        <div class="card">
+            <img src="{{ $room->image ? asset('images/' . $room->image) : asset('images/room1.jpg') }}" alt="{{ $room->room_type }}">
+            <h3>{{ $room->room_type }}</h3>
+            <p>₱{{ number_format($room->price, 2) }}/night • {{ $room->description ?? 'Comfortable and spacious room.' }}</p>
+        </div>
+        @empty
+        <div class="card">
+            <img src="{{ asset('images/room1.jpg') }}" alt="Deluxe Room">
+            <h3>Deluxe Room</h3>
+            <p>₱3,500/night • Cozy, modern, and perfect for couples.</p>
         </div>
 
-        <div class="accommodation-listing single-listing">
-            <div class="listing-group full-width-listing">
-                <h4>Rooms</h4>
-                <ul>
-                    @foreach($displayRooms as $room)
-                        <li class="{{ $room['name'] === 'Deluxe Room' ? 'active' : '' }}">
-                            <a href="{{ route('accommodation.room', $room['slug']) }}">{{ $room['name'] }}</a>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
+        <div class="card">
+            <img src="{{ asset('images/room2.jpg') }}" alt="Executive Suite">
+            <h3>Executive Suite</h3>
+            <p>₱6,500/night • Spacious suite with lounge area.</p>
         </div>
+
+        <div class="card">
+            <img src="{{ asset('images/room3.jpg') }}" alt="Presidential Suite">
+            <h3>Presidential Suite</h3>
+            <p>₱12,000/night • Luxury experience for special occasions.</p>
+        </div>
+        @endforelse
     </div>
+</section>
 
-    <div class="booking-bar">
-        <div class="booking-field">
-            <span class="booking-label">Date</span>
-            <div class="field-value">Select Date Range</div>
+<section class="recommendation animate-on-scroll">
+    <h2>Why Guests Love Us</h2>
+
+    <div class="cards">
+        <div class="card">
+            <h3>Premium Amenities</h3>
+            <p>Fast Wi‑Fi, comfortable bedding, and thoughtful in-room essentials.</p>
         </div>
-        <div class="booking-field">
-            <span class="booking-label">Guests</span>
-            <div class="field-value">1 Room, 1 Adult, 0 Child</div>
+        <div class="card">
+            <h3>Friendly Hospitality</h3>
+            <p>We take care of the details so your stay feels effortless.</p>
         </div>
-        <button type="button" class="booking-btn">BOOK NOW</button>
+        <div class="card">
+            <h3>Prime Location</h3>
+            <p>Close to dining, attractions, and easy transport access.</p>
+        </div>
     </div>
 </section>
 

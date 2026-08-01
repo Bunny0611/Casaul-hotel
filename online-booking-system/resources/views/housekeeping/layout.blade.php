@@ -3,29 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CASAUL Hotel Management - Admin</title>
+    <title>CASAUL Hotel - Housekeeping</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            font-family: 'Poppins', sans-serif;
-        }
+        * { font-family: 'Poppins', sans-serif; }
         
         .sidebar {
-            background: linear-gradient(180deg, #800000 0%, #5c0000 100%);
+            background: linear-gradient(180deg, #1e3a5f 0%, #14304f 100%);
         }
         
         .header {
-            background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);
-        }
-        
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            background: linear-gradient(90deg, #2d5a87 0%, #3d7ab5 100%);
         }
         
         .nav-item {
@@ -38,18 +29,17 @@
             transition: all 0.25s ease;
             color: rgba(255,255,255,0.9);
         }
-
+        
         .nav-item:hover {
             background: rgba(255,255,255,0.14);
             transform: translateX(4px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
-
+        
         .nav-item.active {
             background: rgba(255,255,255,0.2);
-            border-left: 4px solid #ff6b35;
+            border-left: 4px solid #3d7ab5;
         }
-
+        
         .nav-item i {
             width: 1.5rem;
             flex-shrink: 0;
@@ -64,14 +54,13 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
+        .clean { background: #10b981; }
+        .dirty { background: #ef4444; }
+        .in-progress { background: #f59e0b; }
+        
         .status-available { background: #10b981; }
         .status-occupied { background: #ef4444; }
         .status-maintenance { background: #f59e0b; }
-        
-        .status-pending { background: #f59e0b; }
-        .status-confirmed { background: #10b981; }
-        .status-cancelled { background: #ef4444; }
-        .status-completed { background: #3b82f6; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -80,41 +69,17 @@
         <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto md:static flex flex-col">
             <div class="p-6">
                 <h1 class="text-2xl font-bold tracking-wider">CASAUL</h1>
-                <p class="text-sm text-gray-300 mt-1">Hotel Management</p>
+                <p class="text-sm text-gray-300 mt-1">Housekeeping Portal</p>
             </div>
             
             <nav class="mt-20 flex flex-col px-3">
-                <a href="{{ route('admin.dashboard') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin') || request()->is('admin/') ? 'active' : '' }}">
-                    <i class="fas fa-tachometer-alt w-6"></i>
+                <a href="{{ route('housekeeping.dashboard') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 active">
+                    <i class="fas fa-broom w-6"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ route('admin.reservations') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/reservations') ? 'active' : '' }}">
-                    <i class="fas fa-calendar-check w-6"></i>
-                    <span>Reservations</span>
-                </a>
-                <a href="{{ route('admin.rooms') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/rooms') ? 'active' : '' }}">
+                <a href="{{ route('housekeeping.dashboard') }}#rooms" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
                     <i class="fas fa-bed w-6"></i>
-                    <span>Rooms</span>
-                </a>
-                <a href="{{ route('admin.guests') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/guests') ? 'active' : '' }}">
-                    <i class="fas fa-users w-6"></i>
-                    <span>Guests</span>
-                </a>
-                <a href="{{ route('admin.messages') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/messages') ? 'active' : '' }}">
-                    <i class="fas fa-comments w-6"></i>
-                    <span>Messages</span>
-                </a>
-                <a href="{{ route('admin.reports') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/reports') ? 'active' : '' }}">
-                    <i class="fas fa-chart-bar w-6"></i>
-                    <span>Reports</span>
-                </a>
-                <a href="{{ route('admin.notifications') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/notifications') ? 'active' : '' }}">
-                    <i class="fas fa-bell w-6"></i>
-                    <span>Notifications</span>
-                </a>
-                <a href="{{ route('admin.settings') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/settings') ? 'active' : '' }}">
-                    <i class="fas fa-cog w-6"></i>
-                    <span>Settings</span>
+                    <span>Room Cleaning</span>
                 </a>
             </nav>
             
@@ -145,10 +110,6 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <input type="text" placeholder="Search..." class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-64">
-                        <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
-                    </div>
                     <div class="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
                         <i class="fas fa-user-circle text-2xl"></i>
                         <span class="font-medium">{{ auth()->user()->name }}</span>
@@ -168,17 +129,10 @@
                 @yield('content')
             </main>
         </div>
+    </div>
     
     <script>
-        // Dynamic animations and mobile sidebar toggle
         document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.card-hover');
-            cards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transition = 'all 0.3s ease';
-                });
-            });
-
             const sidebar = document.getElementById('sidebar');
             const backdrop = document.getElementById('sidebarBackdrop');
             const toggle = document.getElementById('sidebarToggle');
@@ -201,3 +155,4 @@
     </script>
 </body>
 </html>
+
