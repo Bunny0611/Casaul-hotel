@@ -13,6 +13,16 @@ Route::view('/gallery', 'gallery')->name('gallery');
 Route::view('/dining', 'dining')->name('dining');
 Route::view('/events', 'events')->name('events');
 
+Route::prefix('employee')->name('employee.')->group(function () {
+    Route::view('/', 'employee.employee')->name('index');
+    Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
+    Route::view('/reservation', 'employee.reservation', ['reservations' => collect([]), 'rooms' => collect([])])->name('reservation');
+    Route::view('/checkin', 'employee.checkin')->name('checkin');
+    Route::view('/room-status', 'employee.room-status')->name('room-status');
+    Route::view('/guest-requests', 'employee.guest-requests')->name('guest-requests');
+    Route::view('/messages', 'employee.messages')->name('messages');
+});
+
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/rooms', [AdminController::class, 'rooms'])->name('rooms');
