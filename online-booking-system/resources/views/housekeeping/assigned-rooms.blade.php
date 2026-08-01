@@ -57,17 +57,13 @@ animation:fade .5s ease-in-out;
 @keyframes fade{
 
 from{
-
-opacity:0;
-transform:translateY(10px);
-
+    opacity:0;
+    transform:translateY(10px);
 }
 
 to{
-
-opacity:1;
-transform:translateY(0);
-
+    opacity:1;
+    transform:translateY(0);
 }
 
 }
@@ -78,335 +74,150 @@ transform:translateY(0);
 
 <div class="flex h-screen overflow-hidden bg-gray-100">
 
-
-
-<!-- SIDEBAR -->
-
-<aside id="sidebar"
-class="sidebar fixed lg:static -left-64 lg:left-0 top-0 z-50 w-64 h-screen text-white flex-shrink-0 transition-all duration-300">
-
-
+    <aside id="sidebar" class="sidebar fixed lg:static -left-64 lg:left-0 top-0 z-50 w-64 h-screen text-white flex-shrink-0 transition-all duration-300">
 
 <div class="p-6">
 
 
-<h1 class="text-2xl font-bold tracking-wider">
-
-<i class="fas fa-hotel mr-2"></i>
-
-CASAUL
-
-</h1>
-
-
-<p class="text-sm text-gray-300 mt-1">
-
-Housekeeping 
-
-</p>
-
-
+    <h1 class="text-2xl font-bold tracking-wider">
+        <i class="fas fa-hotel mr-2"></i>
+        CASAUL
+    </h1>
+    <p class="text-sm text-gray-300 mt-1">
+        Housekeeping 
+    </p>
 </div>
 
 
 
 
-<nav class="mt-6">
+    <nav class="mt-6">
+        <a href="{{ route('housekeeping.dashboard') }}" class="nav-item flex items-center px-6 py-3">
+            <i class="fas fa-home w-6"></i>
+                <span>
+                Dashboard
+                </span>
+        </a>
 
+        <a href="{{ route('housekeeping.assigned-rooms') }}" class="nav-item active flex items-center px-6 py-3">
+            <i class="fas fa-bed w-6"></i>
+                <span>
+                Assigned Rooms
+                </span>
+         </a>
 
+        <a href="{{ route('housekeeping.room-status-update') }}" class="nav-item flex items-center px-6 py-3">
+            <i class="fas fa-sync-alt w-6"></i>
 
-<a href="{{ route('housekeeping.dashboard') }}"
-class="nav-item flex items-center px-6 py-3">
+                <span>
+                Room Status Update
+                </span>
+        </a>
 
-<i class="fas fa-home w-6"></i>
+        <a href="{{ route('housekeeping.guest-requests') }}" class="nav-item flex items-center px-6 py-3">
+            <i class="fas fa-bell w-6"></i>
+                <span>
+                Guest Requests
+                </span>
+        </a>
 
-<span>
-Dashboard
-</span>
+        <a href="{{ route('housekeeping.maintenance-report') }}" class="nav-item flex items-center px-6 py-3">
+            <i class="fas fa-tools w-6"></i>
+                <span>
+                Maintenance Report
+                </span>
+        </a>
 
-</a>
+        <a href="{{ route('housekeeping.cleaning-history') }}" class="nav-item flex items-center px-6 py-3">
+            <i class="fas fa-history w-6"></i>
+                <span>
+                    Cleaning History
+                </span>
+        </a>
 
+    </nav>
 
-
-
-<a href="{{ route('housekeeping.assigned-rooms') }}"
-class="nav-item active flex items-center px-6 py-3">
-
-<i class="fas fa-bed w-6"></i>
-
-<span>
-Assigned Rooms
-</span>
-
-</a>
-
-
-
-
-<a href="{{ route('housekeeping.room-status-update') }}"
-class="nav-item flex items-center px-6 py-3">
-
-<i class="fas fa-sync-alt w-6"></i>
-
-<span>
-Room Status Update
-</span>
-
-</a>
-
-
-
-
-<a href="{{ route('housekeeping.guest-requests') }}"
-class="nav-item flex items-center px-6 py-3">
-
-<i class="fas fa-bell w-6"></i>
-
-<span>
-Guest Requests
-</span>
-
-</a>
-
-
-
-
-<a href="{{ route('housekeeping.maintenance-report') }}"
-class="nav-item flex items-center px-6 py-3">
-
-<i class="fas fa-tools w-6"></i>
-
-<span>
-Maintenance Report
-</span>
-
-</a>
-
-
-
-
-<a href="{{ route('housekeeping.cleaning-history') }}"
-class="nav-item flex items-center px-6 py-3">
-
-<i class="fas fa-history w-6"></i>
-
-<span>
-Cleaning History
-</span>
-
-</a>
-
-
-</nav>
-
-
-
-
-<div class="absolute bottom-0 w-64 p-6">
-
-
-<a href="{{ route('logout') }}"
-class="flex items-center px-6 py-3 text-gray-300 hover:text-white">
-
-
-<i class="fas fa-sign-out-alt w-6"></i>
-
-Logout
-
-
-</a>
-
-
-</div>
-
-
+    <div class="absolute bottom-0 w-64 p-6">
+        <a href="{{ route('logout') }}" class="flex items-center px-6 py-3 text-gray-300 hover:text-white">
+            <i class="fas fa-sign-out-alt w-6"></i>
+                Logout
+        </a>
+    </div>
 
 </aside>
-
-
-
-
-
-<!-- MAIN AREA -->
-
 
 <div class="flex-1 flex flex-col overflow-hidden">
 
 
-
-
-
-<!-- HEADER -->
-
-
 <header class="header text-white px-4 md:px-6 py-4 shadow-lg">
 
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center">
+            <button id="menuBtn" class="lg:hidden text-2xl mr-4">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h2 class="text-xl font-semibold">
+                Welcome to CASAUL Housekeeping
+            </h2>
+        </div>
 
-<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div class="relative w-full sm:w-64">
+            <input type="text" placeholder="Search..." class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none w-full">
+            <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
+        </div>
 
-
-
-<div class="flex items-center">
-
-
-<button id="menuBtn"
-class="lg:hidden text-2xl mr-4">
-
-<i class="fas fa-bars"></i>
-
-</button>
-
-
-
-<h2 class="text-xl font-semibold">
-
-Welcome to CASAUL Housekeeping
-
-</h2>
-
-
+        <div class="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
+            <i class="fas fa-user-circle text-2xl"></i>
+                <span>
+                Housekeeper
+                </span>
+        </div>
+    </div>
 </div>
-
-
-
-
-
-
-<div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-
-
-
-<div class="relative w-full sm:w-64">
-
-<input 
-type="text"
-placeholder="Search..."
-class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none w-full">
-
-
-<i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
-
-
-</div>
-
-
-
-
-
-
-<div class="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
-
-
-<i class="fas fa-user-circle text-2xl"></i>
-
-
-<span>
-Housekeeper
-</span>
-
-
-</div>
-
-
-
-</div>
-
-
-
-</div>
-
 
 </header>
 
-
-
-
-
-
-
-<!-- CONTENT -->
-
-
 <main class="flex-1 overflow-y-auto p-4 md:p-6">
+        <div class="animate-fade-in">
+            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">
+                    Assigned Rooms
+                </h2>
 
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <select class="border rounded-lg px-4 py-2 h-11">
 
-<div class="animate-fade-in">
+                    <option>
+                    All Priority
+                    </option>
 
+                    <option>
+                    High
+                    </option>
 
+                    <option>
+                    Medium
+                    </option>
 
-<div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
+                    <option>
+                    Low
+                    </option>
 
+                </select>
 
+            <button onclick="openModal()" class="h-11 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg flex items-center justify-center">
+                <i class="fas fa-plus mr-2"></i>
+                    Assign Room Task
+            </button>
+        </div>
+    </div>
 
-<h2 class="text-3xl font-bold text-gray-800">
-
-Assigned Rooms
-
-</h2>
-
-
-
-
-<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-
-
-
-<select class="border rounded-lg px-4 py-2 h-11">
-
-<option>
-All Priority
-</option>
-
-<option>
-High
-</option>
-
-<option>
-Medium
-</option>
-
-<option>
-Low
-</option>
-
-</select>
-
-
-
-
-
-<button
-onclick="openModal()"
-class="h-11 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg flex items-center justify-center">
-
-
-<i class="fas fa-plus mr-2"></i>
-
-Assign Room Task
-
-
-</button>
-
-
-
-</div>
-
-
-
-</div>
-<!-- ASSIGNED ROOM TABLE -->
-
-<div class="bg-white rounded-xl shadow-lg p-6">
-
-
-<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
-
-
-<h3 class="text-lg font-semibold text-gray-800">
-
-Assigned Cleaning Tasks
-
-</h3>
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
+                <h3 class="text-lg font-semibold text-gray-800">
+                    Assigned Cleaning Tasks
+                </h3>
 
 
 
