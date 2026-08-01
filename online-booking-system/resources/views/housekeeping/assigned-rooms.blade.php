@@ -149,463 +149,220 @@ to{
 <div class="flex-1 flex flex-col overflow-hidden">
 
 
-<header class="header text-white px-4 md:px-6 py-4 shadow-lg">
+    <header class="header text-white px-4 md:px-6 py-4 shadow-lg">
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="flex items-center">
-            <button id="menuBtn" class="lg:hidden text-2xl mr-4">
-                <i class="fas fa-bars"></i>
-            </button>
-            <h2 class="text-xl font-semibold">
-                Welcome to CASAUL Housekeeping
-            </h2>
-        </div>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex items-center">
+                <button id="menuBtn" class="lg:hidden text-2xl mr-4">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h2 class="text-xl font-semibold">
+                    Welcome to CASAUL Housekeeping
+                </h2>
+            </div>
 
-     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div class="relative w-full sm:w-64">
-            <input type="text" placeholder="Search..." class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none w-full">
-            <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
-        </div>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div class="relative w-full sm:w-64">
+                <input type="text" placeholder="Search..." class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none w-full">
+                <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
+            </div>
 
-        <div class="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
-            <i class="fas fa-user-circle text-2xl"></i>
-                <span>
-                Housekeeper
-                </span>
+            <div class="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
+                <i class="fas fa-user-circle text-2xl"></i>
+                    <span>
+                    Housekeeper
+                    </span>
+            </div>
         </div>
     </div>
-</div>
-
 </header>
 
-<main class="flex-1 overflow-y-auto p-4 md:p-6">
-        <div class="animate-fade-in">
-            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
-                <h2 class="text-3xl font-bold text-gray-800">
-                    Assigned Rooms
-                </h2>
+        <main class="flex-1 overflow-y-auto p-4 md:p-6">
+            <div class="animate-fade-in">
+                <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
+                        <h2 class="text-3xl font-bold text-gray-800">
+                                        Assigned Rooms
+                        </h2>
 
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <select class="border rounded-lg px-4 py-2 h-11">
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                            <select class="border rounded-lg px-4 py-2 h-11">
 
-                    <option>
-                    All Priority
-                    </option>
+                                <option>
+                                    All Priority
+                                </option>
 
-                    <option>
-                    High
-                    </option>
+                                <option>
+                                    High
+                                </option>
 
-                    <option>
-                    Medium
-                    </option>
+                                <option>
+                                    Medium
+                                </option>
 
-                    <option>
-                    Low
-                    </option>
+                                <option>
+                                    Low
+                                </option>
 
-                </select>
+                            </select>
 
-            <button onclick="openModal()" class="h-11 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg flex items-center justify-center">
-                <i class="fas fa-plus mr-2"></i>
-                    Assign Room Task
-            </button>
-        </div>
+                                <button onclick="openModal()" class="h-11 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg flex items-center justify-center">
+                                    <i class="fas fa-plus mr-2"></i>
+                                        Assign Room Task
+                                </button>
+                            </div>
+                        </div>
+
+                            <div class="bg-white rounded-xl shadow-lg p-6">
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
+                                    <h3 class="text-lg font-semibold text-gray-800">
+                                        Assigned Cleaning Tasks
+                                    </h3>
+
+                                    <span class="text-sm text-gray-500">
+                                        Total: 4 Rooms
+                                    </span>
+                                </div>
+
+                                <div class="overflow-x-auto">
+                                        <table class="w-full min-w-[700px]">
+                                            <thead>
+                                                <tr class="bg-gray-50">
+                                                    <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
+                                                        Room
+                                                    </th>
+
+                                                    <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
+                                                        Task
+                                                    </th>
+
+                                                    <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
+                                                        Priority
+                                                    </th>
+
+                                                    <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
+                                                        Status
+
+                                                    </th>
+
+                                                    <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
+                                                        Action
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                        <tbody class="divide-y divide-gray-200">
+
+
+                                    <tr class="hover:bg-gray-50 transition">
+                                        <td class="px-6 py-4">
+                                            <div class="font-semibold text-gray-800">
+                                                Room 101
+                                            </div>
+
+                                            <div class="text-xs text-gray-500">
+                                                Deluxe Room
+                                            </div>  
+                                        </td>
+
+                                        <td class="px-6 py-4">
+                                            Deep Cleaning
+                                        </td>
+
+                                        <td class="px-6 py-4">
+                                            <span class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700">
+                                                High
+                                            </span>
+                                        </td>
+
+                                        <td class="px-6 py-4">
+                                            <span class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
+                                                Pending
+                                            </span>
+                                        </td>
+
+                                        <td class="px-6 py-4">
+                                            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                                                Start Cleaning
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="hover:bg-gray-50 transition">
+                                        <td class="px-6 py-4">
+                                            <div class="font-semibold text-gray-800">
+                                                Room 205
+                                            </div>
+
+                                            <div class="text-xs text-gray-500">
+                                                Suite Room
+                                            </div>
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        Change Linens
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        <span class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
+                                            Medium
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        <span class="px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
+                                            Cleaning
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        <button class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+                                            Complete
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="px-6 py-4">
+                                        <div class="font-semibold text-gray-800">
+                                            Room 302
+                                        </div>
+
+                                        <div class="text-xs text-gray-500">
+                                            Standard Room
+                                        </div>
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        General Cleaning
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        <span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                                            Low
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        <span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                                            Completed
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-4">
+                                        <span class="text-green-600 text-sm font-medium">
+                                            Finished
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
-
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    Assigned Cleaning Tasks
-                </h3>
-
-
-
-<span class="text-sm text-gray-500">
-
-Total: 4 Rooms
-
-</span>
-
-
 </div>
 
-
-
-
-
-<div class="overflow-x-auto">
-
-
-<table class="w-full min-w-[700px]">
-
-
-
-<thead>
-
-
-<tr class="bg-gray-50">
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-
-Room
-
-</th>
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-
-Task
-
-</th>
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-
-Priority
-
-</th>
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-
-Status
-
-</th>
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-
-Action
-
-</th>
-
-
-</tr>
-
-
-</thead>
-
-
-
-
-
-<tbody class="divide-y divide-gray-200">
-
-
-
-
-
-<!-- ROOM 101 -->
-
-
-<tr class="hover:bg-gray-50 transition">
-
-
-<td class="px-6 py-4">
-
-
-<div class="font-semibold text-gray-800">
-
-Room 101
-
-</div>
-
-
-<div class="text-xs text-gray-500">
-
-Deluxe Room
-
-</div>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-Deep Cleaning
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="px-3 py-1 rounded-full text-xs bg-red-100 text-red-700">
-
-High
-
-</span>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
-
-Pending
-
-</span>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
-
-
-Start Cleaning
-
-
-</button>
-
-
-</td>
-
-
-</tr>
-
-
-
-
-
-
-
-
-<!-- ROOM 205 -->
-
-
-<tr class="hover:bg-gray-50 transition">
-
-
-<td class="px-6 py-4">
-
-
-<div class="font-semibold text-gray-800">
-
-Room 205
-
-</div>
-
-
-<div class="text-xs text-gray-500">
-
-Suite Room
-
-</div>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-Change Linens
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
-
-Medium
-
-</span>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
-
-Cleaning
-
-</span>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<button class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
-
-Complete
-
-</button>
-
-
-</td>
-
-
-</tr>
-
-
-
-
-
-
-
-
-
-<!-- ROOM 302 -->
-
-
-<tr class="hover:bg-gray-50 transition">
-
-
-<td class="px-6 py-4">
-
-
-<div class="font-semibold text-gray-800">
-
-Room 302
-
-</div>
-
-
-<div class="text-xs text-gray-500">
-
-Standard Room
-
-</div>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-General Cleaning
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">
-
-Low
-
-</span>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">
-
-Completed
-
-</span>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="text-green-600 text-sm font-medium">
-
-Finished
-
-</span>
-
-
-</td>
-
-
-
-</tr>
-
-
-
-
-
-
-
-</tbody>
-
-
-</table>
-
-
-</div>
-
-
-</div>
-
-
-
-
-    </div>
-
-
-    </main>
-
-
-    </div>
-
-
-    </div>
-
-<div id="assignModal"
-class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+<div id="assignModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
 
 
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
