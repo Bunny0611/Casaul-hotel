@@ -20,6 +20,11 @@ Route::view('/events', 'events')->name('events');
 // --- Admin Login (outside admin prefix so it's named 'login' not 'admin.login') ---
 Route::get('/admin/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/admin/login', [AuthController::class, 'login'])->name('login.submit');
+
+// --- Guest Login ---
+Route::get('/guest/login', [AuthController::class, 'showGuestLoginForm'])->name('guest.login');
+Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.login.submit');
+
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
 // --- Employee Portal ---

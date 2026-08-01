@@ -16,6 +16,14 @@ class AuthController extends Controller
     }
 
     /**
+     * Show the guest login form.
+     */
+    public function showGuestLoginForm()
+    {
+        return view('guest.login');
+    }
+
+    /**
      * Handle an admin login attempt.
      */
     public function login(Request $request)
@@ -43,6 +51,30 @@ class AuthController extends Controller
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records for the selected role.',
+        ])->onlyInput('email');
+    }
+
+    /**
+     * Handle a guest login attempt.
+     */
+    public function guestLogin(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
+
+        if (Auth::attempt([
+            'email' => $credentials['email'],
+            'password' => $credentials['password'],
+        ], $request->boolean('remember'))) {
+            $request->session()->regenerate();
+
+            return redirect()->intended(route('home'));
+        }
+
+        return back()->withErrors([
+            'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
     }
 
