@@ -1,8 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\HousekeepingController;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/accommodation', [HomeController::class, 'accommodation'])->name('accommodation');
@@ -28,3 +30,48 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/notifications', [AdminController::class, 'notifications'])->name('notifications');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
 });
+
+Route::prefix('housekeeping')->group(function(){
+
+    Route::get('/dashboard',
+    [HousekeepingController::class,'dashboard'])
+    ->name('housekeeping.dashboard');
+
+
+    Route::get('/assigned-rooms',
+    [HousekeepingController::class,'assignedRooms'])
+    ->name('housekeeping.assigned-rooms');
+
+
+    Route::get('/room-status-update',
+    [HousekeepingController::class,'roomStatusUpdate'])
+    ->name('housekeeping.room-status-update');
+
+
+    Route::get('/guest-requests',
+    [HousekeepingController::class,'guestRequests'])
+    ->name('housekeeping.guest-requests');
+
+
+    Route::get('/maintenance-report',
+    [HousekeepingController::class,'maintenanceReport'])
+    ->name('housekeeping.maintenance-report');
+
+
+    Route::get('/cleaning-history',
+    [HousekeepingController::class,'cleaningHistory'])
+    ->name('housekeeping.cleaning-history');
+
+});
+
+Route::get('/logout', function () {
+
+    Auth::logout();
+
+    request()->session()->invalidate();
+
+    request()->session()->regenerateToken();
+
+    return redirect('/');
+
+})->name('logout');
