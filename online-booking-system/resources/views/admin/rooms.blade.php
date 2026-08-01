@@ -3,72 +3,75 @@
 @section('content')
 <div class="animate-fade-in">
     @if(session('success'))
-        <div class="mb-6 rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
+        <div class="mb-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
             {{ session('success') }}
         </div>
     @endif
 
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-800">Room Management</h2>
-        <button onclick="document.getElementById('addRoomModal').classList.remove('hidden')" class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg">
+    <div class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+            <h2 class="text-3xl font-bold text-gray-800">Room Management</h2>
+            <p class="mt-1 text-sm text-gray-500">Manage room inventory, availability, and maintenance from one place.</p>
+        </div>
+        <button type="button" onclick="openAddRoomModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
             <i class="fas fa-plus mr-2"></i>Add Room
         </button>
     </div>
-    
-    <!-- Tabs -->
-    <div class="flex space-x-4 mb-6">
-        <button class="px-6 py-3 bg-orange-500 text-white rounded-lg font-medium">ROOMS</button>
-        <button class="px-6 py-3 bg-white text-gray-600 rounded-lg font-medium hover:bg-gray-100">MAINTENANCE</button>
+
+    <div class="mb-6 flex flex-wrap gap-4">
+        <button type="button" data-tab="rooms" class="tab-button rounded-lg bg-orange-500 px-6 py-3 font-medium text-white transition hover:bg-orange-600">ROOMS</button>
+        <button type="button" data-tab="maintenance" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">MAINTENANCE</button>
     </div>
-    
-    <!-- Rooms Table -->
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+
+    <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room No</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Floor</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Room No</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Capacity</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     @forelse($rooms as $room)
-                    <tr class="hover:bg-gray-50 transition-colors">
+                    <tr class="transition-colors hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $room->room_number }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $room->room_type }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($room->price, 2) }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $room->floor }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $room->capacity }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-3 py-1 rounded-full text-xs font-medium text-white status-{{ $room->status }}">
+                            <span class="rounded-full px-3 py-1 text-xs font-medium text-white status-{{ $room->status }}">
                                 {{ ucfirst($room->status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                            <button onclick="editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status) )" class="text-blue-600 hover:text-blue-800 transition-colors">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="changeStatus({{ $room->id }})" class="text-green-600 hover:text-green-800 transition-colors">
-                                <i class="fas fa-exchange-alt"></i>
-                            </button>
-                            <form action="{{ route('admin.rooms.destroy', $room->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this room?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:text-red-800 transition-colors">
-                                    <i class="fas fa-trash"></i>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center gap-2">
+                                <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status))' class='rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800' title='Edit'>
+                                    <i class='fas fa-edit'></i>
                                 </button>
-                            </form>
+                                <button type="button" onclick="changeStatus({{ $room->id }})" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Status">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
+                                <form action="{{ route('admin.rooms.destroy', $room->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this room?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
                         <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                            <i class="fas fa-bed text-4xl mb-4 text-gray-300"></i>
+                            <i class="fas fa-bed mb-4 text-4xl text-gray-300"></i>
                             <p>No rooms found. Add your first room to get started.</p>
                         </td>
                     </tr>
@@ -77,137 +80,262 @@
             </table>
         </div>
     </div>
-    
-    <button class="mt-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-300 shadow-lg">
+
+    <div data-panel="maintenance" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="border-b border-gray-200 px-6 py-5">
+            <h3 class="text-lg font-semibold text-gray-800">Maintenance Rooms</h3>
+            <p class="mt-1 text-sm text-gray-500">View rooms currently marked for maintenance and return them to available status.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Room No</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Capacity</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    @forelse($rooms->where('status', 'maintenance') as $maintenanceRoom)
+                    <tr class="transition-colors hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $maintenanceRoom->room_number }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenanceRoom->room_type }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenanceRoom->floor }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenanceRoom->capacity }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="rounded-full px-3 py-1 text-xs font-medium text-white status-{{ $maintenanceRoom->status }}">
+                                {{ ucfirst($maintenanceRoom->status) }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button type="button" onclick="returnRoomFromMaintenance({{ $maintenanceRoom->id }})" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition hover:bg-green-100">
+                                Return Available
+                            </button>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            <i class="fas fa-tools mb-4 text-4xl text-gray-300"></i>
+                            <p class="text-lg font-medium">No rooms currently in maintenance.</p>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button type="button" onclick="openScheduleMaintenanceModal()" class="mt-6 w-full rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700 sm:w-auto">
         <i class="fas fa-tools mr-2"></i>Schedule Maintenance
     </button>
 </div>
 
-<!-- Add Room Modal -->
-<div id="addRoomModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 animate-fade-in">
-        <div class="p-6 border-b">
-            <h3 class="text-xl font-semibold text-gray-800">Add New Room</h3>
+<div id="scheduleMaintenanceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+        <button type="button" onclick="closeScheduleMaintenanceModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+
+        <div class="mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">Schedule Maintenance</h3>
+            <p class="mt-1 text-sm text-gray-500">Select a room and set it to maintenance mode.</p>
         </div>
-        <form action="{{ route('admin.rooms.store') }}" method="POST" class="p-6 space-y-4">
+
+        <form id="scheduleMaintenanceForm" action="" method="POST" class="space-y-4">
             @csrf
+            @method('PATCH')
+            <input type="hidden" name="status" value="maintenance">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Room Number</label>
-                <input type="text" name="room_number" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Room Type</label>
-                <select name="room_type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                    <option value="">Select Type</option>
-                    <option value="Deluxe Room">Deluxe Room</option>
-                    <option value="Executive Suite">Executive Suite</option>
-                    <option value="Presidential Suite">Presidential Suite</option>
-                    <option value="Standard Room">Standard Room</option>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Room</label>
+                <select id="scheduleRoomId" name="room_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <option value="">Choose a room</option>
+                    @foreach($rooms->where('status', '!=', 'maintenance') as $roomOption)
+                        <option value="{{ $roomOption->id }}">{{ $roomOption->room_number }} - {{ $roomOption->room_type }}</option>
+                    @endforeach
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Price (₱)</label>
-                <input type="number" name="price" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                <label class="mb-1 block text-sm font-medium text-gray-700">Maintenance Notes</label>
+                <textarea name="maintenance_notes" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Optional note"></textarea>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Floor</label>
-                <input type="text" name="floor" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Capacity</label>
-                <input type="number" name="capacity" required min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea name="description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"></textarea>
-            </div>
-            <div class="flex space-x-3 pt-4">
-                <button type="button" onclick="document.getElementById('addRoomModal').classList.add('hidden')" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
-                <button type="submit" class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">Add Room</button>
+            <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button type="button" onclick="closeScheduleMaintenanceModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Schedule</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Edit Room Modal -->
-<div id="editRoomModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 animate-fade-in">
-        <div class="p-6 border-b">
-            <h3 class="text-xl font-semibold text-gray-800">Edit Room</h3>
+<div id="addRoomModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+        <button type="button" onclick="closeAddRoomModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+
+        <div class="mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">Add New Room</h3>
+            <p class="mt-1 text-sm text-gray-500">Fill in the details below to create a new room.</p>
         </div>
-        <form id="editRoomForm" action="" method="POST" class="p-6 space-y-4">
+
+        @if($errors->any())
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <ul class="list-disc space-y-1 pl-5">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form action="{{ route('admin.rooms.store') }}" method="POST" class="space-y-4">
+            @csrf
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Room Number</label>
+                    <input type="text" name="room_number" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Room Type</label>
+                    <select name="room_type" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select Type</option>
+                        <option value="Deluxe Room">Deluxe Room</option>
+                        <option value="Executive Suite">Executive Suite</option>
+                        <option value="Presidential Suite">Presidential Suite</option>
+                        <option value="Standard Room">Standard Room</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label>
+                    <input type="number" name="price" step="0.01" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Floor</label>
+                    <input type="text" name="floor" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label>
+                    <input type="number" name="capacity" required min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Description</label>
+                <textarea name="description" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+            </div>
+            <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button type="button" onclick="closeAddRoomModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Room</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editRoomModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+        <button type="button" onclick="closeEditRoomModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+
+        <div class="mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">Edit Room</h3>
+            <p class="mt-1 text-sm text-gray-500">Update the room details below.</p>
+        </div>
+
+        <form id="editRoomForm" action="" method="POST" class="space-y-4">
             @csrf
             @method('PUT')
             <input type="hidden" name="id" id="editRoomId">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Room Number</label>
-                <input type="text" name="room_number" id="editRoomNumber" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Room Number</label>
+                    <input type="text" name="room_number" id="editRoomNumber" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Room Type</label>
+                    <select name="room_type" id="editRoomType" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select Type</option>
+                        <option value="Deluxe Room">Deluxe Room</option>
+                        <option value="Executive Suite">Executive Suite</option>
+                        <option value="Presidential Suite">Presidential Suite</option>
+                        <option value="Standard Room">Standard Room</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label>
+                    <input type="number" name="price" id="editPrice" step="0.01" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Floor</label>
+                    <input type="text" name="floor" id="editFloor" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label>
+                    <input type="number" name="capacity" id="editCapacity" required min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Status</label>
+                    <select name="status" id="editStatus" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="available">Available</option>
+                        <option value="occupied">Occupied</option>
+                        <option value="reserved">Reserved</option>
+                        <option value="maintenance">Maintenance</option>
+                    </select>
+                </div>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Room Type</label>
-                <select name="room_type" id="editRoomType" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                    <option value="">Select Type</option>
-                    <option value="Deluxe Room">Deluxe Room</option>
-                    <option value="Executive Suite">Executive Suite</option>
-                    <option value="Presidential Suite">Presidential Suite</option>
-                    <option value="Standard Room">Standard Room</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Price (₱)</label>
-                <input type="number" name="price" id="editPrice" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Floor</label>
-                <input type="text" name="floor" id="editFloor" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Capacity</label>
-                <input type="number" name="capacity" id="editCapacity" required min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select name="status" id="editStatus" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                    <option value="available">Available</option>
-                    <option value="occupied">Occupied</option>
-                    <option value="maintenance">Maintenance</option>
-                </select>
-            </div>
-            <div class="flex space-x-3 pt-4">
-                <button type="button" onclick="document.getElementById('editRoomModal').classList.add('hidden')" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
-                <button type="submit" class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">Update Room</button>
+            <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button type="button" onclick="closeEditRoomModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Update Room</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Change Status Modal -->
-<div id="statusModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 animate-fade-in">
-        <div class="p-6 border-b">
-            <h3 class="text-xl font-semibold text-gray-800">Change Room Status</h3>
+<div id="statusModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+        <button type="button" onclick="closeStatusModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+
+        <div class="mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">Change Room Status</h3>
+            <p class="mt-1 text-sm text-gray-500">Choose the new status for this room.</p>
         </div>
-        <form id="statusForm" action="" method="POST" class="p-6 space-y-4">
+
+        <form id="statusForm" action="" method="POST" class="space-y-4">
             @csrf
             @method('PATCH')
             <input type="hidden" name="id" id="statusRoomId">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Select Status</label>
-                <select name="status" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                <label class="mb-1 block text-sm font-medium text-gray-700">Select Status</label>
+                <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <option value="available">Available</option>
                     <option value="occupied">Occupied</option>
+                    <option value="reserved">Reserved</option>
                     <option value="maintenance">Maintenance</option>
                 </select>
             </div>
-            <div class="flex space-x-3 pt-4">
-                <button type="button" onclick="document.getElementById('statusModal').classList.add('hidden')" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">Cancel</button>
-                <button type="submit" class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">Update Status</button>
+            <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button type="button" onclick="closeStatusModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Update Status</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
+    function openAddRoomModal() {
+        document.getElementById('addRoomModal').classList.remove('hidden');
+        document.getElementById('addRoomModal').classList.add('flex');
+    }
+
+    function closeAddRoomModal() {
+        document.getElementById('addRoomModal').classList.add('hidden');
+        document.getElementById('addRoomModal').classList.remove('flex');
+    }
+
     function editRoom(id, roomNumber, roomType, price, floor, capacity, status) {
         document.getElementById('editRoomId').value = id;
         document.getElementById('editRoomNumber').value = roomNumber;
@@ -219,13 +347,138 @@
         var editRoute = "{{ route('admin.rooms.update', ['id' => '__ID__']) }}";
         document.getElementById('editRoomForm').action = editRoute.replace('__ID__', id);
         document.getElementById('editRoomModal').classList.remove('hidden');
+        document.getElementById('editRoomModal').classList.add('flex');
     }
-    
+
+    function closeEditRoomModal() {
+        document.getElementById('editRoomModal').classList.add('hidden');
+        document.getElementById('editRoomModal').classList.remove('flex');
+    }
+
     function changeStatus(id) {
         document.getElementById('statusRoomId').value = id;
         var statusRoute = "{{ route('admin.rooms.status', ['id' => '__ID__']) }}";
         document.getElementById('statusForm').action = statusRoute.replace('__ID__', id);
         document.getElementById('statusModal').classList.remove('hidden');
+        document.getElementById('statusModal').classList.add('flex');
     }
+
+    function closeStatusModal() {
+        document.getElementById('statusModal').classList.add('hidden');
+        document.getElementById('statusModal').classList.remove('flex');
+    }
+
+    function openScheduleMaintenanceModal() {
+        document.getElementById('scheduleMaintenanceModal').classList.remove('hidden');
+        document.getElementById('scheduleMaintenanceModal').classList.add('flex');
+    }
+
+    function closeScheduleMaintenanceModal() {
+        document.getElementById('scheduleMaintenanceModal').classList.add('hidden');
+        document.getElementById('scheduleMaintenanceModal').classList.remove('flex');
+    }
+
+    function returnRoomFromMaintenance(id) {
+        var statusRoute = "{{ route('admin.rooms.status', ['id' => '__ID__']) }}";
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = statusRoute.replace('__ID__', id);
+        form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}">' +
+                         '<input type="hidden" name="_method" value="PATCH">' +
+                         '<input type="hidden" name="status" value="available">';
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const addModal = document.getElementById('addRoomModal');
+        const editModal = document.getElementById('editRoomModal');
+        const statusModal = document.getElementById('statusModal');
+        const scheduleModal = document.getElementById('scheduleMaintenanceModal');
+
+        [addModal, editModal, statusModal, scheduleModal].forEach(function (modal) {
+            if (modal) {
+                modal.addEventListener('click', function (event) {
+                    if (event.target === modal) {
+                        if (modal === addModal) {
+                            closeAddRoomModal();
+                        } else if (modal === editModal) {
+                            closeEditRoomModal();
+                        } else if (modal === statusModal) {
+                            closeStatusModal();
+                        } else if (modal === scheduleModal) {
+                            closeScheduleMaintenanceModal();
+                        }
+                    }
+                });
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeAddRoomModal();
+                closeEditRoomModal();
+                closeStatusModal();
+                closeScheduleMaintenanceModal();
+            }
+        });
+
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const panels = document.querySelectorAll('[data-panel]');
+        const scheduleMaintenanceForm = document.getElementById('scheduleMaintenanceForm');
+        const scheduleRoomSelect = document.getElementById('scheduleRoomId');
+
+        function setScheduleFormAction(roomId) {
+            if (!scheduleMaintenanceForm || !roomId) {
+                return;
+            }
+            const statusRoute = "{{ route('admin.rooms.status', ['id' => '__ID__']) }}";
+            scheduleMaintenanceForm.action = statusRoute.replace('__ID__', roomId);
+        }
+
+        function activateTab(targetName) {
+            tabButtons.forEach(function(btn) {
+                const isActive = btn.getAttribute('data-tab') === targetName;
+                btn.classList.toggle('bg-orange-500', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('bg-white', !isActive);
+                btn.classList.toggle('text-gray-600', !isActive);
+            });
+            panels.forEach(function(panel) {
+                panel.classList.toggle('hidden', panel.getAttribute('data-panel') !== targetName);
+            });
+        }
+
+        tabButtons.forEach(function(button) {
+            button.addEventListener('click', function () {
+                activateTab(this.getAttribute('data-tab'));
+            });
+        });
+
+        activateTab('rooms');
+
+        if (scheduleMaintenanceForm && scheduleRoomSelect) {
+            if (scheduleRoomSelect.value) {
+                setScheduleFormAction(scheduleRoomSelect.value);
+            }
+
+            scheduleRoomSelect.addEventListener('change', function () {
+                setScheduleFormAction(this.value);
+            });
+
+            scheduleMaintenanceForm.addEventListener('submit', function(event) {
+                const roomId = scheduleRoomSelect.value;
+                if (!roomId) {
+                    event.preventDefault();
+                    return;
+                }
+                setScheduleFormAction(roomId);
+            });
+        }
+
+        @if($errors->any())
+            openAddRoomModal();
+        @endif
+    });
 </script>
 @endsection

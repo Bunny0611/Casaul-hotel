@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CASAUL Hotel Management - Admin</title>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,9 +15,16 @@
             font-family: 'Poppins', sans-serif;
         }
         
-        .sidebar {
-            background: linear-gradient(180deg, #800000 0%, #5c0000 100%);
-        }
+       
+         .sidebar {
+    background-color: #800000 !important;
+    background-image: none !important;
+}
+.sidebar nav,
+.sidebar .mt-auto,
+.sidebar .p-6 {
+    background: transparent !important;
+}
         
         .header {
             background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);
@@ -35,6 +43,28 @@
             background: rgba(255,255,255,0.2);
             border-left: 4px solid #ff6b35;
         }
+
+        .nav-item {
+            display: flex !important;
+            width: 100%;
+            justify-content: flex-start;
+            align-items: center;
+            margin: 0.2rem 0;
+            border-radius: 0.9rem;
+            transition: all 0.25s ease;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.14);
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .nav-item i {
+            width: 1.5rem;
+            flex-shrink: 0;
+        }
         
         .animate-fade-in {
             animation: fadeIn 0.5s ease-in-out;
@@ -48,6 +78,7 @@
         .status-available { background: #10b981; }
         .status-occupied { background: #ef4444; }
         .status-maintenance { background: #f59e0b; }
+        .status-reserved { background: #04d9ff; }
         
         .status-pending { background: #f59e0b; }
         .status-confirmed { background: #10b981; }
@@ -58,48 +89,48 @@
 <body class="bg-gray-100">
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto md:static">
+<aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto md:static flex flex-col">
             <div class="p-6">
                 <h1 class="text-2xl font-bold tracking-wider">CASAUL</h1>
                 <p class="text-sm text-gray-300 mt-1">Hotel Management</p>
             </div>
             
-            <nav class="mt-6">
-                <a href="{{ route('admin.dashboard') }}" class="nav-item flex items-center px-6 py-3 transition-all duration-300 {{ request()->is('admin') || request()->is('admin/') ? 'active' : '' }}">
+            <nav class="mt-20 flex flex-col px-3">
+                <a href="{{ route('admin.dashboard') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin') || request()->is('admin/') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt w-6"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ route('admin.reservations') }}" class="nav-item flex items-center px-6 py-3 transition-all duration-300 {{ request()->is('admin/reservations') ? 'active' : '' }}">
+                <a href="{{ route('admin.reservations') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/reservations') ? 'active' : '' }}">
                     <i class="fas fa-calendar-check w-6"></i>
                     <span>Reservations</span>
                 </a>
-                <a href="{{ route('admin.rooms') }}" class="nav-item flex items-center px-6 py-3 transition-all duration-300 {{ request()->is('admin/rooms') ? 'active' : '' }}">
+                <a href="{{ route('admin.rooms') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/rooms') ? 'active' : '' }}">
                     <i class="fas fa-bed w-6"></i>
                     <span>Rooms</span>
                 </a>
-                <a href="{{ route('admin.guests') }}" class="nav-item flex items-center px-6 py-3 transition-all duration-300 {{ request()->is('admin/guests') ? 'active' : '' }}">
+                <a href="{{ route('admin.guests') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/guests') ? 'active' : '' }}">
                     <i class="fas fa-users w-6"></i>
                     <span>Guests</span>
                 </a>
-                <a href="{{ route('admin.messages') }}" class="nav-item flex items-center px-6 py-3 transition-all duration-300 {{ request()->is('admin/messages') ? 'active' : '' }}">
+                <a href="{{ route('admin.messages') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/messages') ? 'active' : '' }}">
                     <i class="fas fa-comments w-6"></i>
                     <span>Messages</span>
                 </a>
-                <a href="{{ route('admin.reports') }}" class="nav-item flex items-center px-6 py-3 transition-all duration-300 {{ request()->is('admin/reports') ? 'active' : '' }}">
+                <a href="{{ route('admin.reports') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/reports') ? 'active' : '' }}">
                     <i class="fas fa-chart-bar w-6"></i>
                     <span>Reports</span>
                 </a>
-                <a href="{{ route('admin.notifications') }}" class="nav-item flex items-center px-6 py-3 transition-all duration-300 {{ request()->is('admin/notifications') ? 'active' : '' }}">
+                <a href="{{ route('admin.notifications') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/notifications') ? 'active' : '' }}">
                     <i class="fas fa-bell w-6"></i>
                     <span>Notifications</span>
                 </a>
-                <a href="{{ route('admin.settings') }}" class="nav-item flex items-center px-6 py-3 transition-all duration-300 {{ request()->is('admin/settings') ? 'active' : '' }}">
+                <a href="{{ route('admin.settings') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/settings') ? 'active' : '' }}">
                     <i class="fas fa-cog w-6"></i>
                     <span>Settings</span>
                 </a>
             </nav>
             
-            <div class="absolute bottom-0 w-64 p-6">
+            <div class="mt-auto pt-8 px-6 pb-6">
                 <a href="{{ route('home') }}" class="flex items-center px-6 py-3 text-gray-300 hover:text-white transition-colors">
                     <i class="fas fa-sign-out-alt w-6"></i>
                     <span>Logout</span>
