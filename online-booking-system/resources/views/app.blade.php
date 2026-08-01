@@ -44,7 +44,7 @@
 
         <li><a href="{{ route('dining') }}">DINING</a></li>
 
-        <li><a href="{{ route('admin.dashboard') }}" class="admin-link">ADMIN</a></li>
+  
 
     </ul>
 
