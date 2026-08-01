@@ -120,7 +120,6 @@
         </div>
     </div>
     
-   
     <div class="bg-white rounded-xl shadow-lg p-6">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-gray-800">Latest Customer Receipts</h3>
@@ -271,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
 });
 </script>
 @endsection
