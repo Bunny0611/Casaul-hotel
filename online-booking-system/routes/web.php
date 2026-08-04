@@ -27,6 +27,7 @@ Route::post('/staff/login', [AuthController::class, 'login'])->name('login.submi
 // --- Guest Login ---
 Route::get('/guest/login', [AuthController::class, 'showGuestLoginForm'])->name('guest.login');
 Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.login.submit');
+Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
 
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
