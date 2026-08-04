@@ -9,7 +9,6 @@
 'backgroundImage' => 'image/Royal-Suite-room.jpg',
 ])
 
-
 <section class="offers animate-on-scroll" id="rooms">
     <h2>Featured Rooms</h2>
 
@@ -58,6 +57,17 @@
             <h3>Prime Location</h3>
             <p>Close to dining, attractions, and easy transport access.</p>
         </div>
+    </div>
+</section>
+
+<section class="reservation-highlight animate-on-scroll">
+    <div class="reservation-highlight-card">
+        <div class="reservation-highlight-copy">
+            <span class="eyebrow">Plan the Perfect Stay</span>
+            <h2>Ready to lock in your ideal room?</h2>
+            <p>Choose your room, amenities, event package, or dining plan in one seamless booking experience.</p>
+        </div>
+        <a href="{{ route('reservation') }}" class="btn"><span>Make Reservation</span></a>
     </div>
 </section>
 
