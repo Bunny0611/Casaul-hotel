@@ -87,6 +87,37 @@ class AuthController extends Controller
     }
 
     /**
+     * Handle a guest registration attempt.
+     */
+    public function guestRegister(Request $request)
+    {
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'middle_initial' => ['required', 'string', 'max:3'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'contact_no' => ['required', 'string', 'max:25'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = User::create([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'middle_initial' => $validated['middle_initial'],
+            'email' => $validated['email'],
+            'contact_no' => $validated['contact_no'],
+            'name' => trim($validated['first_name'].' '.$validated['middle_initial'].' '.$validated['last_name']),
+            'password' => Hash::make($validated['password']),
+            'role' => 'guest',
+        ]);
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('home'));
+    }
+
+    /**
      * Log the admin out of the application.
      */
     public function logout(Request $request)

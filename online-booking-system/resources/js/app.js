@@ -195,11 +195,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        signupForm?.addEventListener('submit', (event) => {
-            event.preventDefault();
+        signupForm?.addEventListener('submit', () => {
             if (authMessage) {
-                authMessage.style.display = 'block';
-                authMessage.textContent = 'Account creation is coming soon. Please use the sign-in form for now.';
+                authMessage.style.display = 'none';
+                authMessage.textContent = '';
             }
         });
     }

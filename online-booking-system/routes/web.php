@@ -11,6 +11,8 @@ use App\Http\Controllers\HousekeepingController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/accommodation', [HomeController::class, 'accommodation'])->name('accommodation');
 Route::get('/accommodation/{slug}', [HomeController::class, 'roomDetail'])->name('accommodation.room');
+Route::get('/reservation', [HomeController::class, 'reservation'])->name('reservation');
+Route::post('/reservation', [HomeController::class, 'storeReservation'])->name('reservation.store');
 Route::post('/send-message', [HomeController::class, 'sendMessage'])->name('send.message');
 Route::view('/offers', 'offers')->name('offers');
 Route::view('/gallery', 'gallery')->name('gallery');
@@ -24,6 +26,7 @@ Route::post('/admin/login', [AuthController::class, 'login'])->name('login.submi
 // --- Guest Login ---
 Route::get('/guest/login', [AuthController::class, 'showGuestLoginForm'])->name('guest.login');
 Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.login.submit');
+Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
 
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
