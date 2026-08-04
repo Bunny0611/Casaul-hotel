@@ -13,23 +13,23 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             if (!Schema::hasColumn('users', 'first_name')) {
-                $table->string('first_name')->after('id');
+                $table->string('first_name')->nullable()->after('id');
             }
 
             if (!Schema::hasColumn('users', 'last_name')) {
-                $table->string('last_name')->after('first_name');
+                $table->string('last_name')->nullable()->after('first_name');
             }
 
             if (!Schema::hasColumn('users', 'middle_initial')) {
-                $table->string('middle_initial', 3)->after('last_name');
+                $table->string('middle_initial', 3)->nullable()->after('last_name');
             }
 
             if (!Schema::hasColumn('users', 'contact_no')) {
-                $table->string('contact_no', 25)->after('email');
+                $table->string('contact_no', 25)->nullable()->after('email');
             }
 
             if (Schema::hasColumn('users', 'role')) {
-                $table->enum('role', ['admin', 'housekeeping', 'guest'])->default('admin')->change();
+                $table->enum('role', ['admin', 'housekeeping', 'employee', 'guest'])->default('admin')->change();
             }
         });
     }
