@@ -12,48 +12,47 @@
                 <h3 class="page-title">Room Overview</h3>
                 <p class="page-subtitle">View room availability and housekeeping status</p>
             </div>
-            <button class="primary-btn" id="refresh-button" type="button">Refresh</button>
         </div>
 
         <div class="summary-grid">
             <article class="summary-card" data-tone="available">
                 <div class="summary-card-head">
-                    <span class="summary-label"><span class="summary-icon">🟢</span>Available Rooms</span>
+                    <span class="summary-label"><span class="summary-icon"></span>Available Rooms</span>
                     <span class="summary-dot" style="background:#16a34a"></span>
                 </div>
                 <div class="summary-value">12</div>
             </article>
             <article class="summary-card" data-tone="reserved">
                 <div class="summary-card-head">
-                    <span class="summary-label"><span class="summary-icon">🔵</span>Reserved Rooms</span>
+                    <span class="summary-label"><span class="summary-icon"></span>Reserved Rooms</span>
                     <span class="summary-dot" style="background:#2563eb"></span>
                 </div>
                 <div class="summary-value">8</div>
             </article>
             <article class="summary-card" data-tone="occupied">
                 <div class="summary-card-head">
-                    <span class="summary-label"><span class="summary-icon">🔴</span>Occupied Rooms</span>
+                    <span class="summary-label"><span class="summary-icon"></span>Occupied Rooms</span>
                     <span class="summary-dot" style="background:#dc2626"></span>
                 </div>
                 <div class="summary-value">17</div>
             </article>
             <article class="summary-card" data-tone="dirty">
                 <div class="summary-card-head">
-                    <span class="summary-label"><span class="summary-icon">⚫</span>Dirty Rooms</span>
+                    <span class="summary-label"><span class="summary-icon"></span>Dirty Rooms</span>
                     <span class="summary-dot" style="background:#6b7280"></span>
                 </div>
                 <div class="summary-value">4</div>
             </article>
             <article class="summary-card" data-tone="cleaning">
                 <div class="summary-card-head">
-                    <span class="summary-label"><span class="summary-icon">🟣</span>Cleaning Rooms</span>
+                    <span class="summary-label"><span class="summary-icon"></span>Cleaning Rooms</span>
                     <span class="summary-dot" style="background:#7c3aed"></span>
                 </div>
                 <div class="summary-value">3</div>
             </article>
             <article class="summary-card" data-tone="maintenance">
                 <div class="summary-card-head">
-                    <span class="summary-label"><span class="summary-icon">🟡</span>Maintenance Rooms</span>
+                    <span class="summary-label"><span class="summary-icon"></span>Maintenance Rooms</span>
                     <span class="summary-dot" style="background:#d97706"></span>
                 </div>
                 <div class="summary-value">2</div>

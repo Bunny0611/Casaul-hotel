@@ -98,6 +98,112 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    const searchToggle = document.getElementById('nav-search-toggle');
+    const searchForm = document.getElementById('nav-search-form');
+    const searchInput = document.getElementById('nav-search-input');
+    const modalTrigger = document.getElementById('guest-signin-trigger');
+    const authModal = document.getElementById('guest-auth-modal');
+    const closeModalBtn = document.getElementById('guest-auth-close');
+    const signInView = document.getElementById('auth-signin-view');
+    const signUpView = document.getElementById('auth-signup-view');
+    const switchBtn = document.getElementById('auth-switch-btn');
+    const switchLabel = document.getElementById('auth-switch-label');
+    const googleBtn = document.getElementById('google-signin-btn');
+    const authMessage = document.getElementById('auth-message');
+    const signupForm = document.getElementById('guest-signup-form');
+
+    if (searchToggle && searchForm && searchInput) {
+        searchToggle.addEventListener('click', () => {
+            searchForm.classList.toggle('active');
+            if (searchForm.classList.contains('active')) {
+                searchInput.focus();
+            }
+        });
+
+        searchForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const query = searchInput.value.trim().toLowerCase();
+
+            if (!query) {
+                searchInput.focus();
+                return;
+            }
+
+            const candidates = Array.from(document.querySelectorAll('main h1, main h2, main h3, main h4, main p, main li, main a, main span, main button, .card, .section, .room-card'));
+            const match = candidates.find((element) => {
+                const text = element.textContent?.trim() || '';
+                return text.length > 0 && text.toLowerCase().includes(query) && !element.closest('nav') && !element.closest('footer') && !element.closest('.chat-widget') && !element.closest('.page-loader');
+            });
+
+            if (match) {
+                match.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                match.classList.add('search-highlight');
+                setTimeout(() => match.classList.remove('search-highlight'), 2200);
+                searchForm.classList.remove('active');
+            } else {
+                alert('No matching content found on this page.');
+            }
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!searchForm.contains(event.target) && !searchToggle.contains(event.target)) {
+                searchForm.classList.remove('active');
+            }
+        });
+    }
+
+    if (modalTrigger && authModal) {
+        const openModal = () => {
+            authModal.classList.add('open');
+            authModal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        };
+
+        const closeModal = () => {
+            authModal.classList.remove('open');
+            authModal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        };
+
+        modalTrigger.addEventListener('click', openModal);
+        closeModalBtn?.addEventListener('click', closeModal);
+        authModal.addEventListener('click', (event) => {
+            if (event.target === authModal) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        let isSignUp = false;
+        switchBtn?.addEventListener('click', () => {
+            isSignUp = !isSignUp;
+            signInView?.classList.toggle('auth-hidden', isSignUp);
+            signUpView?.classList.toggle('auth-hidden', !isSignUp);
+            switchLabel.textContent = isSignUp ? 'Already have an account?' : 'Don’t have an account?';
+            switchBtn.textContent = isSignUp ? 'Sign in' : 'Sign up';
+        });
+
+        googleBtn?.addEventListener('click', () => {
+            if (authMessage) {
+                authMessage.style.display = 'block';
+                authMessage.textContent = 'Google sign-in is coming soon. Please use email sign-in for now.';
+            }
+        });
+
+        signupForm?.addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (authMessage) {
+                authMessage.style.display = 'block';
+                authMessage.textContent = 'Account creation is coming soon. Please use the sign-in form for now.';
+            }
+        });
+    }
+
     console.log('✨ Dynamic animations loaded!');
 });
 

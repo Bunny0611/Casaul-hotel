@@ -42,17 +42,74 @@
 
         <li><a href="{{ route('offers') }}">OFFERS</a></li>
 
-        <li><a href="{{ route('gallery') }}">GALLERY</a></li>
-
         <li><a href="{{ route('dining') }}">DINING</a></li>
 
-        <li><a href="{{ route('events') }}">EVENTS</a></li>
-
-        <li><a href="{{ route('admin.dashboard') }}" class="admin-link">ADMIN</a></li>
+  
 
     </ul>
 
+    <div class="nav-actions">
+        <div class="nav-search-wrapper">
+            <button type="button" class="nav-search-toggle" id="nav-search-toggle" aria-label="Open search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </button>
+            <form class="nav-search-form" id="nav-search-form" role="search">
+                <input type="search" id="nav-search-input" placeholder="Search this page..." aria-label="Search this page">
+                <button type="submit" class="nav-search-submit">GO</button>
+            </form>
+        </div>
+
+        <button type="button" class="nav-signin-btn" id="guest-signin-trigger">SIGN IN</button>
+    </div>
+
 </nav>
+
+<div class="auth-modal-backdrop" id="guest-auth-modal" aria-hidden="true">
+    <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="guest-auth-title">
+        <button type="button" class="auth-close-btn" id="guest-auth-close" aria-label="Close">×</button>
+
+        <div class="auth-brand">
+            <img src="{{ asset('image/LOGO.png') }}" alt="Casaul Hotel" class="auth-brand-logo">
+            <h2 id="guest-auth-title">Welcome to CASAUL</h2>
+            <p>Sign in to continue or create a guest account.</p>
+        </div>
+
+        <div id="auth-message" class="auth-message" style="display:none;"></div>
+
+        <div id="auth-signin-view">
+            <button type="button" class="auth-social-btn google-btn" id="google-signin-btn">
+                <i class="fab fa-google"></i>
+                Continue with Google
+            </button>
+
+            <div class="auth-divider"><span>or sign in with email</span></div>
+
+            <form method="POST" action="{{ route('guest.login.submit') }}" class="auth-form">
+                @csrf
+                <input type="email" name="email" class="auth-input" placeholder="Email address" required>
+                <input type="password" name="password" class="auth-input" placeholder="Password" required>
+                <button type="submit" class="auth-submit-btn">Sign In</button>
+            </form>
+        </div>
+
+        <div id="auth-signup-view" class="auth-hidden">
+            <form class="auth-form" id="guest-signup-form">
+                <input type="text" class="auth-input" placeholder="Full name" required>
+                <input type="email" class="auth-input" placeholder="Email address" required>
+                <input type="password" class="auth-input" placeholder="Create password" required>
+                <button type="submit" class="auth-submit-btn">Create Account</button>
+            </form>
+        </div>
+
+        <p class="auth-switch-text">
+            <span id="auth-switch-label">Don’t have an account?</span>
+            <button type="button" class="auth-switch-link" id="auth-switch-btn">Sign up</button>
+        </p>
+    </div>
+</div>
 
 @yield('content')
 

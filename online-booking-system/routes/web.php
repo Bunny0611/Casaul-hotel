@@ -3,9 +3,11 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
 
+// --- Public Routes ---
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/accommodation', [HomeController::class, 'accommodation'])->name('accommodation');
 Route::get('/accommodation/{slug}', [HomeController::class, 'roomDetail'])->name('accommodation.room');
@@ -15,6 +17,17 @@ Route::view('/gallery', 'gallery')->name('gallery');
 Route::view('/dining', 'dining')->name('dining');
 Route::view('/events', 'events')->name('events');
 
+// --- Admin Login (outside admin prefix so it's named 'login' not 'admin.login') ---
+Route::get('/admin/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/admin/login', [AuthController::class, 'login'])->name('login.submit');
+
+// --- Guest Login ---
+Route::get('/guest/login', [AuthController::class, 'showGuestLoginForm'])->name('guest.login');
+Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.login.submit');
+
+Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
+
+// --- Employee Portal ---
 Route::prefix('employee')->name('employee.')->group(function () {
     Route::view('/', 'employee.employee')->name('index');
     Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
@@ -25,7 +38,8 @@ Route::prefix('employee')->name('employee.')->group(function () {
     Route::view('/messages', 'employee.messages')->name('messages');
 });
 
-Route::prefix('admin')->name('admin.')->group(function () {
+// --- Protected Admin Routes (requires authentication) ---
+Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/rooms', [AdminController::class, 'rooms'])->name('rooms');
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
@@ -43,49 +57,24 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/reports/print', [AdminController::class, 'printReports'])->name('reports.print');
     Route::get('/notifications', [AdminController::class, 'notifications'])->name('notifications');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+    Route::post('/settings/account', [AdminController::class, 'updateAccount'])->name('settings.account');
 });
 
-Route::prefix('housekeeping')->group(function(){
-
-    Route::get('/dashboard',
-    [HousekeepingController::class,'dashboard'])
-    ->name('housekeeping.dashboard');
-
-
-    Route::get('/assigned-rooms',
-    [HousekeepingController::class,'assignedRooms'])
-    ->name('housekeeping.assigned-rooms');
-
-
-    Route::get('/room-status-update',
-    [HousekeepingController::class,'roomStatusUpdate'])
-    ->name('housekeeping.room-status-update');
-
-
-    Route::get('/guest-requests',
-    [HousekeepingController::class,'guestRequests'])
-    ->name('housekeeping.guest-requests');
-
-
-    Route::get('/maintenance-report',
-    [HousekeepingController::class,'maintenanceReport'])
-    ->name('housekeeping.maintenance-report');
-
-
-    Route::get('/cleaning-history',
-    [HousekeepingController::class,'cleaningHistory'])
-    ->name('housekeeping.cleaning-history');
-
+// --- Housekeeping Portal ---
+Route::prefix('housekeeping')->name('housekeeping.')->group(function () {
+    Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
+    Route::get('/assigned-rooms', [HousekeepingController::class, 'assignedRooms'])->name('assigned-rooms');
+    Route::get('/room-status-update', [HousekeepingController::class, 'roomStatusUpdate'])->name('room-status-update');
+    Route::get('/guest-requests', [HousekeepingController::class, 'guestRequests'])->name('guest-requests');
+    Route::get('/maintenance-report', [HousekeepingController::class, 'maintenanceReport'])->name('maintenance-report');
+    Route::get('/cleaning-history', [HousekeepingController::class, 'cleaningHistory'])->name('cleaning-history');
 });
 
-Route::get('/logout', function () {
-
+// --- Logout (fallback route) ---
+Route::post('/logout', function () {
     Auth::logout();
-
     request()->session()->invalidate();
-
     request()->session()->regenerateToken();
-
     return redirect('/');
-
 })->name('logout');
+

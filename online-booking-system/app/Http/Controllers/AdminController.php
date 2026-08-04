@@ -330,4 +330,35 @@ class AdminController extends Controller
     {
         return view('admin.settings');
     }
+
+    public function updateAccount(Request $request)
+    {
+        $user = auth()->user();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'current_password' => ['required', 'string'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        // Verify the current password
+        if (!\Illuminate\Support\Facades\Hash::check($validated['current_password'], $user->password)) {
+            return back()->withErrors([
+                'current_password' => 'The current password you entered is incorrect.',
+            ])->withInput();
+        }
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+
+        // Only update the password if a new one was provided
+        if (!empty($validated['password'])) {
+            $user->password = \Illuminate\Support\Facades\Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return back()->with('success', 'Account settings updated successfully!');
+    }
 }

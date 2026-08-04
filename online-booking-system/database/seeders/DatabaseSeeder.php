@@ -15,11 +15,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // Create admin user
+        User::create([
+            'name' => 'Admin',
+            'email' => 'admin@casaul.com',
+            'password' => bcrypt('password'),
+            'role' => 'admin',
         ]);
+
+        // Create housekeeping user
+        User::create([
+            'name' => 'Housekeeping',
+            'email' => 'housekeeping@casaul.com',
+            'password' => bcrypt('password'),
+            'role' => 'housekeeping',
+        ]);
+
+        // Run room seeder
+        $this->call(RoomSeeder::class);
     }
 }

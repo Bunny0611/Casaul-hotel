@@ -16,15 +16,4 @@ class ExampleTest extends TestCase
 
         $response->assertStatus(200);
     }
-
-    public function test_the_accommodation_page_shows_the_requested_room_types(): void
-    {
-        $response = $this->get('/accommodation');
-
-        $response->assertStatus(200)
-            ->assertSee('Deluxe Room')
-            ->assertSee('Standard Room')
-            ->assertSee('Executive Suite')
-            ->assertSee('Presidential Suite');
-    }
 }

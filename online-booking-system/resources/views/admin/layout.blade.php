@@ -35,15 +35,6 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.15);
         }
         
-        .nav-item:hover {
-            background: rgba(255,255,255,0.1);
-        }
-        
-        .nav-item.active {
-            background: rgba(255,255,255,0.2);
-            border-left: 4px solid #ff6b35;
-        }
-
         .nav-item {
             display: flex !important;
             width: 100%;
@@ -59,6 +50,11 @@
             background: rgba(255,255,255,0.14);
             transform: translateX(4px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        .nav-item.active {
+            background: rgba(255,255,255,0.2);
+            border-left: 4px solid #ff6b35;
         }
 
         .nav-item i {
@@ -89,7 +85,7 @@
 <body class="bg-gray-100">
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
-<aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto md:static flex flex-col">
+        <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto md:static flex flex-col">
             <div class="p-6">
                 <h1 class="text-2xl font-bold tracking-wider">CASAUL</h1>
                 <p class="text-sm text-gray-300 mt-1">Hotel Management</p>
@@ -131,10 +127,13 @@
             </nav>
             
             <div class="mt-auto pt-8 px-6 pb-6">
-                <a href="{{ route('home') }}" class="flex items-center px-6 py-3 text-gray-300 hover:text-white transition-colors">
-                    <i class="fas fa-sign-out-alt w-6"></i>
-                    <span>Logout</span>
-                </a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="flex items-center w-full px-6 py-3 text-gray-300 hover:text-white transition-colors bg-transparent border-none cursor-pointer">
+                        <i class="fas fa-sign-out-alt w-6"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
             </div>
         </aside>
         
@@ -150,7 +149,7 @@
                         <i class="fas fa-bars"></i>
                     </button>
                     <div>
-                        <h2 class="text-xl font-semibold">Welcome to CASAUL Hotel Management</h2>
+                        <h2 class="text-xl font-semibold">Welcome, {{ auth()->user()->name }}!</h2>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -160,7 +159,7 @@
                     </div>
                     <div class="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
                         <i class="fas fa-user-circle text-2xl"></i>
-                        <span class="font-medium">Admin</span>
+                        <span class="font-medium">{{ auth()->user()->name }}</span>
                     </div>
                 </div>
             </header>
@@ -177,7 +176,6 @@
                 @yield('content')
             </main>
         </div>
-    </div>
     
     <script>
         // Dynamic animations and mobile sidebar toggle

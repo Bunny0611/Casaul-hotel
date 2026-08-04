@@ -12,6 +12,7 @@ class Room extends Model
         'price',
         'floor',
         'status',
+        'cleaning_status',
         'description',
         'image',
         'capacity',
