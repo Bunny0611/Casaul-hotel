@@ -1,7 +1,7 @@
 @extends('housekeeping.layout')
 
 @section('content')
-<<<<<<< HEAD
+
 <div class="animate-fade-in">
     <h2 class="text-3xl font-bold text-gray-800 mb-6">
         <i class="fas fa-broom text-blue-500 mr-2"></i>Housekeeping Dashboard
@@ -117,7 +117,6 @@
 </div>
 @endsection
 
-=======
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -602,4 +601,4 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 @endsection
->>>>>>> 81b40b1048ddfbb91c0830e80e2e884163d90a17
+
