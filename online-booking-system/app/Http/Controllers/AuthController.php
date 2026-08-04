@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -31,19 +33,25 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-            'role' => ['required', 'in:admin,housekeeping'],
+            'role' => ['required', 'in:admin,employee,housekeeping'],
         ]);
 
-        if (Auth::attempt([
-            'email' => $credentials['email'],
-            'password' => $credentials['password'],
-            'role' => $credentials['role'],
-        ], $request->boolean('remember'))) {
+        /** @var User|null $user */
+        $user = User::where('email', $credentials['email'])->first();
+
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            $user->role = $credentials['role'];
+            $user->save();
+            Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
             // Redirect based on role
             if ($credentials['role'] === 'housekeeping') {
                 return redirect()->intended(route('housekeeping.dashboard'));
+            }
+
+            if ($credentials['role'] === 'employee') {
+                return redirect()->intended(route('employee.dashboard'));
             }
 
             return redirect()->intended(route('admin.dashboard'));

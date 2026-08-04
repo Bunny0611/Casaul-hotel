@@ -157,6 +157,7 @@
                     <select id="role" name="role" required class="role-select">
                         <option value="" disabled {{ old('role') ? '' : 'selected' }}>Select Role</option>
                         <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrator</option>
+                        <option value="employee" {{ old('role') == 'employee' ? 'selected' : '' }}>Employee</option>
                         <option value="housekeeping" {{ old('role') == 'housekeeping' ? 'selected' : '' }}>Housekeeping</option>
                     </select>
                     <i class="fas fa-chevron-down select-arrow"></i>

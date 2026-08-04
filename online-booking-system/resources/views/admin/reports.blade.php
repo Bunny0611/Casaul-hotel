@@ -140,28 +140,66 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-semibold mb-4">Reservation Status</h3>
-            <div class="mx-auto max-w-[320px]">
-                <canvas id="reservationStatusChart" class="w-full h-auto"></canvas>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">Recent Transactions</h3>
+                    <p class="text-sm text-gray-500">Latest guest activity and payment movement</p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                            <th class="px-4 py-3">Guest</th>
+                            <th class="px-4 py-3">Room</th>
+                            <th class="px-4 py-3">Amount</th>
+                            <th class="px-4 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @forelse($reservations->take(8) as $reservation)
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-4 py-3 text-gray-900">{{ $reservation->guest_name }}</td>
+                            <td class="px-4 py-3 text-gray-900">{{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</td>
+                            <td class="px-4 py-3 font-medium text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-3 py-1 rounded-full text-xs font-medium text-white status-{{ $reservation->status }}">
+                                    {{ ucfirst($reservation->status) }}
+                                </span>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="4" class="px-4 py-8 text-center text-gray-500">No transactions found.</td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Payment Method Breakdown</h3>
-                <canvas id="paymentMethodChart" height="250"></canvas>
+                <div class="relative h-[320px]">
+                    <canvas id="paymentMethodChart" class="w-full h-full"></canvas>
+                </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Revenue by Room Type</h3>
-                <canvas id="roomTypeChart" height="250"></canvas>
+                <div class="relative h-[320px]">
+                    <canvas id="roomTypeChart" class="w-full h-full"></canvas>
+                </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 class="text-lg font-semibold mb-4">Monthly Revenue</h3>
-            <canvas id="monthlyRevenue"></canvas>
+            <div class="relative h-[340px]">
+                <canvas id="monthlyRevenue" class="w-full h-full"></canvas>
+            </div>
         </div>
     </div>
 
@@ -185,58 +223,84 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Transactions</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse($reservations->take(8) as $reservation)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $reservation->guest_name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-3 py-1 rounded-full text-xs font-medium text-white status-{{ $reservation->status }}">
-                                    {{ ucfirst($reservation->status) }}
-                                </span>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-gray-500">
-                                <p>No transactions found.</p>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">Reservation Status</h3>
+                    <p class="text-sm text-gray-500">Snapshot of booking progress</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                    <p class="text-sm font-medium text-yellow-700">Pending</p>
+                    <p class="mt-2 text-2xl font-bold text-yellow-800">12</p>
+                    <p class="mt-1 text-xs text-yellow-600">Sample dummy data</p>
+                </div>
+                <div class="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <p class="text-sm font-medium text-blue-700">Confirmed</p>
+                    <p class="mt-2 text-2xl font-bold text-blue-800">18</p>
+                    <p class="mt-1 text-xs text-blue-600">Sample dummy data</p>
+                </div>
+                <div class="rounded-lg border border-green-200 bg-green-50 p-4">
+                    <p class="text-sm font-medium text-green-700">Completed</p>
+                    <p class="mt-2 text-2xl font-bold text-green-800">24</p>
+                    <p class="mt-1 text-xs text-green-600">Sample dummy data</p>
+                </div>
+                <div class="rounded-lg border border-red-200 bg-red-50 p-4">
+                    <p class="text-sm font-medium text-red-700">Cancelled</p>
+                    <p class="mt-2 text-2xl font-bold text-red-800">6</p>
+                    <p class="mt-1 text-xs text-red-600">Sample dummy data</p>
+                </div>
             </div>
         </div>
     </div>
 
     <div data-panel="occupancy" class="hidden space-y-6">
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-semibold">Room Occupancy</h3>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-gray-800">Room Occupancy</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <div class="text-center p-4 rounded-lg bg-green-50">
+                <div class="text-center p-4 rounded-lg bg-green-50 border border-green-100">
                     <h2 class="text-4xl font-bold text-green-600">{{ $availableRooms }}</h2>
                     <p class="mt-2 text-gray-600">Available</p>
                 </div>
-                <div class="text-center p-4 rounded-lg bg-red-50">
+                <div class="text-center p-4 rounded-lg bg-red-50 border border-red-100">
                     <h2 class="text-4xl font-bold text-red-600">{{ $occupiedRooms }}</h2>
                     <p class="mt-2 text-gray-600">Occupied</p>
                 </div>
-                <div class="text-center p-4 rounded-lg bg-yellow-50">
+                <div class="text-center p-4 rounded-lg bg-yellow-50 border border-yellow-100">
                     <h2 class="text-4xl font-bold text-yellow-500">{{ $maintenanceRooms }}</h2>
                     <p class="mt-2 text-gray-600">Maintenance</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">Housekeeping Report</h3>
+                    <p class="text-sm text-gray-500">Daily service snapshot and support needs</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="rounded-lg border border-cyan-200 bg-cyan-50 p-4">
+                    <p class="text-sm font-medium text-cyan-700">Rooms Cleaned</p>
+                    <p class="mt-2 text-2xl font-bold text-cyan-800">28</p>
+                    <p class="mt-1 text-xs text-cyan-600">Sample dummy data</p>
+                </div>
+                <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+                    <p class="text-sm font-medium text-indigo-700">Rooms Inspected</p>
+                    <p class="mt-2 text-2xl font-bold text-indigo-800">19</p>
+                    <p class="mt-1 text-xs text-indigo-600">Sample dummy data</p>
+                </div>
+                <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                    <p class="text-sm font-medium text-emerald-700">Maintenance Requests</p>
+                    <p class="mt-2 text-2xl font-bold text-emerald-800">4</p>
+                    <p class="mt-1 text-xs text-emerald-600">Sample dummy data</p>
+                </div>
+                <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <p class="text-sm font-medium text-amber-700">Inventory Low</p>
+                    <p class="mt-2 text-2xl font-bold text-amber-800">2</p>
+                    <p class="mt-1 text-xs text-amber-600">Sample dummy data</p>
                 </div>
             </div>
         </div>
@@ -418,37 +482,5 @@
         }
     });
 
-    const reservationStatusChart = new Chart(
-document.getElementById('reservationStatusChart'),
-{
-    type:'pie',
-
-    data:{
-        labels:[
-            'Pending',
-            'Confirmed',
-            'Completed',
-            'Cancelled'
-        ],
-
-        datasets:[{
-
-            data:[
-                {{ $pendingReservations }},
-                {{ $confirmedReservations }},
-                {{ $completedCount }},
-                {{ $cancelledReservations }}
-            ],
-
-            backgroundColor:[
-                '#f59e0b',
-                '#3b82f6',
-                '#10b981',
-                '#ef4444'
-            ]
-        }]
-    }
-
-});
 </script>
 @endsection
