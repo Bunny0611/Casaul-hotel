@@ -7,9 +7,6 @@ use App\Models\Room;
 
 class HousekeepingController extends Controller
 {
-    /**
-     * Show the housekeeping dashboard with room cleaning statuses.
-     */
     public function dashboard()
     {
         $rooms = Room::orderBy('room_number')->get();
@@ -31,9 +28,41 @@ class HousekeepingController extends Controller
         ));
     }
 
-    /**
-     * Update the cleaning status of a room.
-     */
+
+    public function assignedRooms()
+    {
+        $rooms = Room::orderBy('room_number')->get();
+
+        return view('housekeeping.assigned-rooms', compact('rooms'));
+    }
+
+
+    public function roomStatusUpdate()
+    {
+        $rooms = Room::orderBy('room_number')->get();
+
+        return view('housekeeping.room-status-update', compact('rooms'));
+    }
+
+
+    public function guestRequests()
+    {
+        return view('housekeeping.guest-requests');
+    }
+
+
+    public function maintenanceReport()
+    {
+        return view('housekeeping.maintenance-report');
+    }
+
+
+    public function cleaningHistory()
+    {
+        return view('housekeeping.cleaning-history');
+    }
+
+
     public function updateStatus(Request $request, $id)
     {
         $room = Room::findOrFail($id);
@@ -42,9 +71,14 @@ class HousekeepingController extends Controller
             'cleaning_status' => ['required', 'in:clean,dirty,in_progress'],
         ]);
 
-        $room->update(['cleaning_status' => $validated['cleaning_status']]);
+        $room->update([
+            'cleaning_status' => $validated['cleaning_status']
+        ]);
 
-        return back()->with('success', "Room {$room->room_number} marked as " . str_replace('_', ' ', $validated['cleaning_status']) . '.');
+        return back()->with(
+            'success',
+            "Room {$room->room_number} marked as " .
+            str_replace('_', ' ', $validated['cleaning_status']) . '.'
+        );
     }
 }
-
