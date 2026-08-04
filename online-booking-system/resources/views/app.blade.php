@@ -44,7 +44,9 @@
 
         <li><a href="{{ route('dining') }}">DINING</a></li>
 
-  
+        <li><a href="{{ route('events') }}">EVENTS</a></li>
+
+        <li><a href="{{ route('aboutus') }}">ABOUT US</a></li>
 
     </ul>
 

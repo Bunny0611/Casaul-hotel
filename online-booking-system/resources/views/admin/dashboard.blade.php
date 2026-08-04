@@ -257,16 +257,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 },
-                    grid: { color: 'rgba(0,0,0,0.05)' }
-                },
-                y: {
-                    grid: { display: false }
-                }
             }
         }
     });
