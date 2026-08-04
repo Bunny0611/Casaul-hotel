@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Room;
 use App\Models\Message;
+use App\Models\Reservation;
 
 class HomeController extends Controller
 {
@@ -54,6 +55,49 @@ class HomeController extends Controller
     {
         $rooms = $this->featuredRooms();
         return view('index', compact('rooms'));
+    }
+
+    public function reservation()
+    {
+        $rooms = Room::where('status', 'available')->get();
+
+        $amenities = [
+            ['id' => 'swimming_pool', 'name' => 'Swimming Pool', 'description' => 'Access to the pool for up to 4 guests.', 'price' => 1000, 'details' => 'Includes towels and pool lounge seating.'],
+            ['id' => 'breakfast', 'name' => 'Breakfast Buffet', 'description' => 'Daily buffet breakfast for 2 guests.', 'price' => 800, 'details' => 'Includes hot and cold selections, coffee, and juice.'],
+            ['id' => 'spa', 'name' => 'Spa Access', 'description' => 'Full spa access for one day.', 'price' => 1500, 'details' => 'Enjoy sauna, steam room, and private relaxation lounge.'],
+        ];
+
+        $events = [
+            ['id' => 'wedding', 'name' => 'Wedding Package', 'description' => 'Elegant wedding package for 100 guests.', 'price' => 25000, 'details' => 'Venue, catering, decorations, and coordination included.'],
+            ['id' => 'corporate', 'name' => 'Corporate Event', 'description' => 'Conference package for 50 guests.', 'price' => 18000, 'details' => 'Meeting room, AV support, and refreshments provided.'],
+            ['id' => 'birthday', 'name' => 'Birthday Celebration', 'description' => 'Celebration package for up to 40 guests.', 'price' => 12000, 'details' => 'Includes decorations, cake, and buffet options.' ],
+        ];
+
+        $dining = [
+            ['id' => 'romantic_dinner', 'name' => 'Romantic Dinner', 'description' => 'Candlelit dinner for 2 guests.', 'price' => 1500, 'details' => 'Two-course meal with wine pairing.'],
+            ['id' => 'family_feast', 'name' => 'Family Feast', 'description' => 'Dinner package for 4 guests.', 'price' => 2200, 'details' => 'Shared set menu with appetizers, mains, and dessert.'],
+            ['id' => 'seafood_banquet', 'name' => 'Seafood Banquet', 'description' => 'Premium seafood experience for 2 guests.', 'price' => 1800, 'details' => 'Includes seafood platter and dessert.'],
+        ];
+
+        return view('reservation', compact('rooms', 'amenities', 'events', 'dining'));
+    }
+
+    public function storeReservation(Request $request)
+    {
+        $validated = $request->validate([
+            'room_id' => 'required|exists:rooms,id',
+            'check_in' => 'required|date|after_or_equal:today',
+            'check_out' => 'required|date|after:check_in',
+            'guest_name' => 'required|string|max:255',
+            'guest_email' => 'required|email|max:255',
+            'guest_phone' => 'required|string|max:20',
+            'total_amount' => 'required|numeric|min:0',
+            'special_requests' => 'nullable|string',
+        ]);
+
+        Reservation::create(array_merge($validated, ['status' => 'pending']));
+
+        return redirect()->route('reservation')->with('success', 'Your reservation request has been submitted. We will contact you soon.');
     }
     
     public function accommodation()

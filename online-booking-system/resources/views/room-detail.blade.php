@@ -16,7 +16,7 @@
             </div>
             <div class="room-detail-actions">
                 <a href="{{ route('accommodation') }}" class="btn room-detail-secondary">Back to Rooms</a>
-                <a href="#" class="btn room-detail-primary">Book This Room</a>
+                <a href="{{ route('reservation') }}" class="btn room-detail-primary">Book This Room</a>
             </div>
         </div>
 
