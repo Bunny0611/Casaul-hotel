@@ -40,7 +40,7 @@
             width: 100%;
             justify-content: flex-start;
             align-items: center;
-            margin: 0.2rem 0;
+            margin: 0.08rem 0;
             border-radius: 0.9rem;
             transition: all 0.25s ease;
             color: rgba(255,255,255,0.9);
@@ -92,39 +92,39 @@
             </div>
             
             <nav class="mt-20 flex flex-col px-3">
-                <a href="{{ route('admin.dashboard') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin') || request()->is('admin/') ? 'active' : '' }}">
+                <a href="{{ route('admin.dashboard') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin') || request()->is('admin/') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt w-6"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ route('admin.reservations') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/reservations') ? 'active' : '' }}">
+                <a href="{{ route('admin.reservations') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/reservations') ? 'active' : '' }}">
                     <i class="fas fa-calendar-check w-6"></i>
                     <span>Reservations</span>
                 </a>
-                <a href="{{ route('admin.rooms') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/rooms') ? 'active' : '' }}">
+                <a href="{{ route('admin.rooms') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/rooms') ? 'active' : '' }}">
                     <i class="fas fa-bed w-6"></i>
                     <span>Rooms</span>
                 </a>
-                <a href="{{ route('admin.guests') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/guests') ? 'active' : '' }}">
-                    <i class="fas fa-users w-6"></i>
-                    <span>Guests</span>
+                <a href="{{ route('admin.manage-account') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/manage-account') ? 'active' : '' }}">
+                    <i class="fas fa-user-cog w-6"></i>
+                    <span>Manage Account</span>
                 </a>
-                <a href="{{ route('admin.messages') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/messages') ? 'active' : '' }}">
+                <a href="{{ route('admin.messages') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/messages') ? 'active' : '' }}">
                     <i class="fas fa-comments w-6"></i>
                     <span>Messages</span>
                 </a>
-                <a href="{{ route('admin.reports') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/reports') ? 'active' : '' }}">
+                <a href="{{ route('admin.reports') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/reports') ? 'active' : '' }}">
                     <i class="fas fa-chart-bar w-6"></i>
                     <span>Reports</span>
                 </a>
-                <a href="{{ route('admin.notifications') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/notifications') ? 'active' : '' }}">
+                <a href="{{ route('admin.notifications') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/notifications') ? 'active' : '' }}">
                     <i class="fas fa-bell w-6"></i>
                     <span>Notifications</span>
                 </a>
-                <a href="{{ route('admin.settings') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/settings') ? 'active' : '' }}">
+                <a href="{{ route('admin.settings') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/settings') ? 'active' : '' }}">
                     <i class="fas fa-cog w-6"></i>
                     <span>Settings</span>
                 </a>
-            </nav>
+            
             
             <div class="mt-auto pt-8 px-6 pb-6">
                 <form method="POST" action="{{ route('logout') }}">

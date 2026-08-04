@@ -44,26 +44,26 @@
         </div>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-4">
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Total</p>
-            <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['total'] }}</p>
+    <div class="grid grid-cols-5 gap-3 pb-2">
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Total</p>
+            <p class="mt-2 text-xl font-semibold text-gray-800">{{ $stats['total'] }}</p>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Pending</p>
-            <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['pending'] }}</p>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Pending</p>
+            <p class="mt-2 text-xl font-semibold text-amber-600">{{ $stats['pending'] }}</p>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Confirmed</p>
-            <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['confirmed'] }}</p>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Confirmed</p>
+            <p class="mt-2 text-xl font-semibold text-green-600">{{ $stats['confirmed'] }}</p>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Completed</p>
-            <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['completed'] }}</p>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Completed</p>
+            <p class="mt-2 text-xl font-semibold text-blue-600">{{ $stats['completed'] }}</p>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Cancelled</p>
-            <p class="mt-2 text-2xl font-semibold text-red-600">{{ $reservations->where('status', 'cancelled')->count() }}</p>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Cancelled</p>
+            <p class="mt-2 text-xl font-semibold text-red-600">{{ $reservations->where('status', 'cancelled')->count() }}</p>
         </div>
     </div>
 

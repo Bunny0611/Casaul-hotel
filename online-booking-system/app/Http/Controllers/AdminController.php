@@ -326,6 +326,11 @@ class AdminController extends Controller
         return view('admin.notifications', compact('messages'));
     }
 
+    public function manageAccount()
+    {
+        return view('admin.manage-account');
+    }
+
     public function settings()
     {
         return view('admin.settings');
