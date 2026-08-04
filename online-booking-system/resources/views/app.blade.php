@@ -40,6 +40,8 @@
 
         <li><a href="{{ route('accommodation') }}">ACCOMMODATION</a></li>
 
+        <li><a href="{{ route('reservation') }}">RESERVATION</a></li>
+
         <li><a href="{{ route('offers') }}">OFFERS</a></li>
 
         <li><a href="{{ route('dining') }}">DINING</a></li>
