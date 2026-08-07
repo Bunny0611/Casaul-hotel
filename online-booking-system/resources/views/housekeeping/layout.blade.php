@@ -121,30 +121,6 @@
                     <i class="fas fa-tools w-6"></i>
                     <span>Maintenance Report</span>
                 </a>
-                <a href="{{ route('housekeeping.cleaning-history') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->routeIs('housekeeping.cleaning-history') ? 'active' : '' }}">
-                    <i class="fas fa-history w-6"></i>
-                    <span>Cleaning History</span>
-                </a>
-                <a href="{{ route('housekeeping.assigned-rooms') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
-                    <i class="fas fa-clipboard-list w-6"></i>
-                    <span>Assigned Rooms</span>
-                </a>
-                <a href="{{ route('housekeeping.room-status-update') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
-                    <i class="fas fa-sync-alt w-6"></i>
-                    <span>Room Status Update</span>
-                </a>
-                <a href="{{ route('housekeeping.guest-requests') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
-                    <i class="fas fa-bell w-6"></i>
-                    <span>Guest Requests</span>
-                </a>
-                <a href="{{ route('housekeeping.maintenance-report') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
-                    <i class="fas fa-tools w-6"></i>
-                    <span>Maintenance Report</span>
-                </a>
-                <a href="{{ route('housekeeping.cleaning-history') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
-                    <i class="fas fa-history w-6"></i>
-                    <span>Cleaning History</span>
-                </a>
             </nav>
             
             <div class="mt-auto pt-8 px-6 pb-6">
@@ -224,7 +200,3 @@
 </body>
 </html>
 
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/main

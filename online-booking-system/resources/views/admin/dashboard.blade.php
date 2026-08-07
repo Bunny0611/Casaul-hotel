@@ -265,14 +265,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             return context.label;
                         }
                     }
-                }
-<<<<<<< HEAD
+                },
             },
             scales: {
                 x: { display: false },
                 y: { display: false }
-=======
->>>>>>> origin/main
             }
         }
     });

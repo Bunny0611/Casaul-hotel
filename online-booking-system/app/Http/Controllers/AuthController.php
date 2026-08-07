@@ -33,11 +33,7 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-<<<<<<< HEAD
-            'role' => ['required', 'in:admin,housekeeping,employee'],
-=======
             'role' => ['required', 'in:admin,employee,housekeeping'],
->>>>>>> origin/main
         ]);
 
         $user = User::where('email', $credentials['email'])

@@ -98,13 +98,12 @@
         <form method="POST" action="{{ route('login.submit') }}">
             @csrf
             <div class="form-group">
-<<<<<<< HEAD
                 <label for="role">Login As</label>
                 <div class="input-wrap select-wrap">
                     <i class="fas fa-user-tag"></i>
                     <select id="role" name="role" required class="role-select">
                         <option value="" disabled {{ old('role') ? '' : 'selected' }}>Select Role</option>
-<option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrator</option>
+                        <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrator</option>
                         <option value="housekeeping" {{ old('role') == 'housekeeping' ? 'selected' : '' }}>Housekeeping</option>
                         <option value="employee" {{ old('role') == 'employee' ? 'selected' : '' }}>Employee</option>
                     </select>
@@ -115,8 +114,6 @@
                 @enderror
             </div>
             <div class="form-group">
-=======
->>>>>>> origin/main
                 <label for="email">Email Address</label>
                 <div class="input-wrap">
                     <i class="fas fa-envelope"></i>
