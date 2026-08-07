@@ -20,7 +20,7 @@ Route::view('/dining', 'dining')->name('dining');
 Route::view('/events', 'events')->name('events');
 Route::view('/aboutus', 'aboutus')->name('aboutus');
 
-// --- Admin Login (outside admin prefix so it's named 'login' not 'admin.login') ---
+// --- Staff Login ---
 Route::get('/staff/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/staff/login', [AuthController::class, 'login'])->name('login.submit');
 
@@ -29,50 +29,63 @@ Route::get('/guest/login', [AuthController::class, 'showGuestLoginForm'])->name(
 Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.login.submit');
 Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
 
+// --- Admin Logout ---
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
-// --- Employee Portal (requires authentication) ---
+// --- Employee Portal ---
 Route::prefix('employee')->name('employee.')->middleware('auth')->group(function () {
     Route::view('/', 'employee.employee')->name('index');
     Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
-    Route::view('/reservation', 'employee.reservation', ['reservations' => collect([]), 'rooms' => collect([])])->name('reservation');
+    Route::view('/reservation', 'employee.reservation', [
+        'reservations' => collect([]),
+        'rooms' => collect([])
+    ])->name('reservation');
     Route::view('/checkin', 'employee.checkin')->name('checkin');
     Route::view('/room-status', 'employee.room-status')->name('room-status');
     Route::view('/guest-requests', 'employee.guest-requests')->name('guest-requests');
-    Route::view('/messages', 'employee.messages')->name('messages'); 
+    Route::view('/messages', 'employee.messages')->name('messages');
 });
 
-// --- Protected Admin Routes (requires authentication) ---
+// --- Admin Portal ---
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
+
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+
     Route::get('/rooms', [AdminController::class, 'rooms'])->name('rooms');
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
     Route::put('/rooms/{id}', [AdminController::class, 'updateRoom'])->name('rooms.update');
     Route::patch('/rooms/{id}/status', [AdminController::class, 'updateRoomStatus'])->name('rooms.status');
     Route::delete('/rooms/{id}', [AdminController::class, 'destroyRoom'])->name('rooms.destroy');
+
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
+
     Route::get('/guests', [AdminController::class, 'guests'])->name('guests');
+
     Route::get('/messages', [AdminController::class, 'messages'])->name('messages');
     Route::post('/messages/{id}/reply', [AdminController::class, 'replyMessage'])->name('messages.reply');
+
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
     Route::get('/reports/export-csv', [AdminController::class, 'exportReportsCsv'])->name('reports.export.csv');
     Route::get('/reports/print', [AdminController::class, 'printReports'])->name('reports.print');
+
     Route::get('/notifications', [AdminController::class, 'notifications'])->name('notifications');
+
     Route::get('/manage-account', [AdminController::class, 'manageAccount'])->name('manage-account');
+
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings/account', [AdminController::class, 'updateAccount'])->name('settings.account');
 });
 
-// --- Housekeeping Portal (requires authentication) ---
+// --- Housekeeping Portal ---
 Route::prefix('housekeeping')->name('housekeeping.')->middleware('auth')->group(function () {
+
     Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
-<<<<<<< HEAD
-    Route::patch('/rooms/{room}/cleaning', [HousekeepingController::class, 'updateStatus'])->name('rooms.cleaning');
-=======
-    Route::patch('/rooms/{id}/cleaning', [HousekeepingController::class, 'updateStatus'])->name('rooms.cleaning');
->>>>>>> origin/main
+
+    Route::patch('/rooms/{id}/cleaning', [HousekeepingController::class, 'updateStatus'])
+        ->name('rooms.cleaning');
+
     Route::get('/assigned-rooms', [HousekeepingController::class, 'assignedRooms'])->name('assigned-rooms');
     Route::get('/room-status-update', [HousekeepingController::class, 'roomStatusUpdate'])->name('room-status-update');
     Route::get('/guest-requests', [HousekeepingController::class, 'guestRequests'])->name('guest-requests');
@@ -80,11 +93,11 @@ Route::prefix('housekeeping')->name('housekeeping.')->middleware('auth')->group(
     Route::get('/cleaning-history', [HousekeepingController::class, 'cleaningHistory'])->name('cleaning-history');
 });
 
-// --- Logout (fallback route) ---
+// --- Logout ---
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
+
     return redirect('/');
 })->name('logout');
-
