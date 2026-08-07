@@ -22,9 +22,7 @@
             <h2 class="text-2xl font-bold text-gray-800">Reservation Management</h2>
             <p class="mt-1 text-sm text-gray-500">Manage guest bookings, update statuses, and create new reservations from one place.</p>
         </div>
-        <button type="button" onclick="openAddReservationModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
-            <i class="fas fa-plus mr-2"></i>Add Reservation
-        </button>
+        
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr]">
@@ -182,78 +180,7 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.reservations.store') }}" method="POST" class="space-y-4">
-            @csrf
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Guest Name</label>
-                    <input type="text" name="guest_name" value="{{ old('guest_name') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('guest_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Guest Email</label>
-                    <input type="email" name="guest_email" value="{{ old('guest_email') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('guest_email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Guest Phone</label>
-                    <input type="text" name="guest_phone" value="{{ old('guest_phone') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('guest_phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Room</label>
-                    <select name="room_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="">Select a room</option>
-                        @foreach($rooms as $room)
-                            <option value="{{ $room->id }}" {{ old('room_id') == $room->id ? 'selected' : '' }}>{{ $room->room_number }} - {{ $room->room_type }}</option>
-                        @endforeach
-                    </select>
-                    @error('room_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Check-in</label>
-                    <input type="date" name="check_in" value="{{ old('check_in') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('check_in')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Check-out</label>
-                    <input type="date" name="check_out" value="{{ old('check_out') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('check_out')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Status</label>
-                    <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="pending" {{ old('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="confirmed" {{ old('status') == 'confirmed' ? 'selected' : '' }}>Confirmed</option>
-                        <option value="cancelled" {{ old('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                        <option value="completed" {{ old('status') == 'completed' ? 'selected' : '' }}>Completed</option>
-                    </select>
-                    @error('status')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Total Amount</label>
-                    <input type="number" name="total_amount" value="{{ old('total_amount') }}" min="0" step="0.01" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('total_amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-            </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700">Special Requests</label>
-                <textarea name="special_requests" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">{{ old('special_requests') }}</textarea>
-                @error('special_requests')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-            </div>
-            <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-                <button type="button" onclick="closeAddReservationModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
-                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Save Reservation</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<form id="reservationStatusForm" action="" method="POST">
-    @csrf
-    @method('PATCH')
-    <input type="hidden" name="status" id="reservationStatus">
-</form>
+        
 
 <script>
     function changeReservationStatus(id, status) {

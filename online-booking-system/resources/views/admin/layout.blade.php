@@ -80,6 +80,15 @@
         .status-confirmed { background: #10b981; }
         .status-cancelled { background: #ef4444; }
         .status-completed { background: #3b82f6; }
+
+        /* Minimal dark-mode overrides when `dark` class is present on documentElement/body */
+        .dark body, body.dark { background-color: #0b1220; color: #e6eef8; }
+        body.dark .bg-white, body.dark .bg-slate-50, body.dark .bg-gray-50 { background-color: #0f1724 !important; }
+        body.dark .text-gray-900, body.dark .text-slate-900, body.dark .text-gray-800 { color: #e6eef8 !important; }
+        body.dark .text-gray-500, body.dark .text-slate-500 { color: #9ca3af !important; }
+        body.dark .border-gray-200, body.dark .border-slate-200, body.dark .border-gray-50 { border-color: #1f2937 !important; }
+        body.dark input, body.dark textarea { background-color: #071023; color: #e6eef8 !important; border-color: #1f2937 !important; }
+        body.dark .header { background: linear-gradient(90deg, #0f1724 0%, #0b1220 100%); }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -206,6 +215,26 @@
             toggle.addEventListener('click', openSidebar);
             backdrop.addEventListener('click', closeSidebar);
         });
+        // Apply persisted theme across all pages
+        (function() {
+            const root = document.documentElement;
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                root.classList.add('dark');
+                document.body.classList.add('dark');
+            }
+
+            // listen for changes from other tabs
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'theme') {
+                    if (e.newValue === 'dark') {
+                        root.classList.add('dark'); document.body.classList.add('dark');
+                    } else if (e.newValue === 'light') {
+                        root.classList.remove('dark'); document.body.classList.remove('dark');
+                    }
+                }
+            });
+        })();
     </script>
 </body>
 </html>
