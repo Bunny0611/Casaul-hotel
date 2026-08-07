@@ -80,8 +80,8 @@
                         <div class="rounded-3xl bg-slate-50 p-4">
                             <p class="text-sm font-medium text-slate-900">Theme</p>
                             <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                                <button class="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 text-left hover:border-orange-300">Light Mode</button>
-                                <button class="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 text-left hover:border-orange-300">Dark Mode</button>
+                                <button id="themeLightBtn" class="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 text-left hover:border-orange-300" aria-pressed="false">Light Mode</button>
+                                <button id="themeDarkBtn" class="rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 text-left hover:border-orange-300" aria-pressed="false">Dark Mode</button>
                             </div>
                         </div>
                         <div class="rounded-3xl bg-slate-50 p-4">
@@ -187,6 +187,60 @@
     openButton.addEventListener('click', () => modal.classList.remove('hidden'));
     closeButton.addEventListener('click', () => modal.classList.add('hidden'));
     cancelButton.addEventListener('click', () => modal.classList.add('hidden'));
+</script>
+<script>
+    // Theme toggle: supports light/dark, persists in localStorage, respects OS preference
+    (function() {
+        const lightBtn = document.getElementById('themeLightBtn');
+        const darkBtn = document.getElementById('themeDarkBtn');
+        const root = document.documentElement;
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                root.classList.add('dark');
+                document.body.classList.add('dark');
+                darkBtn.classList.add('border-orange-300', 'ring-1', 'ring-orange-200');
+                darkBtn.setAttribute('aria-pressed', 'true');
+                lightBtn.classList.remove('border-orange-300', 'ring-1', 'ring-orange-200');
+                lightBtn.setAttribute('aria-pressed', 'false');
+            } else {
+                root.classList.remove('dark');
+                document.body.classList.remove('dark');
+                lightBtn.classList.add('border-orange-300', 'ring-1', 'ring-orange-200');
+                lightBtn.setAttribute('aria-pressed', 'true');
+                darkBtn.classList.remove('border-orange-300', 'ring-1', 'ring-orange-200');
+                darkBtn.setAttribute('aria-pressed', 'false');
+            }
+        }
+
+        function init() {
+            const saved = localStorage.getItem('theme');
+            let theme;
+            if (saved === 'dark' || saved === 'light') {
+                theme = saved;
+            } else {
+                theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            applyTheme(theme);
+
+            if (lightBtn) lightBtn.addEventListener('click', () => { localStorage.setItem('theme', 'light'); applyTheme('light'); });
+            if (darkBtn) darkBtn.addEventListener('click', () => { localStorage.setItem('theme', 'dark'); applyTheme('dark'); });
+
+            // React to OS changes when user hasn't explicitly chosen
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (!localStorage.getItem('theme')) {
+                    applyTheme(e.matches ? 'dark' : 'light');
+                }
+            });
+        }
+
+        // initialize safely after DOM loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
 </script>
 </div>
 @endsection

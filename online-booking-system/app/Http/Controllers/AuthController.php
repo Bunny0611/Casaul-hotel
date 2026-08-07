@@ -36,12 +36,11 @@ class AuthController extends Controller
             'role' => ['required', 'in:admin,employee,housekeeping'],
         ]);
 
-        /** @var User|null $user */
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::where('email', $credentials['email'])
+            ->where('role', $credentials['role'])
+            ->first();
 
         if ($user && Hash::check($credentials['password'], $user->password)) {
-            $user->role = $credentials['role'];
-            $user->save();
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
