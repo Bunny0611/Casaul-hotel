@@ -10,8 +10,29 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         * { font-family: 'Poppins', sans-serif; }
-        
-.sidebar {
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            width: 100%;
+            background: #f3f4f6;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+
+        header {
+            margin: 0;
+            padding-top: 0;
+        }
+
+        .sidebar {
     background-color: #800000 !important;
     background-image: none !important;
 }
@@ -69,7 +90,7 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <div class="flex min-h-screen overflow-hidden">
+    <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
         <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto md:fixed md:inset-y-0 md:left-0 flex flex-col">
             <div class="p-6">
@@ -121,18 +142,22 @@
         <div id="sidebarBackdrop" class="fixed inset-0 z-40 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col overflow-hidden md:ml-64">
+        <div class="flex-1 flex flex-col ml-64 min-h-screen">
             <!-- Header -->
-            <header class="header text-white px-6 py-4 flex items-center justify-between shadow-lg">
+            <header class="header sticky top-0 z-50 text-white px-6 py-3 flex items-center justify-between shadow-lg">
                 <div class="flex items-center gap-4">
-                    <button id="sidebarToggle" class="md:hidden p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                    <button id="sidebarToggle" class="md:hidden p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
                         <i class="fas fa-bars"></i>
                     </button>
                     <div>
-                        <h2 class="text-xl font-semibold">Welcome,  {{ Auth::user()?->name ?? 'Housekeeper' }}!</h2>
+                        <h2 class="text-xl font-semibold mt-0">Welcome,  {{ Auth::user()?->name ?? 'Housekeeper' }}!</h2>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Search..." class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-64">
+                        <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
+                    </div>
                     <div class="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
                         <i class="fas fa-user-circle text-2xl"></i>
                         <span class="font-medium"> {{ Auth::user()?->name ?? 'Housekeeper' }}</span>
@@ -141,7 +166,7 @@
             </header>
             
             <!-- Content Area -->
-            <main class="flex-1 overflow-y-auto p-6">
+            <main class="flex-1 overflow-y-auto px-6 pb-6 pt-3">
                 @if(session('success'))
                     <div class="bg-green-500 text-white px-6 py-3 rounded-lg mb-6 animate-fade-in">
                         <i class="fas fa-check-circle mr-2"></i>
