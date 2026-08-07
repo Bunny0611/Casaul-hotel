@@ -31,6 +31,14 @@ class DatabaseSeeder extends Seeder
             'role' => 'housekeeping',
         ]);
 
+        // Create employee user
+        User::create([
+            'name' => 'Employee',
+            'email' => 'employee@casaul.com',
+            'password' => bcrypt('password'),
+            'role' => 'employee',
+        ]);
+
         // Run room seeder
         $this->call(RoomSeeder::class);
     }

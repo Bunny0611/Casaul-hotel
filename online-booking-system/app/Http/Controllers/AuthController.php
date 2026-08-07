@@ -31,7 +31,7 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-            'role' => ['required', 'in:admin,housekeeping'],
+            'role' => ['required', 'in:admin,housekeeping,employee'],
         ]);
 
         if (Auth::attempt([
@@ -44,6 +44,10 @@ class AuthController extends Controller
             // Redirect based on role
             if ($credentials['role'] === 'housekeeping') {
                 return redirect()->intended(route('housekeeping.dashboard'));
+            }
+
+            if ($credentials['role'] === 'employee') {
+                return redirect()->intended(route('employee.dashboard'));
             }
 
             return redirect()->intended(route('admin.dashboard'));

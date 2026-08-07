@@ -27,8 +27,8 @@ Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.
 
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
-// --- Employee Portal ---
-Route::prefix('employee')->name('employee.')->group(function () {
+// --- Employee Portal (requires authentication) ---
+Route::prefix('employee')->name('employee.')->middleware('auth')->group(function () {
     Route::view('/', 'employee.employee')->name('index');
     Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
     Route::view('/reservation', 'employee.reservation', ['reservations' => collect([]), 'rooms' => collect([])])->name('reservation');
@@ -60,9 +60,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/settings/account', [AdminController::class, 'updateAccount'])->name('settings.account');
 });
 
-// --- Housekeeping Portal ---
-Route::prefix('housekeeping')->name('housekeeping.')->group(function () {
+// --- Housekeeping Portal (requires authentication) ---
+Route::prefix('housekeeping')->name('housekeeping.')->middleware('auth')->group(function () {
     Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
+    Route::patch('/rooms/{room}/cleaning', [HousekeepingController::class, 'updateStatus'])->name('rooms.cleaning');
     Route::get('/assigned-rooms', [HousekeepingController::class, 'assignedRooms'])->name('assigned-rooms');
     Route::get('/room-status-update', [HousekeepingController::class, 'roomStatusUpdate'])->name('room-status-update');
     Route::get('/guest-requests', [HousekeepingController::class, 'guestRequests'])->name('guest-requests');

@@ -17,14 +17,11 @@
         </div>
     @endif
 
-    <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Reservation Management</h2>
             <p class="mt-1 text-sm text-gray-500">Manage guest bookings, update statuses, and create new reservations from one place.</p>
         </div>
-        <button type="button" onclick="openAddReservationModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
-            <i class="fas fa-plus mr-2"></i>Add Reservation
-        </button>
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr]">
@@ -44,26 +41,65 @@
         </div>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-4">
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Total</p>
-            <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['total'] }}</p>
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total</p>
+                    <p class="mt-2 text-2xl font-bold text-gray-900">{{ $stats['total'] }}</p>
+                </div>
+                <div class="rounded-xl bg-gray-100 p-2 text-gray-600">
+                    <i class="fas fa-calendar-check text-lg"></i>
+                </div>
+            </div>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Pending</p>
-            <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['pending'] }}</p>
+
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm transition-shadow hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-amber-700">Pending</p>
+                    <p class="mt-2 text-2xl font-bold text-amber-800">{{ $stats['pending'] }}</p>
+                </div>
+                <div class="rounded-xl bg-amber-100 p-2 text-amber-700">
+                    <i class="fas fa-clock text-lg"></i>
+                </div>
+            </div>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Confirmed</p>
-            <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['confirmed'] }}</p>
+
+        <div class="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm transition-shadow hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-green-700">Confirmed</p>
+                    <p class="mt-2 text-2xl font-bold text-green-800">{{ $stats['confirmed'] }}</p>
+                </div>
+                <div class="rounded-xl bg-green-100 p-2 text-green-700">
+                    <i class="fas fa-check-circle text-lg"></i>
+                </div>
+            </div>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Completed</p>
-            <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['completed'] }}</p>
+
+        <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm transition-shadow hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-blue-700">Completed</p>
+                    <p class="mt-2 text-2xl font-bold text-blue-800">{{ $stats['completed'] }}</p>
+                </div>
+                <div class="rounded-xl bg-blue-100 p-2 text-blue-700">
+                    <i class="fas fa-check-double text-lg"></i>
+                </div>
+            </div>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Cancelled</p>
-            <p class="mt-2 text-2xl font-semibold text-red-600">{{ $reservations->where('status', 'cancelled')->count() }}</p>
+
+        <div class="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm transition-shadow hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-red-700">Cancelled</p>
+                    <p class="mt-2 text-2xl font-bold text-red-800">{{ $reservations->where('status', 'cancelled')->count() }}</p>
+                </div>
+                <div class="rounded-xl bg-red-100 p-2 text-red-700">
+                    <i class="fas fa-times-circle text-lg"></i>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -161,94 +197,6 @@
     </div>
 </div>
 
-<div id="addReservationModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
-        <button type="button" onclick="closeAddReservationModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
-            <i class="fas fa-times text-xl"></i>
-        </button>
-
-        <div class="mb-6">
-            <h3 class="text-2xl font-bold text-gray-800">Add New Reservation</h3>
-            <p class="mt-1 text-sm text-gray-500">Fill in the details below to create a new booking.</p>
-        </div>
-
-        @if($errors->any())
-            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                <ul class="list-disc space-y-1 pl-5">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <form action="{{ route('admin.reservations.store') }}" method="POST" class="space-y-4">
-            @csrf
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Guest Name</label>
-                    <input type="text" name="guest_name" value="{{ old('guest_name') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('guest_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Guest Email</label>
-                    <input type="email" name="guest_email" value="{{ old('guest_email') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('guest_email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Guest Phone</label>
-                    <input type="text" name="guest_phone" value="{{ old('guest_phone') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('guest_phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Room</label>
-                    <select name="room_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="">Select a room</option>
-                        @foreach($rooms as $room)
-                            <option value="{{ $room->id }}" {{ old('room_id') == $room->id ? 'selected' : '' }}>{{ $room->room_number }} - {{ $room->room_type }}</option>
-                        @endforeach
-                    </select>
-                    @error('room_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Check-in</label>
-                    <input type="date" name="check_in" value="{{ old('check_in') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('check_in')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Check-out</label>
-                    <input type="date" name="check_out" value="{{ old('check_out') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('check_out')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Status</label>
-                    <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="pending" {{ old('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="confirmed" {{ old('status') == 'confirmed' ? 'selected' : '' }}>Confirmed</option>
-                        <option value="cancelled" {{ old('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                        <option value="completed" {{ old('status') == 'completed' ? 'selected' : '' }}>Completed</option>
-                    </select>
-                    @error('status')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Total Amount</label>
-                    <input type="number" name="total_amount" value="{{ old('total_amount') }}" min="0" step="0.01" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('total_amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
-            </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700">Special Requests</label>
-                <textarea name="special_requests" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">{{ old('special_requests') }}</textarea>
-                @error('special_requests')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-            </div>
-            <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-                <button type="button" onclick="closeAddReservationModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
-                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Save Reservation</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <form id="reservationStatusForm" action="" method="POST">
     @csrf
     @method('PATCH')
@@ -265,52 +213,38 @@
         }
     }
 
-    function openAddReservationModal() {
-        document.getElementById('addReservationModal').classList.remove('hidden');
-        document.getElementById('addReservationModal').classList.add('flex');
-    }
-
-    function closeAddReservationModal() {
-        document.getElementById('addReservationModal').classList.add('hidden');
-        document.getElementById('addReservationModal').classList.remove('flex');
-    }
-
     document.addEventListener('DOMContentLoaded', function () {
-        const modal = document.getElementById('addReservationModal');
-        if (modal) {
-            modal.addEventListener('click', function (event) {
-                if (event.target === modal) {
-                    closeAddReservationModal();
-                }
+        const searchInput = document.getElementById('reservationSearch');
+        const statusFilter = document.getElementById('reservationStatusFilter');
+        const reservationItems = document.querySelectorAll('.reservation-item');
+
+        function filterReservations() {
+            if (!searchInput || !statusFilter) return;
+
+            const query = searchInput.value.trim().toLowerCase();
+            const status = statusFilter.value;
+
+            reservationItems.forEach(item => {
+                const itemStatus = item.getAttribute('data-status') || '';
+                const itemSearch = item.getAttribute('data-search') || '';
+
+                const matchesQuery = query === '' || itemSearch.includes(query);
+                const matchesStatus = status === '' || itemStatus === status;
+
+                item.style.display = matchesQuery && matchesStatus ? '' : 'none';
             });
         }
 
-            const searchInput = document.getElementById('reservationSearch');
-            const statusFilter = document.getElementById('reservationStatusFilter');
-            const reservationItems = document.querySelectorAll('.reservation-item');
+        if (searchInput) {
+            searchInput.addEventListener('input', filterReservations);
+        }
 
-            function filterReservations() {
-                const query = searchInput.value.trim().toLowerCase();
-                const status = statusFilter.value;
+        if (statusFilter) {
+            statusFilter.addEventListener('change', filterReservations);
+        }
 
-                reservationItems.forEach(item => {
-                    const itemStatus = item.getAttribute('data-status') || '';
-                    const itemSearch = item.getAttribute('data-search') || '';
-
-                    const matchesQuery = query === '' || itemSearch.includes(query);
-                    const matchesStatus = status === '' || itemStatus === status;
-
-                    item.style.display = matchesQuery && matchesStatus ? '' : 'none';
-                });
-            }
-
-            if (searchInput) {
-                searchInput.addEventListener('input', filterReservations);
-            }
-
-            if (statusFilter) {
-                statusFilter.addEventListener('change', filterReservations);
-            }
+        filterReservations();
+    });
 
 </script>
 @endsection

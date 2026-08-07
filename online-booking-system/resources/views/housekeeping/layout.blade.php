@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<<<<<<< HEAD
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -82,6 +81,26 @@
                     <i class="fas fa-bed w-6"></i>
                     <span>Room Cleaning</span>
                 </a>
+                <a href="{{ route('housekeeping.assigned-rooms') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
+                    <i class="fas fa-clipboard-list w-6"></i>
+                    <span>Assigned Rooms</span>
+                </a>
+                <a href="{{ route('housekeeping.room-status-update') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
+                    <i class="fas fa-sync-alt w-6"></i>
+                    <span>Room Status Update</span>
+                </a>
+                <a href="{{ route('housekeeping.guest-requests') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
+                    <i class="fas fa-bell w-6"></i>
+                    <span>Guest Requests</span>
+                </a>
+                <a href="{{ route('housekeeping.maintenance-report') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
+                    <i class="fas fa-tools w-6"></i>
+                    <span>Maintenance Report</span>
+                </a>
+                <a href="{{ route('housekeeping.cleaning-history') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
+                    <i class="fas fa-history w-6"></i>
+                    <span>Cleaning History</span>
+                </a>
             </nav>
             
             <div class="mt-auto pt-8 px-6 pb-6">
@@ -157,33 +176,3 @@
 </body>
 </html>
 
-=======
-
-<head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>CASAUL Housekeeping</title>
-
-
-<script src="https://cdn.tailwindcss.com"></script>
-
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-
-</head>
-
-
-<body class="bg-gray-100">
-
-
-@yield('content')
-
-
-</body>
-
-
-</html>
->>>>>>> 81b40b1048ddfbb91c0830e80e2e884163d90a17

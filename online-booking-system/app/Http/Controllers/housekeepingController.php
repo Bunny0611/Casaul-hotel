@@ -1,4 +1,4 @@
-<?php
+ <?php
 
 namespace App\Http\Controllers;
 
@@ -45,6 +45,47 @@ class HousekeepingController extends Controller
         $room->update(['cleaning_status' => $validated['cleaning_status']]);
 
         return back()->with('success', "Room {$room->room_number} marked as " . str_replace('_', ' ', $validated['cleaning_status']) . '.');
+    }
+
+    /**
+     * Show assigned rooms for housekeeping.
+     */
+    public function assignedRooms()
+    {
+        return view('housekeeping.assigned-rooms');
+    }
+
+    /**
+     * Show the room status update page.
+     */
+    public function roomStatusUpdate()
+    {
+        $rooms = Room::orderBy('room_number')->get();
+        return view('housekeeping.room-status-update', compact('rooms'));
+    }
+
+    /**
+     * Show guest requests for housekeeping.
+     */
+    public function guestRequests()
+    {
+        return view('housekeeping.guest-requests');
+    }
+
+    /**
+     * Show the maintenance report page.
+     */
+    public function maintenanceReport()
+    {
+        return view('housekeeping.maintenance-report');
+    }
+
+    /**
+     * Show the cleaning history page.
+     */
+    public function cleaningHistory()
+    {
+        return view('housekeeping.cleaning-history');
     }
 }
 
