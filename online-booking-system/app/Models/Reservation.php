@@ -20,6 +20,7 @@ class Reservation extends Model
         'check_out',
         'status',
         'total_amount',
+        'payment_method',
         'special_requests',
     ];
 

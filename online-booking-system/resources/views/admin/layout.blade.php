@@ -40,7 +40,7 @@
             width: 100%;
             justify-content: flex-start;
             align-items: center;
-            margin: 0.2rem 0;
+            margin: 0.08rem 0;
             border-radius: 0.9rem;
             transition: all 0.25s ease;
             color: rgba(255,255,255,0.9);
@@ -80,6 +80,15 @@
         .status-confirmed { background: #10b981; }
         .status-cancelled { background: #ef4444; }
         .status-completed { background: #3b82f6; }
+
+        /* Minimal dark-mode overrides when `dark` class is present on documentElement/body */
+        .dark body, body.dark { background-color: #0b1220; color: #e6eef8; }
+        body.dark .bg-white, body.dark .bg-slate-50, body.dark .bg-gray-50 { background-color: #0f1724 !important; }
+        body.dark .text-gray-900, body.dark .text-slate-900, body.dark .text-gray-800 { color: #e6eef8 !important; }
+        body.dark .text-gray-500, body.dark .text-slate-500 { color: #9ca3af !important; }
+        body.dark .border-gray-200, body.dark .border-slate-200, body.dark .border-gray-50 { border-color: #1f2937 !important; }
+        body.dark input, body.dark textarea { background-color: #071023; color: #e6eef8 !important; border-color: #1f2937 !important; }
+        body.dark .header { background: linear-gradient(90deg, #0f1724 0%, #0b1220 100%); }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -92,39 +101,39 @@
             </div>
             
             <nav class="mt-20 flex flex-col px-3">
-                <a href="{{ route('admin.dashboard') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin') || request()->is('admin/') ? 'active' : '' }}">
+                <a href="{{ route('admin.dashboard') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin') || request()->is('admin/') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt w-6"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ route('admin.reservations') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/reservations') ? 'active' : '' }}">
+                <a href="{{ route('admin.reservations') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/reservations') ? 'active' : '' }}">
                     <i class="fas fa-calendar-check w-6"></i>
                     <span>Reservations</span>
                 </a>
-                <a href="{{ route('admin.rooms') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/rooms') ? 'active' : '' }}">
+                <a href="{{ route('admin.rooms') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/rooms') ? 'active' : '' }}">
                     <i class="fas fa-bed w-6"></i>
                     <span>Rooms</span>
                 </a>
-                <a href="{{ route('admin.guests') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/guests') ? 'active' : '' }}">
-                    <i class="fas fa-users w-6"></i>
-                    <span>Guests</span>
+                <a href="{{ route('admin.manage-account') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/manage-account') ? 'active' : '' }}">
+                    <i class="fas fa-user-cog w-6"></i>
+                    <span>Manage Account</span>
                 </a>
-                <a href="{{ route('admin.messages') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/messages') ? 'active' : '' }}">
+                <a href="{{ route('admin.messages') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/messages') ? 'active' : '' }}">
                     <i class="fas fa-comments w-6"></i>
                     <span>Messages</span>
                 </a>
-                <a href="{{ route('admin.reports') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/reports') ? 'active' : '' }}">
+                <a href="{{ route('admin.reports') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/reports') ? 'active' : '' }}">
                     <i class="fas fa-chart-bar w-6"></i>
                     <span>Reports</span>
                 </a>
-                <a href="{{ route('admin.notifications') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/notifications') ? 'active' : '' }}">
+                <a href="{{ route('admin.notifications') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/notifications') ? 'active' : '' }}">
                     <i class="fas fa-bell w-6"></i>
                     <span>Notifications</span>
                 </a>
-                <a href="{{ route('admin.settings') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->is('admin/settings') ? 'active' : '' }}">
+                <a href="{{ route('admin.settings') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/settings') ? 'active' : '' }}">
                     <i class="fas fa-cog w-6"></i>
                     <span>Settings</span>
                 </a>
-            </nav>
+            
             
             <div class="mt-auto pt-8 px-6 pb-6">
                 <form method="POST" action="{{ route('logout') }}">
@@ -206,6 +215,26 @@
             toggle.addEventListener('click', openSidebar);
             backdrop.addEventListener('click', closeSidebar);
         });
+        // Apply persisted theme across all pages
+        (function() {
+            const root = document.documentElement;
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                root.classList.add('dark');
+                document.body.classList.add('dark');
+            }
+
+            // listen for changes from other tabs
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'theme') {
+                    if (e.newValue === 'dark') {
+                        root.classList.add('dark'); document.body.classList.add('dark');
+                    } else if (e.newValue === 'light') {
+                        root.classList.remove('dark'); document.body.classList.remove('dark');
+                    }
+                }
+            });
+        })();
     </script>
 </body>
 </html>

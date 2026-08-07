@@ -22,6 +22,10 @@
             <h2 class="text-2xl font-bold text-gray-800">Reservation Management</h2>
             <p class="mt-1 text-sm text-gray-500">Manage guest bookings, update statuses, and create new reservations from one place.</p>
         </div>
+<<<<<<< HEAD
+=======
+        
+>>>>>>> origin/main
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr]">
@@ -41,6 +45,7 @@
         </div>
     </div>
 
+<<<<<<< HEAD
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
             <div class="flex items-center justify-between">
@@ -100,6 +105,28 @@
                     <i class="fas fa-times-circle text-lg"></i>
                 </div>
             </div>
+=======
+    <div class="grid grid-cols-5 gap-3 pb-2">
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Total</p>
+            <p class="mt-2 text-xl font-semibold text-gray-800">{{ $stats['total'] }}</p>
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Pending</p>
+            <p class="mt-2 text-xl font-semibold text-amber-600">{{ $stats['pending'] }}</p>
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Confirmed</p>
+            <p class="mt-2 text-xl font-semibold text-green-600">{{ $stats['confirmed'] }}</p>
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Completed</p>
+            <p class="mt-2 text-xl font-semibold text-blue-600">{{ $stats['completed'] }}</p>
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Cancelled</p>
+            <p class="mt-2 text-xl font-semibold text-red-600">{{ $reservations->where('status', 'cancelled')->count() }}</p>
+>>>>>>> origin/main
         </div>
     </div>
 
@@ -197,11 +224,36 @@
     </div>
 </div>
 
+<<<<<<< HEAD
 <form id="reservationStatusForm" action="" method="POST">
     @csrf
     @method('PATCH')
     <input type="hidden" name="status" id="reservationStatus">
 </form>
+=======
+<div id="addReservationModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+        <button type="button" onclick="closeAddReservationModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+
+        <div class="mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">Add New Reservation</h3>
+            <p class="mt-1 text-sm text-gray-500">Fill in the details below to create a new booking.</p>
+        </div>
+
+        @if($errors->any())
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <ul class="list-disc space-y-1 pl-5">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        
+>>>>>>> origin/main
 
 <script>
     function changeReservationStatus(id, status) {

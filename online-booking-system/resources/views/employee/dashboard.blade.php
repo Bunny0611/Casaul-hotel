@@ -308,31 +308,7 @@
         </div>
     </div>
 
-    <div class="dashboard-panel" style="margin-top: 1.2rem;">
-        <div class="panel-title">
-            <h3>Quick Actions</h3>
-            <span>Fast links</span>
-        </div>
-        <div class="quick-actions">
-            <a href="{{ route('employee.reservation') }}" class="quick-action">
-                <i class="fas fa-calendar-plus"></i>
-                <span>New Reservation</span>
-            </a>
-            <a href="{{ route('employee.checkin') }}" class="quick-action">
-                <i class="fas fa-sign-in-alt"></i>
-                <span>Check In</span>
-            </a>
-            <a href="{{ route('employee.checkin') }}" class="quick-action">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Check Out</span>
-            </a>
-            <a href="{{ route('employee.reservation') }}" class="quick-action">
-                <i class="fas fa-list"></i>
-                <span>View Reservations</span>
-            </a>
-        </div>
-    </div>
-</div>
+    
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {

@@ -7,7 +7,7 @@
     <title>Casaul Hotel</title>
 
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
 
@@ -40,11 +40,13 @@
 
         <li><a href="{{ route('accommodation') }}">ACCOMMODATION</a></li>
 
+        <li><a href="{{ route('reservation') }}">RESERVATION</a></li>
+
         <li><a href="{{ route('offers') }}">OFFERS</a></li>
 
         <li><a href="{{ route('dining') }}">DINING</a></li>
 
-  
+        <li><a href="{{ route('aboutus') }}">ABOUT US</a></li>
 
     </ul>
 
@@ -96,10 +98,15 @@
         </div>
 
         <div id="auth-signup-view" class="auth-hidden">
-            <form class="auth-form" id="guest-signup-form">
-                <input type="text" class="auth-input" placeholder="Full name" required>
-                <input type="email" class="auth-input" placeholder="Email address" required>
-                <input type="password" class="auth-input" placeholder="Create password" required>
+            <form method="POST" action="{{ route('guest.register.submit') }}" class="auth-form" id="guest-signup-form">
+                @csrf
+                <input type="text" name="first_name" class="auth-input" placeholder="First Name" required>
+                <input type="text" name="last_name" class="auth-input" placeholder="Last Name" required>
+                <input type="text" name="middle_initial" class="auth-input" placeholder="M.I" maxlength="3" required>
+                <input type="email" name="email" class="auth-input" placeholder="Gmail Address" required>
+                <input type="text" name="contact_no" class="auth-input" placeholder="Contact No." required>
+                <input type="password" name="password" class="auth-input" placeholder="Password" required>
+                <input type="password" name="password_confirmation" class="auth-input" placeholder="Re-Type Password" required>
                 <button type="submit" class="auth-submit-btn">Create Account</button>
             </form>
         </div>

@@ -266,10 +266,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 }
+<<<<<<< HEAD
             },
             scales: {
                 x: { display: false },
                 y: { display: false }
+=======
+>>>>>>> origin/main
             }
         }
     });

@@ -93,7 +93,7 @@
         </form>
 
         <div class="table-card">
-            <div class="table-scroll-hint">Swipe horizontally to view more columns</div>
+            <div class="table-scroll-hint">Tap the Details button for full room information</div>
             <div class="table-scroll">
                 <table class="room-table">
                     <thead>
@@ -101,13 +101,8 @@
                             <th>Room Number</th>
                             <th>Room Type</th>
                             <th>Floor</th>
-                            <th>Capacity</th>
                             <th>Status</th>
                             <th>Housekeeping Status</th>
-                            <th>Assigned Housekeeper</th>
-                            <th>Current Guest</th>
-                            <th>Expected Check-out Date</th>
-                            <th>Last Updated</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -119,6 +114,7 @@
                         data-capacity="2"
                         data-status="available"
                         data-status-label="Available"
+                        data-housekeeping-status="Ready"
                         data-housekeeper="Maria Santos"
                         data-guest="—"
                         data-checkin="—"
@@ -128,20 +124,9 @@
                         <td>101</td>
                         <td>Deluxe</td>
                         <td>Floor 1</td>
-                        <td>2 Guests</td>
                         <td><span class="status-badge available">Available</span></td>
                         <td><span class="housekeeping-pill">Ready</span></td>
-                        <td>Maria Santos</td>
-                        <td>—</td>
-                        <td>—</td>
-                        <td>08:30 AM</td>
-                        <td>
-                            <div class="action-group">
-                                <button class="action-btn" type="button" data-action="view">View Details</button>
-                                <button class="action-btn" type="button" data-action="status">Change Status</button>
-                                <button class="action-btn" type="button" data-action="housekeeper">Assign Housekeeper</button>
-                            </div>
-                        </td>
+                        <td><button class="action-btn" type="button" data-action="view">Details</button></td>
                     </tr>
                     <tr data-room-row
                         data-room-number="205"
@@ -150,6 +135,7 @@
                         data-capacity="4"
                         data-status="occupied"
                         data-status-label="Occupied"
+                        data-housekeeping-status="Not Required"
                         data-housekeeper="Rina Cruz"
                         data-guest="Sofia Alvarez"
                         data-checkin="2026-07-28"
@@ -159,20 +145,9 @@
                         <td>205</td>
                         <td>Executive</td>
                         <td>Floor 2</td>
-                        <td>4 Guests</td>
                         <td><span class="status-badge occupied">Occupied</span></td>
                         <td><span class="housekeeping-pill">Not Required</span></td>
-                        <td>Rina Cruz</td>
-                        <td>Sofia Alvarez</td>
-                        <td>2026-08-02</td>
-                        <td>11:15 AM</td>
-                        <td>
-                            <div class="action-group">
-                                <button class="action-btn" type="button" data-action="view">View Details</button>
-                                <button class="action-btn" type="button" data-action="status">Change Status</button>
-                                <button class="action-btn" type="button" data-action="housekeeper">Assign Housekeeper</button>
-                            </div>
-                        </td>
+                        <td><button class="action-btn" type="button" data-action="view">Details</button></td>
                     </tr>
                     <tr data-room-row
                         data-room-number="312"
@@ -181,6 +156,7 @@
                         data-capacity="6"
                         data-status="cleaning"
                         data-status-label="Cleaning"
+                        data-housekeeping-status="In Progress"
                         data-housekeeper="Jessa Lim"
                         data-guest="—"
                         data-checkin="—"
@@ -190,20 +166,9 @@
                         <td>312</td>
                         <td>Suite</td>
                         <td>Floor 3</td>
-                        <td>6 Guests</td>
                         <td><span class="status-badge cleaning">Cleaning</span></td>
                         <td><span class="housekeeping-pill">In Progress</span></td>
-                        <td>Jessa Lim</td>
-                        <td>—</td>
-                        <td>—</td>
-                        <td>01:05 PM</td>
-                        <td>
-                            <div class="action-group">
-                                <button class="action-btn" type="button" data-action="view">View Details</button>
-                                <button class="action-btn" type="button" data-action="status">Change Status</button>
-                                <button class="action-btn" type="button" data-action="housekeeper">Assign Housekeeper</button>
-                            </div>
-                        </td>
+                        <td><button class="action-btn" type="button" data-action="view">Details</button></td>
                     </tr>
                     <tr data-room-row
                         data-room-number="408"
@@ -212,6 +177,7 @@
                         data-capacity="2"
                         data-status="reserved"
                         data-status-label="Reserved"
+                        data-housekeeping-status="Pending Touch-up"
                         data-housekeeper="Nico Dela Cruz"
                         data-guest="Arielle Gomez"
                         data-checkin="2026-08-01"
@@ -221,20 +187,9 @@
                         <td>408</td>
                         <td>Deluxe</td>
                         <td>Floor 4</td>
-                        <td>2 Guests</td>
                         <td><span class="status-badge reserved">Reserved</span></td>
                         <td><span class="housekeeping-pill">Pending Touch-up</span></td>
-                        <td>Nico Dela Cruz</td>
-                        <td>Arielle Gomez</td>
-                        <td>2026-08-03</td>
-                        <td>09:45 AM</td>
-                        <td>
-                            <div class="action-group">
-                                <button class="action-btn" type="button" data-action="view">View Details</button>
-                                <button class="action-btn" type="button" data-action="status">Change Status</button>
-                                <button class="action-btn" type="button" data-action="housekeeper">Assign Housekeeper</button>
-                            </div>
-                        </td>
+                        <td><button class="action-btn" type="button" data-action="view">Details</button></td>
                     </tr>
                     <tr data-room-row
                         data-room-number="510"
@@ -243,6 +198,7 @@
                         data-capacity="2"
                         data-status="dirty"
                         data-status-label="Dirty"
+                        data-housekeeping-status="Needs Attention"
                         data-housekeeper="Liza Tan"
                         data-guest="—"
                         data-checkin="—"
@@ -252,20 +208,9 @@
                         <td>510</td>
                         <td>Standard</td>
                         <td>Floor 5</td>
-                        <td>2 Guests</td>
                         <td><span class="status-badge dirty">Dirty</span></td>
                         <td><span class="housekeeping-pill">Needs Attention</span></td>
-                        <td>Liza Tan</td>
-                        <td>—</td>
-                        <td>—</td>
-                        <td>07:20 AM</td>
-                        <td>
-                            <div class="action-group">
-                                <button class="action-btn" type="button" data-action="view">View Details</button>
-                                <button class="action-btn" type="button" data-action="status">Change Status</button>
-                                <button class="action-btn" type="button" data-action="housekeeper">Assign Housekeeper</button>
-                            </div>
-                        </td>
+                        <td><button class="action-btn" type="button" data-action="view">Details</button></td>
                     </tr>
                     <tr data-room-row
                         data-room-number="602"
@@ -274,6 +219,7 @@
                         data-capacity="8"
                         data-status="maintenance"
                         data-status-label="Maintenance"
+                        data-housekeeping-status="Paused"
                         data-housekeeper="—"
                         data-guest="—"
                         data-checkin="—"
@@ -283,20 +229,9 @@
                         <td>602</td>
                         <td>Penthouse</td>
                         <td>Floor 6</td>
-                        <td>8 Guests</td>
                         <td><span class="status-badge maintenance">Maintenance</span></td>
                         <td><span class="housekeeping-pill">Paused</span></td>
-                        <td>—</td>
-                        <td>—</td>
-                        <td>—</td>
-                        <td>06:40 AM</td>
-                        <td>
-                            <div class="action-group">
-                                <button class="action-btn" type="button" data-action="view">View Details</button>
-                                <button class="action-btn" type="button" data-action="status">Change Status</button>
-                                <button class="action-btn" type="button" data-action="housekeeper">Assign Housekeeper</button>
-                            </div>
-                        </td>
+                        <td><button class="action-btn" type="button" data-action="view">Details</button></td>
                     </tr>
                     </tbody>
                 </table>
@@ -343,17 +278,24 @@
             <h4 class="modal-title" id="modal-title">Room Details</h4>
             <button class="close-btn" id="close-modal" type="button" aria-label="Close dialog">×</button>
         </div>
-        <div class="modal-grid">
-            <div class="modal-item"><strong>Room Number</strong><span id="detail-room-number">—</span></div>
-            <div class="modal-item"><strong>Room Type</strong><span id="detail-room-type">—</span></div>
-            <div class="modal-item"><strong>Floor</strong><span id="detail-floor">—</span></div>
-            <div class="modal-item"><strong>Capacity</strong><span id="detail-capacity">—</span></div>
-            <div class="modal-item"><strong>Current Status</strong><span id="detail-status">—</span></div>
-            <div class="modal-item"><strong>Current Guest</strong><span id="detail-guest">—</span></div>
-            <div class="modal-item"><strong>Check-in Date</strong><span id="detail-checkin">—</span></div>
-            <div class="modal-item"><strong>Check-out Date</strong><span id="detail-checkout">—</span></div>
-            <div class="modal-item"><strong>Assigned Housekeeper</strong><span id="detail-housekeeper">—</span></div>
-            <div class="modal-item"><strong>Notes</strong><span id="detail-notes">—</span></div>
+        <div class="modal-body">
+            <div class="modal-grid">
+                <div class="modal-item"><strong>Room Number</strong><span id="detail-room-number">—</span></div>
+                <div class="modal-item"><strong>Room Type</strong><span id="detail-room-type">—</span></div>
+                <div class="modal-item"><strong>Floor</strong><span id="detail-floor">—</span></div>
+                <div class="modal-item"><strong>Capacity</strong><span id="detail-capacity">—</span></div>
+                <div class="modal-item"><strong>Current Status</strong><span id="detail-status">—</span></div>
+                <div class="modal-item"><strong>Housekeeping Status</strong><span id="detail-housekeeping-status">—</span></div>
+                <div class="modal-item"><strong>Current Guest</strong><span id="detail-guest">—</span></div>
+                <div class="modal-item"><strong>Check-in Date</strong><span id="detail-checkin">—</span></div>
+                <div class="modal-item"><strong>Check-out Date</strong><span id="detail-checkout">—</span></div>
+                <div class="modal-item"><strong>Assigned Housekeeper</strong><span id="detail-housekeeper">—</span></div>
+                <div class="modal-item modal-notes"><strong>Notes</strong><span id="detail-notes">—</span></div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="primary-btn" id="modal-change-status" type="button">Change Status</button>
+            <button class="secondary-btn" id="modal-assign-housekeeper" type="button">Assign Housekeeper</button>
         </div>
     </div>
 </div>

@@ -2,1290 +2,495 @@
 
 @section('content')
 
-<style>
-
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-*{
-    font-family:'Poppins',sans-serif;
-}
-
-.sidebar{
-    background:linear-gradient(
-        180deg,
-        #800000 0%,
-        #5c0000 100%
-    );
-}
-
-.header{
-    background:linear-gradient(
-        90deg,
-        #ff6b35 0%,
-        #ff8c42 100%
-    );
-}
-
-.btn-primary{
-
-background:linear-gradient(
-90deg,
-#ff6b35 0%,
-#ff8c42 100%
-);
-
-}
-
-.btn-primary:hover{
-    opacity:.9;
-}
-
-
-.nav-item:hover{
-    background:rgba(255,255,255,0.1);
-}
-
-
-.nav-item.active{
-
-background:rgba(255,255,255,0.2);
-
-border-left:4px solid #ff6b35;
-
-}
-
-
-.animate-fade-in{
-
-animation:fade .5s ease-in-out;
-
-}
-
-
-@keyframes fade{
-
-from{
-
-opacity:0;
-transform:translateY(10px);
-
-}
-
-to{
-
-opacity:1;
-transform:translateY(0);
-
-}
-
-}
-
-</style>
-
-
-
-<div class="flex h-screen overflow-hidden bg-gray-100">
-
-
-<!-- SIDEBAR -->
-
-<aside id="sidebar"
-class="sidebar fixed lg:static -left-64 lg:left-0 top-0 z-50 w-64 h-screen text-white flex flex-col transition-all duration-300">
-
-
-<div class="p-6">
-
-<h1 class="text-2xl font-bold tracking-wider">
-
-<i class="fas fa-hotel mr-2"></i>
-
-CASAUL
-
-</h1>
-
-
-<p class="text-sm text-gray-300 mt-1">
-
-Housekeeping
-
-</p>
-
-</div>
-
-
-
-
-<nav class="mt-6 flex-1">
-
-
-<a href="{{ route('housekeeping.dashboard') }}"
-class="nav-item flex items-center px-6 py-3 transition">
-
-<i class="fas fa-home w-6"></i>
-
-<span>
-Dashboard
-</span>
-
-</a>
-
-
-
-
-<a href="{{ route('housekeeping.assigned-rooms') }}"
-class="nav-item flex items-center px-6 py-3 transition">
-
-<i class="fas fa-bed w-6"></i>
-
-<span>
-Assigned Rooms
-</span>
-
-</a>
-
-
-
-
-<a href="{{ route('housekeeping.room-status-update') }}"
-class="nav-item flex items-center px-6 py-3 transition">
-
-<i class="fas fa-sync-alt w-6"></i>
-
-<span>
-Room Status Update
-</span>
-
-</a>
-
-
-
-
-<a href="{{ route('housekeeping.guest-requests') }}"
-class="nav-item flex items-center px-6 py-3 transition">
-
-<i class="fas fa-bell w-6"></i>
-
-<span>
-Guest Requests
-</span>
-
-</a>
-
-
-
-
-<a href="{{ route('housekeeping.maintenance-report') }}"
-class="nav-item active flex items-center px-6 py-3 transition">
-
-<i class="fas fa-tools w-6"></i>
-
-<span>
-Maintenance Report
-</span>
-
-</a>
-
-
-
-
-<a href="{{ route('housekeeping.cleaning-history') }}"
-class="nav-item flex items-center px-6 py-3 transition">
-
-<i class="fas fa-history w-6"></i>
-
-<span>
-Cleaning History
-</span>
-
-</a>
-
-
-</nav>
-
-
-
-
-<div class="p-6 mt-auto">
-
-<a href="{{ route('logout') }}"
-class="flex items-center px-6 py-3 text-gray-300 hover:text-white">
-
-<i class="fas fa-sign-out-alt w-6"></i>
-
-<span>
-Logout
-</span>
-
-</a>
-
-</div>
-
-
-</aside>
-
-
-
-
-
-<!-- MAIN -->
-
-<div class="flex-1 flex flex-col overflow-hidden">
-
-
-
-<!-- HEADER -->
-
-<header class="header text-white px-4 md:px-6 py-4 shadow-lg">
-
-
-<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
-
-<div class="flex items-center">
-
-<button id="menuBtn"
-class="lg:hidden text-2xl mr-4">
-
-<i class="fas fa-bars"></i>
-
-</button>
-
-
-<h2 class="text-xl font-semibold">
-
-Welcome to CASAUL Housekeeping
-
-</h2>
-
-
-</div>
-
-
-
-
-<div class="flex flex-col sm:flex-row gap-4">
-
-
-<div class="relative">
-
-<input
-type="text"
-placeholder="Search..."
-class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg w-full sm:w-64 focus:outline-none">
-
-
-<i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
-
-</div>
-
-
-
-<div class="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
-
-<i class="fas fa-user-circle text-2xl"></i>
-
-<span>
-Housekeeper
-</span>
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-</header>
-
-
-
-<!-- CONTENT -->
-
 <main class="flex-1 overflow-y-auto p-4 md:p-6">
-
-
-<div class="animate-fade-in">
-
-
-<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-
-
-<h2 class="text-3xl font-bold text-gray-800">
-
-Maintenance Report
-
-</h2>
-
-
-<button
-onclick="openReportModal()"
-class="btn-primary text-white px-5 py-3 rounded-lg">
-
-<i class="fas fa-plus mr-2"></i>
-
-Create Report
-
-</button>
-
-
-</div>
-<!-- SUMMARY CARDS -->
-
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-
-
-<!-- TOTAL REPORTS -->
-
-<div class="bg-white rounded-xl shadow-lg p-6">
-
-<div class="flex justify-between items-center">
-
-<div>
-
-<p class="text-gray-500 text-sm">
-Total Reports
-</p>
-
-<h2 class="text-3xl font-bold text-gray-800">
-2
-</h2>
-
-</div>
-
-
-<div class="bg-blue-100 p-4 rounded-full">
-
-<i class="fas fa-file-alt text-blue-600 text-xl"></i>
-
-</div>
-
-
-</div>
-
-</div>
-
-
-
-
-
-<!-- PENDING -->
-
-<div class="bg-white rounded-xl shadow-lg p-6">
-
-<div class="flex justify-between items-center">
-
-<div>
-
-<p class="text-gray-500 text-sm">
-Pending Issues
-</p>
-
-<h2 class="text-3xl font-bold text-gray-800">
-1
-</h2>
-
-</div>
-
-
-<div class="bg-yellow-100 p-4 rounded-full">
-
-<i class="fas fa-clock text-yellow-600 text-xl"></i>
-
-</div>
-
-
-</div>
-
-</div>
-
-
-
-
-
-<!-- REPAIR -->
-
-<div class="bg-white rounded-xl shadow-lg p-6">
-
-<div class="flex justify-between items-center">
-
-<div>
-
-<p class="text-gray-500 text-sm">
-Under Repair
-</p>
-
-<h2 class="text-3xl font-bold text-gray-800">
-1
-</h2>
-
-</div>
-
-
-<div class="bg-orange-100 p-4 rounded-full">
-
-<i class="fas fa-wrench text-orange-600 text-xl"></i>
-
-</div>
-
-
-</div>
-
-</div>
-
-
-
-
-
-<!-- COMPLETED -->
-
-<div class="bg-white rounded-xl shadow-lg p-6">
-
-<div class="flex justify-between items-center">
-
-<div>
-
-<p class="text-gray-500 text-sm">
-Completed
-</p>
-
-<h2 class="text-3xl font-bold text-gray-800">
-0
-</h2>
-
-</div>
-
-
-<div class="bg-green-100 p-4 rounded-full">
-
-<i class="fas fa-check-circle text-green-600 text-xl"></i>
-
-</div>
-
-
-</div>
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-
-<!-- MAINTENANCE TABLE -->
-
-
-<div class="bg-white rounded-xl shadow-lg p-6">
-
-
-<div class="overflow-x-auto">
-
-
-<table class="w-full min-w-[900px]">
-
-
-<thead>
-
-
-<tr class="bg-gray-50">
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-Room
-</th>
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-Problem
-</th>
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-Priority
-</th>
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-Date Reported
-</th>
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-Status
-</th>
-
-
-<th class="px-6 py-3 text-left text-xs uppercase text-gray-500">
-Action
-</th>
-
-
-</tr>
-
-
-</thead>
-
-
-
-
-
-<tbody class="divide-y">
-
-
-
-<tr class="hover:bg-gray-50 transition">
-
-
-<td class="px-6 py-4 font-semibold">
-
-Room 101
-
-</td>
-
-
-
-<td class="px-6 py-4">
-
-
-<p class="font-medium">
-
-Air Conditioner
-
-</p>
-
-
-<p class="text-xs text-gray-500">
-
-Not cooling properly
-
-</p>
-
-
-</td>
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs">
-
-High
-
-</span>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4 text-gray-500">
-
-July 31, 2026
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs">
-
-Pending
-
-</span>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<button class="text-blue-600 hover:text-blue-800">
-
-View
-
-</button>
-
-
-</td>
-
-
-
-</tr>
-
-
-
-
-
-
-
-<tr class="hover:bg-gray-50 transition">
-
-
-<td class="px-6 py-4 font-semibold">
-
-Room 205
-
-</td>
-
-
-
-
-<td class="px-6 py-4">
-
-
-<p class="font-medium">
-
-Bathroom Faucet
-
-</p>
-
-
-<p class="text-xs text-gray-500">
-
-Water leakage
-
-</p>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs">
-
-Medium
-
-</span>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4 text-gray-500">
-
-July 30, 2026
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs">
-
-Repairing
-
-</span>
-
-
-</td>
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<button class="text-blue-600 hover:text-blue-800">
-
-View
-
-</button>
-
-
-</td>
-
-
-
-</tr>
-
-
-
-</tbody>
-
-
-</table>
-
-
-</div>
-
-
-</div>
-
-</div>
-
+    <div class="animate-fade-in space-y-8">
+
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.3em] text-amber-600">
+                    Maintenance overview
+                </p>
+                <h2 class="text-2xl font-bold text-slate-800 sm:text-3xl">
+                    Maintenance Report
+                </h2>
+                <p class="mt-1 max-w-2xl text-sm text-slate-600">
+                    Track room repairs, pending issues, and completed maintenance work in one dashboard.
+                </p>
+            </div>
+
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center w-full lg:w-auto">
+                <div class="relative w-full sm:w-72">
+                    <input
+                        id="reportSearch"
+                        type="search"
+                        placeholder="Search reports..."
+                        class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                    />
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                </div>
+
+                <button
+                    onclick="openReportModal()"
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200/40 transition hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-300 sm:w-auto"
+                >
+                    <i class="fas fa-plus"></i>
+                    Create Report
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <!-- TOTAL REPORTS -->
+            <div class="card-hover rounded-2xl bg-white p-5 shadow-lg">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-sm text-slate-500">Total Reports</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-800">2</p>
+                        <p class="mt-2 flex items-center text-xs font-medium text-blue-600">
+                            <i class="fas fa-file-alt mr-1"></i>
+                            All time records
+                        </p>
+                    </div>
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-100">
+                        <i class="fas fa-file-alt text-xl text-blue-700"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PENDING -->
+            <div class="card-hover rounded-2xl bg-white p-5 shadow-lg">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-sm text-slate-500">Pending Issues</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-800">1</p>
+                        <p class="mt-2 flex items-center text-xs font-medium text-amber-600">
+                            <i class="fas fa-clock mr-1"></i>
+                            Awaiting action
+                        </p>
+                    </div>
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-100">
+                        <i class="fas fa-clock text-xl text-amber-700"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPAIR -->
+            <div class="card-hover rounded-2xl bg-white p-5 shadow-lg">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-sm text-slate-500">Under Repair</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-800">1</p>
+                        <p class="mt-2 flex items-center text-xs font-medium text-orange-600">
+                            <i class="fas fa-wrench mr-1"></i>
+                            In progress
+                        </p>
+                    </div>
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-100">
+                        <i class="fas fa-wrench text-xl text-orange-700"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMPLETED -->
+            <div class="card-hover rounded-2xl bg-white p-5 shadow-lg">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-sm text-slate-500">Completed</p>
+                        <p class="mt-2 text-3xl font-bold text-slate-800">0</p>
+                        <p class="mt-2 flex items-center text-xs font-medium text-green-600">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            Resolved issues
+                        </p>
+                    </div>
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-emerald-100">
+                        <i class="fas fa-check-circle text-xl text-emerald-700"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAINTENANCE TABLE -->
+        <div class="overflow-hidden rounded-2xl bg-white shadow-lg">
+            <!-- Table toolbar -->
+            <div class="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-800">
+                        Maintenance Records
+                    </h3>
+                    <p class="text-sm text-slate-500">
+                        Showing all reported maintenance issues
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                        All (2)
+                    </span>
+                    <span class="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">
+                        Pending (1)
+                    </span>
+                    <span class="rounded-full bg-orange-100 px-3 py-1.5 text-xs font-semibold text-orange-700">
+                        Repairing (1)
+                    </span>
+                    <span class="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                        Completed (0)
+                    </span>
+                </div>
+            </div>
+
+<!-- Desktop table -->
+            <div class="hidden overflow-x-auto md:block">
+                <table class="w-full min-w-[640px]">
+                    <thead>
+<tr class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                            <th class="px-3 py-3">Room</th>
+                            <th class="px-3 py-3">Reported By</th>
+                            <th class="px-3 py-3">Category</th>
+                            <th class="px-3 py-3">Problem</th>
+                            <th class="px-3 py-3">Priority</th>
+                            <th class="px-3 py-3">Date Reported</th>
+                            <th class="px-3 py-3">Expected Repair</th>
+                            <th class="px-3 py-3">Technician</th>
+                            <th class="px-3 py-3">Status</th>
+                            <th class="px-3 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+<tr class="transition hover:bg-orange-50/70">
+                            <td class="px-3 py-3">
+                                <div class="font-semibold text-slate-800">Room 101</div>
+                                <div class="text-xs text-slate-500">Deluxe Room</div>
+                            </td>
+                            <td class="px-3 py-3 text-sm text-slate-600">Maria Santos</td>
+                            <td class="px-3 py-3">
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Air Conditioning</span>
+                            </td>
+                            <td class="px-3 py-3">
+                                <p class="font-medium text-slate-800">Air Conditioner</p>
+                                <p class="text-xs text-slate-500">Not cooling properly</p>
+                            </td>
+                            <td class="px-3 py-3">
+                                <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">High</span>
+                            </td>
+                            <td class="px-3 py-3 text-sm text-slate-600">Jul 31, 2026</td>
+                            <td class="px-3 py-3 text-sm text-slate-600">Aug 2, 2026</td>
+                            <td class="px-3 py-3 text-sm text-slate-600">John Reyes</td>
+                            <td class="px-3 py-3">
+                                <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Pending</span>
+                            </td>
+                            <td class="px-3 py-3">
+                                <button class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-50">
+                                    <i class="fas fa-eye text-xs"></i>
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+
+<tr class="transition hover:bg-orange-50/70">
+                            <td class="px-3 py-3">
+                                <div class="font-semibold text-slate-800">Room 205</div>
+                                <div class="text-xs text-slate-500">Suite Room</div>
+                            </td>
+                            <td class="px-3 py-3 text-sm text-slate-600">Ana Cruz</td>
+                            <td class="px-3 py-3">
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Plumbing</span>
+                            </td>
+                            <td class="px-3 py-3">
+                                <p class="font-medium text-slate-800">Bathroom Faucet</p>
+                                <p class="text-xs text-slate-500">Water leakage</p>
+                            </td>
+                            <td class="px-3 py-3">
+                                <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">Medium</span>
+                            </td>
+                            <td class="px-3 py-3 text-sm text-slate-600">Jul 30, 2026</td>
+                            <td class="px-3 py-3 text-sm text-slate-600">Aug 1, 2026</td>
+                            <td class="px-3 py-3 text-sm text-slate-600">Pedro Lim</td>
+                            <td class="px-3 py-3">
+                                <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Repairing</span>
+                            </td>
+                            <td class="px-3 py-3">
+                                <button class="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-50">
+                                    <i class="fas fa-eye text-xs"></i>
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile card list -->
+            <div class="divide-y divide-slate-100 md:hidden">
+                <!-- Card: Room 101 -->
+<div class="p-4">
+                    <div class="mb-3 flex items-start justify-between">
+                        <div>
+                            <p class="font-semibold text-slate-800">Room 101</p>
+                            <p class="text-xs text-slate-500">Deluxe Room</p>
+                        </div>
+                        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Pending</span>
+                    </div>
+                    <p class="text-sm font-medium text-slate-800">Air Conditioner</p>
+                    <p class="text-xs text-slate-500">Not cooling properly</p>
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">High</span>
+                        <span class="text-xs text-slate-500">Jul 31, 2026</span>
+                        <span class="text-xs text-slate-500">Expected: Aug 2, 2026</span>
+                        <button class="ml-auto inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-50">
+                            <i class="fas fa-eye text-xs"></i>
+                            View
+                        </button>
+                    </div>
+                    <div class="mt-3 grid grid-cols-1 gap-1 border-t border-slate-100 pt-3 text-xs text-slate-500 sm:grid-cols-2">
+                        <p><span class="font-semibold text-slate-600">Reported By:</span> Maria Santos</p>
+                        <p><span class="font-semibold text-slate-600">Category:</span> Air Conditioning</p>
+                        <p><span class="font-semibold text-slate-600">Technician:</span> John Reyes</p>
+                    </div>
+                </div>
+
+<!-- Card: Room 205 -->
+                <div class="p-4">
+                    <div class="mb-3 flex items-start justify-between">
+                        <div>
+                            <p class="font-semibold text-slate-800">Room 205</p>
+                            <p class="text-xs text-slate-500">Suite Room</p>
+                        </div>
+                        <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Repairing</span>
+                    </div>
+                    <p class="text-sm font-medium text-slate-800">Bathroom Faucet</p>
+                    <p class="text-xs text-slate-500">Water leakage</p>
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">Medium</span>
+                        <span class="text-xs text-slate-500">Jul 30, 2026</span>
+                        <span class="text-xs text-slate-500">Expected: Aug 1, 2026</span>
+                        <button class="ml-auto inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-blue-700 transition hover:bg-blue-50">
+                            <i class="fas fa-eye text-xs"></i>
+                            View
+                        </button>
+                    </div>
+                    <div class="mt-3 grid grid-cols-1 gap-1 border-t border-slate-100 pt-3 text-xs text-slate-500 sm:grid-cols-2">
+                        <p><span class="font-semibold text-slate-600">Reported By:</span> Ana Cruz</p>
+                        <p><span class="font-semibold text-slate-600">Category:</span> Plumbing</p>
+                        <p><span class="font-semibold text-slate-600">Technician:</span> Pedro Lim</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 
-</div>
-
-</div>
-
-
-
-
-
-
-
 <!-- CREATE MAINTENANCE REPORT MODAL -->
-
-
-<div id="reportModal"
-class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
-
-
-<div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-
-
-
+<div
+    id="reportModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-5 opacity-0 transition-opacity duration-200"
+>
+        <div class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
 <!-- MODAL HEADER -->
+        <div class="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3">
+            <div>
+                <h2 class="text-lg font-bold text-slate-800 sm:text-xl">
+                    Create Maintenance Report
+                </h2>
+                <p class="text-xs text-slate-500 sm:text-sm">
+                    Record a new maintenance issue for a room.
+                </p>
+            </div>
+            <button
+                onclick="closeReportModal()"
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-2xl text-slate-400 transition hover:bg-slate-100 hover:text-red-600"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+        </div>
 
-<div class="flex justify-between items-center px-6 py-4 border-b">
+<form class="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+            <!-- ROOM INFORMATION -->
+            <div>
+                <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    <i class="fas fa-door-open text-orange-600"></i>
+                    Room Information
+                </h3>
 
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="text-sm font-medium text-slate-600">Room Number</label>
+                        <select class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100">
+                            <option>Room 101</option>
+                            <option>Room 205</option>
+                            <option>Room 302</option>
+                        </select>
+                    </div>
 
-<h2 class="text-2xl font-bold text-gray-800">
+                    <div>
+                        <label class="text-sm font-medium text-slate-600">Room Type</label>
+                        <select class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100">
+                            <option>Deluxe Room</option>
+                            <option>Suite Room</option>
+                            <option>Standard Room</option>
+                        </select>
+                    </div>
 
-Create Maintenance Report
+                    <div class="sm:col-span-2">
+                        <label class="text-sm font-medium text-slate-600">Reported By</label>
+                        <input
+                            type="text"
+                            placeholder="Housekeeper Name"
+                            class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                        />
+                    </div>
+                </div>
+            </div>
 
-</h2>
+            <!-- ISSUE DETAILS -->
+            <div>
+                <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    <i class="fas fa-exclamation-triangle text-orange-600"></i>
+                    Issue Details
+                </h3>
 
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="text-sm font-medium text-slate-600">Maintenance Category</label>
+                        <select class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100">
+                            <option>Air Conditioning</option>
+                            <option>Electrical</option>
+                            <option>Plumbing</option>
+                            <option>Furniture</option>
+                            <option>Appliance</option>
+                            <option>Others</option>
+                        </select>
+                    </div>
 
-<button onclick="closeReportModal()"
-class="text-3xl text-gray-500 hover:text-red-600">
+                    <div>
+                        <label class="text-sm font-medium text-slate-600">Priority Level</label>
+                        <select class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100">
+                            <option>Low</option>
+                            <option>Medium</option>
+                            <option>High</option>
+                            <option>Urgent</option>
+                        </select>
+                    </div>
+                </div>
 
-&times;
+                <div class="mt-4">
+                    <label class="text-sm font-medium text-slate-600">Problem Description</label>
+                    <textarea
+                        rows="3"
+                        placeholder="Example: Air conditioner is not cooling properly."
+                        class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                    ></textarea>
+                </div>
+            </div>
 
-</button>
+            <!-- REPAIR SCHEDULE -->
+            <div>
+                <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    <i class="fas fa-calendar-alt text-orange-600"></i>
+                    Repair Schedule
+                </h3>
 
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="text-sm font-medium text-slate-600">Date Reported</label>
+                        <input
+                            type="date"
+                            class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                        />
+                    </div>
 
+                    <div>
+                        <label class="text-sm font-medium text-slate-600">Expected Repair Date</label>
+                        <input
+                            type="date"
+                            class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                        />
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="text-sm font-medium text-slate-600">Assigned Technician</label>
+                        <input
+                            type="text"
+                            placeholder="Technician Name"
+                            class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <!-- STATUS -->
+            <div>
+                <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    <i class="fas fa-tasks text-orange-600"></i>
+                    Status
+                </h3>
+
+                <div>
+                    <label class="text-sm font-medium text-slate-600">Current Status</label>
+                    <select class="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-100 sm:max-w-xs">
+                        <option>Pending</option>
+                        <option>In Progress</option>
+                        <option>Completed</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <button
+                    type="button"
+                    onclick="closeReportModal()"
+                    class="w-full rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 sm:w-auto"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-orange-200/40 transition hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-300 sm:w-auto"
+                >
+                    <i class="fas fa-save"></i>
+                    Submit Report
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
-
-
-
-
-
-
-
-<form class="p-6 space-y-6">
-
-
-
-
-
-<!-- ROOM INFORMATION -->
-
-
-<h3 class="font-semibold text-gray-700">
-
-Room Information
-
-</h3>
-
-
-
-<div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-
-
-<div>
-
-<label class="text-sm text-gray-600">
-
-Room Number
-
-</label>
-
-
-<select class="w-full mt-2 border rounded-lg px-4 py-2">
-
-<option>
-Room 101
-</option>
-
-<option>
-Room 205
-</option>
-
-<option>
-Room 302
-</option>
-
-</select>
-
-
-</div>
-
-
-
-
-
-<div>
-
-<label class="text-sm text-gray-600">
-
-Room Type
-
-</label>
-
-
-<select class="w-full mt-2 border rounded-lg px-4 py-2">
-
-
-<option>
-Deluxe Room
-</option>
-
-
-<option>
-Suite Room
-</option>
-
-
-<option>
-Standard Room
-</option>
-
-
-</select>
-
-
-</div>
-
-
-
-
-
-<div>
-
-<label class="text-sm text-gray-600">
-
-Reported By
-
-</label>
-
-
-<input
-type="text"
-placeholder="Housekeeper Name"
-class="w-full mt-2 border rounded-lg px-4 py-2">
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-
-
-<!-- ISSUE DETAILS -->
-
-
-<h3 class="font-semibold text-gray-700">
-
-Issue Details
-
-</h3>
-
-
-
-<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-
-
-<div>
-
-
-<label class="text-sm text-gray-600">
-
-Maintenance Category
-
-</label>
-
-
-<select class="w-full mt-2 border rounded-lg px-4 py-2">
-
-
-<option>
-Air Conditioning
-</option>
-
-
-<option>
-Electrical
-</option>
-
-
-<option>
-Plumbing
-</option>
-
-
-<option>
-Furniture
-</option>
-
-
-<option>
-Appliance
-</option>
-
-
-<option>
-Others
-</option>
-
-
-</select>
-
-
-</div>
-
-
-
-
-
-<div>
-
-
-<label class="text-sm text-gray-600">
-
-Priority Level
-
-</label>
-
-
-<select class="w-full mt-2 border rounded-lg px-4 py-2">
-
-
-<option>
-Low
-</option>
-
-
-<option>
-Medium
-</option>
-
-
-<option>
-High
-</option>
-
-
-<option>
-Urgent
-</option>
-
-
-</select>
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-
-<div>
-
-
-<label class="text-sm text-gray-600">
-
-Problem Description
-
-</label>
-
-
-<textarea
-rows="4"
-placeholder="Example: Air conditioner is not cooling properly."
-class="w-full mt-2 border rounded-lg px-4 py-3"></textarea>
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<!-- REPAIR SCHEDULE -->
-
-
-<h3 class="font-semibold text-gray-700">
-
-Repair Schedule
-
-</h3>
-
-
-
-<div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-
-
-<div>
-
-
-<label class="text-sm text-gray-600">
-
-Date Reported
-
-</label>
-
-
-<input
-type="date"
-class="w-full mt-2 border rounded-lg px-4 py-2">
-
-
-</div>
-
-
-
-
-
-<div>
-
-
-<label class="text-sm text-gray-600">
-
-Expected Repair Date
-
-</label>
-
-
-<input
-type="date"
-class="w-full mt-2 border rounded-lg px-4 py-2">
-
-
-</div>
-
-
-
-
-
-<div>
-
-
-<label class="text-sm text-gray-600">
-
-Assigned Technician
-
-</label>
-
-
-<input
-type="text"
-placeholder="Technician Name"
-class="w-full mt-2 border rounded-lg px-4 py-2">
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<!-- STATUS -->
-
-
-<div>
-
-
-<label class="text-sm text-gray-600">
-
-Current Status
-
-</label>
-
-
-<select class="w-full mt-2 border rounded-lg px-4 py-2">
-
-
-<option>
-Pending
-</option>
-
-
-<option>
-In Progress
-</option>
-
-
-<option>
-Completed
-</option>
-
-
-</select>
-
-
-</div>
-
-
-
-
-
-
-
-
-<!-- BUTTONS -->
-
-
-<div class="flex flex-col sm:flex-row justify-end gap-3">
-
-
-<button
-type="button"
-onclick="closeReportModal()"
-class="px-6 py-3 border rounded-lg">
-
-
-Cancel
-
-
-</button>
-
-
-
-
-
-<button
-type="submit"
-class="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700">
-
-
-<i class="fas fa-save mr-2"></i>
-
-
-Submit Report
-
-
-</button>
-
-
-</div>
-
-
-
-</form>
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-
 
 <script>
+    function openReportModal() {
+        const modal = document.getElementById("reportModal");
+        modal.classList.remove("hidden");
+        // trigger transition
+        requestAnimationFrame(() => {
+            modal.classList.add("flex", "opacity-100");
+        });
+        document.body.style.overflow = "hidden";
+    }
 
+    function closeReportModal() {
+        const modal = document.getElementById("reportModal");
+        modal.classList.remove("opacity-100");
+        setTimeout(() => {
+            modal.classList.add("hidden");
+            modal.classList.remove("flex");
+        }, 200);
+        document.body.style.overflow = "";
+    }
 
-function openReportModal(){
+    // Close on backdrop click
+    document.addEventListener("click", function (e) {
+        const modal = document.getElementById("reportModal");
+        if (e.target === modal) {
+            closeReportModal();
+        }
+    });
 
-
-document.getElementById("reportModal")
-.classList.remove("hidden");
-
-
-document.getElementById("reportModal")
-.classList.add("flex");
-
-
-}
-
-
-
-function closeReportModal(){
-
-
-document.getElementById("reportModal")
-.classList.remove("flex");
-
-
-document.getElementById("reportModal")
-.classList.add("hidden");
-
-
-}
-
-
-
-
-// MOBILE SIDEBAR TOGGLE
-
-document.getElementById("menuBtn")
-?.addEventListener("click",function(){
-
-
-document.getElementById("sidebar")
-.classList.toggle("-left-64");
-
-
-document.getElementById("sidebar")
-.classList.toggle("left-0");
-
-
-});
-
-
-
+    // Close on Escape
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            closeReportModal();
+        }
+    });
 </script>
 
-
-
 @endsection
+

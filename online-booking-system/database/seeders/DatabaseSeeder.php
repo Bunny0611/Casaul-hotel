@@ -15,26 +15,36 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create admin user
-        User::create([
-            'name' => 'Admin',
+        // Create default admin user
+        User::updateOrCreate([
             'email' => 'admin@casaul.com',
+        ], [
+            'name' => 'Admin',
             'password' => bcrypt('password'),
             'role' => 'admin',
         ]);
 
-        // Create housekeeping user
-        User::create([
-            'name' => 'Housekeeping',
+        // Create default housekeeping user
+        User::updateOrCreate([
             'email' => 'housekeeping@casaul.com',
+        ], [
+            'name' => 'Housekeeping',
             'password' => bcrypt('password'),
             'role' => 'housekeeping',
         ]);
 
+<<<<<<< HEAD
         // Create employee user
         User::create([
             'name' => 'Employee',
             'email' => 'employee@casaul.com',
+=======
+        // Create default employee user
+        User::updateOrCreate([
+            'email' => 'employee@casaul.com',
+        ], [
+            'name' => 'Employee',
+>>>>>>> origin/main
             'password' => bcrypt('password'),
             'role' => 'employee',
         ]);

@@ -11,19 +11,23 @@ use App\Http\Controllers\HousekeepingController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/accommodation', [HomeController::class, 'accommodation'])->name('accommodation');
 Route::get('/accommodation/{slug}', [HomeController::class, 'roomDetail'])->name('accommodation.room');
+Route::get('/reservation', [HomeController::class, 'reservation'])->name('reservation');
+Route::post('/reservation', [HomeController::class, 'storeReservation'])->name('reservation.store');
 Route::post('/send-message', [HomeController::class, 'sendMessage'])->name('send.message');
 Route::view('/offers', 'offers')->name('offers');
 Route::view('/gallery', 'gallery')->name('gallery');
 Route::view('/dining', 'dining')->name('dining');
 Route::view('/events', 'events')->name('events');
+Route::view('/aboutus', 'aboutus')->name('aboutus');
 
 // --- Admin Login (outside admin prefix so it's named 'login' not 'admin.login') ---
-Route::get('/admin/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/admin/login', [AuthController::class, 'login'])->name('login.submit');
+Route::get('/staff/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::post('/staff/login', [AuthController::class, 'login'])->name('login.submit');
 
 // --- Guest Login ---
 Route::get('/guest/login', [AuthController::class, 'showGuestLoginForm'])->name('guest.login');
 Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.login.submit');
+Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
 
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -35,7 +39,7 @@ Route::prefix('employee')->name('employee.')->middleware('auth')->group(function
     Route::view('/checkin', 'employee.checkin')->name('checkin');
     Route::view('/room-status', 'employee.room-status')->name('room-status');
     Route::view('/guest-requests', 'employee.guest-requests')->name('guest-requests');
-    Route::view('/messages', 'employee.messages')->name('messages');
+    Route::view('/messages', 'employee.messages')->name('messages'); 
 });
 
 // --- Protected Admin Routes (requires authentication) ---
@@ -56,6 +60,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/reports/export-csv', [AdminController::class, 'exportReportsCsv'])->name('reports.export.csv');
     Route::get('/reports/print', [AdminController::class, 'printReports'])->name('reports.print');
     Route::get('/notifications', [AdminController::class, 'notifications'])->name('notifications');
+    Route::get('/manage-account', [AdminController::class, 'manageAccount'])->name('manage-account');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings/account', [AdminController::class, 'updateAccount'])->name('settings.account');
 });
@@ -63,7 +68,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 // --- Housekeeping Portal (requires authentication) ---
 Route::prefix('housekeeping')->name('housekeeping.')->middleware('auth')->group(function () {
     Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
+<<<<<<< HEAD
     Route::patch('/rooms/{room}/cleaning', [HousekeepingController::class, 'updateStatus'])->name('rooms.cleaning');
+=======
+    Route::patch('/rooms/{id}/cleaning', [HousekeepingController::class, 'updateStatus'])->name('rooms.cleaning');
+>>>>>>> origin/main
     Route::get('/assigned-rooms', [HousekeepingController::class, 'assignedRooms'])->name('assigned-rooms');
     Route::get('/room-status-update', [HousekeepingController::class, 'roomStatusUpdate'])->name('room-status-update');
     Route::get('/guest-requests', [HousekeepingController::class, 'guestRequests'])->name('guest-requests');

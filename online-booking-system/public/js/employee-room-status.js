@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
         floor: document.getElementById('detail-floor'),
         capacity: document.getElementById('detail-capacity'),
         status: document.getElementById('detail-status'),
+        housekeepingStatus: document.getElementById('detail-housekeeping-status'),
         guest: document.getElementById('detail-guest'),
         checkin: document.getElementById('detail-checkin'),
         checkout: document.getElementById('detail-checkout'),
@@ -63,12 +64,14 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-action="view"]').forEach((button) => {
         button.addEventListener('click', function () {
             const row = this.closest('[data-room-row]');
+            activeRoomNumber = row.dataset.roomNumber;
             const record = {
                 roomNumber: row.dataset.roomNumber,
                 roomType: row.dataset.roomType,
                 floor: row.dataset.floor,
                 capacity: row.dataset.capacity,
                 status: row.dataset.statusLabel,
+                housekeepingStatus: row.dataset.housekeepingStatus,
                 guest: row.dataset.guest,
                 checkin: row.dataset.checkin,
                 checkout: row.dataset.checkout,
@@ -90,16 +93,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.querySelectorAll('[data-action="status"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            alert('Status change placeholder');
-        });
+    const modalChangeStatus = document.getElementById('modal-change-status');
+    const modalAssignHousekeeper = document.getElementById('modal-assign-housekeeper');
+    let activeRoomNumber = null;
+
+    modalChangeStatus.addEventListener('click', () => {
+        if (!activeRoomNumber) {
+            return;
+        }
+        alert(`Change status for room ${activeRoomNumber}`);
     });
 
-    document.querySelectorAll('[data-action="housekeeper"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            alert('Housekeeper assignment placeholder');
-        });
+    modalAssignHousekeeper.addEventListener('click', () => {
+        if (!activeRoomNumber) {
+            return;
+        }
+        alert(`Assign housekeeper for room ${activeRoomNumber}`);
     });
 
     document.getElementById('refresh-button').addEventListener('click', () => {
