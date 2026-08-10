@@ -44,7 +44,6 @@ class AuthController extends Controller
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
-            // Redirect based on role
             if ($credentials['role'] === 'housekeeping') {
                 return redirect()->intended(route('housekeeping.dashboard'));
             }
@@ -74,6 +73,7 @@ class AuthController extends Controller
         if (Auth::attempt([
             'email' => $credentials['email'],
             'password' => $credentials['password'],
+            'role' => 'guest',
         ], $request->boolean('remember'))) {
             $request->session()->regenerate();
 

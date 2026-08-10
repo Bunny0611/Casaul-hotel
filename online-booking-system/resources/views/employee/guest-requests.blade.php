@@ -7,37 +7,43 @@
             <h3 class="text-2xl font-bold text-gray-800">Guest Service Requests</h3>
             <p class="text-sm text-gray-500">Manage room service and guest assistance requests</p>
         </div>
-        <button class="rounded-lg bg-emerald-500 px-4 py-2 text-white transition hover:bg-emerald-600">Resolve</button>
+        <div class="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">
+            {{ collect($requests)->where('status', 'Resolved')->count() }} resolved
+        </div>
     </div>
 
+    @if(session('success'))
+        <div class="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+            {{ session('success') }}
+        </div>
+    @endif
+
     <div class="space-y-4">
-        <div class="rounded-xl border border-gray-200 p-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="font-semibold text-gray-800">Room 305 - Extra Towels</p>
-                    <p class="text-sm text-gray-500">Requested 10:15 AM</p>
+        @foreach($requests as $request)
+            <div class="rounded-xl border border-gray-200 p-4">
+                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <p class="font-semibold text-gray-800">{{ $request['title'] }}</p>
+                        <p class="text-sm text-gray-500">Requested {{ $request['requested_at'] }}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="rounded-full px-2 py-1 text-xs font-medium text-white {{ $request['status'] === 'Resolved' ? 'bg-emerald-500' : ($request['status'] === 'Approved' ? 'bg-blue-500' : 'bg-amber-500') }}">
+                            {{ $request['status'] }}
+                        </span>
+                        @if($request['status'] !== 'Resolved')
+                            <form method="POST" action="{{ route('employee.guest-requests.resolve', ['id' => $request['id']]) }}">
+                                @csrf
+                                <button type="submit" class="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-600">
+                                    Resolve
+                                </button>
+                            </form>
+                        @else
+                            <span class="text-sm text-gray-500">Completed</span>
+                        @endif
+                    </div>
                 </div>
-                <span class="rounded-full bg-amber-500 px-2 py-1 text-xs text-white">Pending</span>
             </div>
-        </div>
-        <div class="rounded-xl border border-gray-200 p-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="font-semibold text-gray-800">Room 208 - Late Checkout</p>
-                    <p class="text-sm text-gray-500">Requested 9:40 AM</p>
-                </div>
-                <span class="rounded-full bg-emerald-500 px-2 py-1 text-xs text-white">Approved</span>
-            </div>
-        </div>
-        <div class="rounded-xl border border-gray-200 p-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="font-semibold text-gray-800">Room 101 - Wake-up Call</p>
-                    <p class="text-sm text-gray-500">Requested 7:30 AM</p>
-                </div>
-                <span class="rounded-full bg-blue-500 px-2 py-1 text-xs text-white">Done</span>
-            </div>
-        </div>
+        @endforeach
     </div>
 </div>
 @endsection

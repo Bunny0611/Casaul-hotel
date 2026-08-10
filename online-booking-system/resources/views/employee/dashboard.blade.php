@@ -114,6 +114,32 @@
         margin: 0;
     }
 
+    .snapshot-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.7rem;
+        margin-top: 0.9rem;
+    }
+
+    .snapshot-card {
+        background: #fffaf7;
+        border: 1px solid #f6dfcc;
+        border-radius: 0.9rem;
+        padding: 0.7rem 0.75rem;
+    }
+
+    .snapshot-card strong {
+        display: block;
+        font-size: 1.05rem;
+        color: #111827;
+        margin-bottom: 0.2rem;
+    }
+
+    .snapshot-card span {
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+
     .activity-list {
         list-style: none;
         padding: 0;
@@ -259,6 +285,25 @@
                 <div style="background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 0.8rem; padding: 0.65rem 0.75rem; flex: 1; min-width: 120px;">
                     <div style="font-size: 0.8rem; color: #9ca3af;">Available</div>
                     <div style="font-size: 1rem; font-weight: 700; color: #111827;">13 Rooms</div>
+                </div>
+            </div>
+
+            <div class="snapshot-grid">
+                <div class="snapshot-card">
+                    <strong>37%</strong>
+                    <span>Occupancy rate</span>
+                </div>
+                <div class="snapshot-card">
+                    <strong>12</strong>
+                    <span>Ready for check-in</span>
+                </div>
+                <div class="snapshot-card">
+                    <strong>4</strong>
+                    <span>Need cleaning</span>
+                </div>
+                <div class="snapshot-card">
+                    <strong>2</strong>
+                    <span>Under maintenance</span>
                 </div>
             </div>
         </div>
