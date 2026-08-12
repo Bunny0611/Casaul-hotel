@@ -38,11 +38,11 @@
 
     <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
-            <div class="text-sm text-gray-700">Tick the checkboxes to select rooms, then delete them in bulk. Use the header checkbox to select all.</div>
+            <div></div>
             <div class="flex items-center gap-3">
                 <span id="bulkSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span>
-                <button type="button" onclick="confirmBulkDelete()" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700">
-                    <i class="fas fa-trash mr-2"></i>Delete Selected
+                <button type="button" onclick="confirmBulkDelete()" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected rooms">
+                    <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>
@@ -92,17 +92,17 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status))' class='inline-flex items-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100'>
-                                        <i class='fas fa-edit mr-2'></i>Edit
+                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
+                                        <i class='fas fa-edit'></i>
                                     </button>
-                                    <button type="button" onclick="changeStatus({{ $room->id }})" class="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100">
-                                        <i class="fas fa-exchange-alt mr-2"></i>Status
+                                    <button type="button" onclick="changeStatus({{ $room->id }})" class="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 transition hover:bg-emerald-100" aria-label="Change room status">
+                                        <i class="fas fa-exchange-alt"></i>
                                     </button>
                                     <form action="{{ route('admin.rooms.destroy', $room->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this room?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100">
-                                            <i class="fas fa-trash mr-2"></i>Delete
+                                        <button type="submit" class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700 transition hover:bg-red-100" aria-label="Delete room">
+                                            <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
                                 </div>
