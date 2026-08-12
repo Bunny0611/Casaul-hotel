@@ -4,9 +4,15 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
+
+use App\Models\Message;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
 
 // --- Public Routes ---
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -30,18 +36,66 @@ Route::get('/guest/login', [AuthController::class, 'showGuestLoginForm'])->name(
 Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.login.submit');
 Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
 
+// --- Guest Profile ---
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [HomeController::class, 'profile'])->name('profile');
+    Route::get('/profile/records', [HomeController::class, 'records'])->name('profile.records');
+});
+
+// --- Admin Logout ---
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
 // --- Employee Portal ---
 Route::prefix('employee')->name('employee.')->group(function () {
     Route::redirect('/', '/employee/dashboard')->name('index');
     Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
+    Route::view('/reservation', 'employee.reservation', [
+        'reservations' => collect([]),
+        'rooms' => collect([]),
+    ])->name('reservation');
+    Route::view('/checkin', 'employee.checkin')->name('checkin');
+    Route::view('/room-status', 'employee.room-status')->name('room-status');
+    Route::get('/guest-requests', function () {
+        $requests = session('employee_guest_requests', [
+            [
+                'id' => 1,
+                'title' => 'Room 305 - Extra Towels',
+                'requested_at' => '10:15 AM',
+                'status' => 'Pending',
+            ],
+            [
+                'id' => 2,
+                'title' => 'Room 208 - Late Checkout',
+                'requested_at' => '9:40 AM',
+                'status' => 'Approved',
+            ],
+            [
+                'id' => 3,
+                'title' => 'Room 101 - Wake-up Call',
+                'requested_at' => '7:30 AM',
+                'status' => 'Done',
+            ],
+        ]);
+
+        return view('employee.guest-requests', compact('requests'));
+    })->name('guest-requests');
+    Route::post('/guest-requests/{id}/resolve', [
+        AdminController::class,
+        'resolveGuestRequest',
+    ])->name('guest-requests.resolve');
+    Route::get('/messages', function () {
+        $messages = Message::latest()->get();
+
+        return view('employee.messages', compact('messages'));
+    })->name('messages');
+
     Route::view('/reservation', 'employee.reservation', ['reservations' => collect([]), 'rooms' => collect([])])->name('reservation');
     Route::view('/checkin', 'employee.checkin')->name('checkin');
     Route::view('/room-status', 'employee.room-status')->name('room-status');
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
     Route::post('/guest-requests/{id}/resolve', [AdminController::class, 'resolveGuestRequest'])->name('guest-requests.resolve');
     Route::get('/messages', [AdminController::class, 'employeeMessages'])->name('messages');
+
     Route::post('/messages', [AdminController::class, 'storeEmployeeMessage'])->name('messages.store');
 });
 
@@ -96,3 +150,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> f7a9e056cf50a077c77772e82df7e7c7f84d1525
