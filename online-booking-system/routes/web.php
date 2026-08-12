@@ -39,8 +39,10 @@ Route::prefix('employee')->name('employee.')->group(function () {
     Route::view('/reservation', 'employee.reservation', ['reservations' => collect([]), 'rooms' => collect([])])->name('reservation');
     Route::view('/checkin', 'employee.checkin')->name('checkin');
     Route::view('/room-status', 'employee.room-status')->name('room-status');
-    Route::view('/guest-requests', 'employee.guest-requests')->name('guest-requests');
-    Route::view('/messages', 'employee.messages')->name('messages'); 
+    Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
+    Route::post('/guest-requests/{id}/resolve', [AdminController::class, 'resolveGuestRequest'])->name('guest-requests.resolve');
+    Route::get('/messages', [AdminController::class, 'employeeMessages'])->name('messages');
+    Route::post('/messages', [AdminController::class, 'storeEmployeeMessage'])->name('messages.store');
 });
 
 // --- Protected Admin Routes (requires authentication) ---

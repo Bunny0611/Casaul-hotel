@@ -173,6 +173,18 @@ class AdminController extends Controller
         return view('admin.messages', compact('messages'));
     }
 
+    public function employeeMessages()
+    {
+        $messages = Message::latest()->get();
+        return view('employee.messages', compact('messages'));
+    }
+
+    public function employeeGuestRequests()
+    {
+        $requests = session()->get('employee_guest_requests', []);
+        return view('employee.guest-requests', compact('requests'));
+    }
+
     public function replyMessage(Request $request, $id)
     {
         $message = Message::findOrFail($id);
