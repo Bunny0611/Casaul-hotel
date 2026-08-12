@@ -260,11 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             return context.label;
                         }
                     }
-<<<<<<< HEAD
-                }
-=======
                 },
->>>>>>> 567910577cfeffed3b9fcc998ab381d3b8efecfd
             },
             scales: {
                 x: { display: false },
