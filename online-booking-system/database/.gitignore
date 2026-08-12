@@ -1,1 +1,5 @@
-*.sqlite*
+# The shared SQLite database is committed so collaborators receive the same data.
+# Only transient SQLite journal files are ignored.
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm

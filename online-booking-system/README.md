@@ -16,18 +16,24 @@ Hotel booking system for CASAUL Hotel with staff login, reservations, rooms, hou
 1. `composer install`
 2. `npm install`
 3. Copy `.env.example` to `.env`, generate key: `php artisan key:generate`
-4. Create the database file: `php -r "touch('database/database.sqlite');"`
-5. Build the database with default accounts: `php artisan migrate --seed`
+4. **Delete any local `database/database.sqlite` file you may have created earlier, then `git pull`.** The shared `database/database.sqlite` is committed to the repo, so pulling it gives you the same data (rooms, reservations, accounts) as everyone else.
+5. If you do not get the database file from git (first-time setup before it was committed), create it manually and seed defaults: `php -r "touch('database/database.sqlite');"` then `php artisan migrate --seed`.
 
-The seeder creates these staff accounts (password: `password`):
+### Keeping the database in sync
 
-| Role        | Email                    |
-|-------------|--------------------------|
-| Admin       | admin@casaul.com         |
-| Employee    | employee@casaul.com      |
-| Housekeeping| housekeeping@casaul.com  |
+The SQLite database is a **shared file committed to git** so all collaborators read the same data:
 
-Admins create additional accounts (employee / housekeeping / other admins) from **Manage Account** in the admin dashboard. Created accounts can log in from any device using their email and password.
+- The seeder creates these staff accounts (password: `password`):
+
+  | Role        | Email                    |
+  |-------------|--------------------------|
+  | Admin       | admin@casaul.com         |
+  | Employee    | employee@casaul.com      |
+  | Housekeeping| housekeeping@casaul.com  |
+
+- Admins create additional accounts (employee / housekeeping / other admins) from **Manage Account** in the admin dashboard. Created accounts can log in from any device using their email and password.
+- **After creating/changing accounts (or any data), commit and push the `database/database.sqlite` file** so collaborators get the update when they `git pull`.
+- Collaborators who modified their local DB should overwrite with the repo version (`git checkout database/database.sqlite`) before pulling to avoid conflicts.
 
 ## About Laravel
 
