@@ -1,11 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
+use App\Models\Message;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 // --- Public Routes ---
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -38,7 +39,7 @@ Route::prefix('employee')->name('employee.')->middleware('auth')->group(function
     Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
     Route::view('/reservation', 'employee.reservation', [
         'reservations' => collect([]),
-        'rooms' => collect([])
+        'rooms' => collect([]),
     ])->name('reservation');
     Route::view('/checkin', 'employee.checkin')->name('checkin');
     Route::view('/room-status', 'employee.room-status')->name('room-status');
@@ -67,14 +68,15 @@ Route::prefix('employee')->name('employee.')->middleware('auth')->group(function
         return view('employee.guest-requests', compact('requests'));
     })->name('guest-requests');
     Route::post('/guest-requests/{id}/resolve', [
-        \App\Http\Controllers\AdminController::class,
-        'resolveGuestRequest'
+        AdminController::class,
+        'resolveGuestRequest',
     ])->name('guest-requests.resolve');
     Route::get('/messages', function () {
-        $messages = \App\Models\Message::latest()->get();
+        $messages = Message::latest()->get();
+
         return view('employee.messages', compact('messages'));
     })->name('messages');
-    Route::post('/messages', [\App\Http\Controllers\AdminController::class, 'storeEmployeeMessage'])->name('messages.store');
+    Route::post('/messages', [AdminController::class, 'storeEmployeeMessage'])->name('messages.store');
 });
 
 // --- Admin Portal ---
