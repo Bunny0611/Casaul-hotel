@@ -50,6 +50,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
     Route::put('/rooms/{id}', [AdminController::class, 'updateRoom'])->name('rooms.update');
     Route::patch('/rooms/{id}/status', [AdminController::class, 'updateRoomStatus'])->name('rooms.status');
+    Route::match(['post', 'delete'], '/rooms/bulk-delete', [AdminController::class, 'bulkDestroyRooms'])->name('rooms.bulkDestroy');
     Route::delete('/rooms/{id}', [AdminController::class, 'destroyRoom'])->name('rooms.destroy');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');

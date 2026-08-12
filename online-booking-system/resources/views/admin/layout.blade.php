@@ -70,6 +70,20 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        @media (max-width: 767px) {
+            .sidebar {
+                width: min(80vw, 18rem);
+            }
+
+            .header-search {
+                width: 100%;
+            }
+
+            .main-content-panel {
+                padding: 1rem;
+            }
+        }
         
         .status-available { background: #10b981; }
         .status-occupied { background: #ef4444; }
@@ -92,7 +106,7 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <div class="flex h-screen overflow-hidden">
+    <div class="flex min-h-screen overflow-hidden">
         <!-- Sidebar -->
         <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto md:static flex flex-col">
             <div class="p-6">
@@ -150,31 +164,33 @@
         <div id="sidebarBackdrop" class="fixed inset-0 z-40 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col overflow-hidden md:ml-0">
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden md:ml-0">
             <!-- Header -->
-            <header class="header text-white px-6 py-4 flex items-center justify-between shadow-lg">
-                <div class="flex items-center gap-4">
-                    <button id="sidebarToggle" class="md:hidden p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div>
-                        <h2 class="text-xl font-semibold">Welcome, {{ auth()->user()->name }}!</h2>
+            <header class="header text-white px-4 py-4 sm:px-6 shadow-lg">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-3">
+                        <button id="sidebarToggle" class="md:hidden p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-semibold">Welcome, {{ auth()->user()->name }}!</h2>
+                        </div>
                     </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <input type="text" placeholder="Search..." class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-64">
-                        <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
-                    </div>
-                    <div class="flex items-center space-x-2 bg-white/20 px-4 py-2 rounded-lg">
-                        <i class="fas fa-user-circle text-2xl"></i>
-                        <span class="font-medium">{{ auth()->user()->name }}</span>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4">
+                        <div class="relative header-search w-full sm:w-64">
+                            <input type="text" placeholder="Search..." class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-full">
+                            <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
+                        </div>
+                        <div class="flex items-center justify-center space-x-2 bg-white/20 px-3 py-2 rounded-lg text-sm sm:text-base">
+                            <i class="fas fa-user-circle text-xl sm:text-2xl"></i>
+                            <span class="font-medium truncate max-w-[8rem] sm:max-w-none">{{ auth()->user()->name }}</span>
+                        </div>
                     </div>
                 </div>
             </header>
             
             <!-- Content Area -->
-            <main class="flex-1 overflow-y-auto p-6">
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 main-content-panel">
                 @if(session('success'))
                     <div class="bg-green-500 text-white px-6 py-3 rounded-lg mb-6 animate-fade-in">
                         <i class="fas fa-check-circle mr-2"></i>

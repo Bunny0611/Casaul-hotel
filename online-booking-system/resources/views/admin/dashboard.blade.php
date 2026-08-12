@@ -2,11 +2,11 @@
 
 @section('content')
 <div class="animate-fade-in">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
+    <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
     
     
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-lg p-6 card-hover transition-all duration-300">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4 sm:gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 card-hover transition-all duration-300">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-gray-500 text-sm">Total Revenue</p>
@@ -104,25 +104,25 @@
     
 
     
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-lg p-6 h-[420px] lg:h-[380px]">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Reservation Status <span class="text-sm font-normal text-gray-400">(Overview)</span></h3>
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 h-[320px] sm:h-[420px] lg:h-[380px]">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-4">Reservation Status <span class="text-sm font-normal text-gray-400">(Overview)</span></h3>
             <div class="h-[calc(100%-3rem)]">
                 <canvas id="reservationChart" class="h-full w-full"></canvas>
             </div>
         </div>
         
-        <div class="bg-white rounded-xl shadow-lg p-6 h-[420px] lg:h-[380px]">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Room Type Distribution <span class="text-sm font-normal text-gray-400">(By Type)</span></h3>
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 h-[320px] sm:h-[420px] lg:h-[380px]">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-4">Room Type Distribution <span class="text-sm font-normal text-gray-400">(By Type)</span></h3>
             <div class="h-[calc(100%-3rem)]">
                 <canvas id="roomTypeChart" class="h-full w-full"></canvas>
             </div>
         </div>
     </div>
     
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-800">Latest Customer Receipts</h3>
+    <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 overflow-hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-800">Latest Customer Receipts</h3>
             <a href="{{ route('admin.reservations') }}" class="text-sm text-[#ff6b35] hover:underline">
                 View All <i class="fas fa-arrow-right ml-1"></i>
             </a>

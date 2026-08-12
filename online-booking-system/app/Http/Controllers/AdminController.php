@@ -74,7 +74,7 @@ class AdminController extends Controller
 
     public function rooms()
     {
-        $rooms = Room::all();
+        $rooms = Room::orderBy('room_number')->paginate(5);
         return view('admin.rooms', compact('rooms'));
     }
 
@@ -124,6 +124,30 @@ class AdminController extends Controller
         $room = Room::findOrFail($id);
         $room->delete();
         return redirect()->route('admin.rooms')->with('success', 'Room deleted successfully!');
+    }
+
+    public function bulkDestroyRooms(Request $request)
+    {
+        $ids = $request->input('room_ids', []);
+
+        if (is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        $roomIds = collect($ids)
+            ->filter(fn($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!count($roomIds)) {
+            return redirect()->route('admin.rooms')->with('success', 'No rooms selected for deletion.');
+        }
+
+        $deleted = Room::whereIn('id', $roomIds)->delete();
+
+        return redirect()->route('admin.rooms')->with('success', $deleted . ' room(s) deleted successfully!');
     }
 
     public function reservations()
