@@ -7,6 +7,28 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## CASAUL Hotel Management System
+
+Hotel booking system for CASAUL Hotel with staff login, reservations, rooms, housekeeping, and admin-managed accounts.
+
+### Setup (for collaborators)
+
+1. `composer install`
+2. `npm install`
+3. Copy `.env.example` to `.env`, generate key: `php artisan key:generate`
+4. Create the database file: `php -r "touch('database/database.sqlite');"`
+5. Build the database with default accounts: `php artisan migrate --seed`
+
+The seeder creates these staff accounts (password: `password`):
+
+| Role        | Email                    |
+|-------------|--------------------------|
+| Admin       | admin@casaul.com         |
+| Employee    | employee@casaul.com      |
+| Housekeeping| housekeeping@casaul.com  |
+
+Admins create additional accounts (employee / housekeeping / other admins) from **Manage Account** in the admin dashboard. Created accounts can log in from any device using their email and password.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

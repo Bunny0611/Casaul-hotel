@@ -41,6 +41,12 @@ class AuthController extends Controller
             ->first();
 
         if ($user && Hash::check($credentials['password'], $user->password)) {
+            if (! $user->is_active) {
+                return back()->withErrors([
+                    'email' => 'This account has been deactivated. Please contact the administrator.',
+                ])->onlyInput('email');
+            }
+
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 

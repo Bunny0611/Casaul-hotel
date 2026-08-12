@@ -62,6 +62,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/reports/print', [AdminController::class, 'printReports'])->name('reports.print');
     Route::get('/notifications', [AdminController::class, 'notifications'])->name('notifications');
     Route::get('/manage-account', [AdminController::class, 'manageAccount'])->name('manage-account');
+    Route::post('/manage-account', [AdminController::class, 'storeAccount'])->name('manage-account.store');
+    Route::put('/manage-account/{id}', [AdminController::class, 'updateAccountUser'])->name('manage-account.update');
+    Route::patch('/manage-account/{id}/status', [AdminController::class, 'updateUserStatus'])->name('manage-account.status');
+    Route::delete('/manage-account/{id}', [AdminController::class, 'destroyUser'])->name('manage-account.destroy');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings/account', [AdminController::class, 'updateAccount'])->name('settings.account');
 });
