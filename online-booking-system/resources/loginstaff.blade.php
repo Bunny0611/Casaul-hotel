@@ -133,21 +133,23 @@
             <h1>CASAUL HOTEL</h1>
             <p>Admin Management Portal</p>
         </div>
-        
+
         @if($errors->any())
             <div class="error-msg">
                 <i class="fas fa-exclamation-circle"></i>
                 <span>{{ $errors->first('email') }}</span>
             </div>
         @endif
-        
+
         @if(session('status'))
             <div class="error-msg" style="background:#f0fdf4; border-color:#bbf7d0; color:#16a34a;">
                 <i class="fas fa-check-circle"></i>
                 <span>{{ session('status') }}</span>
             </div>
         @endif
-        
+
+        {{-- show login form only to guests --}}
+        @guest
         <form method="POST" action="{{ route('login.submit') }}">
             @csrf
             <div class="form-group">
@@ -180,18 +182,60 @@
                     <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
                 </div>
             </div>
-            <div class="remember-group">
-                <input id="remember" type="checkbox" name="remember">
-                <label for="remember">Remember me</label>
-            </div>
             <button type="submit" class="login-btn">
                 <i class="fas fa-sign-in-alt"></i>
                 Sign In
             </button>
         </form>
+        @endguest
+
+        {{-- profile icon & dropdown for authenticated users --}}
+        @auth
+            <div style="margin-top:8px;display:flex;justify-content:center">
+                <div class="relative" style="width:100%;max-width:320px;">
+                    <button id="profileToggle" class="login-btn" style="display:flex;align-items:center;gap:10px;justify-content:center;text-decoration:none;padding:10px;width:auto;" type="button" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-user-circle" style="font-size:20px;"></i>
+                    </button>
+
+                    <div id="profileMenu" style="display:none;position:absolute;right:0;min-width:220px;margin-top:8px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);overflow:hidden;z-index:50;">
+                        <div style="padding:12px 14px;border-bottom:1px solid #f3f4f6;">
+                            <div style="font-weight:700">{{ auth()->user()->name }}</div>
+                            <div style="font-size:13px;color:#6b7280">{{ auth()->user()->email }}</div>
+                        </div>
+                        <a href="{{ route('accommodations') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100">View Accommodation</a>
+                        <a href="{{ route('records') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100">View Records</a>
+                        <a href="{{ route('profile.edit') }}" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-100">View / Edit Profile</a>
+                        <form method="POST" action="{{ route('logout') }}" style="margin:0;">
+                            @csrf
+                            <button type="submit" class="block w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100" style="background:transparent;border:none;">Logout</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                (function(){
+                    const btn = document.getElementById('profileToggle');
+                    const menu = document.getElementById('profileMenu');
+                    btn && btn.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        const showing = menu.style.display === 'block';
+                        menu.style.display = showing ? 'none' : 'block';
+                        btn.setAttribute('aria-expanded', String(!showing));
+                    });
+                    document.addEventListener('click', function(){ if(menu) menu.style.display = 'none'; });
+                })();
+            </script>
+        @endauth
+
         <div class="login-footer">
             <a href="{{ route('home') }}"><i class="fas fa-arrow-left"></i> Back to Website</a>
             <p>&copy; {{ date('Y') }} CASAUL Hotel. All rights reserved.</p>
         </div>
+
+        @if(session('registered'))
+            <script>window.location.href = "{{ route('home') }}";</script>
+        @endif
+    </div>
 </body>
 </html>

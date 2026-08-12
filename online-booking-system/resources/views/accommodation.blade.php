@@ -61,15 +61,19 @@
 </section>
 
 <section class="reservation-highlight animate-on-scroll">
-    <div class="reservation-highlight-card">
-        <div class="reservation-highlight-copy">
+    <div class="reservation-highlight-card" style="background: rgba(255,255,255,0.96); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 24px 45px rgba(0,0,0,0.12); border-radius: 28px; padding: 2rem; max-width: 960px; margin: 0 auto;">
+        <div class="reservation-highlight-copy" style="display: flex; flex-direction: column; gap: 0.75rem;">
             <span class="eyebrow">Plan the Perfect Stay</span>
-            <h2>Ready to lock in your ideal room?</h2>
-            <p>Choose your room, amenities, event package, or dining plan in one seamless booking experience.</p>
+            <h2 style="margin: 0; font-size: clamp(1.75rem, 2.4vw, 2.6rem);">Ready to lock in your ideal room?</h2>
+            <p style="margin: 0; color: #4f4f4f; line-height: 1.7;">Choose your room, amenities, event package, or dining plan in one seamless booking experience.</p>
         </div>
-        <a href="{{ route('reservation') }}" class="btn"><span>Make Reservation</span></a>
+        <div style="margin-top: 1.75rem; display: flex; justify-content: flex-start;">
+            <a href="{{ route('reservation') }}" class="btn" style="padding: 0.95rem 1.8rem; border-radius: 999px; background: #3f51b5; color: #fff; text-decoration: none; box-shadow: 0 14px 30px rgba(63,81,181,0.18); transition: transform 0.2s ease;">
+                <span>Make Reservation</span>
+            </a>
+        </div>
     </div>
 </section>
-
+ 
 @endsection
 
