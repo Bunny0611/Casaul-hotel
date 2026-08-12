@@ -19,7 +19,7 @@
     @endif
 
     <div class="space-y-4">
-        @foreach($requests as $request)
+        @forelse($requests as $request)
             <div class="rounded-xl border border-gray-200 p-4">
                 <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -43,7 +43,11 @@
                     </div>
                 </div>
             </div>
-        @endforeach
+        @empty
+            <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                No guest requests found. Refresh the page after new requests arrive.
+            </div>
+        @endforelse
     </div>
 </div>
 @endsection

@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Room;
 use App\Models\Reservation;
 use App\Models\Message;
+use App\Models\User;
 
 class AdminController extends Controller
 {
@@ -169,6 +171,18 @@ class AdminController extends Controller
     {
         $messages = Message::latest()->get();
         return view('admin.messages', compact('messages'));
+    }
+
+    public function employeeMessages()
+    {
+        $messages = Message::latest()->get();
+        return view('employee.messages', compact('messages'));
+    }
+
+    public function employeeGuestRequests()
+    {
+        $requests = session()->get('employee_guest_requests', []);
+        return view('employee.guest-requests', compact('requests'));
     }
 
     public function replyMessage(Request $request, $id)
@@ -572,7 +586,124 @@ class AdminController extends Controller
 
     public function manageAccount()
     {
-        return view('admin.manage-account');
+        $this->ensureAdmin();
+
+        $users = User::with('creator')->latest()->get();
+
+        return view('admin.manage-account', [
+            'users' => $users,
+            'totalUsers' => $users->count(),
+            'totalAdmins' => $users->where('role', 'admin')->count(),
+            'totalEmployees' => $users->where('role', 'employee')->count(),
+            'totalHousekeeping' => $users->where('role', 'housekeeping')->count(),
+            'activeUsers' => $users->where('is_active', true)->count(),
+        ]);
+    }
+
+    public function storeAccount(Request $request)
+    {
+        $this->ensureAdmin();
+
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'middle_initial' => ['nullable', 'string', 'max:3'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'contact_no' => ['nullable', 'string', 'max:25'],
+            'role' => ['required', 'in:admin,employee,housekeeping'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $middleInitial = $validated['middle_initial'] ?? null;
+
+        User::create([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'middle_initial' => $middleInitial,
+            'name' => trim($validated['first_name'] . ' ' . ($middleInitial ? $middleInitial . '. ' : '') . $validated['last_name']),
+            'email' => $validated['email'],
+            'contact_no' => $validated['contact_no'] ?? null,
+            'role' => $validated['role'],
+            'password' => Hash::make($validated['password']),
+            'is_active' => true,
+            'created_by' => auth()->id(),
+        ]);
+
+        return redirect()->route('admin.manage-account')->with('success', 'Account created successfully! The user can now log in with their email and password.');
+    }
+
+    public function updateAccountUser(Request $request, $id)
+    {
+        $this->ensureAdmin();
+
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'middle_initial' => ['nullable', 'string', 'max:3'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'contact_no' => ['nullable', 'string', 'max:25'],
+            'role' => ['required', 'in:admin,employee,housekeeping'],
+            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $middleInitial = $validated['middle_initial'] ?? null;
+
+        $user->first_name = $validated['first_name'];
+        $user->last_name = $validated['last_name'];
+        $user->middle_initial = $middleInitial;
+        $user->name = trim($validated['first_name'] . ' ' . ($middleInitial ? $middleInitial . '. ' : '') . $validated['last_name']);
+        $user->email = $validated['email'];
+        $user->contact_no = $validated['contact_no'] ?? null;
+        $user->role = $validated['role'];
+
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return redirect()->route('admin.manage-account')->with('success', 'Account updated successfully!');
+    }
+
+    public function updateUserStatus(Request $request, $id)
+    {
+        $this->ensureAdmin();
+
+        $user = User::findOrFail($id);
+
+        if ($user->id === auth()->id()) {
+            return redirect()->route('admin.manage-account')->withErrors(['You cannot deactivate your own account.']);
+        }
+
+        $validated = $request->validate([
+            'is_active' => ['required', 'in:0,1'],
+        ]);
+
+        $user->update(['is_active' => (bool) $validated['is_active']]);
+
+        return redirect()->route('admin.manage-account')->with('success', 'Account status updated successfully!');
+    }
+
+    public function destroyUser($id)
+    {
+        $this->ensureAdmin();
+
+        $user = User::findOrFail($id);
+
+        if ($user->id === auth()->id()) {
+            return redirect()->route('admin.manage-account')->withErrors(['You cannot delete your own account.']);
+        }
+
+        $user->delete();
+
+        return redirect()->route('admin.manage-account')->with('success', 'Account deleted successfully!');
+    }
+
+    private function ensureAdmin(): void
+    {
+        abort_unless(auth()->check() && auth()->user()->role === 'admin', 403, 'Only administrators can manage accounts.');
     }
 
     public function settings()

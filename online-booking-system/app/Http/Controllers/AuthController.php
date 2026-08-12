@@ -45,6 +45,12 @@ class AuthController extends Controller
             ->first();
 
         if ($user && Hash::check($credentials['password'], $user->password)) {
+            if (! $user->is_active) {
+                return back()->withErrors([
+                    'email' => 'This account has been deactivated. Please contact the administrator.',
+                ])->onlyInput('email');
+            }
+
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
@@ -94,34 +100,31 @@ class AuthController extends Controller
      */
     public function guestRegister(Request $request)
     {
-        $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'middle_initial' => ['required', 'string', 'max:3'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'contact_no' => ['required', 'string', 'max:25'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|confirmed|min:6',
         ]);
 
         $user = User::create([
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'middle_initial' => $validated['middle_initial'],
-            'email' => $validated['email'],
-            'contact_no' => $validated['contact_no'],
-            'name' => trim($validated['first_name'].' '.$validated['middle_initial'].' '.$validated['last_name']),
-            'password' => Hash::make($validated['password']),
-            'role' => 'guest',
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
         ]);
 
+        // auto-login and secure session
         Auth::login($user);
         $request->session()->regenerate();
 
+<<<<<<< HEAD
         return redirect()->intended(route('profile'));
+=======
+        return redirect()->route('home');
+>>>>>>> 9bf0e2af202095ba6597495b577172feed0a3429
     }
 
     /**
-     * Log the admin out of the application.
+     * Log the user out of the application.
      */
     public function logout(Request $request)
     {

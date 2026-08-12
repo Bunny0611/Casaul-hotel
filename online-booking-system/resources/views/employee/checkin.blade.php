@@ -139,17 +139,17 @@
         border: 1px solid #e2e8f0;
         border-radius: 1.5rem;
         background: #ffffff;
-        box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08);
-        padding: 1.75rem;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        padding: 1.25rem;
         display: flex;
         flex-direction: column;
-        max-height: 720px;
+        max-height: 620px;
         min-height: 0;
     }
 
     .check-form-body {
         overflow-y: auto;
-        max-height: 560px;
+        max-height: 460px;
         flex: 1;
         min-height: 0;
         padding-right: 4px;
@@ -157,11 +157,11 @@
     }
 
     .check-form-body::-webkit-scrollbar {
-        width: 8px;
+        width: 7px;
     }
 
     .check-form-body::-webkit-scrollbar-thumb {
-        background: rgba(100, 116, 139, 0.35);
+        background: rgba(100, 116, 139, 0.3);
         border-radius: 999px;
     }
 
@@ -169,7 +169,8 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
+        gap: 1rem;
     }
 
     .check-form-header h3 {
@@ -311,19 +312,21 @@
     .checkin-action-btn,
     .checkout-action-btn {
         border-radius: 999px;
-        padding: 0.95rem 1.5rem;
+        padding: 0.7rem 1.1rem;
         font-weight: 700;
+        font-size: 0.9rem;
         border: none;
         cursor: pointer;
+        min-width: 110px;
     }
 
     .checkin-action-btn {
-        background: #10b981;
+        background: #059669;
         color: #ffffff;
     }
 
     .checkout-action-btn {
-        background: #ef4444;
+        background: #dc2626;
         color: #ffffff;
     }
 

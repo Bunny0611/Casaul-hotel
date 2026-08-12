@@ -7,6 +7,34 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## CASAUL Hotel Management System
+
+Hotel booking system for CASAUL Hotel with staff login, reservations, rooms, housekeeping, and admin-managed accounts.
+
+### Setup (for collaborators)
+
+1. `composer install`
+2. `npm install`
+3. Copy `.env.example` to `.env`, generate key: `php artisan key:generate`
+4. **Delete any local `database/database.sqlite` file you may have created earlier, then `git pull`.** The shared `database/database.sqlite` is committed to the repo, so pulling it gives you the same data (rooms, reservations, accounts) as everyone else.
+5. If you do not get the database file from git (first-time setup before it was committed), create it manually and seed defaults: `php -r "touch('database/database.sqlite');"` then `php artisan migrate --seed`.
+
+### Keeping the database in sync
+
+The SQLite database is a **shared file committed to git** so all collaborators read the same data:
+
+- The seeder creates these staff accounts (password: `password`):
+
+  | Role        | Email                    |
+  |-------------|--------------------------|
+  | Admin       | admin@casaul.com         |
+  | Employee    | employee@casaul.com      |
+  | Housekeeping| housekeeping@casaul.com  |
+
+- Admins create additional accounts (employee / housekeeping / other admins) from **Manage Account** in the admin dashboard. Created accounts can log in from any device using their email and password.
+- **After creating/changing accounts (or any data), commit and push the `database/database.sqlite` file** so collaborators get the update when they `git pull`.
+- Collaborators who modified their local DB should overwrite with the repo version (`git checkout database/database.sqlite`) before pulling to avoid conflicts.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

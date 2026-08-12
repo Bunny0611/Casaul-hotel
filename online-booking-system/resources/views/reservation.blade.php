@@ -325,7 +325,7 @@
                         </div>
                     </div>
                     <div class="summary-item-card-right">
-                        <span class="summary-item-price">₱0</span>
+                        <span class="summary-item-price" id="summaryAmenitiesPrice">₱0</span>
                         <button type="button" class="summary-edit-btn">Edit</button>
                     </div>
                 </article>
@@ -338,7 +338,7 @@
                         </div>
                     </div>
                     <div class="summary-item-card-right">
-                        <span class="summary-item-price">₱0</span>
+                        <span class="summary-item-price" id="summaryEventPrice">₱0</span>
                         <button type="button" class="summary-edit-btn">Edit</button>
                     </div>
                 </article>
@@ -351,7 +351,7 @@
                         </div>
                     </div>
                     <div class="summary-item-card-right">
-                        <span class="summary-item-price">₱0</span>
+                        <span class="summary-item-price" id="summaryDiningPrice">₱0</span>
                         <button type="button" class="summary-edit-btn">Edit</button>
                     </div>
                 </article>
@@ -454,6 +454,9 @@
         const summaryItems = document.getElementById('summaryItems');
         const summaryEvent = document.getElementById('summaryEvent');
         const summaryDining = document.getElementById('summaryDining');
+        const summaryAmenitiesPrice = document.getElementById('summaryAmenitiesPrice');
+        const summaryEventPrice = document.getElementById('summaryEventPrice');
+        const summaryDiningPrice = document.getElementById('summaryDiningPrice');
         const summaryTotal = document.getElementById('summaryTotal');
         const confirmBtn = document.getElementById('confirmReservationBtn');
         const clearBtn = document.getElementById('clearReservationBtn');
@@ -494,6 +497,26 @@
             });
         });
 
+        const summaryEditButtons = document.querySelectorAll('.summary-edit-btn');
+        summaryEditButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const title = this.closest('.summary-item-card').querySelector('.summary-item-title').textContent.trim().toLowerCase();
+                let targetId = 'room-tab';
+
+                if (title.startsWith('amenities')) {
+                    targetId = 'amenities-tab';
+                } else if (title.startsWith('event')) {
+                    targetId = 'event-tab';
+                } else if (title.startsWith('dining')) {
+                    targetId = 'dining-tab';
+                }
+
+                tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === targetId));
+                panels.forEach(panel => panel.classList.toggle('active', panel.id === targetId));
+                document.getElementById(targetId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
         const updateSummary = () => {
             summaryRoom.textContent = selectedRoom ? selectedRoom : 'None';
             summaryRoomDetails.textContent = selectedRoom ? `${checkIn.value || 'Date'} – ${checkOut.value || 'Date'} • ${guestCount.value} Guests` : 'Choose a room and dates';
@@ -501,6 +524,9 @@
             summaryItems.textContent = selectedAmenities.length > 0 ? `${selectedAmenities.length} selected` : '0 selected';
             summaryEvent.textContent = selectedEvent ? selectedEvent.title : 'None';
             summaryDining.textContent = selectedDining ? selectedDining.title : 'None';
+            summaryAmenitiesPrice.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + item.price, 0).toLocaleString()}`;
+            summaryEventPrice.textContent = `₱${(selectedEvent ? selectedEvent.price : 0).toLocaleString()}`;
+            summaryDiningPrice.textContent = `₱${(selectedDining ? selectedDining.price : 0).toLocaleString()}`;
 
             confirmReservationId.textContent = selectedRoom ? `RES-${Math.floor(Math.random() * 9000) + 1000}` : 'RES-0000';
             confirmRoom.textContent = selectedRoom ? selectedRoom : 'None';
