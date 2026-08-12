@@ -47,6 +47,10 @@
             flex-shrink: 0;
         }
 
+        .nav-item span {
+            white-space: nowrap;
+        }
+
         .animate-fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }

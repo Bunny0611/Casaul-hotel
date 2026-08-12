@@ -925,14 +925,15 @@ nav a:hover{
     background: rgba(15, 23, 42, 0.72);
     backdrop-filter: blur(8px);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 20px;
+    padding: 36px 24px 24px;
     z-index: 1200;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     transition: all 0.25s ease;
+    overflow-y: auto;
 }
 
 .auth-modal-backdrop.open {
@@ -945,9 +946,55 @@ nav a:hover{
     width: min(100%, 460px);
     background: white;
     border-radius: 24px;
-    padding: 28px 24px 24px;
+    padding: 28px 24px 16px;
     position: relative;
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+    max-height: calc(100vh - 72px);
+    overflow-y: auto;
+    display: block;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(30, 58, 95, 0.35) rgba(226, 232, 240, 0.65);
+}
+
+.auth-content {
+    overflow: visible;
+    padding-right: 0;
+}
+
+.auth-panel {
+    overflow: visible;
+    padding-right: 0;
+}
+
+.auth-form {
+    display: grid;
+    gap: 10px;
+}
+
+.auth-switch-text {
+    margin: 16px 0 0;
+}
+
+.auth-modal::-webkit-scrollbar {
+    width: 8px;
+}
+
+.auth-modal::-webkit-scrollbar {
+    width: 8px;
+}
+
+.auth-modal::-webkit-scrollbar-track {
+    background: rgba(229, 231, 235, 0.8);
+    border-radius: 999px;
+}
+
+.auth-modal::-webkit-scrollbar-thumb {
+    background: rgba(30, 58, 95, 0.35);
+    border-radius: 999px;
+}
+
+.auth-modal::-webkit-scrollbar-thumb:hover {
+    background: rgba(30, 58, 95, 0.55);
 }
 
 .auth-close-btn {
@@ -1717,14 +1764,176 @@ nav a:hover{
     margin-top: 20px;
 }
 
-@media (max-width: 1150px) {
-    .reservation-shell {
-        grid-template-columns: 1fr;
+    .confirmation-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.65);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        padding: 24px;
+        z-index: 50;
     }
-    .reservation-summary {
-        position: static;
+
+    .confirmation-modal.open {
+        display: flex;
     }
-}
+
+    .confirmation-card {
+        width: min(560px, 100%);
+        background: #ffffff;
+        border-radius: 28px;
+        padding: 28px;
+        box-shadow: 0 32px 80px rgba(15, 23, 42, 0.18);
+        animation: modalPop 0.22s ease-out;
+    }
+
+    /* Confirmation form layout */
+    .confirmation-form .confirmation-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+
+    .confirmation-form .confirmation-col {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .confirmation-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .confirmation-label {
+        font-size: 0.75rem;
+        color: #475569;
+        font-weight: 700;
+    }
+
+    .confirmation-input {
+        border-radius: 12px;
+        padding: 10px 12px;
+        border: 1px solid rgba(15,23,42,0.06);
+        background: #fff;
+        color: #0f172a;
+        font-weight: 600;
+    }
+
+    .confirmation-total-row {
+        margin-top: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .confirmation-total-label {
+        color: #64748b;
+        font-weight: 700;
+    }
+
+    .confirmation-total-amount {
+        font-size: 1.15rem;
+        color: #0f172a;
+    }
+
+    .confirmation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .confirmation-header h3 {
+        margin: 0;
+        font-size: 1.35rem;
+    }
+
+    .confirmation-close {
+        border: none;
+        background: transparent;
+        color: #0f172a;
+        font-size: 1.5rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .confirmation-text {
+        margin: 0 0 20px;
+        color: #475569;
+        line-height: 1.7;
+    }
+
+    .confirmation-details {
+        display: grid;
+        gap: 14px;
+        padding: 16px 0 20px;
+        border-top: 1px solid #f1f5f9;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .confirmation-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        color: #334155;
+        font-size: 0.98rem;
+    }
+
+    .confirmation-row span {
+        color: #64748b;
+    }
+
+    .confirmation-row.confirmation-total {
+        font-size: 1rem;
+        font-weight: 700;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 16px;
+        margin-top: 8px;
+    }
+
+    .confirmation-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 22px;
+        flex-wrap: wrap;
+    }
+
+    .confirm-submit-btn,
+    .confirm-cancel-btn,
+    .summary-actions button {
+        border: none;
+        border-radius: 999px;
+        padding: 12px 20px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .confirm-submit-btn {
+        background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%);
+        color: #ffffff;
+    }
+
+    .confirm-cancel-btn {
+        background: #eef2ff;
+        color: #0f172a;
+    }
+
+    @keyframes modalPop {
+        from {
+            opacity: 0;
+            transform: translateY(12px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
 
 @media (max-width: 760px) {
     .reservation-tabs {

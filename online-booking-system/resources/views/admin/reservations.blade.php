@@ -41,6 +41,7 @@
         </div>
     </div>
 
+<<<<<<< HEAD
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
             <div class="flex items-center justify-between">
@@ -100,6 +101,28 @@
                     <i class="fas fa-times-circle text-lg"></i>
                 </div>
             </div>
+=======
+    <div class="grid grid-cols-5 gap-3 pb-2">
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Total</p>
+            <p class="mt-2 text-xl font-semibold text-gray-800">{{ $stats['total'] }}</p>
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Pending</p>
+            <p class="mt-2 text-xl font-semibold text-amber-600">{{ $stats['pending'] }}</p>
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Confirmed</p>
+            <p class="mt-2 text-xl font-semibold text-green-600">{{ $stats['confirmed'] }}</p>
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Completed</p>
+            <p class="mt-2 text-xl font-semibold text-blue-600">{{ $stats['completed'] }}</p>
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Cancelled</p>
+            <p class="mt-2 text-xl font-semibold text-red-600">{{ $reservations->where('status', 'cancelled')->count() }}</p>
+>>>>>>> 567910577cfeffed3b9fcc998ab381d3b8efecfd
         </div>
     </div>
 
@@ -204,6 +227,7 @@
     </div>
 </div>
 
+<<<<<<< HEAD
 <form id="reservationStatusForm" action="" method="POST">
     @csrf
     @method('PATCH')
@@ -288,6 +312,13 @@
         </form>
     </div>
 </div>
+=======
+    <form id="reservationStatusForm" action="" method="POST">
+        @csrf
+        @method('PATCH')
+        <input type="hidden" name="status" id="reservationStatus">
+    </form>
+>>>>>>> 567910577cfeffed3b9fcc998ab381d3b8efecfd
 
 <script>
     function changeReservationStatus(id, status) {

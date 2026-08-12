@@ -48,8 +48,39 @@ Route::prefix('employee')->name('employee.')->middleware('auth')->group(function
     ])->name('reservation');
     Route::view('/checkin', 'employee.checkin')->name('checkin');
     Route::view('/room-status', 'employee.room-status')->name('room-status');
-    Route::view('/guest-requests', 'employee.guest-requests')->name('guest-requests');
-    Route::view('/messages', 'employee.messages')->name('messages');
+    Route::get('/guest-requests', function () {
+        $requests = session('employee_guest_requests', [
+            [
+                'id' => 1,
+                'title' => 'Room 305 - Extra Towels',
+                'requested_at' => '10:15 AM',
+                'status' => 'Pending',
+            ],
+            [
+                'id' => 2,
+                'title' => 'Room 208 - Late Checkout',
+                'requested_at' => '9:40 AM',
+                'status' => 'Approved',
+            ],
+            [
+                'id' => 3,
+                'title' => 'Room 101 - Wake-up Call',
+                'requested_at' => '7:30 AM',
+                'status' => 'Done',
+            ],
+        ]);
+
+        return view('employee.guest-requests', compact('requests'));
+    })->name('guest-requests');
+    Route::post('/guest-requests/{id}/resolve', [
+        \App\Http\Controllers\AdminController::class,
+        'resolveGuestRequest'
+    ])->name('guest-requests.resolve');
+    Route::get('/messages', function () {
+        $messages = \App\Models\Message::latest()->get();
+        return view('employee.messages', compact('messages'));
+    })->name('messages');
+    Route::post('/messages', [\App\Http\Controllers\AdminController::class, 'storeEmployeeMessage'])->name('messages.store');
 });
 
 // --- Admin Portal ---

@@ -12,15 +12,14 @@
         </span>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="mb-4">
                 <h3 class="text-lg font-semibold text-slate-900">Cleaning Workflow</h3>
                 <p class="mt-1 text-sm text-slate-500">A quick view of each stage in the room cleaning process.</p>
             </div>
 
-            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                <div class="rounded-xl border border-red-100 bg-red-50 p-3">
+            <div class="flex gap-3 overflow-x-auto pb-1">
+                <div class="flex min-w-[150px] flex-1 flex-col rounded-xl border border-red-100 bg-red-50 p-3">
                     <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-red-100 text-red-600">
                         <i class="fas fa-trash"></i>
                     </div>
@@ -28,7 +27,7 @@
                     <p class="text-xs text-red-500">Needs attention</p>
                 </div>
 
-                <div class="rounded-xl border border-amber-100 bg-amber-50 p-3">
+                <div class="flex min-w-[150px] flex-1 flex-col rounded-xl border border-amber-100 bg-amber-50 p-3">
                     <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
                         <i class="fas fa-broom"></i>
                     </div>
@@ -36,7 +35,7 @@
                     <p class="text-xs text-amber-500">In progress</p>
                 </div>
 
-                <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                <div class="flex min-w-[150px] flex-1 flex-col rounded-xl border border-emerald-100 bg-emerald-50 p-3">
                     <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
                         <i class="fas fa-check"></i>
                     </div>
@@ -44,7 +43,7 @@
                     <p class="text-xs text-emerald-500">Ready for review</p>
                 </div>
 
-                <div class="rounded-xl border border-sky-100 bg-sky-50 p-3">
+                <div class="flex min-w-[150px] flex-1 flex-col rounded-xl border border-sky-100 bg-sky-50 p-3">
                     <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
                         <i class="fas fa-user-check"></i>
                     </div>
@@ -52,7 +51,7 @@
                     <p class="text-xs text-sky-500">Quality checked</p>
                 </div>
 
-                <div class="rounded-xl border border-violet-100 bg-violet-50 p-3">
+                <div class="flex min-w-[150px] flex-1 flex-col rounded-xl border border-violet-100 bg-violet-50 p-3">
                     <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
                         <i class="fas fa-door-open"></i>
                     </div>
@@ -61,7 +60,9 @@
                 </div>
             </div>
         </div>
+    </div>
 
+<div class="space-y-6">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="mb-4">
                 <h3 class="text-lg font-semibold text-slate-900">Update Room Status</h3>
@@ -105,9 +106,8 @@
                 <button type="submit" class="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 sm:w-auto">
                     <i class="fas fa-sync-alt mr-2"></i> Update Status
                 </button>
-            </form>
+</form>
         </div>
-    </div>
 
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">

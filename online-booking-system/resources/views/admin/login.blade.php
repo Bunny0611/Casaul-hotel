@@ -99,15 +99,14 @@
             @csrf
             <div class="form-group">
                 <label for="role">Login As</label>
-                <div class="input-wrap select-wrap">
+                <div class="input-wrap">
                     <i class="fas fa-user-tag"></i>
-                    <select id="role" name="role" required class="role-select">
+                    <select id="role" name="role" required>
                         <option value="" disabled {{ old('role') ? '' : 'selected' }}>Select Role</option>
                         <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrator</option>
                         <option value="housekeeping" {{ old('role') == 'housekeeping' ? 'selected' : '' }}>Housekeeping</option>
                         <option value="employee" {{ old('role') == 'employee' ? 'selected' : '' }}>Employee</option>
                     </select>
-                    <i class="fas fa-chevron-down select-arrow"></i>
                 </div>
                 @error('role')
                     <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -133,9 +132,16 @@
             </div>
             <button type="submit" class="login-btn">
                 <i class="fas fa-sign-in-alt"></i>
-                Sign In as Staff
+                Sign In
             </button>
         </form>
+
+        <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+            <p class="font-semibold text-slate-700">Demo staff accounts</p>
+            <p class="mt-1">Admin: admin@casaul.com / password</p>
+            <p>Employee: employee@casaul.com / password</p>
+            <p>Housekeeping: housekeeping@casaul.com / password</p>
+        </div>
 
         <div class="login-footer">
             <a href="{{ route('home') }}"><i class="fas fa-arrow-left"></i> Back to Website</a>

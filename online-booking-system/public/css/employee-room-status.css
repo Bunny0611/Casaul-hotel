@@ -91,19 +91,12 @@ body {
 }
 
 .summary-card {
-    background: #fffdfb;
+    background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 16px;
     padding: 0.75rem 0.8rem;
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
-
-.summary-card[data-tone="available"] { background: #f5fff7; }
-.summary-card[data-tone="reserved"] { background: #f7faff; }
-.summary-card[data-tone="occupied"] { background: #fff8f8; }
-.summary-card[data-tone="dirty"] { background: #f8fafc; }
-.summary-card[data-tone="cleaning"] { background: #faf7ff; }
-.summary-card[data-tone="maintenance"] { background: #fffdf6; }
 
 .summary-card-head {
     display: flex;
@@ -330,16 +323,17 @@ body {
 .insight-panel {
     margin-top: 1rem;
     border: 1px solid var(--border);
-    border-radius: 16px;
-    background: #fbfdff;
-    padding: 0.9rem;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+    padding: 1rem;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
 }
 
 .insight-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.85rem;
 }
 
 .insight-header h4 {
@@ -362,21 +356,24 @@ body {
 
 .insight-card {
     border: 1px solid #e2e8f0;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 0.8rem;
     background: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
 .insight-card strong {
     display: block;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     color: var(--text);
     margin-bottom: 0.2rem;
+    font-weight: 800;
 }
 
 .insight-card span {
     font-size: 0.82rem;
     color: var(--muted);
+    line-height: 1.4;
 }
 
 .summary-pill {
