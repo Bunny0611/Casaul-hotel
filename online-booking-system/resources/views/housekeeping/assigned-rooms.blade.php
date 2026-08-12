@@ -30,24 +30,24 @@
                 <span id="taskCount" class="inline-flex items-center rounded-full bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700">Total: 0 Rooms</span>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-[1100px]">
+            <div class="overflow-x-auto max-w-full">
+                <table class="w-full table-fixed min-w-0">
                     <thead>
                         <tr class="bg-gray-50">
-                            <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">Room</th>
-                            <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">Task</th>
-                            <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">Priority</th>
-                            <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">Assigned Staff</th>
-                            <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">Day</th>
-                            <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">Status</th>
-                            <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">Start Time</th>
-                            <th class="px-6 py-3 text-left text-xs uppercase text-gray-500">Finish Time</th>
-                            <th class="px-6 py-3 text-left text-xs uppercase text-gray-500 w-[220px]">Action</th>
+                            <th class="px-2 py-2 text-left text-xs uppercase text-gray-500">Room</th>
+                            <th class="px-2 py-2 text-left text-xs uppercase text-gray-500">Task</th>
+                            <th class="px-2 py-2 text-left text-xs uppercase text-gray-500">Priority</th>
+                            <th class="px-2 py-2 text-left text-xs uppercase text-gray-500">Assigned Staff</th>
+                            <th class="px-2 py-2 text-left text-xs uppercase text-gray-500">Day</th>
+                            <th class="px-2 py-2 text-left text-xs uppercase text-gray-500">Status</th>
+                            <th class="px-2 py-2 text-left text-xs uppercase text-gray-500">Start Time</th>
+                            <th class="px-2 py-2 text-left text-xs uppercase text-gray-500">Finish Time</th>
+                            <th class="px-2 py-2 text-left text-xs uppercase text-gray-500">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                         <tr id="noTasksRow" style="display:none;">
-                            <td colspan="9" class="px-6 py-8 text-center text-sm text-gray-500">No tasks match this priority.</td>
+                            <td colspan="9" class="px-2 py-8 text-center text-sm text-gray-500">No tasks match this priority.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -56,7 +56,7 @@
     </div>
 
     <div id="assignModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center px-6 py-4 border-b">
                 <h2 class="text-2xl font-bold text-gray-800">Assign Cleaning Task</h2>
                 <button onclick="closeModal()" class="text-2xl text-gray-500 hover:text-red-600">&times;</button>
@@ -202,20 +202,20 @@
             const priorityClass = getPriorityClass(task.priority);
 
             row.innerHTML = `
-                <td class="px-6 py-4">
+                <td class="px-3 py-3 break-words">
                     <div class="font-semibold text-gray-800">${escapeHtml(task.roomLabel)}</div>
                     <div class="text-xs text-gray-500">${escapeHtml(task.roomType)} · ${escapeHtml(task.occupancy)}</div>
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-3 py-3 break-words">
                     <div class="flex flex-col">
                         <span class="font-semibold text-gray-800">${escapeHtml(task.task)}</span>
                         <span class="text-xs text-gray-500">${escapeHtml(task.note || 'New task assigned')}</span>
                     </div>
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-3 py-3">
                     <span class="${priorityClass}">${escapeHtml(getPriorityLabel(task.priority))}</span>
                 </td>
-                <td class="px-6 py-4">
+                <td class="px-3 py-3 break-words">
                     <div class="flex items-center gap-2">
                         <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-700">${escapeHtml(initials)}</div>
                         <div>
@@ -224,27 +224,27 @@
                         </div>
                     </div>
                 </td>
-                <td class="px-6 py-4">
-                    <span class="text-sm font-medium text-gray-700">${escapeHtml(task.day || 'Not set')}</span>
+                <td class="px-2 py-2 max-w-[80px] break-words">
+                    <span class="text-xs font-medium text-gray-700">${escapeHtml(task.day || 'Not set')}</span>
                 </td>
-                <td class="px-6 py-4">
-                    <span data-status class="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">Pending</span>
+                <td class="px-2 py-2 max-w-[90px] break-words">
+                    <span data-status class="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-[10px] font-semibold text-yellow-700">Pending</span>
                 </td>
-                <td class="px-6 py-4">
-                    <span data-timestamp="start" class="text-sm text-gray-500">Not started</span>
+                <td class="px-2 py-2 max-w-[80px] break-words">
+                    <span data-timestamp="start" class="text-xs text-gray-500">Not started</span>
                 </td>
-                <td class="px-6 py-4">
-                    <span data-timestamp="end" class="text-sm text-gray-500">—</span>
+                <td class="px-2 py-2 max-w-[80px] break-words">
+                    <span data-timestamp="end" class="text-xs text-gray-500">—</span>
                 </td>
-                <td class="px-6 py-4 w-[260px]" data-action-cell>
+                <td class="px-2 py-2 max-w-[120px]" data-action-cell>
                     <div class="flex flex-wrap gap-2">
-                        <button type="button" data-action="start" onclick="startCleaning(this)" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 whitespace-nowrap">Start Cleaning</button>
-                        <button type="button" data-action="complete" onclick="completeCleaning(this)" class="hidden rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700 whitespace-nowrap">Complete</button>
-                        <button type="button" onclick="deleteTask(this)" class="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 whitespace-nowrap">Delete</button>
+                        <button type="button" data-action="start" onclick="startCleaning(this)" class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-blue-700 whitespace-nowrap">Start</button>
+                        <button type="button" data-action="complete" onclick="completeCleaning(this)" class="hidden rounded-lg bg-green-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-green-700 whitespace-nowrap">Complete</button>
+                        <button type="button" onclick="deleteTask(this)" class="rounded-lg border border-red-200 px-3 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50 whitespace-nowrap">Delete</button>
                     </div>
                 </td>`;
 
-            if (noTasksRow) noTasksRow.remove();
+            if (noTasksRow) noTasksRow.style.display = 'none';
             tbody.appendChild(row);
         }
 

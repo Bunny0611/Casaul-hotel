@@ -2,32 +2,30 @@
 
 @section('content')
 
+@php
+$stats = [
+    'pending' => 0,
+    'resolved' => 0,
+    'total' => 0,
+];
+@endphp
 
-<main class="flex-1 overflow-y-auto p-6">
+<main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50">
 
+<div class="animate-fade-in max-w-7xl mx-auto space-y-6">
 
-<div class="animate-fade-in">
-
-
-
-<div class="flex justify-between items-center mb-6">
-
-
-<h2 class="text-3xl font-bold text-gray-800">
-Guest Requests
-</h2>
-
-
-<button
-onclick="openRequestModal()"
-class="btn-primary text-white px-5 py-3 rounded-lg">
-
-<i class="fas fa-plus mr-2"></i>
-Add Request
-
-</button>
-
-
+<div class="rounded-3xl bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 text-white p-5 sm:p-8 shadow-xl">
+<div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+<div>
+<p class="text-xs sm:text-sm uppercase tracking-[0.2em] text-slate-300">Housekeeping Desk</p>
+<h2 class="text-2xl sm:text-3xl font-bold mt-2">Guest Requests</h2>
+<p class="text-sm sm:text-base text-slate-200 mt-2">A clear view of guest messages and service needs for the day.</p>
+</div>
+<div class="bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/10 min-w-[140px] text-center">
+<p class="text-sm text-slate-300">Active requests</p>
+<p class="text-2xl font-semibold">{{ $stats['pending'] }}</p>
+</div>
+</div>
 </div>
 
 
@@ -36,46 +34,46 @@ Add Request
 
 <!-- SUMMARY CARDS -->
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
 
 
 
-<div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+<div class="bg-gradient-to-br from-amber-50 to-white rounded-2xl shadow-lg p-5 sm:p-6 card-hover border border-amber-100">
 
-<p class="text-gray-500">
-Pending Requests
+<p class="text-gray-500 text-sm uppercase tracking-wide">
+Pending Messages
 </p>
 
-<h2 class="text-3xl font-bold">
-8
+<h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mt-2">
+{{ $stats['pending'] }}
 </h2>
 
 </div>
 
 
 
-<div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+<div class="bg-gradient-to-br from-emerald-50 to-white rounded-2xl shadow-lg p-5 sm:p-6 card-hover border border-emerald-100">
 
-<p class="text-gray-500">
-Completed Requests
+<p class="text-gray-500 text-sm uppercase tracking-wide">
+Resolved Messages
 </p>
 
-<h2 class="text-3xl font-bold">
-24
+<h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mt-2">
+{{ $stats['resolved'] }}
 </h2>
 
 </div>
 
 
 
-<div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+<div class="bg-gradient-to-br from-sky-50 to-white rounded-2xl shadow-lg p-5 sm:p-6 card-hover border border-sky-100">
 
-<p class="text-gray-500">
-Total Requests
+<p class="text-gray-500 text-sm uppercase tracking-wide">
+Total Messages
 </p>
 
-<h2 class="text-3xl font-bold">
-32
+<h2 class="text-2xl sm:text-3xl font-bold text-gray-800 mt-2">
+{{ $stats['total'] }}
 </h2>
 
 </div>
@@ -84,180 +82,31 @@ Total Requests
 </div>
 
 
+<div class="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4 sm:gap-6">
 
-
-
-<!-- COMMON REQUESTS -->
-
-
-<div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-
-
-<h3 class="text-lg font-semibold mb-5">
-Common Guest Requests
-</h3>
-
-
-
-<div class="grid grid-cols-2 md:grid-cols-4 gap-5">
-
-
-<div class="border rounded-xl p-5 text-center">
-
-<i class="fas fa-bed text-blue-500 text-3xl"></i>
-
-<p class="mt-3">
-Extra Pillows
-</p>
-
+<div class="bg-white rounded-3xl shadow-lg p-5 sm:p-6 border border-gray-100">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
+<h3 class="text-lg font-semibold text-gray-800">Guest Message Box</h3>
+<span class="text-sm text-gray-500">Today</span>
 </div>
 
-
-<div class="border rounded-xl p-5 text-center">
-
-<i class="fas fa-tshirt text-green-500 text-3xl"></i>
-
-<p class="mt-3">
-Towels
-</p>
-
+<div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 sm:p-8 text-center">
+<p class="text-base sm:text-lg font-semibold text-gray-700">No guest messages yet</p>
+<p class="text-sm text-gray-500 mt-2">Requests from guests will appear here once they arrive.</p>
+</div>
 </div>
 
-
-<div class="border rounded-xl p-5 text-center">
-
-<i class="fas fa-box text-orange-500 text-3xl"></i>
-
-<p class="mt-3">
-Amenities
-</p>
-
+<div class="bg-gradient-to-br from-slate-50 to-white rounded-3xl shadow-lg p-5 sm:p-6 border border-gray-100">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
+<h3 class="text-lg font-semibold text-gray-800">Notification Center</h3>
+<span class="text-sm text-gray-500">Live</span>
 </div>
 
-
-<div class="border rounded-xl p-5 text-center">
-
-<i class="fas fa-water text-purple-500 text-3xl"></i>
-
-<p class="mt-3">
-Drinking Water
-</p>
-
+<div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 sm:p-8 text-center">
+<p class="text-base sm:text-lg font-semibold text-gray-700">No notifications yet</p>
+<p class="text-sm text-gray-500 mt-2">Housekeeping notifications will appear here when needed.</p>
 </div>
-
-
 </div>
-
-
-</div>
-
-
-
-
-
-<!-- REQUEST TABLE -->
-
-
-<div class="bg-white rounded-xl shadow-lg p-6">
-
-
-<h3 class="text-lg font-semibold mb-5">
-Request Tracking
-</h3>
-
-
-
-<div class="overflow-x-auto">
-
-
-<table class="w-full min-w-[900px]">
-
-
-<thead>
-
-<tr class="bg-gray-50">
-
-<th class="px-6 py-3 text-left">
-Room
-</th>
-
-<th class="px-6 py-3 text-left">
-Guest
-</th>
-
-<th class="px-6 py-3 text-left">
-Request
-</th>
-
-<th class="px-6 py-3 text-left">
-Time
-</th>
-
-<th class="px-6 py-3 text-left">
-Status
-</th>
-
-<th class="px-6 py-3 text-left">
-Action
-</th>
-
-</tr>
-
-</thead>
-
-
-
-<tbody>
-
-
-<tr class="border-b">
-
-
-<td class="px-6 py-4">
-Room 101
-</td>
-
-<td class="px-6 py-4">
-John Smith
-</td>
-
-<td class="px-6 py-4">
-Extra Pillows
-</td>
-
-<td class="px-6 py-4">
-10:30 AM
-</td>
-
-<td class="px-6 py-4">
-
-<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
-Pending
-</span>
-
-</td>
-
-<td class="px-6 py-4">
-
-<button class="bg-green-600 text-white px-4 py-2 rounded-lg">
-Complete
-</button>
-
-</td>
-
-
-</tr>
-
-
-
-</tbody>
-
-
-</table>
-
-
-</div>
-
 
 </div>
 
@@ -289,7 +138,7 @@ class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-6">
 
 
 <h2 class="text-2xl font-bold">
-Add Guest Request
+Send New Guest Message
 </h2>
 
 
@@ -340,7 +189,7 @@ class="border rounded-lg px-4 py-2">
 
 <textarea
 rows="4"
-placeholder="Additional notes..."
+placeholder="Write the guest's message here..."
 class="w-full border rounded-lg px-4 py-3"></textarea>
 
 
@@ -365,7 +214,7 @@ class="btn-primary text-white px-6 py-2 rounded-lg">
 
 <i class="fas fa-save mr-2"></i>
 
-Save Request
+Send Message
 
 </button>
 

@@ -98,6 +98,21 @@
         <form method="POST" action="{{ route('login.submit') }}">
             @csrf
             <div class="form-group">
+                <label for="role">Login As</label>
+                <div class="input-wrap">
+                    <i class="fas fa-user-tag"></i>
+                    <select id="role" name="role" required>
+                        <option value="" disabled {{ old('role') ? '' : 'selected' }}>Select Role</option>
+                        <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrator</option>
+                        <option value="housekeeping" {{ old('role') == 'housekeeping' ? 'selected' : '' }}>Housekeeping</option>
+                        <option value="employee" {{ old('role') == 'employee' ? 'selected' : '' }}>Employee</option>
+                    </select>
+                </div>
+                @error('role')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div class="form-group">
                 <label for="email">Email Address</label>
                 <div class="input-wrap">
                     <i class="fas fa-envelope"></i>
@@ -111,26 +126,22 @@
                     <input id="password" type="password" name="password" required autocomplete="current-password" placeholder="Enter your password">
                 </div>
             </div>
-            <div class="form-group">
-                <label for="role">Role</label>
-                <div class="input-wrap">
-                    <i class="fas fa-user-shield"></i>
-                    <select id="role" name="role" required>
-                        <option value="admin">Admin</option>
-                        <option value="employee">Employee</option>
-                        <option value="housekeeping">Housekeeping</option>
-                    </select>
-                </div>
-            </div>
             <div class="remember-group">
                 <input id="remember" type="checkbox" name="remember">
                 <label for="remember">Remember me</label>
             </div>
             <button type="submit" class="login-btn">
                 <i class="fas fa-sign-in-alt"></i>
-                Sign In as Staff
+                Sign In
             </button>
         </form>
+
+        <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+            <p class="font-semibold text-slate-700">Demo staff accounts</p>
+            <p class="mt-1">Admin: admin@casaul.com / password</p>
+            <p>Employee: employee@casaul.com / password</p>
+            <p>Housekeeping: housekeeping@casaul.com / password</p>
+        </div>
 
         <div class="login-footer">
             <a href="{{ route('home') }}"><i class="fas fa-arrow-left"></i> Back to Website</a>

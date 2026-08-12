@@ -187,6 +187,42 @@ class AdminController extends Controller
         return redirect()->route('admin.messages')->with('success', 'Reply sent successfully!');
     }
 
+    public function storeEmployeeMessage(Request $request)
+    {
+        $validated = $request->validate([
+            'recipient' => ['required', 'string', 'max:255'],
+            'subject' => ['nullable', 'string', 'max:255'],
+            'message' => ['required', 'string'],
+        ]);
+
+        Message::create([
+            'customer_name' => $request->user()?->name ?? 'Employee',
+            'customer_email' => $request->user()?->email ?? 'employee@casaul.com',
+            'message' => $validated['message'],
+        ]);
+
+        return redirect()->route('employee.messages')->with('success', 'Message sent successfully.');
+    }
+
+    public function resolveGuestRequest(Request $request, $id)
+    {
+        $requests = $request->session()->get('employee_guest_requests', []);
+
+        if (!empty($requests)) {
+            foreach ($requests as &$item) {
+                if (($item['id'] ?? null) == $id) {
+                    $item['status'] = 'Resolved';
+                    break;
+                }
+            }
+            unset($item);
+
+            $request->session()->put('employee_guest_requests', $requests);
+        }
+
+        return redirect()->route('employee.guest-requests')->with('success', 'Guest request resolved.');
+    }
+
     public function reports(Request $request)
     {
         $from = $request->query('from');
