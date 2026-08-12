@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 
 // --- Public Routes ---
@@ -45,7 +47,7 @@ Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
 // --- Employee Portal ---
 Route::prefix('employee')->name('employee.')->group(function () {
-    Route::view('/', 'employee.employee')->name('index');
+    Route::redirect('/', '/employee/dashboard')->name('index');
     Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
     Route::view('/reservation', 'employee.reservation', [
         'reservations' => collect([]),
@@ -140,12 +142,16 @@ Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
+
     return redirect('/');
 })->name('logout');
 
-Route::middleware('auth')->group(function(){
-    Route::get('/profile/edit', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+Route::middleware('auth')->group(function () {
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
+<<<<<<< HEAD
+=======
 
 
+>>>>>>> f7a9e056cf50a077c77772e82df7e7c7f84d1525

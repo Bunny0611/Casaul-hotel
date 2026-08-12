@@ -15,10 +15,161 @@
 
         .sidebar {
             background: linear-gradient(180deg, #800000 0%, #5c0000 100%);
+            min-width: 10rem;
+            width: min(10rem, 100%);
         }
 
         .header {
             background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 0.9rem;
+            min-height: auto;
+        }
+
+        .header .header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .header .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 0 1 auto;
+            min-width: 0;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .header .search-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1 1 220px;
+            min-width: 0;
+            max-width: 18rem;
+            width: 100%;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .header .search-wrapper input {
+            flex: 1 1 100%;
+            width: 100%;
+            transition: width 0.2s ease, opacity 0.2s ease;
+        }
+
+        .mobile-search-button {
+            display: none;
+            border: none;
+            background: rgba(255,255,255,0.18);
+            color: white;
+            padding: 0.55rem;
+            border-radius: 999px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header .search-wrapper.active {
+            max-width: 100%;
+            flex: 1 1 100%;
+            width: 100%;
+        }
+
+        .header .search-wrapper.active input {
+            display: block;
+            opacity: 1;
+            width: 100%;
+        }
+
+        .header .profile-box .font-medium {
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: min(18rem, 100%);
+            }
+
+            .header {
+                padding: 0.65rem 0.75rem;
+            }
+
+            .header-left {
+                justify-content: space-between;
+                flex: 1 1 100%;
+                min-width: 0;
+            }
+
+            .header-right {
+                justify-content: flex-end;
+                gap: 0.75rem;
+                align-items: center;
+                flex-wrap: nowrap;
+                min-width: 0;
+            }
+
+            .header .search-wrapper {
+                max-width: none;
+                flex: 0 0 auto;
+                width: auto;
+                min-width: 0;
+            }
+
+            .header .search-wrapper input {
+                display: none;
+                opacity: 0;
+                width: 0;
+                padding: 0;
+                margin: 0;
+                border: none;
+                visibility: hidden;
+                min-width: 0;
+            }
+
+            .header .search-wrapper.active {
+                flex: 1 1 auto;
+                width: auto;
+                max-width: calc(100% - 4.5rem);
+                min-width: 0;
+            }
+
+            .header .search-wrapper.active input {
+                display: block;
+                opacity: 1;
+                visibility: visible;
+                width: 100%;
+                padding: 0.55rem 0.9rem;
+                border-radius: 999px;
+                margin: 0;
+                border: 1px solid rgba(255,255,255,0.2);
+                box-sizing: border-box;
+            }
+
+            .mobile-search-button {
+                display: inline-flex;
+            }
+
+            .header .profile-box {
+                width: auto;
+                padding: 0.6rem 0.8rem;
+            }
+
+            .header .profile-box span {
+                display: none;
+            }
+
+            .nav-item span {
+                white-space: normal;
+            }
         }
 
         .nav-item {
@@ -118,27 +269,29 @@
 
         <div class="flex-1 flex flex-col overflow-hidden md:ml-0">
             <header class="header text-white px-6 py-4 flex items-center justify-between shadow-lg">
-                <div class="flex items-center gap-4">
+                <div class="header-left">
                     <button id="sidebarToggle" class="md:hidden rounded-lg bg-white/20 p-2 transition-colors hover:bg-white/30">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <div>
-                        <h2 class="text-xl font-semibold">@yield('pageTitle', 'Welcome to CASAUL Hotel Management')</h2>
+                    <div class="min-w-0">
+                        <h2 class="text-xl font-semibold text-white truncate">@yield('pageTitle', 'Welcome to CASAUL Hotel Management')</h2>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <input type="text" placeholder="Search..." class="w-64 rounded-lg bg-white/20 px-4 py-2 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white/50">
-                        <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
+                <div class="header-right">
+                    <div class="search-wrapper relative">
+                        <button type="button" class="mobile-search-button" id="mobileSearchToggle">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <input id="headerSearchInput" type="text" placeholder="Search..." class="w-full rounded-lg bg-white/20 px-4 py-2 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white/50">
                     </div>
-                    <div class="flex items-center space-x-2 rounded-lg bg-white/20 px-4 py-2">
+                    <div class="profile-box flex items-center rounded-lg bg-white/20 px-4 py-2 text-white">
                         <i class="fas fa-user-circle text-2xl"></i>
                         <span class="font-medium">Employee</span>
                     </div>
                 </div>
             </header>
 
-            <main class="flex-1 overflow-y-auto p-6">
+            <main class="flex-1 overflow-y-auto px-4 py-6 md:px-6">
                 @if(session('success'))
                     <div class="mb-6 rounded-lg bg-green-500 px-6 py-3 text-white animate-fade-in">
                         <i class="fas fa-check-circle mr-2"></i>
@@ -175,6 +328,26 @@
 
             if (backdrop) {
                 backdrop.addEventListener('click', closeSidebar);
+            }
+
+            const mobileSearchToggle = document.getElementById('mobileSearchToggle');
+            const searchWrapper = document.querySelector('.search-wrapper');
+            const searchInput = document.getElementById('headerSearchInput');
+
+            if (mobileSearchToggle && searchWrapper && searchInput) {
+                mobileSearchToggle.addEventListener('click', function () {
+                    searchWrapper.classList.toggle('active');
+                    if (searchWrapper.classList.contains('active')) {
+                        searchInput.style.display = 'block';
+                        searchInput.style.visibility = 'visible';
+                        searchInput.style.width = '100%';
+                        searchInput.focus();
+                    } else {
+                        searchInput.style.display = '';
+                        searchInput.style.visibility = '';
+                        searchInput.style.width = '';
+                    }
+                });
             }
         });
     </script>
