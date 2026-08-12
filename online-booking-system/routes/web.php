@@ -1,12 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
 use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 // --- Public Routes ---
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -34,7 +34,7 @@ Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
 // --- Employee Portal ---
 Route::prefix('employee')->name('employee.')->group(function () {
-    Route::view('/', 'employee.employee')->name('index');
+    Route::redirect('/', '/employee/dashboard')->name('index');
     Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
     Route::view('/reservation', 'employee.reservation', ['reservations' => collect([]), 'rooms' => collect([])])->name('reservation');
     Route::view('/checkin', 'employee.checkin')->name('checkin');
@@ -88,11 +88,11 @@ Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
+
     return redirect('/');
 })->name('logout');
 
-Route::middleware('auth')->group(function(){
-    Route::get('/profile/edit', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+Route::middleware('auth')->group(function () {
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
-
