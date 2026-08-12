@@ -106,6 +106,21 @@ class HomeController extends Controller
         return view('accommodation', compact('rooms'));
     }
 
+    public function profile()
+    {
+        return view('profile');
+    }
+
+    public function records()
+    {
+        $reservations = Reservation::with('room')
+            ->where('guest_email', auth()->user()->email)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('profile-records', compact('reservations'));
+    }
+
     public function roomDetail($slug)
     {
         $room = collect($this->featuredRooms())->firstWhere('slug', $slug);

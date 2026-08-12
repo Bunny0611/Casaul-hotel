@@ -20,8 +20,11 @@ class DatabaseSeeder extends Seeder
             'email' => 'admin@casaul.com',
         ], [
             'name' => 'Admin',
+            'first_name' => 'Admin',
+            'last_name' => 'User',
             'password' => bcrypt('password'),
             'role' => 'admin',
+            'is_active' => true,
         ]);
 
         // Create default housekeeping user
@@ -29,8 +32,11 @@ class DatabaseSeeder extends Seeder
             'email' => 'housekeeping@casaul.com',
         ], [
             'name' => 'Housekeeping',
+            'first_name' => 'Housekeeping',
+            'last_name' => 'Staff',
             'password' => bcrypt('password'),
             'role' => 'housekeeping',
+            'is_active' => true,
         ]);
 
         // Create default employee user
@@ -38,11 +44,15 @@ class DatabaseSeeder extends Seeder
             'email' => 'employee@casaul.com',
         ], [
             'name' => 'Employee',
+            'first_name' => 'Employee',
+            'last_name' => 'Staff',
             'password' => bcrypt('password'),
             'role' => 'employee',
+            'is_active' => true,
         ]);
 
         // Run room seeder
         $this->call(RoomSeeder::class);
     }
 }
+

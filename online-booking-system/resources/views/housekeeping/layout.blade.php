@@ -1,3 +1,4 @@
+﻿
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,7 +17,12 @@
     >
 
     <style>
+
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        * { font-family: 'Poppins', sans-serif; }
+
 
         * {
             font-family: 'Poppins', sans-serif;
@@ -164,7 +170,7 @@
             }
         }
     </style>
-</head>
+
 
 <body class="bg-gray-100">
 
@@ -237,6 +243,7 @@
                     <span>Maintenance Report</span>
                 </a>
 
+
                 <a
                     href="{{ route('housekeeping.cleaning-history') }}"
                     class="nav-item px-5 py-3.5
@@ -246,6 +253,10 @@
                     <span>Cleaning History</span>
                 </a>
 
+                <a href="{{ route('housekeeping.cleaning-history') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->routeIs('housekeeping.cleaning-history') ? 'active' : '' }}">
+                    <i class="fas fa-history w-6"></i>
+                    <span>Cleaning History</span>
+                </a>
             </nav>
 
             <div class="mt-auto pt-8 px-6 pb-6">

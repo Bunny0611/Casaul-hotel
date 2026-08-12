@@ -1,14 +1,13 @@
-```blade
 @extends('housekeeping.layout')
 
 @section('content')
 
 <style>
-
     .hk-dashboard {
         font-family: 'Poppins', sans-serif;
         color: #1f2937;
         animation: fadeIn 0.5s ease;
+        width: 100%;
     }
 
     @keyframes fadeIn {
@@ -16,11 +15,16 @@
             opacity: 0;
             transform: translateY(8px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
+
+    /* =========================================================
+       DASHBOARD HEADER
+    ========================================================= */
 
     .dashboard-header {
         background: linear-gradient(135deg, #800000, #5c0000);
@@ -39,7 +43,7 @@
         width: 220px;
         height: 220px;
         border-radius: 50%;
-        background: rgba(255,255,255,0.05);
+        background: rgba(255, 255, 255, 0.05);
         right: -60px;
         top: -80px;
     }
@@ -51,6 +55,10 @@
         gap: 25px;
         position: relative;
         z-index: 2;
+    }
+
+    .header-text {
+        flex: 1;
     }
 
     .header-label {
@@ -78,11 +86,12 @@
 
     .date-card {
         min-width: 150px;
-        background: rgba(255,255,255,0.12);
-        border: 1px solid rgba(255,255,255,0.15);
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 15px;
         padding: 15px 18px;
         backdrop-filter: blur(8px);
+        flex-shrink: 0;
     }
 
     .date-card .date-title {
@@ -99,6 +108,10 @@
         font-weight: 500;
     }
 
+    /* =========================================================
+       STATISTICS
+    ========================================================= */
+
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
@@ -111,7 +124,7 @@
         border: 1px solid #e5e7eb;
         border-radius: 18px;
         padding: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
         transition: all 0.25s ease;
         position: relative;
         overflow: hidden;
@@ -119,7 +132,7 @@
 
     .stat-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
     }
 
     .stat-card::before {
@@ -199,12 +212,16 @@
         color: #d97706;
     }
 
+    /* =========================================================
+       ROOMS SECTION
+    ========================================================= */
+
     .rooms-section {
         background: white;
         border: 1px solid #e5e7eb;
         border-radius: 20px;
         padding: 25px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     }
 
     .rooms-header {
@@ -213,6 +230,10 @@
         align-items: center;
         gap: 20px;
         margin-bottom: 25px;
+    }
+
+    .rooms-title {
+        flex: 1;
     }
 
     .rooms-title h2 {
@@ -227,6 +248,10 @@
         font-size: 13px;
         color: #6b7280;
     }
+
+    /* =========================================================
+       STATUS LEGEND
+    ========================================================= */
 
     .status-legend {
         display: flex;
@@ -278,6 +303,10 @@
         background: #f59e0b;
     }
 
+    /* =========================================================
+       ROOM GRID
+    ========================================================= */
+
     .rooms-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -295,7 +324,7 @@
 
     .room-card:hover {
         transform: translateY(-4px);
-        box-shadow: 0 12px 25px rgba(0,0,0,0.07);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.07);
     }
 
     .room-card.clean {
@@ -312,6 +341,10 @@
         background: #fffbeb;
         border-color: #fde68a;
     }
+
+    /* =========================================================
+       ROOM HEADER
+    ========================================================= */
 
     .room-top {
         display: flex;
@@ -336,23 +369,28 @@
         width: 12px;
         height: 12px;
         border-radius: 50%;
-        box-shadow: 0 0 0 5px rgba(255,255,255,0.7);
+        box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.7);
+        flex-shrink: 0;
     }
 
-    .clean .status-dot {
+    .room-card.clean .status-dot {
         background: #16a34a;
     }
 
-    .dirty .status-dot {
+    .room-card.dirty .status-dot {
         background: #dc2626;
     }
 
-    .in-progress .status-dot {
+    .room-card.in-progress .status-dot {
         background: #d97706;
     }
 
+    /* =========================================================
+       ROOM INFORMATION
+    ========================================================= */
+
     .room-info {
-        background: rgba(255,255,255,0.65);
+        background: rgba(255, 255, 255, 0.65);
         border-radius: 12px;
         padding: 12px;
         margin-bottom: 16px;
@@ -368,7 +406,7 @@
     }
 
     .info-row:not(:last-child) {
-        border-bottom: 1px solid rgba(0,0,0,0.05);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
 
     .info-label {
@@ -390,8 +428,12 @@
         font-size: 10px;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: .4px;
+        letter-spacing: 0.4px;
     }
+
+    /* =========================================================
+       STATUS FORM
+    ========================================================= */
 
     .status-form label {
         display: block;
@@ -423,8 +465,12 @@
 
     .status-select:focus {
         border-color: #800000;
-        box-shadow: 0 0 0 3px rgba(128,0,0,0.08);
+        box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.08);
     }
+
+    /* =========================================================
+       EMPTY STATE
+    ========================================================= */
 
     .empty-state {
         grid-column: 1 / -1;
@@ -446,6 +492,10 @@
         color: #64748b;
         font-size: 13px;
     }
+
+    /* =========================================================
+       RESPONSIVE
+    ========================================================= */
 
     @media (max-width: 1200px) {
         .stats-grid {
@@ -515,17 +565,30 @@
         .stat-number {
             font-size: 26px;
         }
+
+        .rooms-section {
+            padding: 15px;
+        }
+
+        .room-card {
+            padding: 16px;
+        }
     }
 </style>
 
 
 <div class="hk-dashboard">
 
+    <!-- =====================================================
+         DASHBOARD HEADER
+    ====================================================== -->
+
     <div class="dashboard-header">
 
         <div class="header-content">
 
-            <div>
+            <div class="header-text">
+
                 <div class="header-label">
                     Housekeeping Dashboard
                 </div>
@@ -538,9 +601,11 @@
                     Stay on top of room readiness, cleaning progress,
                     and priority tasks from one streamlined workspace.
                 </p>
+
             </div>
 
             <div class="date-card">
+
                 <div class="date-title">
                     Today
                 </div>
@@ -548,20 +613,29 @@
                 <div class="date-value">
                     {{ now()->format('F j, Y') }}
                 </div>
+
             </div>
 
         </div>
 
-</div>
+    </div>
+
+
+    <!-- =====================================================
+         STATISTICS
+    ====================================================== -->
 
     <div class="stats-grid">
 
+        <!-- Total Rooms -->
         <div class="stat-card total">
 
             <div class="stat-top">
+
                 <div class="stat-icon">
                     <i class="fas fa-door-open"></i>
                 </div>
+
             </div>
 
             <div class="stat-label">
@@ -575,12 +649,15 @@
         </div>
 
 
+        <!-- Clean Rooms -->
         <div class="stat-card clean">
 
             <div class="stat-top">
+
                 <div class="stat-icon">
                     <i class="fas fa-check-circle"></i>
                 </div>
+
             </div>
 
             <div class="stat-label">
@@ -594,12 +671,15 @@
         </div>
 
 
+        <!-- Dirty Rooms -->
         <div class="stat-card dirty">
 
             <div class="stat-top">
+
                 <div class="stat-icon">
                     <i class="fas fa-broom"></i>
                 </div>
+
             </div>
 
             <div class="stat-label">
@@ -613,12 +693,15 @@
         </div>
 
 
+        <!-- In Progress -->
         <div class="stat-card progress">
 
             <div class="stat-top">
+
                 <div class="stat-icon">
                     <i class="fas fa-spinner"></i>
                 </div>
+
             </div>
 
             <div class="stat-label">
@@ -632,12 +715,15 @@
         </div>
 
 
+        <!-- Occupied Rooms -->
         <div class="stat-card occupied">
 
             <div class="stat-top">
+
                 <div class="stat-icon">
                     <i class="fas fa-user-check"></i>
                 </div>
+
             </div>
 
             <div class="stat-label">
@@ -651,6 +737,11 @@
         </div>
 
     </div>
+
+
+    <!-- =====================================================
+         ROOM CLEANING STATUS
+    ====================================================== -->
 
     <div class="rooms-section">
 
@@ -688,6 +779,10 @@
         </div>
 
 
+        <!-- =================================================
+             ROOM CARDS
+        ================================================== -->
+
         <div class="rooms-grid">
 
             @forelse($rooms as $room)
@@ -703,9 +798,11 @@
 
                 <div class="room-card {{ $roomClass }}">
 
+                    <!-- Room Header -->
                     <div class="room-top">
 
                         <div>
+
                             <div class="room-number">
                                 {{ $room->room_number }}
                             </div>
@@ -713,6 +810,7 @@
                             <div class="room-type">
                                 {{ $room->room_type }}
                             </div>
+
                         </div>
 
                         <div class="status-dot"></div>
@@ -720,6 +818,7 @@
                     </div>
 
 
+                    <!-- Room Information -->
                     <div class="room-info">
 
                         <div class="info-row">
@@ -742,9 +841,11 @@
                             </span>
 
                             <span class="info-value">
+
                                 <span class="room-status">
                                     {{ ucfirst($room->status) }}
                                 </span>
+
                             </span>
 
                         </div>
@@ -765,7 +866,7 @@
                     </div>
 
 
-
+                    <!-- Update Cleaning Status -->
                     <form
                         method="POST"
                         action="{{ route('housekeeping.rooms.cleaning', $room->id) }}"
@@ -775,11 +876,12 @@
                         @csrf
                         @method('PATCH')
 
-                        <label>
+                        <label for="cleaning_status_{{ $room->id }}">
                             Update Cleaning Status
                         </label>
 
                         <select
+                            id="cleaning_status_{{ $room->id }}"
                             name="cleaning_status"
                             onchange="this.form.submit()"
                             class="status-select"
@@ -833,4 +935,3 @@
 </div>
 
 @endsection
-```

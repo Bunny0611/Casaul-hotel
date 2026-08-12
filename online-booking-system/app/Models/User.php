@@ -27,6 +27,8 @@ class User extends Authenticatable
         'contact_no',
         'password',
         'role',
+        'is_active',
+        'created_by',
     ];
 
     /**
@@ -40,6 +42,14 @@ class User extends Authenticatable
     ];
 
     /**
+     * The user who created this account (if created by an admin).
+     */
+    public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -49,6 +59,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 }
