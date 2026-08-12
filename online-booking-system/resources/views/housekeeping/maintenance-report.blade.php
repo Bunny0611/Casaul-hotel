@@ -6,27 +6,41 @@
 
      .maintenance-page {
     width: 100%;
-    min-height: 100%;
-    padding: 28px 32px 40px;
+    max-width: 100%;
+    min-height: 100vh;
     margin: 0;
+    padding: 28px 0 40px;
     background: #f6f7f9;
     color: #1f2937;
     box-sizing: border-box;
+    overflow-x: hidden;
 }
 
     .maintenance-container {
-        width: 100%;
-        max-width: 1600px;
-        margin: 0 auto;
-    }
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
 
-    .maintenance-header {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 25px;
-        margin-bottom: 28px;
-    }
+   .maintenance-header-container {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto 28px;
+    padding: 24px 30px;
+    background: #f8f9fb;
+    border: 1px solid #edf0f3;
+    border-radius: 16px;
+    box-sizing: border-box;
+}
+
+.maintenance-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+    margin-bottom: 0;
+}
 
     .header-label {
         margin: 0 0 7px;
@@ -312,10 +326,10 @@
     }
 
     .maintenance-table {
-        width: 100%;
-        min-width: 1050px;
-        border-collapse: collapse;
-    }
+    width: 100%;
+    min-width: 950px;
+    border-collapse: collapse;
+}
 
     .maintenance-table thead {
         background: #fafafa;
@@ -783,6 +797,10 @@
             grid-template-columns: repeat(2, 1fr);
         }
 
+         .maintenance-header-container {
+        padding: 22px 24px;
+        }
+
         .maintenance-header {
             align-items: flex-start;
             flex-direction: column;
@@ -821,30 +839,36 @@
     }
 
     @media (max-width: 650px) {
-        .maintenance-page {
-            padding: 18px 14px 30px;
-        }
 
-        .maintenance-title {
-            font-size: 25px;
-        }
+    .maintenance-page {
+        padding: 18px 14px 30px;
+    }
 
-        .maintenance-description {
-            font-size: 12px;
-        }
+    .maintenance-header-container {
+        padding: 20px 17px;
+        border-radius: 14px;
+    }
 
-        .header-actions {
-            flex-direction: column;
-            align-items: stretch;
-        }
+    .maintenance-title {
+        font-size: 25px;
+    }
 
-        .search-wrapper {
-            width: 100%;
-        }
+    .maintenance-description {
+        font-size: 12px;
+    }
 
-        .primary-button {
-            width: 100%;
-        }
+    .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-wrapper {
+        width: 100%;
+    }
+
+    .primary-button {
+        width: 100%;
+    }
 
         .statistics-grid {
             grid-template-columns: 1fr;
@@ -919,47 +943,53 @@
 
 
 <main class="maintenance-page">
-    <div class="maintenance-container">
 
-        <div class="maintenance-header">
+  <div class="maintenance-header-container">
 
-            <div>
-                <p class="header-label">Maintenance Overview</p>
+    <div class="maintenance-header">
 
-                <h1 class="maintenance-title">
-                    Maintenance Report
-                </h1>
+        <div>
+            <p class="header-label">
+                Maintenance Overview
+            </p>
 
-                <p class="maintenance-description">
-                    Track room repairs, pending issues, and completed
-                    maintenance work in one dashboard.
-                </p>
-            </div>
+            <h1 class="maintenance-title">
+                Maintenance Report
+            </h1>
 
-            <div class="header-actions">
-
-                <div class="search-wrapper">
-                    <i class="fas fa-search"></i>
-
-                    <input
-                        id="reportSearch"
-                        type="search"
-                        class="search-input"
-                        placeholder="Search reports..."
-                    >
-                </div>
-
-                <button
-                    type="button"
-                    onclick="openReportModal()"
-                    class="primary-button"
-                >
-                    <i class="fas fa-plus"></i>
-                    Create Report
-                </button>
-
-            </div>
+            <p class="maintenance-description">
+                Track room repairs, pending issues, and completed
+                maintenance work in one dashboard.
+            </p>
         </div>
+
+        <div class="header-actions">
+
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+
+                <input
+                    id="reportSearch"
+                    type="search"
+                    class="search-input"
+                    placeholder="Search reports..."
+                >
+            </div>
+
+            <button
+                type="button"
+                onclick="openReportModal()"
+                class="primary-button"
+            >
+                <i class="fas fa-plus"></i>
+                Create Report
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
         <div class="statistics-grid">
 

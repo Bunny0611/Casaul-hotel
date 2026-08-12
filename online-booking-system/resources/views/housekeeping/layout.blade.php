@@ -168,6 +168,7 @@
                 padding-left: 1rem !important;
                 padding-right: 1rem !important;
             }
+            
         }
     </style>
 
@@ -249,11 +250,6 @@
                     class="nav-item px-5 py-3.5
                     {{ request()->routeIs('housekeeping.cleaning-history') ? 'active' : '' }}"
                 >
-                    <i class="fas fa-history w-6"></i>
-                    <span>Cleaning History</span>
-                </a>
-
-                <a href="{{ route('housekeeping.cleaning-history') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->routeIs('housekeeping.cleaning-history') ? 'active' : '' }}">
                     <i class="fas fa-history w-6"></i>
                     <span>Cleaning History</span>
                 </a>

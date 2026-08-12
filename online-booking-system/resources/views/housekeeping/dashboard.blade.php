@@ -3,17 +3,29 @@
 @section('content')
 
 <style>
+    /* =========================================================
+       DASHBOARD
+    ========================================================= */
+
     .hk-dashboard {
+        width: 100%;
+        max-width: 100%;
         font-family: 'Poppins', sans-serif;
         color: #1f2937;
-        animation: fadeIn 0.5s ease;
-        width: 100%;
+        animation: fadeIn 0.4s ease;
+        box-sizing: border-box;
+    }
+
+    .hk-dashboard *,
+    .hk-dashboard *::before,
+    .hk-dashboard *::after {
+        box-sizing: border-box;
     }
 
     @keyframes fadeIn {
         from {
             opacity: 0;
-            transform: translateY(8px);
+            transform: translateY(6px);
         }
 
         to {
@@ -22,91 +34,79 @@
         }
     }
 
+
     /* =========================================================
-       DASHBOARD HEADER
+       HEADER
     ========================================================= */
 
     .dashboard-header {
+        width: 100%;
         background: linear-gradient(135deg, #800000, #5c0000);
-        border-radius: 20px;
-        padding: 30px;
+        border-radius: 18px;
+        padding: 26px 30px;
         color: white;
-        margin-bottom: 25px;
-        box-shadow: 0 10px 25px rgba(92, 0, 0, 0.12);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .dashboard-header::after {
-        content: "";
-        position: absolute;
-        width: 220px;
-        height: 220px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.05);
-        right: -60px;
-        top: -80px;
+        margin-bottom: 22px;
+        box-shadow: 0 8px 22px rgba(92, 0, 0, 0.12);
     }
 
     .header-content {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 25px;
-        position: relative;
-        z-index: 2;
+        gap: 20px;
     }
 
-    .header-text {
-        flex: 1;
+    .header-content > div:first-child {
+        min-width: 0;
     }
 
     .header-label {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
-        letter-spacing: 2px;
+        letter-spacing: 1.5px;
         text-transform: uppercase;
         color: #ffbd91;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
     .dashboard-header h1 {
         margin: 0;
-        font-size: 30px;
+        font-size: 27px;
         font-weight: 700;
+        line-height: 1.25;
     }
 
     .dashboard-header p {
-        margin: 8px 0 0;
+        margin: 7px 0 0;
         color: #f7d8cb;
-        font-size: 14px;
-        line-height: 1.6;
-        max-width: 650px;
+        font-size: 13px;
+        line-height: 1.5;
     }
 
     .date-card {
-        min-width: 150px;
-        background: rgba(255, 255, 255, 0.12);
+        min-width: 145px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.1);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 15px;
-        padding: 15px 18px;
-        backdrop-filter: blur(8px);
         flex-shrink: 0;
     }
 
-    .date-card .date-title {
-        font-size: 12px;
-        font-weight: 600;
+    .date-title {
+        font-size: 10px;
         text-transform: uppercase;
         letter-spacing: 1px;
         color: #ffbd91;
+        font-weight: 600;
     }
 
-    .date-card .date-value {
-        margin-top: 5px;
-        font-size: 14px;
+    .date-value {
+        margin-top: 4px;
+        font-size: 13px;
         font-weight: 500;
+        white-space: nowrap;
     }
+
 
     /* =========================================================
        STATISTICS
@@ -114,25 +114,21 @@
 
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 18px;
-        margin-bottom: 25px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 15px;
+        margin-bottom: 22px;
+        width: 100%;
     }
 
     .stat-card {
-        background: white;
+        min-width: 0;
+        background: #ffffff;
         border: 1px solid #e5e7eb;
-        border-radius: 18px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-        transition: all 0.25s ease;
+        border-radius: 14px;
+        padding: 17px;
         position: relative;
         overflow: hidden;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.035);
     }
 
     .stat-card::before {
@@ -140,26 +136,24 @@
         position: absolute;
         left: 0;
         top: 0;
+        bottom: 0;
         width: 4px;
-        height: 100%;
         background: #800000;
     }
 
     .stat-top {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
+        justify-content: flex-end;
     }
 
     .stat-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 17px;
+        font-size: 15px;
     }
 
     .stat-card.total .stat-icon {
@@ -188,15 +182,16 @@
     }
 
     .stat-label {
+        margin-top: 11px;
+        font-size: 12px;
         color: #6b7280;
-        font-size: 13px;
-        margin-top: 14px;
+        line-height: 1.4;
     }
 
     .stat-number {
-        font-size: 30px;
+        margin-top: 2px;
+        font-size: 25px;
         font-weight: 700;
-        margin-top: 3px;
         color: #111827;
     }
 
@@ -212,61 +207,74 @@
         color: #d97706;
     }
 
+    .stat-card.occupied .stat-number {
+        color: #7c3aed;
+    }
+
+
     /* =========================================================
-       ROOMS SECTION
+       ROOM TABLE SECTION
     ========================================================= */
 
     .rooms-section {
-        background: white;
+        width: 100%;
+        background: #ffffff;
         border: 1px solid #e5e7eb;
-        border-radius: 20px;
-        padding: 25px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        border-radius: 16px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
     }
 
     .rooms-header {
+        padding: 20px 22px;
+        border-bottom: 1px solid #e5e7eb;
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 20px;
-        margin-bottom: 25px;
     }
 
     .rooms-title {
-        flex: 1;
+        min-width: 0;
     }
 
     .rooms-title h2 {
         margin: 0;
-        font-size: 21px;
+        font-size: 19px;
         font-weight: 700;
         color: #111827;
+        line-height: 1.3;
     }
 
     .rooms-title p {
-        margin: 5px 0 0;
-        font-size: 13px;
+        margin: 4px 0 0;
+        font-size: 12px;
         color: #6b7280;
+        line-height: 1.5;
     }
 
+
     /* =========================================================
-       STATUS LEGEND
+       LEGEND
     ========================================================= */
 
     .status-legend {
         display: flex;
-        flex-wrap: wrap;
         gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        flex-shrink: 0;
     }
 
     .legend-item {
         display: inline-flex;
         align-items: center;
-        gap: 7px;
-        padding: 7px 12px;
-        border-radius: 30px;
-        font-size: 12px;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 20px;
+        font-size: 11px;
         font-weight: 600;
+        white-space: nowrap;
     }
 
     .legend-item::before {
@@ -274,6 +282,7 @@
         width: 7px;
         height: 7px;
         border-radius: 50%;
+        flex-shrink: 0;
     }
 
     .legend-clean {
@@ -303,211 +312,111 @@
         background: #f59e0b;
     }
 
-    /* =========================================================
-       ROOM GRID
-    ========================================================= */
-
-    .rooms-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 18px;
-    }
-
-    .room-card {
-        border-radius: 18px;
-        padding: 20px;
-        border: 1px solid;
-        transition: all 0.25s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .room-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.07);
-    }
-
-    .room-card.clean {
-        background: #f0fdf4;
-        border-color: #bbf7d0;
-    }
-
-    .room-card.dirty {
-        background: #fef2f2;
-        border-color: #fecaca;
-    }
-
-    .room-card.in-progress {
-        background: #fffbeb;
-        border-color: #fde68a;
-    }
 
     /* =========================================================
-       ROOM HEADER
+       TABLE
     ========================================================= */
 
-    .room-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 18px;
-    }
-
-    .room-number {
-        font-size: 24px;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .room-type {
-        margin-top: 2px;
-        font-size: 12px;
-        color: #6b7280;
-    }
-
-    .status-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.7);
-        flex-shrink: 0;
-    }
-
-    .room-card.clean .status-dot {
-        background: #16a34a;
-    }
-
-    .room-card.dirty .status-dot {
-        background: #dc2626;
-    }
-
-    .room-card.in-progress .status-dot {
-        background: #d97706;
-    }
-
-    /* =========================================================
-       ROOM INFORMATION
-    ========================================================= */
-
-    .room-info {
-        background: rgba(255, 255, 255, 0.65);
-        border-radius: 12px;
-        padding: 12px;
-        margin-bottom: 16px;
-    }
-
-    .info-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        font-size: 12px;
-        padding: 5px 0;
-    }
-
-    .info-row:not(:last-child) {
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .info-label {
-        color: #6b7280;
-    }
-
-    .info-value {
-        color: #374151;
-        font-weight: 600;
-        text-align: right;
-    }
-
-    .room-status {
-        display: inline-flex;
-        padding: 4px 9px;
-        border-radius: 20px;
-        background: #111827;
-        color: white;
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-    }
-
-    /* =========================================================
-       STATUS FORM
-    ========================================================= */
-
-    .status-form label {
-        display: block;
-        margin-bottom: 7px;
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #6b7280;
-    }
-
-    .status-select {
+    .table-wrapper {
         width: 100%;
-        height: 42px;
-        padding: 0 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 10px;
-        background: white;
-        color: #374151;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .rooms-table {
+        width: 100%;
+        min-width: 720px;
+        border-collapse: collapse;
+    }
+
+    .rooms-table thead {
+        background: #f8fafc;
+    }
+
+    .rooms-table th {
+        padding: 13px 18px;
+        text-align: left;
+        font-size: 10px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        border-bottom: 1px solid #e5e7eb;
+        white-space: nowrap;
+    }
+
+    .rooms-table td {
+        padding: 15px 18px;
+        border-bottom: 1px solid #f1f5f9;
         font-size: 13px;
-        outline: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
+        color: #374151;
+        vertical-align: middle;
     }
 
-    .status-select:hover {
-        border-color: #9ca3af;
-    }
-
-    .status-select:focus {
-        border-color: #800000;
-        box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.08);
-    }
 
     /* =========================================================
        EMPTY STATE
     ========================================================= */
 
     .empty-state {
-        grid-column: 1 / -1;
         text-align: center;
         padding: 60px 20px;
-        background: #f8fafc;
-        border: 1px dashed #d1d5db;
-        border-radius: 18px;
+        width: 100%;
     }
 
-    .empty-state i {
-        font-size: 42px;
-        color: #cbd5e1;
-        margin-bottom: 15px;
+    .empty-icon {
+        width: 55px;
+        height: 55px;
+        margin: 0 auto 14px;
+        border-radius: 14px;
+        background: #f8eeee;
+        color: #800000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+    }
+
+    .empty-state h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: #374151;
     }
 
     .empty-state p {
-        margin: 0;
-        color: #64748b;
-        font-size: 13px;
+        margin: 6px auto 0;
+        color: #94a3b8;
+        font-size: 12px;
+        line-height: 1.5;
+        max-width: 450px;
     }
 
+
     /* =========================================================
-       RESPONSIVE
+       LARGE TABLETS / SMALL DESKTOP
     ========================================================= */
 
     @media (max-width: 1200px) {
+
         .stats-grid {
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
-        .rooms-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
     }
 
+
+    /* =========================================================
+       TABLET
+    ========================================================= */
+
     @media (max-width: 900px) {
+
+        .dashboard-header {
+            padding: 24px;
+        }
+
         .header-content {
             align-items: flex-start;
             flex-direction: column;
@@ -515,6 +424,11 @@
 
         .date-card {
             width: 100%;
+            min-width: 0;
+        }
+
+        .date-value {
+            white-space: normal;
         }
 
         .rooms-header {
@@ -524,55 +438,256 @@
 
         .status-legend {
             width: 100%;
+            justify-content: flex-start;
         }
+
     }
 
+
+    /* =========================================================
+       SMALL TABLET
+    ========================================================= */
+
     @media (max-width: 700px) {
+
         .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
         }
 
-        .rooms-grid {
-            grid-template-columns: 1fr;
+        .stat-card {
+            padding: 15px;
         }
 
         .dashboard-header {
             padding: 22px;
+            border-radius: 15px;
         }
 
         .dashboard-header h1 {
-            font-size: 24px;
-        }
-
-        .rooms-section {
-            padding: 18px;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .dashboard-header h1 {
-            font-size: 21px;
+            font-size: 23px;
         }
 
         .dashboard-header p {
             font-size: 12px;
         }
 
-        .stat-number {
-            font-size: 26px;
+        .rooms-header {
+            padding: 18px;
         }
 
+        .rooms-title h2 {
+            font-size: 17px;
+        }
+
+        .rooms-title p {
+            font-size: 11px;
+        }
+
+        .table-wrapper {
+            border-top: 0;
+        }
+
+    }
+
+
+    /* =========================================================
+       MOBILE
+    ========================================================= */
+
+    @media (max-width: 500px) {
+
+        .hk-dashboard {
+            width: 100%;
+        }
+
+        .dashboard-header {
+            padding: 18px;
+            margin-bottom: 16px;
+            border-radius: 13px;
+        }
+
+        .header-label {
+            font-size: 9px;
+            letter-spacing: 1.2px;
+        }
+
+        .dashboard-header h1 {
+            font-size: 20px;
+        }
+
+        .dashboard-header p {
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .date-card {
+            padding: 10px 12px;
+        }
+
+        .date-title {
+            font-size: 9px;
+        }
+
+        .date-value {
+            font-size: 11px;
+        }
+
+
+        /* Statistics */
+
+        .stats-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            padding: 13px;
+            border-radius: 11px;
+        }
+
+        .stat-card::before {
+            width: 3px;
+        }
+
+        .stat-icon {
+            width: 31px;
+            height: 31px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .stat-label {
+            margin-top: 9px;
+            font-size: 10px;
+        }
+
+        .stat-number {
+            font-size: 21px;
+        }
+
+
+        /* Room section */
+
         .rooms-section {
+            border-radius: 12px;
+        }
+
+        .rooms-header {
+            padding: 15px;
+            gap: 14px;
+        }
+
+        .rooms-title h2 {
+            font-size: 16px;
+        }
+
+        .rooms-title p {
+            font-size: 10px;
+        }
+
+        .status-legend {
+            gap: 6px;
+        }
+
+        .legend-item {
+            padding: 5px 8px;
+            font-size: 9px;
+        }
+
+        .legend-item::before {
+            width: 6px;
+            height: 6px;
+        }
+
+
+        /* Table */
+
+        .rooms-table {
+            min-width: 680px;
+        }
+
+        .rooms-table th {
+            padding: 11px 13px;
+            font-size: 9px;
+        }
+
+        .rooms-table td {
+            padding: 12px 13px;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            padding: 45px 15px;
+        }
+
+        .empty-icon {
+            width: 48px;
+            height: 48px;
+            font-size: 19px;
+            margin-bottom: 11px;
+        }
+
+        .empty-state h3 {
+            font-size: 14px;
+        }
+
+        .empty-state p {
+            font-size: 11px;
+        }
+
+    }
+
+
+    /* =========================================================
+       VERY SMALL MOBILE
+    ========================================================= */
+
+    @media (max-width: 360px) {
+
+        .dashboard-header {
             padding: 15px;
         }
 
-        .room-card {
-            padding: 16px;
+        .dashboard-header h1 {
+            font-size: 18px;
         }
+
+        .dashboard-header p {
+            font-size: 10px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-card {
+            padding: 14px;
+        }
+
+        .stat-top {
+            justify-content: flex-start;
+        }
+
+        .rooms-header {
+            padding: 13px;
+        }
+
+        .status-legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            width: 100%;
+        }
+
+        .legend-item {
+            justify-content: center;
+        }
+
+        .rooms-table {
+            min-width: 650px;
+        }
+
     }
 </style>
 
@@ -587,7 +702,7 @@
 
         <div class="header-content">
 
-            <div class="header-text">
+            <div>
 
                 <div class="header-label">
                     Housekeeping Dashboard
@@ -598,11 +713,11 @@
                 </h1>
 
                 <p>
-                    Stay on top of room readiness, cleaning progress,
-                    and priority tasks from one streamlined workspace.
+                    Monitor room readiness, cleaning progress, and housekeeping tasks.
                 </p>
 
             </div>
+
 
             <div class="date-card">
 
@@ -627,15 +742,12 @@
 
     <div class="stats-grid">
 
-        <!-- Total Rooms -->
         <div class="stat-card total">
 
             <div class="stat-top">
-
                 <div class="stat-icon">
                     <i class="fas fa-door-open"></i>
                 </div>
-
             </div>
 
             <div class="stat-label">
@@ -643,21 +755,18 @@
             </div>
 
             <div class="stat-number">
-                {{ $totalRooms }}
+                0
             </div>
 
         </div>
 
 
-        <!-- Clean Rooms -->
         <div class="stat-card clean">
 
             <div class="stat-top">
-
                 <div class="stat-icon">
                     <i class="fas fa-check-circle"></i>
                 </div>
-
             </div>
 
             <div class="stat-label">
@@ -665,21 +774,18 @@
             </div>
 
             <div class="stat-number">
-                {{ $cleanRooms }}
+                0
             </div>
 
         </div>
 
 
-        <!-- Dirty Rooms -->
         <div class="stat-card dirty">
 
             <div class="stat-top">
-
                 <div class="stat-icon">
                     <i class="fas fa-broom"></i>
                 </div>
-
             </div>
 
             <div class="stat-label">
@@ -687,21 +793,18 @@
             </div>
 
             <div class="stat-number">
-                {{ $dirtyRooms }}
+                0
             </div>
 
         </div>
 
 
-        <!-- In Progress -->
         <div class="stat-card progress">
 
             <div class="stat-top">
-
                 <div class="stat-icon">
                     <i class="fas fa-spinner"></i>
                 </div>
-
             </div>
 
             <div class="stat-label">
@@ -709,21 +812,18 @@
             </div>
 
             <div class="stat-number">
-                {{ $inProgress }}
+                0
             </div>
 
         </div>
 
 
-        <!-- Occupied Rooms -->
         <div class="stat-card occupied">
 
             <div class="stat-top">
-
                 <div class="stat-icon">
                     <i class="fas fa-user-check"></i>
                 </div>
-
             </div>
 
             <div class="stat-label">
@@ -731,7 +831,7 @@
             </div>
 
             <div class="stat-number">
-                {{ $occupiedRooms }}
+                0
             </div>
 
         </div>
@@ -740,7 +840,7 @@
 
 
     <!-- =====================================================
-         ROOM CLEANING STATUS
+         ROOM CLEANING TABLE
     ====================================================== -->
 
     <div class="rooms-section">
@@ -754,7 +854,7 @@
                 </h2>
 
                 <p>
-                    Update cleaning progress and monitor room readiness.
+                    Room information will appear here once rooms are assigned.
                 </p>
 
             </div>
@@ -780,153 +880,71 @@
 
 
         <!-- =================================================
-             ROOM CARDS
+             TABLE
         ================================================== -->
 
-        <div class="rooms-grid">
+        <div class="table-wrapper">
 
-            @forelse($rooms as $room)
+            <table class="rooms-table">
 
-                @php
-                    $roomClass = match($room->cleaning_status) {
-                        'clean' => 'clean',
-                        'dirty' => 'dirty',
-                        default => 'in-progress'
-                    };
-                @endphp
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Room
+                        </th>
+
+                        <th>
+                            Floor
+                        </th>
+
+                        <th>
+                            Room Status
+                        </th>
+
+                        <th>
+                            Cleaning Status
+                        </th>
+
+                        <th>
+                            Update Cleaning
+                        </th>
+
+                    </tr>
+
+                </thead>
 
 
-                <div class="room-card {{ $roomClass }}">
+                <tbody>
 
-                    <!-- Room Header -->
-                    <div class="room-top">
+                    <tr>
 
-                        <div>
+                        <td colspan="5">
 
-                            <div class="room-number">
-                                {{ $room->room_number }}
+                            <div class="empty-state">
+
+                                <div class="empty-icon">
+                                    <i class="fas fa-bed"></i>
+                                </div>
+
+                                <h3>
+                                    No Room Information Yet
+                                </h3>
+
+                                <p>
+                                    Room information will appear here once rooms are added to the system.
+                                </p>
+
                             </div>
 
-                            <div class="room-type">
-                                {{ $room->room_type }}
-                            </div>
+                        </td>
 
-                        </div>
+                    </tr>
 
-                        <div class="status-dot"></div>
+                </tbody>
 
-                    </div>
-
-
-                    <!-- Room Information -->
-                    <div class="room-info">
-
-                        <div class="info-row">
-
-                            <span class="info-label">
-                                Floor
-                            </span>
-
-                            <span class="info-value">
-                                {{ $room->floor ?? 'N/A' }}
-                            </span>
-
-                        </div>
-
-
-                        <div class="info-row">
-
-                            <span class="info-label">
-                                Room Status
-                            </span>
-
-                            <span class="info-value">
-
-                                <span class="room-status">
-                                    {{ ucfirst($room->status) }}
-                                </span>
-
-                            </span>
-
-                        </div>
-
-
-                        <div class="info-row">
-
-                            <span class="info-label">
-                                Cleaning
-                            </span>
-
-                            <span class="info-value">
-                                {{ ucfirst(str_replace('_', ' ', $room->cleaning_status)) }}
-                            </span>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Update Cleaning Status -->
-                    <form
-                        method="POST"
-                        action="{{ route('housekeeping.rooms.cleaning', $room->id) }}"
-                        class="status-form"
-                    >
-
-                        @csrf
-                        @method('PATCH')
-
-                        <label for="cleaning_status_{{ $room->id }}">
-                            Update Cleaning Status
-                        </label>
-
-                        <select
-                            id="cleaning_status_{{ $room->id }}"
-                            name="cleaning_status"
-                            onchange="this.form.submit()"
-                            class="status-select"
-                        >
-
-                            <option
-                                value="clean"
-                                {{ $room->cleaning_status === 'clean' ? 'selected' : '' }}
-                            >
-                                Clean
-                            </option>
-
-                            <option
-                                value="dirty"
-                                {{ $room->cleaning_status === 'dirty' ? 'selected' : '' }}
-                            >
-                                Dirty
-                            </option>
-
-                            <option
-                                value="in_progress"
-                                {{ $room->cleaning_status === 'in_progress' ? 'selected' : '' }}
-                            >
-                                In Progress
-                            </option>
-
-                        </select>
-
-                    </form>
-
-                </div>
-
-            @empty
-
-                <div class="empty-state">
-
-                    <i class="fas fa-bed"></i>
-
-                    <p>
-                        No rooms available for housekeeping.
-                    </p>
-
-                </div>
-
-            @endforelse
+            </table>
 
         </div>
 
