@@ -161,7 +161,7 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.reservations.store') }}" method="POST" class="space-y-4">
+        <form id="addReservationForm" action="{{ route('admin.reservations.store') }}" method="POST" class="space-y-4">
             @csrf
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
@@ -222,7 +222,7 @@
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeAddReservationModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
-                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Save Reservation</button>
+                <button id="saveReservationBtn" type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Save Reservation</button>
             </div>
         </form>
     </div>
@@ -256,11 +256,22 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         const modal = document.getElementById('addReservationModal');
+        const form = document.getElementById('addReservationForm');
+        const saveBtn = document.getElementById('saveReservationBtn');
+
         if (modal) {
             modal.addEventListener('click', function (event) {
                 if (event.target === modal) {
                     closeAddReservationModal();
                 }
+            });
+        }
+
+        if (form && saveBtn) {
+            form.addEventListener('submit', function () {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving...';
+                saveBtn.classList.add('opacity-70', 'cursor-not-allowed');
             });
         }
 

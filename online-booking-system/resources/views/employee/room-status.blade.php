@@ -243,34 +243,8 @@
             <span>Try changing the search terms or the dropdown values.</span>
         </div>
 
-        <div class="insight-panel">
-            <div class="insight-header">
-                <div>
-                    <h4>Operational Snapshot</h4>
-                    <p>Daily housekeeping and occupancy focus areas</p>
-                </div>
-            </div>
-            <div class="insight-grid">
-                <div class="insight-card">
-                    <strong>37%</strong>
-                    <span>Occupancy rate</span>
-                </div>
-                <div class="insight-card">
-                    <strong>12</strong>
-                    <span>Ready for check-in</span>
-                </div>
-                <div class="insight-card">
-                    <strong>4</strong>
-                    <span>Need cleaning</span>
-                </div>
-                <div class="insight-card">
-                    <strong>2</strong>
-                    <span>Under maintenance</span>
-                </div>
-            </div>
-        </div>
     </section>
-</div>
+</div>  
 
 <div class="modal-overlay" id="details-modal" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">

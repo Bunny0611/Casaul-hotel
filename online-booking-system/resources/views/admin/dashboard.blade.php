@@ -249,14 +249,27 @@ document.addEventListener('DOMContentLoaded', function() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: true, position: 'bottom' },
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        boxWidth: 8
+                    }
+                },
                 tooltip: {
+                    enabled: true,
                     callbacks: {
                         label: function(context) {
-                            return context.raw + ' room(s)';
+                            return context.label;
                         }
                     }
-                }
+                },
+            },
+            scales: {
+                x: { display: false },
+                y: { display: false }
             }
         }
     });

@@ -121,10 +121,6 @@
                     <i class="fas fa-tools w-6"></i>
                     <span>Maintenance Report</span>
                 </a>
-                <a href="{{ route('housekeeping.cleaning-history') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->routeIs('housekeeping.cleaning-history') ? 'active' : '' }}">
-                    <i class="fas fa-history w-6"></i>
-                    <span>Cleaning History</span>
-                </a>
             </nav>
             
             <div class="mt-auto pt-8 px-6 pb-6">
@@ -203,5 +199,4 @@
     </script>
 </body>
 </html>
-
 

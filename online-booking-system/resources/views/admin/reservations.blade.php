@@ -17,12 +17,11 @@
         </div>
     @endif
 
-    <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Reservation Management</h2>
             <p class="mt-1 text-sm text-gray-500">Manage guest bookings, update statuses, and create new reservations from one place.</p>
         </div>
-        
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr]">
@@ -159,28 +158,11 @@
     </div>
 </div>
 
-<div id="addReservationModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
-        <button type="button" onclick="closeAddReservationModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
-            <i class="fas fa-times text-xl"></i>
-        </button>
-
-        <div class="mb-6">
-            <h3 class="text-2xl font-bold text-gray-800">Add New Reservation</h3>
-            <p class="mt-1 text-sm text-gray-500">Fill in the details below to create a new booking.</p>
-        </div>
-
-        @if($errors->any())
-            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                <ul class="list-disc space-y-1 pl-5">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        
+    <form id="reservationStatusForm" action="" method="POST">
+        @csrf
+        @method('PATCH')
+        <input type="hidden" name="status" id="reservationStatus">
+    </form>
 
 <script>
     function changeReservationStatus(id, status) {
@@ -192,52 +174,38 @@
         }
     }
 
-    function openAddReservationModal() {
-        document.getElementById('addReservationModal').classList.remove('hidden');
-        document.getElementById('addReservationModal').classList.add('flex');
-    }
-
-    function closeAddReservationModal() {
-        document.getElementById('addReservationModal').classList.add('hidden');
-        document.getElementById('addReservationModal').classList.remove('flex');
-    }
-
     document.addEventListener('DOMContentLoaded', function () {
-        const modal = document.getElementById('addReservationModal');
-        if (modal) {
-            modal.addEventListener('click', function (event) {
-                if (event.target === modal) {
-                    closeAddReservationModal();
-                }
+        const searchInput = document.getElementById('reservationSearch');
+        const statusFilter = document.getElementById('reservationStatusFilter');
+        const reservationItems = document.querySelectorAll('.reservation-item');
+
+        function filterReservations() {
+            if (!searchInput || !statusFilter) return;
+
+            const query = searchInput.value.trim().toLowerCase();
+            const status = statusFilter.value;
+
+            reservationItems.forEach(item => {
+                const itemStatus = item.getAttribute('data-status') || '';
+                const itemSearch = item.getAttribute('data-search') || '';
+
+                const matchesQuery = query === '' || itemSearch.includes(query);
+                const matchesStatus = status === '' || itemStatus === status;
+
+                item.style.display = matchesQuery && matchesStatus ? '' : 'none';
             });
         }
 
-            const searchInput = document.getElementById('reservationSearch');
-            const statusFilter = document.getElementById('reservationStatusFilter');
-            const reservationItems = document.querySelectorAll('.reservation-item');
+        if (searchInput) {
+            searchInput.addEventListener('input', filterReservations);
+        }
 
-            function filterReservations() {
-                const query = searchInput.value.trim().toLowerCase();
-                const status = statusFilter.value;
+        if (statusFilter) {
+            statusFilter.addEventListener('change', filterReservations);
+        }
 
-                reservationItems.forEach(item => {
-                    const itemStatus = item.getAttribute('data-status') || '';
-                    const itemSearch = item.getAttribute('data-search') || '';
-
-                    const matchesQuery = query === '' || itemSearch.includes(query);
-                    const matchesStatus = status === '' || itemStatus === status;
-
-                    item.style.display = matchesQuery && matchesStatus ? '' : 'none';
-                });
-            }
-
-            if (searchInput) {
-                searchInput.addEventListener('input', filterReservations);
-            }
-
-            if (statusFilter) {
-                statusFilter.addEventListener('change', filterReservations);
-            }
+        filterReservations();
+    });
 
 </script>
 @endsection

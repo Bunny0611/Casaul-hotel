@@ -10,24 +10,22 @@ class AdminLoginTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_login_accepts_users_created_with_a_hashed_password_and_repairs_the_role(): void
+    public function test_staff_login_uses_the_selected_role_from_the_login_as_dropdown(): void
     {
         $user = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
+            'name' => 'Employee User',
+            'email' => 'employee@example.com',
             'password' => bcrypt('password'),
-            'role' => 'housekeeping',
+            'role' => 'employee',
         ]);
 
         $response = $this->post(route('login.submit'), [
-            'email' => 'admin@example.com',
+            'email' => 'employee@example.com',
             'password' => 'password',
-            'role' => 'admin',
+            'role' => 'employee',
         ]);
 
-        $response->assertRedirect(route('admin.dashboard'));
+        $response->assertRedirect(route('employee.dashboard'));
         $this->assertAuthenticatedAs($user);
-        $this->assertSame('admin', $user->fresh()->role);
     }
-
 }

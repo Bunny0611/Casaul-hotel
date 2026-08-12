@@ -2,184 +2,93 @@
 
 @section('content')
 <div class="animate-fade-in space-y-8">
-    <div class="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.3em] text-amber-600">
-                Daily overview
-            </p>
-            <h2 class="text-2xl font-bold text-slate-800 sm:text-3xl">
-                Housekeeping Dashboard
-            </h2>
-            <p class="mt-1 text-sm text-slate-600">
-                Stay on top of cleaning priorities, guest requests, and maintenance tasks.
-            </p>
-        </div>
-
-        <div class="flex items-center gap-2 rounded-2xl bg-whi
-        te px-4 py-3 shadow-sm">
-            <i class="fas fa-calendar-alt text-amber-600"></i>
-            <span class="text-sm font-medium text-slate-700">Tuesday, 4 Aug 2026</span>
-        </div>
-    </div>
-
-    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="card-hover rounded-2xl bg-white p-5 shadow-lg">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-sm text-slate-500">Assigned Rooms</p>
-                    <p class="mt-2 text-3xl font-bold text-slate-800">12</p>
-                    <p class="mt-2 flex items-center text-xs font-medium text-amber-600">
-                        <i class="fas fa-clock mr-1"></i>
-                        Pending Cleaning
-                    </p>
-                </div>
-                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100">
-                    <i class="fas fa-bed text-xl text-amber-700"></i>
-                </div>
+    <div class="rounded-3xl bg-white p-6 shadow-sm border border-slate-200">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm uppercase tracking-[0.3em] text-amber-600">Housekeeping dashboard</p>
+                <h1 class="mt-3 text-3xl font-semibold text-slate-900">Room cleaning overview</h1>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Stay on top of room readiness, cleaning progress, and priority tasks from a streamlined, professional interface.</p>
             </div>
-        </div>
-
-        <div class="card-hover rounded-2xl bg-white p-5 shadow-lg">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-sm text-slate-500">Completed Today</p>
-                    <p class="mt-2 text-3xl font-bold text-slate-800">8</p>
-                    <p class="mt-2 flex items-center text-xs font-medium text-green-600">
-                        <i class="fas fa-check-circle mr-1"></i>
-                        Rooms Cleaned
-                    </p>
-                </div>
-                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100">
-                    <i class="fas fa-broom text-xl text-emerald-700"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-hover rounded-2xl bg-white p-5 shadow-lg">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-sm text-slate-500">Guest Requests</p>
-                    <p class="mt-2 text-3xl font-bold text-slate-800">5</p>
-                    <p class="mt-2 flex items-center text-xs font-medium text-red-700">
-                        <i class="fas fa-bell mr-1"></i>
-                        Pending Requests
-                    </p>
-                </div>
-                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100">
-                    <i class="fas fa-concierge-bell text-xl text-orange-700"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-hover rounded-2xl bg-white p-5 shadow-lg">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-sm text-slate-500">Maintenance Reports</p>
-                    <p class="mt-2 text-3xl font-bold text-slate-800">3</p>
-                    <p class="mt-2 flex items-center text-xs font-medium text-red-500">
-                        <i class="fas fa-tools mr-1"></i>
-                        Room Issues
-                    </p>
-                </div>
-                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100">
-                    <i class="fas fa-screwdriver-wrench text-xl text-rose-700"></i>
-                </div>
+            <div class="rounded-3xl bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm">
+                <span class="font-semibold">Today</span>
+                <div class="mt-1 text-slate-500">August 7, 2026</div>
             </div>
         </div>
     </div>
 
-    <div class="grid gap-6 xl:grid-cols-[2fr,1fr]">
-        <div class="rounded-2xl bg-white p-4 shadow-lg sm:p-6">
-            <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h3 class="text-lg font-semibold text-slate-800">
-                    Today's Assigned Rooms
-                </h3>
+    <div class="grid gap-4 xl:grid-cols-5">
+        <div class="rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+            <p class="text-sm text-slate-500">Total rooms</p>
+            <p class="mt-3 text-3xl font-semibold text-slate-900">{{ $totalRooms }}</p>
+        </div>
+        <div class="rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+            <p class="text-sm text-slate-500">Clean rooms</p>
+            <p class="mt-3 text-3xl font-semibold text-emerald-700">{{ $cleanRooms }}</p>
+        </div>
+        <div class="rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+            <p class="text-sm text-slate-500">Dirty rooms</p>
+            <p class="mt-3 text-3xl font-semibold text-red-700">{{ $dirtyRooms }}</p>
+        </div>
+        <div class="rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+            <p class="text-sm text-slate-500">In progress</p>
+            <p class="mt-3 text-3xl font-semibold text-amber-700">{{ $inProgress }}</p>
+        </div>
+        <div class="rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+            <p class="text-sm text-slate-500">Occupied rooms</p>
+            <p class="mt-3 text-3xl font-semibold text-slate-900">{{ $occupiedRooms }}</p>
+        </div>
+    </div>
 
-                <a href="{{ route('housekeeping.assigned-rooms') }}"
-                    class="text-sm font-medium text-red-800 transition hover:underline">
-                    View All →
-                </a>
+    <div class="rounded-3xl bg-white p-6 shadow-sm border border-slate-200">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+            <div>
+                <h2 class="text-xl font-semibold text-slate-900">Room cleaning status</h2>
+                <p class="mt-1 text-sm text-slate-500">Update cleaning progress and view room readiness in one place.</p>
             </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-[560px]">
-                    <thead>
-                        <tr class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                            <th class="px-4 py-3">Room</th>
-                            <th class="px-4 py-3">Task</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr class="transition hover:bg-orange-50/70">
-                            <td class="px-4 py-4 text-sm font-medium text-slate-700">Room 101</td>
-                            <td class="px-4 py-4 text-sm text-slate-600">Deep Cleaning</td>
-                            <td class="px-4 py-4">
-                                <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Pending</span>
-                            </td>
-                            <td class="px-4 py-4">
-                                <a href="{{ route('housekeeping.room-status-update') }}"
-                                    class="text-sm font-medium text-amber-700 transition hover:underline">
-                                    Update
-                                </a>
-                            </td>
-                        </tr>
-
-                        <tr class="transition hover:bg-orange-50/70">
-                            <td class="px-4 py-4 text-sm font-medium text-slate-700">Room 205</td>
-                            <td class="px-4 py-4 text-sm text-slate-600">Change Linens</td>
-                            <td class="px-4 py-4">
-                                <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">Completed</span>
-                            </td>
-                            <td class="px-4 py-4">
-                                <a href="{{ route('housekeeping.room-status-update') }}"
-                                    class="text-sm font-medium text-amber-700 transition hover:underline">
-                                    Update
-                                </a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="flex flex-wrap gap-2 text-sm">
+                <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">Clean</span>
+                <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-red-700">Dirty</span>
+                <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-amber-700">In Progress</span>
             </div>
         </div>
 
-        <div class="rounded-2xl bg-white p-4 shadow-lg sm:p-6">
-            <h3 class="text-lg font-semibold text-slate-800">Priority Tasks</h3>
-
-            <div class="mt-4 space-y-3">
-                <div class="rounded-xl border border-amber-100 bg-amber-50 p-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="font-medium text-slate-800">Room 303</p>
-                            <p class="text-sm text-slate-600">Urgent preparation for guest arrival</p>
-                        </div>
-                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">High</span>
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            @forelse($rooms as $room)
+            <div class="rounded-3xl border p-5 shadow-sm transition hover:-translate-y-0.5 {{ $room->cleaning_status === 'clean' ? 'border-emerald-200 bg-emerald-50' : ($room->cleaning_status === 'dirty' ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50') }}">
+                <div class="mb-4 flex items-center justify-between gap-4">
+                    <div>
+                        <p class="text-2xl font-semibold text-slate-900">{{ $room->room_number }}</p>
+                        <p class="text-sm text-slate-500">{{ $room->room_type }}</p>
                     </div>
+                    <span class="h-3 w-3 rounded-full {{ $room->cleaning_status === 'clean' ? 'bg-emerald-700' : ($room->cleaning_status === 'dirty' ? 'bg-red-700' : 'bg-amber-700') }}"></span>
                 </div>
 
-                <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="font-medium text-slate-800">Room 410</p>
-                            <p class="text-sm text-slate-600">Bathroom maintenance check completed</p>
-                        </div>
-                        <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">Ready</span>
-                    </div>
+                <div class="space-y-2 text-sm text-slate-600">
+                    <p>Floor: {{ $room->floor ?? 'N/A' }}</p>
+                    <p>Status:
+                        <span class="inline-flex rounded-full bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white">{{ ucfirst($room->status) }}</span>
+                    </p>
+                    <p>Cleaning: {{ ucfirst(str_replace('_', ' ', $room->cleaning_status)) }}</p>
                 </div>
 
-                <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="font-medium text-slate-800">Room 512</p>
-                            <p class="text-sm text-slate-600">Fresh linens requested by guest</p>
-                        </div>
-                        <span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">Medium</span>
-                    </div>
-                </div>
+                <form method="POST" action="{{ route('housekeeping.rooms.cleaning', $room->id) }}" class="mt-4">
+                    @csrf
+                    @method('PATCH')
+                    <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Update cleaning status</label>
+                    <select name="cleaning_status" onchange="this.form.submit()" class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-100">
+                        <option value="clean" {{ $room->cleaning_status === 'clean' ? 'selected' : '' }}>Clean</option>
+                        <option value="dirty" {{ $room->cleaning_status === 'dirty' ? 'selected' : '' }}>Dirty</option>
+                        <option value="in_progress" {{ $room->cleaning_status === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                    </select>
+                </form>
             </div>
+            @empty
+            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-12 text-center text-slate-500">
+                <i class="fas fa-bed mb-4 text-4xl text-slate-300"></i>
+                <p class="text-sm">No rooms available for housekeeping.</p>
+            </div>
+            @endforelse
         </div>
     </div>
 </div>
 @endsection
-
