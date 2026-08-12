@@ -1,4 +1,4 @@
- @extends('admin.layout')
+@extends('admin.layout')
 
 @section('content')
 @php
@@ -22,10 +22,6 @@
             <h2 class="text-2xl font-bold text-gray-800">Reservation Management</h2>
             <p class="mt-1 text-sm text-gray-500">Manage guest bookings, update statuses, and create new reservations from one place.</p>
         </div>
-<<<<<<< HEAD
-=======
-        
->>>>>>> origin/main
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr]">
@@ -45,7 +41,6 @@
         </div>
     </div>
 
-<<<<<<< HEAD
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
             <div class="flex items-center justify-between">
@@ -105,29 +100,14 @@
                     <i class="fas fa-times-circle text-lg"></i>
                 </div>
             </div>
-=======
-    <div class="grid grid-cols-5 gap-3 pb-2">
-        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-gray-500">Total</p>
-            <p class="mt-2 text-xl font-semibold text-gray-800">{{ $stats['total'] }}</p>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-gray-500">Pending</p>
-            <p class="mt-2 text-xl font-semibold text-amber-600">{{ $stats['pending'] }}</p>
-        </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-gray-500">Confirmed</p>
-            <p class="mt-2 text-xl font-semibold text-green-600">{{ $stats['confirmed'] }}</p>
-        </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-gray-500">Completed</p>
-            <p class="mt-2 text-xl font-semibold text-blue-600">{{ $stats['completed'] }}</p>
-        </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-            <p class="text-xs uppercase tracking-wide text-gray-500">Cancelled</p>
-            <p class="mt-2 text-xl font-semibold text-red-600">{{ $reservations->where('status', 'cancelled')->count() }}</p>
->>>>>>> origin/main
-        </div>
+    </div>
+
+    <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-800">Reservation List</h3>
+        <button type="button" onclick="openAddReservationModal()" class="inline-flex items-center gap-2 rounded-xl bg-[#ff6b35] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#e85a2a]">
+            <i class="fas fa-plus"></i> Add New Reservation
+        </button>
     </div>
 
     <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -224,13 +204,12 @@
     </div>
 </div>
 
-<<<<<<< HEAD
 <form id="reservationStatusForm" action="" method="POST">
     @csrf
     @method('PATCH')
     <input type="hidden" name="status" id="reservationStatus">
 </form>
-=======
+
 <div id="addReservationModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
     <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         <button type="button" onclick="closeAddReservationModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
@@ -252,8 +231,63 @@
             </div>
         @endif
 
-        
->>>>>>> origin/main
+        <form method="POST" action="{{ route('admin.reservations.store') }}">
+            @csrf
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Guest Name</label>
+                    <input type="text" name="guest_name" required value="{{ old('guest_name') }}" class="mt-1 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Guest Email</label>
+                    <input type="email" name="guest_email" required value="{{ old('guest_email') }}" class="mt-1 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Guest Phone</label>
+                    <input type="text" name="guest_phone" required value="{{ old('guest_phone') }}" class="mt-1 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Room</label>
+                    <select name="room_id" required class="mt-1 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                        <option value="">Select Room</option>
+                        @foreach($rooms as $room)
+                            <option value="{{ $room->id }}">{{ $room->room_number }} - {{ $room->room_type }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Check-in</label>
+                    <input type="date" name="check_in" required value="{{ old('check_in') }}" class="mt-1 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Check-out</label>
+                    <input type="date" name="check_out" required value="{{ old('check_out') }}" class="mt-1 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Total Amount</label>
+                    <input type="number" step="0.01" min="0" name="total_amount" required value="{{ old('total_amount') }}" class="mt-1 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Status</label>
+                    <select name="status" required class="mt-1 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700">Special Requests</label>
+                    <textarea name="special_requests" rows="3" class="mt-1 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">{{ old('special_requests') }}</textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeAddReservationModal()" class="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">Cancel</button>
+                <button type="submit" class="rounded-xl bg-[#ff6b35] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#e85a2a]">Create Reservation</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
     function changeReservationStatus(id, status) {
@@ -263,6 +297,16 @@
             document.getElementById('reservationStatus').value = status;
             document.getElementById('reservationStatusForm').submit();
         }
+    }
+
+    function openAddReservationModal() {
+        document.getElementById('addReservationModal').classList.remove('hidden');
+        document.getElementById('addReservationModal').classList.add('flex');
+    }
+
+    function closeAddReservationModal() {
+        document.getElementById('addReservationModal').classList.add('hidden');
+        document.getElementById('addReservationModal').classList.remove('flex');
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -300,3 +344,4 @@
 
 </script>
 @endsection
+

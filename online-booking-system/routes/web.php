@@ -29,6 +29,12 @@ Route::get('/guest/login', [AuthController::class, 'showGuestLoginForm'])->name(
 Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.login.submit');
 Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
 
+// --- Guest Profile ---
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [HomeController::class, 'profile'])->name('profile');
+    Route::get('/profile/records', [HomeController::class, 'records'])->name('profile.records');
+});
+
 // --- Admin Logout ---
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 

@@ -212,9 +212,9 @@
     <input type="hidden" name="room_id" id="reservationRoomId">
     <input type="hidden" name="check_in" id="reservationCheckIn">
     <input type="hidden" name="check_out" id="reservationCheckOut">
-    <input type="hidden" name="guest_name" id="reservationGuestName" value="Guest">
-    <input type="hidden" name="guest_email" id="reservationGuestEmail" value="guest@example.com">
-    <input type="hidden" name="guest_phone" id="reservationGuestPhone" value="0000000000">
+<input type="hidden" name="guest_name" id="reservationGuestName" value="{{ auth()->user()->name ?? 'Guest' }}">
+    <input type="hidden" name="guest_email" id="reservationGuestEmail" value="{{ auth()->user()->email ?? 'guest@example.com' }}">
+    <input type="hidden" name="guest_phone" id="reservationGuestPhone" value="{{ auth()->user()->contact_no ?? '0000000000' }}">
     <input type="hidden" name="total_amount" id="reservationTotalAmount">
     <input type="hidden" name="special_requests" id="reservationSpecialRequests" value="">
 </form>

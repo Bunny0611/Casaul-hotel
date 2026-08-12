@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Casaul Hotel</title>
 
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+<link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -64,7 +64,41 @@
             </form>
         </div>
 
-        <button type="button" class="nav-signin-btn" id="guest-signin-trigger">SIGN IN</button>
+@auth
+            <div class="profile-dropdown" id="profile-dropdown">
+                <button type="button" class="profile-trigger" id="profile-trigger" aria-label="My Account">
+                    <span class="profile-trigger-avatar">
+                        <i class="fas fa-user"></i>
+                    </span>
+                    <span class="profile-trigger-name">{{ auth()->user()->name }}</span>
+                    <i class="fas fa-chevron-down profile-trigger-caret"></i>
+                </button>
+                <div class="profile-menu" id="profile-menu">
+                    <div class="profile-menu-header">
+                        <span class="profile-menu-avatar"><i class="fas fa-user"></i></span>
+                        <div>
+                            <p class="profile-menu-name">{{ auth()->user()->name }}</p>
+                            <p class="profile-menu-email">{{ auth()->user()->email }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('profile.records') }}" class="profile-menu-item">
+                        <i class="fas fa-list-alt"></i> View Records
+                    </a>
+                    <a href="{{ route('profile') }}" class="profile-menu-item">
+                        <i class="fas fa-user-circle"></i> View Profile
+                    </a>
+                    <div class="profile-menu-divider"></div>
+                    <form method="POST" action="{{ route('logout') }}" class="profile-menu-form">
+                        @csrf
+                        <button type="submit" class="profile-menu-item profile-menu-logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @else
+            <button type="button" class="nav-signin-btn" id="guest-signin-trigger">SIGN IN</button>
+        @endauth
     </div>
 
 </nav>
@@ -235,7 +269,7 @@
 </script>
 @endif
 
-<script src="{{ asset('js/app.js') }}"></script>
+<script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}"></script>
 
 </body>
 </html>

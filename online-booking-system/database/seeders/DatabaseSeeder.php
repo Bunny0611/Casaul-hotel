@@ -33,18 +33,11 @@ class DatabaseSeeder extends Seeder
             'role' => 'housekeeping',
         ]);
 
-<<<<<<< HEAD
-        // Create employee user
-        User::create([
-            'name' => 'Employee',
-            'email' => 'employee@casaul.com',
-=======
         // Create default employee user
         User::updateOrCreate([
             'email' => 'employee@casaul.com',
         ], [
             'name' => 'Employee',
->>>>>>> origin/main
             'password' => bcrypt('password'),
             'role' => 'employee',
         ]);
@@ -53,3 +46,4 @@ class DatabaseSeeder extends Seeder
         $this->call(RoomSeeder::class);
     }
 }
+

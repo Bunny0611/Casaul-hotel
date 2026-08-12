@@ -480,6 +480,445 @@ nav a:hover{
     box-shadow: 0 10px 22px rgba(0,0,0,0.16);
 }
 
+/* ---- Profile Dropdown (Navbar) ---- */
+.profile-dropdown {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.profile-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px 6px 6px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(255,255,255,0.16);
+    color: white;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.profile-trigger:hover {
+    background: rgba(255,255,255,0.26);
+    transform: translateY(-1px);
+}
+
+.profile-trigger-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.profile-trigger-name {
+    font-weight: 700;
+    font-size: 14px;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-trigger-caret {
+    font-size: 11px;
+    color: rgba(255,255,255,0.85);
+    transition: transform 0.25s ease;
+}
+
+.profile-trigger.open .profile-trigger-caret {
+    transform: rotate(180deg);
+}
+
+.profile-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 280px;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    padding: 10px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 1100;
+    border: 1px solid rgba(0,0,0,0.06);
+}
+
+.profile-menu.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.profile-menu-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 8px;
+}
+
+.profile-menu-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.profile-menu-name {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 14px;
+    margin: 0;
+}
+
+.profile-menu-email {
+    color: var(--muted);
+    font-size: 12px;
+    margin: 2px 0 0;
+    word-break: break-all;
+}
+
+.profile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s ease;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+}
+
+.profile-menu-item i {
+    width: 20px;
+    text-align: center;
+    color: var(--brand);
+}
+
+.profile-menu-item:hover {
+    background: #f1f5f9;
+}
+
+.profile-menu-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 8px 0;
+}
+
+.profile-menu-logout {
+    color: #dc2626;
+}
+
+.profile-menu-logout i {
+    color: #dc2626;
+}
+
+.profile-menu-form {
+    margin: 0;
+}
+
+/* ---- Profile Page ---- */
+.profile-page {
+    min-height: 100vh;
+    padding: 140px 24px 60px;
+    width: min(1100px, 94%);
+    margin: 0 auto;
+}
+
+.profile-hero {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.profile-hero .eyebrow {
+    display: inline-block;
+    font-weight: 700;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.profile-hero h1 {
+    font-size: clamp(2.2rem, 4vw, 3rem);
+    color: var(--brand);
+    margin: 0 0 10px;
+}
+
+.profile-hero p {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.8;
+}
+
+.profile-shell {
+    display: grid;
+    gap: 24px;
+}
+
+.profile-card {
+    background: #fff;
+    border-radius: 28px;
+    padding: 40px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(15,23,42,0.08);
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+}
+
+.profile-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    flex-shrink: 0;
+    box-shadow: 0 12px 30px rgba(30,58,95,0.25);
+}
+
+.profile-info h2 {
+    font-size: 1.6rem;
+    color: var(--brand);
+    margin: 0 0 10px;
+}
+
+.profile-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin: 6px 0;
+}
+
+.profile-meta i {
+    color: var(--brand);
+    width: 18px;
+    text-align: center;
+}
+
+.profile-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.profile-action-btn {
+    background: #fff;
+    border: 1px solid rgba(15,23,42,0.08);
+    border-radius: 22px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.profile-action-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(201,162,39,0.3);
+}
+
+.profile-action-btn i {
+    font-size: 26px;
+    color: var(--brand);
+}
+
+.profile-action-btn span {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--brand);
+}
+
+.profile-action-btn small {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.profile-logout-form {
+    margin: 0;
+}
+
+.profile-logout-btn {
+    font-family: inherit;
+    font-size: 1rem;
+    width: 100%;
+}
+
+.profile-logout-btn i {
+    color: #dc2626;
+}
+
+.profile-logout-btn span {
+    color: #dc2626;
+}
+
+/* ---- Records Page ---- */
+.records-toolbar {
+    margin-bottom: 24px;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+    color: #fff;
+    border-radius: 999px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.records-empty {
+    text-align: center;
+    padding: 80px 24px;
+    background: #fff;
+    border-radius: 28px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(15,23,42,0.08);
+}
+
+.records-empty i {
+    font-size: 48px;
+    color: var(--muted-light);
+    margin-bottom: 16px;
+}
+
+.records-empty h3 {
+    font-size: 1.4rem;
+    color: var(--brand);
+    margin: 0 0 8px;
+}
+
+.records-empty p {
+    color: var(--muted);
+    margin: 0 0 20px;
+}
+
+.records-table-wrap {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(15,23,42,0.08);
+    overflow-x: auto;
+}
+
+.records-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+}
+
+.records-table th,
+.records-table td {
+    padding: 16px 18px;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.92rem;
+}
+
+.records-table th {
+    background: #f8fafc;
+    color: var(--brand);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+}
+
+.records-table tr:last-child td {
+    border-bottom: none;
+}
+
+.records-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-confirmed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-cancelled {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.status-completed {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+@media (max-width: 640px) {
+    .profile-page {
+        padding-top: 120px;
+    }
+    .profile-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 28px;
+    }
+    .profile-meta {
+        justify-content: center;
+    }
+}
+
 .auth-modal-backdrop {
     position: fixed;
     inset: 0;

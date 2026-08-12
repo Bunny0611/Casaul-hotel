@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
         * { font-family: 'Poppins', sans-serif; }
 
         html, body {
@@ -125,26 +125,6 @@
                     <i class="fas fa-history w-6"></i>
                     <span>Cleaning History</span>
                 </a>
-                <a href="{{ route('housekeeping.assigned-rooms') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
-                    <i class="fas fa-clipboard-list w-6"></i>
-                    <span>Assigned Rooms</span>
-                </a>
-                <a href="{{ route('housekeeping.room-status-update') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
-                    <i class="fas fa-sync-alt w-6"></i>
-                    <span>Room Status Update</span>
-                </a>
-                <a href="{{ route('housekeeping.guest-requests') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
-                    <i class="fas fa-bell w-6"></i>
-                    <span>Guest Requests</span>
-                </a>
-                <a href="{{ route('housekeeping.maintenance-report') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
-                    <i class="fas fa-tools w-6"></i>
-                    <span>Maintenance Report</span>
-                </a>
-                <a href="{{ route('housekeeping.cleaning-history') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300">
-                    <i class="fas fa-history w-6"></i>
-                    <span>Cleaning History</span>
-                </a>
             </nav>
             
             <div class="mt-auto pt-8 px-6 pb-6">
@@ -224,7 +204,3 @@
 </body>
 </html>
 
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/main

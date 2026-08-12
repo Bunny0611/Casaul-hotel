@@ -99,11 +99,6 @@
         </div>
     </div>
     
-  
-    
-    
-
-    
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div class="bg-white rounded-xl shadow-lg p-6 h-[420px] lg:h-[380px]">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Reservation Status <span class="text-sm font-normal text-gray-400">(Overview)</span></h3>
@@ -266,13 +261,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 }
-<<<<<<< HEAD
             },
             scales: {
                 x: { display: false },
                 y: { display: false }
-=======
->>>>>>> origin/main
             }
         }
     });
@@ -280,3 +272,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endsection
+
