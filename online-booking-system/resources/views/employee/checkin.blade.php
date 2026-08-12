@@ -36,6 +36,115 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+
+    .modal-panel {
+        border-radius: 1.75rem;
+        background: #ffffff;
+        padding: 1.5rem;
+        max-width: 28rem;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .modal-title {
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .modal-subtitle {
+        margin-top: 0.35rem;
+        color: #6b7280;
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    .modal-close-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+
+    .modal-close-btn:hover {
+        color: #475569;
+    }
+
+    .modal-details {
+        display: grid;
+        gap: 0.8rem;
+    }
+
+    .modal-detail-row {
+        border-radius: 1.25rem;
+        background: #f8fafc;
+        padding: 0.95rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .modal-detail-label {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .modal-detail-value {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #334155;
+        text-align: right;
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .modal-btn {
+        border-radius: 999px;
+        min-width: 116px;
+        padding: 0.8rem 1.2rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .modal-btn-secondary {
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        color: #334155;
+    }
+
+    .modal-btn-secondary:hover {
+        background: #f8fafc;
+    }
+
+    .modal-btn-primary {
+        background: #10b981;
+        color: #ffffff;
+        border: 1px solid transparent;
+    }
+
+    .modal-btn-primary:hover {
+        background: #0f766e;
+    }
+
 </style>
 
 <div class="space-y-6">
@@ -87,35 +196,6 @@
             </div>
         </div>
     </div>
-
-    <div class="soft-card p-4 mb-6">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4 flex-1">
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-600">Search Reservation ID</label>
-                    <input id="searchReservation" type="text" placeholder="BK1001" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-sky-500">
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-600">Search Guest Name</label>
-                    <input id="searchGuest" type="text" placeholder="Juan" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-sky-500">
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-600">Filter by Date</label>
-                    <input id="filterDate" type="date" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-sky-500">
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-slate-600">Filter by Status</label>
-                    <select id="filterStatus" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-sky-500">
-                        <option value="">All</option>
-                        <option>Confirmed</option>
-                        <option>Checked In</option>
-                        <option>Checked Out</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
-
 
     <div class="grid gap-6 xl:grid-cols-2">
         <div class="soft-card p-6">
@@ -185,53 +265,112 @@
 </div>
 
 <div id="checkInModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
-    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <div class="mb-4 flex items-start justify-between">
+    <div class="modal-panel w-full max-w-lg">
+        <div class="modal-header">
             <div>
-                <h4 class="text-lg font-semibold text-slate-800">Confirm Check-in</h4>
-                <p class="text-sm text-slate-500">Review guest details before proceeding.</p>
+                <h4 class="modal-title">Confirm Check-in</h4>
+                <p class="modal-subtitle">Review guest details before proceeding.</p>
             </div>
-            <button type="button" class="text-slate-400 hover:text-slate-600" onclick="closeModal('checkInModal')"><i class="fas fa-times"></i></button>
+            <button type="button" class="modal-close-btn" onclick="closeModal('checkInModal')"><i class="fas fa-times"></i></button>
         </div>
-        <div class="space-y-3 text-sm text-slate-700">
-            <div class="rounded-lg bg-slate-50 p-3"><strong>Reservation ID:</strong> <span id="checkInReservation"></span></div>
-            <div class="rounded-lg bg-slate-50 p-3"><strong>Guest:</strong> <span id="checkInGuest"></span></div>
-            <div class="rounded-lg bg-slate-50 p-3"><strong>Room:</strong> <span id="checkInRoom"></span></div>
-            <div class="rounded-lg bg-slate-50 p-3"><strong>Check-in Date:</strong> <span id="checkInDate"></span></div>
-            <div class="rounded-lg bg-slate-50 p-3"><strong>Time:</strong> <span id="checkInTime"></span></div>
+
+        <div class="modal-details">
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Reservation ID:</span>
+                <span class="modal-detail-value" id="checkInReservation"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Guest:</span>
+                <span class="modal-detail-value" id="checkInGuest"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Room:</span>
+                <span class="modal-detail-value" id="checkInRoom"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Check-in Date:</span>
+                <span class="modal-detail-value" id="checkInDate"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Time:</span>
+                <span class="modal-detail-value" id="checkInTime"></span>
+            </div>
         </div>
-        <div class="mt-6 flex justify-end gap-2">
-            <button type="button" class="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600" onclick="closeModal('checkInModal')">Cancel</button>
-            <button type="button" class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Confirm Check-in</button>
+
+        <div class="modal-actions">
+            <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('checkInModal')">Cancel</button>
+            <button type="button" class="modal-btn modal-btn-primary">Confirm Check-in</button>
         </div>
     </div>
 </div>
 
 <div id="checkOutModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
-    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <div class="mb-4 flex items-start justify-between">
+    <div class="modal-panel w-full max-w-lg">
+        <div class="modal-header">
             <div>
-                <h4 class="text-lg font-semibold text-slate-800">Confirm Check-out</h4>
-                <p class="text-sm text-slate-500">Review the final bill and room status before proceeding.</p>
+                <h4 class="modal-title">Confirm Check-out</h4>
+                <p class="modal-subtitle">Review departure details before completing checkout.</p>
             </div>
-            <button type="button" class="text-slate-400 hover:text-slate-600" onclick="closeModal('checkOutModal')"><i class="fas fa-times"></i></button>
+            <button type="button" class="modal-close-btn" onclick="closeModal('checkOutModal')"><i class="fas fa-times"></i></button>
         </div>
-        <div class="space-y-3 text-sm text-slate-700">
-            <div class="rounded-lg bg-slate-50 p-3"><strong>Reservation ID:</strong> <span id="checkOutReservation"></span></div>
-            <div class="rounded-lg bg-slate-50 p-3"><strong>Guest:</strong> <span id="checkOutGuest"></span></div>
-            <div class="rounded-lg bg-slate-50 p-3"><strong>Room:</strong> <span id="checkOutRoom"></span></div>
-            <div class="rounded-lg bg-slate-50 p-3"><strong>Check-out Date:</strong> <span id="checkOutDate"></span></div>
-            <div class="rounded-lg bg-slate-50 p-3"><strong>Balance:</strong> <span id="checkOutBalance"></span></div>
-            <div class="rounded-lg bg-amber-50 p-3 text-amber-700">Room will be marked as Cleaning after checkout.</div>
+
+        <div class="modal-details">
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Reservation ID:</span>
+                <span class="modal-detail-value" id="checkOutReservation"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Guest:</span>
+                <span class="modal-detail-value" id="checkOutGuest"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Room:</span>
+                <span class="modal-detail-value" id="checkOutRoom"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Check-out:</span>
+                <span class="modal-detail-value" id="checkOutDate"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Balance Due:</span>
+                <span class="modal-detail-value text-rose-600" id="checkOutBalance"></span>
+            </div>
         </div>
-        <div class="mt-6 flex justify-end gap-2">
-            <button type="button" class="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600" onclick="closeModal('checkOutModal')">Cancel</button>
-            <button type="button" class="rounded-full bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">Confirm Check-out</button>
+
+        <div class="modal-actions">
+            <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('checkOutModal')">Cancel</button>
+            <button type="button" class="modal-btn modal-btn-primary">Confirm Check-out</button>
         </div>
     </div>
 </div>
 
 <script>
+    function applyFilters() {
+        const reservation = document.getElementById('searchReservation')?.value.toLowerCase() || '';
+        const guest = document.getElementById('searchGuest')?.value.toLowerCase() || '';
+        const date = document.getElementById('filterDate')?.value;
+        const status = document.getElementById('filterStatus')?.value.toLowerCase() || '';
+
+        document.querySelectorAll('tbody tr').forEach((row) => {
+            const rowReservation = row.getAttribute('data-reservation')?.toLowerCase() || '';
+            const rowGuest = row.getAttribute('data-guest')?.toLowerCase() || '';
+            const rowDate = row.getAttribute('data-date');
+            const rowStatus = row.getAttribute('data-status')?.toLowerCase() || '';
+
+            const matchesReservation = rowReservation.includes(reservation);
+            const matchesGuest = rowGuest.includes(guest);
+            const matchesDate = !date || rowDate === date;
+            const matchesStatus = !status || rowStatus === status;
+
+            row.style.display = matchesReservation && matchesGuest && matchesDate && matchesStatus ? '' : 'none';
+        });
+    }
+
+    ['searchReservation', 'searchGuest', 'filterDate', 'filterStatus'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('input', applyFilters);
+        document.getElementById(id)?.addEventListener('change', applyFilters);
+    });
+
     function openCheckInModal(reservation, guest, room, date, time) {
         document.getElementById('checkInReservation').textContent = reservation;
         document.getElementById('checkInGuest').textContent = guest;
@@ -259,40 +398,5 @@
             modal.classList.remove('flex');
         }
     }
-
-    function applyFilters() {
-        const reservation = document.getElementById('searchReservation').value.toLowerCase();
-        const guest = document.getElementById('searchGuest').value.toLowerCase();
-        const date = document.getElementById('filterDate').value;
-        const status = document.getElementById('filterStatus').value.toLowerCase();
-
-        document.querySelectorAll('tbody tr').forEach((row) => {
-            const rowReservation = row.getAttribute('data-reservation').toLowerCase();
-            const rowGuest = row.getAttribute('data-guest').toLowerCase();
-            const rowDate = row.getAttribute('data-date');
-            const rowStatus = row.getAttribute('data-status').toLowerCase();
-
-            const matchesReservation = rowReservation.includes(reservation);
-            const matchesGuest = rowGuest.includes(guest);
-            const matchesDate = !date || rowDate === date;
-            const matchesStatus = !status || rowStatus === status;
-
-            row.style.display = matchesReservation && matchesGuest && matchesDate && matchesStatus ? '' : 'none';
-        });
-    }
-
-    const toggleFormsBtn = document.getElementById('toggleFormsBtn');
-    const formsSection = document.getElementById('formsSection');
-
-    toggleFormsBtn?.addEventListener('click', () => {
-        const isHidden = formsSection.classList.contains('hidden');
-        formsSection.classList.toggle('hidden', !isHidden);
-        toggleFormsBtn.textContent = isHidden ? 'Hide Forms' : 'Show Forms';
-    });
-
-    ['searchReservation', 'searchGuest', 'filterDate', 'filterStatus'].forEach((id) => {
-        document.getElementById(id)?.addEventListener('input', applyFilters);
-        document.getElementById(id)?.addEventListener('change', applyFilters);
-    });
 </script>
 @endsection

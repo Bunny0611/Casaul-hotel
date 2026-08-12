@@ -348,11 +348,26 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        signupForm?.addEventListener('submit', (event) => {
-            event.preventDefault();
-            if (authMessage) {
-                authMessage.style.display = 'block';
-                authMessage.textContent = 'Account creation is coming soon. Please use the sign-in form for now.';
+// Allow the signup form to submit so guests can actually create accounts.
+        // (Previously blocked with a "coming soon" message.)
+    }
+
+    // ---- Profile dropdown toggle ----
+    const profileTrigger = document.getElementById('profile-trigger');
+    const profileMenu = document.getElementById('profile-menu');
+
+    if (profileTrigger && profileMenu) {
+        profileTrigger.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const willOpen = !profileMenu.classList.contains('open');
+            profileMenu.classList.toggle('open', willOpen);
+            profileTrigger.classList.toggle('open', willOpen);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!profileMenu.contains(event.target) && !profileTrigger.contains(event.target)) {
+                profileMenu.classList.remove('open');
+                profileTrigger.classList.remove('open');
             }
         });
     }
