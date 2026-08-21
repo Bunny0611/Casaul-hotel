@@ -23,10 +23,10 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     const applyFilters = () => {
-        const queryRoom = (searchRoomInput.value || '').trim().toLowerCase();
-        const queryType = (searchTypeInput.value || '').trim().toLowerCase();
-        const selectedStatus = (statusSelect.value || '').toLowerCase();
-        const selectedFloor = (floorSelect.value || '').toLowerCase();
+        const queryRoom = (searchRoomInput?.value || '').trim().toLowerCase();
+        const queryType = (searchTypeInput?.value || '').trim().toLowerCase();
+        const selectedStatus = (statusSelect?.value || '').toLowerCase();
+        const selectedFloor = (floorSelect?.value || '').toLowerCase();
         let visibleCount = 0;
 
         rows.forEach((row) => {
@@ -45,15 +45,17 @@ document.addEventListener('DOMContentLoaded', function () {
             if (showRow) visibleCount += 1;
         });
 
-        emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
+        if (emptyState) {
+            emptyState.style.display = visibleCount === 0 ? 'flex' : 'none';
+        }
     };
 
-    [searchRoomInput, searchTypeInput, statusSelect, floorSelect].forEach((element) => {
+        [searchRoomInput, searchTypeInput, statusSelect, floorSelect].filter(Boolean).forEach((element) => {
         element.addEventListener('input', applyFilters);
         element.addEventListener('change', applyFilters);
     });
 
-    resetBtn.addEventListener('click', () => {
+        resetBtn?.addEventListener('click', () => {
         searchRoomInput.value = '';
         searchTypeInput.value = '';
         statusSelect.value = '';
@@ -86,8 +88,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    modalClose.addEventListener('click', () => modalOverlay.classList.remove('open'));
-    modalOverlay.addEventListener('click', function (event) {
+    modalClose?.addEventListener('click', () => modalOverlay.classList.remove('open'));
+    modalOverlay?.addEventListener('click', function (event) {
         if (event.target === this) {
             this.classList.remove('open');
         }
@@ -97,21 +99,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalAssignHousekeeper = document.getElementById('modal-assign-housekeeper');
     let activeRoomNumber = null;
 
-    modalChangeStatus.addEventListener('click', () => {
+    modalChangeStatus?.addEventListener('click', () => {
         if (!activeRoomNumber) {
             return;
         }
         alert(`Change status for room ${activeRoomNumber}`);
     });
 
-    modalAssignHousekeeper.addEventListener('click', () => {
+    modalAssignHousekeeper?.addEventListener('click', () => {
         if (!activeRoomNumber) {
             return;
         }
         alert(`Assign housekeeper for room ${activeRoomNumber}`);
     });
 
-    document.getElementById('refresh-button').addEventListener('click', () => {
+    document.getElementById('refresh-button')?.addEventListener('click', () => {
         rows.forEach((row) => {
             row.style.display = '';
         });
@@ -120,6 +122,58 @@ document.addEventListener('DOMContentLoaded', function () {
         searchTypeInput.value = '';
         statusSelect.value = '';
         floorSelect.value = '';
+    });
+
+    const modalFields = {
+        amenity: {
+            modal: 'amenity-details-modal',
+            row: '[data-action="view-amenity"]',
+            fields: {
+                name: 'amenityName', type: 'amenityType', location: 'amenityLocation', capacity: 'amenityCapacity', status: 'amenityStatus', hours: 'amenityHours', description: 'amenityDescription', reservationStatus: 'reservationStatus', guest: 'guest', reservationId: 'reservationId', reservationDate: 'reservationDate', startTime: 'startTime', endTime: 'endTime', guests: 'guests', lastCleaned: 'lastCleaned', maintenance: 'maintenanceStatus', notes: 'notes'
+            },
+            ids: { name: 'amenity-detail-name', type: 'amenity-detail-type', location: 'amenity-detail-location', capacity: 'amenity-detail-capacity', status: 'amenity-detail-status', hours: 'amenity-detail-hours', description: 'amenity-detail-description', reservationStatus: 'amenity-detail-reservation-status', guest: 'amenity-detail-guest', reservationId: 'amenity-detail-reservation-id', reservationDate: 'amenity-detail-reservation-date', startTime: 'amenity-detail-start-time', endTime: 'amenity-detail-end-time', guests: 'amenity-detail-guests', lastCleaned: 'amenity-detail-last-cleaned', maintenance: 'amenity-detail-maintenance', notes: 'amenity-detail-notes' }
+        },
+        event: {
+            modal: 'event-details-modal',
+            row: '[data-action="view-event"]',
+            fields: { name: 'eventName', type: 'eventType', location: 'eventLocation', capacity: 'eventCapacity', status: 'eventStatus', size: 'eventSize', description: 'eventDescription', reservationStatus: 'reservationStatus', guest: 'guest', reservationId: 'reservationId', date: 'eventDate', startTime: 'startTime', endTime: 'endTime', guests: 'expectedGuests', setup: 'setupStatus', cleaning: 'cleaningStatus', maintenance: 'maintenanceStatus', notes: 'notes' },
+            ids: { name: 'event-detail-name', type: 'event-detail-type', location: 'event-detail-location', capacity: 'event-detail-capacity', status: 'event-detail-status', size: 'event-detail-size', description: 'event-detail-description', reservationStatus: 'event-detail-reservation-status', guest: 'event-detail-guest', reservationId: 'event-detail-reservation-id', date: 'event-detail-date', startTime: 'event-detail-start-time', endTime: 'event-detail-end-time', guests: 'event-detail-guests', setup: 'event-detail-setup', cleaning: 'event-detail-cleaning', maintenance: 'event-detail-maintenance', notes: 'event-detail-notes' }
+        },
+        dining: {
+            modal: 'dining-details-modal',
+            row: '[data-action="view-dining"]',
+            fields: { name: 'diningName', type: 'diningType', location: 'diningLocation', capacity: 'diningCapacity', status: 'diningStatus', reservationStatus: 'reservationStatus', guest: 'guest', reservationId: 'reservationId', date: 'reservationDate', time: 'reservationTime', guests: 'guests', order: 'order', seating: 'seatingStatus', requests: 'specialRequests', notes: 'notes' },
+            ids: { name: 'dining-detail-name', type: 'dining-detail-type', location: 'dining-detail-location', capacity: 'dining-detail-capacity', status: 'dining-detail-status', reservationStatus: 'dining-detail-reservation-status', guest: 'dining-detail-guest', reservationId: 'dining-detail-reservation-id', date: 'dining-detail-date', time: 'dining-detail-time', guests: 'dining-detail-guests', order: 'dining-detail-order', seating: 'dining-detail-seating', requests: 'dining-detail-requests', notes: 'dining-detail-notes' }
+        }
+    };
+
+    Object.values(modalFields).forEach((config) => {
+        document.querySelectorAll(config.row).forEach((button) => {
+            button.addEventListener('click', function () {
+                const row = this.closest('tr');
+                Object.entries(config.fields).forEach(([key, dataKey]) => {
+                    const target = document.getElementById(config.ids[key]);
+                    if (target) target.textContent = row.dataset[dataKey] || '—';
+                });
+                document.getElementById(config.modal)?.classList.add('open');
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-close-modal]').forEach((button) => {
+        button.addEventListener('click', () => document.getElementById(button.dataset.closeModal)?.classList.remove('open'));
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+        overlay.addEventListener('click', function (event) {
+            if (event.target === this) this.classList.remove('open');
+        });
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay.open').forEach((modal) => modal.classList.remove('open'));
+        }
     });
 
     applyFilters();

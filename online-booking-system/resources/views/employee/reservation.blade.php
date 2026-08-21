@@ -4,6 +4,7 @@
 @section('content')
 
 @php
+    $reservations = $reservations ?? collect([]);
     $roomReservations = $reservations;
     $amenityReservations = $reservations->where('category', 'amenities');
     $eventPlaceReservations = $reservations->where('category', 'event_place');
@@ -56,15 +57,6 @@
         <button type="button" onclick="openAddReservationModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
             <i class="fas fa-plus mr-2"></i>Add Reservation
         </button>
-    </div>
-
-    <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div class="flex flex-wrap gap-2">
-            <button type="button" data-reservation-tab="rooms" class="reservation-tab inline-flex items-center rounded-full border border-orange-500 bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition">ROOMS</button>
-            <button type="button" data-reservation-tab="amenities" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">AMENITIES</button>
-            <button type="button" data-reservation-tab="event_place" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">EVENT PLACE</button>
-            <button type="button" data-reservation-tab="dining" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">DINING</button>
-        </div>
     </div>
 
     <div id="roomsTab" data-reservation-panel="rooms" class="space-y-4">
@@ -687,54 +679,6 @@
                 closeAddReservationModal();
             }
         });
-
-        function setActiveReservationTab(tabKey) {
-            const buttons = document.querySelectorAll('[data-reservation-tab]');
-            const panels = document.querySelectorAll('[data-reservation-panel]');
-            buttons.forEach(button => {
-                const isActive = button.dataset.reservationTab === tabKey;
-                button.classList.toggle('bg-orange-500', isActive);
-                button.classList.toggle('border-orange-500', isActive);
-                button.classList.toggle('text-white', isActive);
-                button.classList.toggle('bg-white', !isActive);
-                button.classList.toggle('border-gray-200', !isActive);
-                button.classList.toggle('text-gray-700', !isActive);
-            });
-            panels.forEach(panel => {
-                panel.classList.toggle('hidden', panel.dataset.reservationPanel !== tabKey);
-            });
-            const categoryInput = document.getElementById('reservationCategory');
-            if (categoryInput) {
-                categoryInput.value = tabKey;
-            }
-            const modalTitle = document.querySelector('#addReservationModal h3');
-            const addButton = document.querySelector('button[onclick="openAddReservationModal()"]');
-            const labelMap = {
-                rooms: 'Reservation',
-                amenities: 'Amenity Reservation',
-                event_place: 'Event Place Reservation',
-                dining: 'Dining Reservation'
-            };
-            if (modalTitle) {
-                modalTitle.textContent = `Add New ${labelMap[tabKey]}`;
-            }
-            if (addButton) {
-                const buttonLabel = tabKey === 'rooms' ? 'Add Reservation' : `Add ${labelMap[tabKey]}`;
-                addButton.innerHTML = `<i class="fas fa-plus mr-2"></i>${buttonLabel}`;
-            }
-        }
-
-        const tabButtons = document.querySelectorAll('[data-reservation-tab]');
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => setActiveReservationTab(button.dataset.reservationTab));
-        });
-
-        const initialTab = '{{ old('category', 'rooms') }}';
-        setActiveReservationTab(initialTab);
-
-        @if($errors->any())
-            openAddReservationModal();
-        @endif
     });
 </script>
 @endsection
