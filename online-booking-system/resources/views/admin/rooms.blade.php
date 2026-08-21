@@ -36,7 +36,7 @@
         <button type="button" data-tab="dining" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">DINING</button>
     </div>
 
-    <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-none">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
             <div></div>
             <div class="flex items-center gap-3">
@@ -119,6 +119,7 @@
                     </tbody>
                 </table>
             </div>
+            {{ $rooms->links('pagination.admin-rooms') }}
         </div>
     </div>
 
