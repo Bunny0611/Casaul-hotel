@@ -279,7 +279,8 @@ class AdminController extends Controller
     {
         $reservation = Reservation::findOrFail($id);
         $reservation->update(['status' => $request->status]);
-        return redirect()->route('admin.reservations')->with('success', 'Reservation status updated successfully!');
+
+        return redirect()->back()->with('success', 'Reservation status updated successfully!');
     }
 
     public function guests()
