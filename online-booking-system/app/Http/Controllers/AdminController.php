@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 use App\Models\Room;
 use App\Models\Reservation;
 use App\Models\Message;
@@ -76,15 +77,23 @@ class AdminController extends Controller
     public function rooms()
     {
         $rooms = Room::orderBy('room_number')->paginate(5);
-        $inventoryItems = InventoryItem::orderBy('name')->get();
-        return view('admin.rooms', compact('rooms', 'inventoryItems'));
+        $amenities = InventoryItem::where('category', 'amenities')->orderBy('name')->paginate(5, ['*'], 'amenities_page')->appends(['tab' => 'amenities']);
+        $eventPlaces = InventoryItem::where('category', 'event_place')->orderBy('name')->paginate(5, ['*'], 'event_places_page')->appends(['tab' => 'event-place']);
+        $dining = InventoryItem::where('category', 'dining')->orderBy('name')->paginate(5, ['*'], 'dining_page')->appends(['tab' => 'dining']);
+        $activeTab = request()->query('tab', 'rooms');
+
+        if (!in_array($activeTab, ['rooms', 'amenities', 'event-place', 'dining'], true)) {
+            $activeTab = 'rooms';
+        }
+
+        return view('admin.rooms', compact('rooms', 'amenities', 'eventPlaces', 'dining', 'activeTab'));
     }
 
     public function storeInventoryItem(Request $request)
     {
         $validated = $request->validate([
             'category' => ['required', 'in:amenities,event_place,dining'],
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', Rule::unique('inventory_items', 'name')->where(fn ($query) => $query->where('category', $request->category))],
             'type' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -100,6 +109,71 @@ class AdminController extends Controller
         InventoryItem::create($validated);
 
         return redirect()->route('admin.rooms')->with('success', 'Inventory item added successfully.');
+    }
+
+    public function updateInventoryItem(Request $request, $id)
+    {
+        $item = InventoryItem::findOrFail($id);
+        $validated = $request->validate([
+            'category' => ['required', 'in:amenities,event_place,dining'],
+            'name' => ['required', 'string', 'max:255', Rule::unique('inventory_items', 'name')->where(fn ($query) => $query->where('category', $request->category))->ignore($item->id)],
+            'type' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'status' => ['required', 'string', 'max:50'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'capacity' => ['nullable', 'integer', 'min:1'],
+            'available_from' => ['nullable', 'date_format:H:i'],
+            'available_to' => ['nullable', 'date_format:H:i'],
+            'quantity' => ['nullable', 'integer', 'min:0'],
+        ]);
+        $validated['status'] = strtolower($validated['status']);
+
+        $item->update($validated);
+
+        return redirect()->route('admin.rooms')->with('success', 'Inventory item updated successfully.');
+    }
+
+    public function updateInventoryStatus(Request $request, $id)
+    {
+        $item = InventoryItem::findOrFail($id);
+        $validated = $request->validate(['status' => ['required', 'string', 'max:50']]);
+        $item->update(['status' => strtolower($validated['status'])]);
+
+        return redirect()->route('admin.rooms')->with('success', 'Inventory status updated successfully.');
+    }
+
+    public function destroyInventoryItem($id)
+    {
+        $item = InventoryItem::findOrFail($id);
+        $item->delete();
+
+        return redirect()->route('admin.rooms')->with('success', 'Inventory item deleted successfully.');
+    }
+
+    public function bulkDestroyInventoryItems(Request $request)
+    {
+        $ids = $request->input('inventory_ids', []);
+        $category = $request->input('category');
+
+        if (is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        $inventoryIds = collect($ids)
+            ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!count($inventoryIds) || !in_array($category, ['amenities', 'event_place', 'dining'], true)) {
+            return redirect()->route('admin.rooms')->with('success', 'No inventory items selected for deletion.');
+        }
+
+        $deleted = InventoryItem::where('category', $category)->whereIn('id', $inventoryIds)->delete();
+
+        return redirect()->route('admin.rooms')->with('success', $deleted . ' inventory item(s) deleted successfully.');
     }
 
     public function storeRoom(Request $request)
@@ -205,7 +279,8 @@ class AdminController extends Controller
     {
         $reservation = Reservation::findOrFail($id);
         $reservation->update(['status' => $request->status]);
-        return redirect()->route('admin.reservations')->with('success', 'Reservation status updated successfully!');
+
+        return redirect()->back()->with('success', 'Reservation status updated successfully!');
     }
 
     public function guests()
@@ -637,15 +712,15 @@ class AdminController extends Controller
     {
         $this->ensureAdmin();
 
-        $users = User::with('creator')->latest()->get();
+        $users = User::with('creator')->latest()->paginate(5, ['*'], 'accounts_page');
 
         return view('admin.manage-account', [
             'users' => $users,
-            'totalUsers' => $users->count(),
-            'totalAdmins' => $users->where('role', 'admin')->count(),
-            'totalEmployees' => $users->where('role', 'employee')->count(),
-            'totalHousekeeping' => $users->where('role', 'housekeeping')->count(),
-            'activeUsers' => $users->where('is_active', true)->count(),
+            'totalUsers' => User::count(),
+            'totalAdmins' => User::where('role', 'admin')->count(),
+            'totalEmployees' => User::where('role', 'employee')->count(),
+            'totalHousekeeping' => User::where('role', 'housekeeping')->count(),
+            'activeUsers' => User::where('is_active', true)->count(),
         ]);
     }
 
@@ -748,6 +823,32 @@ class AdminController extends Controller
         $user->delete();
 
         return redirect()->route('admin.manage-account')->with('success', 'Account deleted successfully!');
+    }
+
+    public function bulkDestroyUsers(Request $request)
+    {
+        $this->ensureAdmin();
+
+        $ids = $request->input('user_ids', []);
+        if (is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        $userIds = collect($ids)
+            ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => $id === (int) auth()->id())
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!count($userIds)) {
+            return redirect()->route('admin.manage-account')->withErrors(['No valid accounts selected for deletion.']);
+        }
+
+        $deleted = User::whereIn('id', $userIds)->delete();
+
+        return redirect()->route('admin.manage-account')->with('success', $deleted . ' account(s) deleted successfully!');
     }
 
     private function ensureAdmin(): void

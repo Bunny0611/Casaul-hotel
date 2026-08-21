@@ -43,18 +43,12 @@
 @endphp
 
 <div class="animate-fade-in space-y-6">
-    @if(session('success'))
-        <div class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-            <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
-        </div>
-    @endif
-
     <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Reservation Management</h2>
             <p class="mt-1 text-sm text-gray-500">Manage guest bookings, update statuses, and create new reservations from one place.</p>
         </div>
-        <button type="button" onclick="openAddReservationModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
+        <button type="button" onclick="openAddReservationModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700" style="display: inline-flex !important; visibility: visible !important; opacity: 1 !important;">
             <i class="fas fa-plus mr-2"></i>Add Reservation
         </button>
     </div>
@@ -644,33 +638,50 @@
     }
 
     function openAddReservationModal() {
-        document.getElementById('addReservationModal').classList.remove('hidden');
-        document.getElementById('addReservationModal').classList.add('flex');
+        const modal = document.getElementById('addReservationModal');
+        if (!modal) return;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.style.display = 'flex';
+    }
+
+    function resetAddReservationForm() {
+        const form = document.getElementById('addReservationForm');
+        if (!form) return;
+
+        form.reset();
+        const categoryInput = document.getElementById('reservationCategory');
+        if (categoryInput) {
+            categoryInput.value = 'rooms';
+        }
+
+        const saveBtn = document.getElementById('saveReservationBtn');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save Reservation';
+            saveBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+        }
     }
 
     function closeAddReservationModal() {
-        document.getElementById('addReservationModal').classList.add('hidden');
-        document.getElementById('addReservationModal').classList.remove('flex');
+        const modal = document.getElementById('addReservationModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modal.style.display = 'none';
+        }
+        resetAddReservationForm();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
         const modal = document.getElementById('addReservationModal');
-        const form = document.getElementById('addReservationForm');
-        const saveBtn = document.getElementById('saveReservationBtn');
 
         if (modal) {
             modal.addEventListener('click', function (event) {
                 if (event.target === modal) {
                     closeAddReservationModal();
                 }
-            });
-        }
-
-        if (form && saveBtn) {
-            form.addEventListener('submit', function () {
-                saveBtn.disabled = true;
-                saveBtn.textContent = 'Saving...';
-                saveBtn.classList.add('opacity-70', 'cursor-not-allowed');
             });
         }
 

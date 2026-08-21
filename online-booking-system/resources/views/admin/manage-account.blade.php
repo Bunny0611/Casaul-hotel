@@ -123,6 +123,11 @@
                 <p class="text-sm text-slate-500">Accounts created by an admin can log in on any device using their email and password.</p>
             </div>
             <div class="flex flex-wrap gap-3">
+                <span id="selectedAccountCount" class="self-center text-sm font-medium text-slate-500">0 selected</span>
+                <button type="button" onclick="confirmBulkAccountDelete()"
+                    class="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700">
+                    <i class="fas fa-trash"></i> Delete Selected
+                </button>
                 <button type="button" onclick="window.location.reload()"
                     class="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-600">
                     <i class="fas fa-sync-alt"></i> Refresh
@@ -133,7 +138,8 @@
             <table class="min-w-full border-separate border-spacing-y-3 text-left">
                 <thead>
                     <tr class="text-sm font-semibold text-slate-600">
-                        <th class="px-4 py-3">Name</th>
+                            <th class="px-4 py-3"><input id="selectAllAccounts" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500" onclick="toggleAllAccounts(this)" aria-label="Select all accounts"></th>
+                            <th class="px-4 py-3">Name</th>
                         <th class="px-4 py-3">Email</th>
                         <th class="px-4 py-3">Role</th>
                         <th class="px-4 py-3">Phone</th>
@@ -149,6 +155,7 @@
                             data-role="{{ $user->role }}"
                             data-status="{{ $user->is_active ? 'active' : 'inactive' }}"
                             data-search="{{ strtolower($user->name . ' ' . $user->email) }}">
+                                <td class="px-4 py-4"><input type="checkbox" class="account-checkbox h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500" value="{{ $user->id }}" onclick="updateAccountSelection()" aria-label="Select {{ $user->name }}" @disabled($user->id === auth()->id())></td>
                             <td class="px-4 py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 text-sm font-bold text-white">
@@ -234,14 +241,21 @@
                         </tr>
                     @empty
                         <tr class="bg-slate-50 rounded-3xl">
-                            <td class="px-4 py-4 text-sm text-slate-800" colspan="8">No accounts found.</td>
+                            <td class="px-4 py-4 text-sm text-slate-800" colspan="9">No accounts found.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+        {{ $users->links('pagination.admin-rooms') }}
     </div>
 </div>
+
+<form id="bulkAccountDeleteForm" method="POST" action="{{ route('admin.manage-account.bulkDestroy') }}">
+    @csrf
+    @method('DELETE')
+    <input type="hidden" name="user_ids" id="bulkUserIds">
+</form>
 
 <!-- ===== Create Account Modal ===== -->
 <div id="createModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/50 p-4">
@@ -417,6 +431,45 @@
 
     function closeModal(id) {
         document.getElementById(id).classList.add('hidden');
+    }
+
+    function updateAccountSelection() {
+        const checkboxes = document.querySelectorAll('.account-checkbox');
+        const selected = document.querySelectorAll('.account-checkbox:checked');
+        const selectAll = document.getElementById('selectAllAccounts');
+        const count = document.getElementById('selectedAccountCount');
+
+        if (selectAll) {
+            selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
+        }
+        if (count) {
+            count.textContent = selected.length + ' selected';
+        }
+    }
+
+    function toggleAllAccounts(source) {
+        document.querySelectorAll('.account-checkbox').forEach(function (checkbox) {
+            checkbox.checked = source.checked;
+        });
+        updateAccountSelection();
+    }
+
+    function confirmBulkAccountDelete() {
+        const selectedIds = Array.from(document.querySelectorAll('.account-checkbox:checked')).map(function (checkbox) {
+            return checkbox.value;
+        });
+
+        if (!selectedIds.length) {
+            alert('Please select at least one account to delete.');
+            return;
+        }
+
+        if (!confirm('Are you sure you want to delete the selected ' + selectedIds.length + ' account(s)?')) {
+            return;
+        }
+
+        document.getElementById('bulkUserIds').value = selectedIds.join(',');
+        document.getElementById('bulkAccountDeleteForm').submit();
     }
 
     function openEditModal(btn) {
