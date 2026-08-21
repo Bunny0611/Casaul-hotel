@@ -25,6 +25,20 @@
 .sidebar .p-6 {
     background: transparent !important;
 }
+.sidebar nav,
+.room-pagination {
+    position: static;
+}
+.room-pagination {
+    top: auto;
+    width: auto;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border: 0;
+    backdrop-filter: none;
+    z-index: auto;
+}
         
         .header {
             background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);
@@ -106,15 +120,15 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <div class="flex min-h-screen overflow-hidden">
+    <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto md:static flex flex-col">
+        <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto transform -translate-x-full transition-transform duration-300 md:translate-x-0 md:flex-shrink-0 md:overflow-y-auto flex flex-col">
             <div class="p-6">
                 <h1 class="text-2xl font-bold tracking-wider">CASAUL</h1>
                 <p class="text-sm text-gray-300 mt-1">Hotel Management</p>
             </div>
             
-            <nav class="mt-20 flex flex-col px-3">
+            <nav class="mt-6 flex flex-col px-3">
                 <a href="{{ route('admin.dashboard') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin') || request()->is('admin/') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt w-6"></i>
                     <span>Dashboard</span>
@@ -147,7 +161,7 @@
                     <i class="fas fa-cog w-6"></i>
                     <span>Settings</span>
                 </a>
-            
+            </nav>
             
             <div class="mt-auto pt-8 px-6 pb-6">
                 <form method="POST" action="{{ route('logout') }}">
@@ -164,7 +178,7 @@
         <div id="sidebarBackdrop" class="fixed inset-0 z-40 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col min-w-0 overflow-hidden md:ml-0">
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden md:ml-64">
             <!-- Header -->
             <header class="header text-white px-4 py-4 sm:px-6 shadow-lg">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

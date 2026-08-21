@@ -20,7 +20,7 @@
     <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Reservation Management</h2>
-            <p class="mt-1 text-sm text-gray-500">Manage guest bookings, update statuses, and create new reservations from one place.</p>
+            <p class="mt-1 text-sm text-gray-500">Manage guest bookings and update reservation statuses from one place.</p>
         </div>
     </div>
 
@@ -64,12 +64,7 @@
         </div>
     </div>
 
-    <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-gray-800">Reservation List</h3>
-        <button type="button" onclick="openAddReservationModal()" class="inline-flex items-center gap-2 rounded-xl bg-[#ff6b35] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#e85a2a]">
-            <i class="fas fa-plus"></i> Add New Reservation
-        </button>
-    </div>
+    <h3 class="text-lg font-semibold text-gray-800">Reservation List</h3>
 
     <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div class="hidden overflow-x-auto md:block">
@@ -122,7 +117,7 @@
                             <td colspan="7" class="px-6 py-16 text-center text-gray-500">
                                 <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
                                 <p class="text-lg font-medium">No reservations found.</p>
-                                <p class="mt-1 text-sm">Create your first reservation to get started.</p>
+                                <p class="mt-1 text-sm">Reservations will appear here when guests make a booking.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -158,7 +153,7 @@
                 <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
                     <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
                     <p class="text-lg font-medium">No reservations found.</p>
-                    <p class="mt-1 text-sm">Create your first reservation to get started.</p>
+                    <p class="mt-1 text-sm">Reservations will appear here when guests make a booking.</p>
                 </div>
             @endforelse
         </div>
@@ -179,16 +174,6 @@
             document.getElementById('reservationStatus').value = status;
             document.getElementById('reservationStatusForm').submit();
         }
-    }
-
-    function openAddReservationModal() {
-        document.getElementById('addReservationModal').classList.remove('hidden');
-        document.getElementById('addReservationModal').classList.add('flex');
-    }
-
-    function closeAddReservationModal() {
-        document.getElementById('addReservationModal').classList.add('hidden');
-        document.getElementById('addReservationModal').classList.remove('flex');
     }
 
     document.addEventListener('DOMContentLoaded', function () {
