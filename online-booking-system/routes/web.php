@@ -43,7 +43,7 @@ Route::middleware('auth')->group(function () {
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
 // --- Employee Portal ---
-Route::prefix('employee')->name('employee.')->group(function () {
+Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
     Route::redirect('/', '/employee/dashboard')->name('index');
     Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
     Route::get('/reservation', function () {
@@ -52,6 +52,9 @@ Route::prefix('employee')->name('employee.')->group(function () {
 
         return view('employee.reservation', compact('reservations', 'rooms'));
     })->name('reservation');
+    Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
+    Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
+    Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::view('/checkin', 'employee.checkin')->name('checkin');
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
@@ -101,7 +104,7 @@ Route::prefix('employee')->name('employee.')->group(function () {
 });
 
 // --- Protected Admin Routes (requires authentication) ---
-Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/rooms', [AdminController::class, 'rooms'])->name('rooms');
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
@@ -116,7 +119,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::delete('/rooms/{id}', [AdminController::class, 'destroyRoom'])->name('rooms.destroy');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
+    Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
+    Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::get('/guests', [AdminController::class, 'guests'])->name('guests');
     Route::get('/messages', [AdminController::class, 'messages'])->name('messages');
     Route::post('/messages/{id}/reply', [AdminController::class, 'replyMessage'])->name('messages.reply');
@@ -135,7 +140,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 });
 
 // --- Housekeeping Portal ---
-Route::prefix('housekeeping')->name('housekeeping.')->group(function () {
+Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:housekeeping'])->group(function () {
     Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
     Route::patch('/rooms/{id}/cleaning', [HousekeepingController::class, 'updateStatus'])->name('rooms.cleaning');
     Route::get('/assigned-rooms', [HousekeepingController::class, 'assignedRooms'])->name('assigned-rooms');

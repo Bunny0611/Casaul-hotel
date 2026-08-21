@@ -96,7 +96,7 @@
             <div class="reservation-tabs">
                 <button type="button" class="tab-btn active" data-tab="room-tab"><span class="tab-icon"><i class="fas fa-bed"></i></span>Room</button>
                 <button type="button" class="tab-btn" data-tab="amenities-tab"><span class="tab-icon"><i class="fas fa-concierge-bell"></i></span>Amenities</button>
-                <button type="button" class="tab-btn" data-tab="event-tab"><span class="tab-icon"><i class="fas fa-calendar-check"></i></span>Event</button>
+                <button type="button" class="tab-btn" data-tab="event-place-tab"><span class="tab-icon"><i class="fas fa-calendar-check"></i></span>Event Place</button>
                 <button type="button" class="tab-btn" data-tab="dining-tab"><span class="tab-icon"><i class="fas fa-utensils"></i></span>Dining</button>
             </div>
 
@@ -129,7 +129,7 @@
                 <div class="reservation-card-grid">
                     @foreach($rooms as $room)
                         <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}">
-                            <img src="{{ asset($room->image ?? 'image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}">
+                            <img src="{{ $room->image ? asset(str_starts_with($room->image, 'rooms/') ? 'storage/' . $room->image : $room->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $room->room_type }}</h4>
                                 <div class="reservation-card-meta">
@@ -154,14 +154,15 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($amenities as $amenity)
-                        <article class="reservation-card" data-category="amenities" data-price="{{ $amenity['price'] }}" data-title="{{ $amenity['name'] }}">
+                        <article class="reservation-card" data-category="amenities" data-price="{{ $amenity->price }}" data-title="{{ $amenity->name }}">
+                            <img src="{{ $amenity->image ? asset('storage/' . $amenity->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $amenity->name }}">
                             <div class="reservation-card-body">
-                                <h4>{{ $amenity['name'] }}</h4>
-                                <p>{{ $amenity['description'] }}</p>
-                                <p class="text-muted">{{ $amenity['details'] }}</p>
+                                <h4>{{ $amenity->name }}</h4>
+                                <p>{{ $amenity->description ?: 'Premium guest add-on for your stay.' }}</p>
+                                <p class="text-muted">{{ $amenity->type ?: 'Available for your reservation' }}</p>
                                 <div class="reservation-card-footer">
-                                    <span class="price">₱{{ number_format($amenity['price'], 0) }}</span>
-                                    <button type="button" class="select-option-btn" data-title="{{ $amenity['name'] }}" data-price="{{ $amenity['price'] }}">Add to Reservation</button>
+                                    <span class="price">₱{{ number_format($amenity->price, 0) }}</span>
+                                    <button type="button" class="select-option-btn" data-title="{{ $amenity->name }}" data-price="{{ $amenity->price }}">Add to Reservation</button>
                                 </div>
                             </div>
                         </article>
@@ -169,21 +170,22 @@
                 </div>
             </div>
 
-            <div id="event-tab" class="reservation-panel">
+            <div id="event-place-tab" class="reservation-panel">
                 <div class="panel-header">
-                    <h3>Event</h3>
+                    <h3>Event Place</h3>
                     <p>Select an event package for your occasion.</p>
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
-                        <article class="reservation-card" data-category="event" data-price="{{ $event['price'] }}" data-title="{{ $event['name'] }}">
+                        <article class="reservation-card" data-category="event_place" data-price="{{ $event->price }}" data-title="{{ $event->name }}">
+                            <img src="{{ $event->image ? asset('storage/' . $event->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $event->name }}">
                             <div class="reservation-card-body">
-                                <h4>{{ $event['name'] }}</h4>
-                                <p>{{ $event['description'] }}</p>
-                                <p class="text-muted">{{ $event['details'] }}</p>
+                                <h4>{{ $event->name }}</h4>
+                                <p>{{ $event->description ?: 'Flexible event venue for your occasion.' }}</p>
+                                <p class="text-muted">{{ $event->type ?: 'Event venue package' }}</p>
                                 <div class="reservation-card-footer">
-                                    <span class="price">₱{{ number_format($event['price'], 0) }}</span>
-                                    <button type="button" class="select-option-btn" data-title="{{ $event['name'] }}" data-price="{{ $event['price'] }}">Add to Reservation</button>
+                                    <span class="price">₱{{ number_format($event->price, 0) }}</span>
+                                    <button type="button" class="select-option-btn" data-title="{{ $event->name }}" data-price="{{ $event->price }}">Add to Reservation</button>
                                 </div>
                             </div>
                         </article>
@@ -198,14 +200,15 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($dining as $meal)
-                        <article class="reservation-card" data-category="dining" data-price="{{ $meal['price'] }}" data-title="{{ $meal['name'] }}">
+                        <article class="reservation-card" data-category="dining" data-price="{{ $meal->price }}" data-title="{{ $meal->name }}">
+                            <img src="{{ $meal->image ? asset('storage/' . $meal->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
                             <div class="reservation-card-body">
-                                <h4>{{ $meal['name'] }}</h4>
-                                <p>{{ $meal['description'] }}</p>
-                                <p class="text-muted">{{ $meal['details'] }}</p>
+                                <h4>{{ $meal->name }}</h4>
+                                <p>{{ $meal->description ?: 'A dining option for your stay.' }}</p>
+                                <p class="text-muted">{{ $meal->type ?: 'Dining package' }}</p>
                                 <div class="reservation-card-footer">
-                                    <span class="price">₱{{ number_format($meal['price'], 0) }}</span>
-                                    <button type="button" class="select-option-btn" data-title="{{ $meal['name'] }}" data-price="{{ $meal['price'] }}">Add to Reservation</button>
+                                    <span class="price">₱{{ number_format($meal->price, 0) }}</span>
+                                    <button type="button" class="select-option-btn" data-title="{{ $meal->name }}" data-price="{{ $meal->price }}">Add to Reservation</button>
                                 </div>
                             </div>
                         </article>
@@ -260,13 +263,13 @@
                     <div class="summary-item-card-left">
                         <div class="summary-item-icon"><i class="fas fa-calendar-check"></i></div>
                         <div class="summary-item-details">
-                            <p class="summary-item-title">Event</p>
+                            <p class="summary-item-title">Event Place</p>
                             <p class="summary-item-subtitle" id="summaryEvent">None</p>
                         </div>
                     </div>
                     <div class="summary-item-card-right">
                         <span class="summary-item-price" id="summaryEventPrice">₱0</span>
-                        <button type="button" class="summary-edit-btn" data-target="event-tab">Edit</button>
+                        <button type="button" class="summary-edit-btn" data-target="event-place-tab">Edit</button>
                     </div>
                 </article>
                 <article class="summary-item-card">
@@ -358,6 +361,7 @@
 
 <form id="reservationForm" action="{{ route('reservation.store') }}" method="POST" style="display:none;">
     @csrf
+    <input type="hidden" name="submission_token" value="{{ \Illuminate\Support\Str::uuid() }}">
     <input type="hidden" name="room_id" id="reservationRoomId">
     <input type="hidden" name="check_in" id="reservationCheckIn">
     <input type="hidden" name="check_out" id="reservationCheckOut">
@@ -505,9 +509,9 @@
                         this.textContent = 'Added';
                         this.disabled = true;
                     }
-                } else if (category === 'event') {
+                } else if (category === 'event_place') {
                     if (selectedEvent) {
-                        const previousEventBtn = Array.from(items).find(btn => btn.closest('.reservation-card').dataset.category === 'event' && btn.textContent === 'Selected');
+                        const previousEventBtn = Array.from(items).find(btn => btn.closest('.reservation-card').dataset.category === 'event_place' && btn.textContent === 'Selected');
                         if (previousEventBtn) {
                             previousEventBtn.textContent = 'Add to Reservation';
                             previousEventBtn.disabled = false;
@@ -586,6 +590,12 @@
         });
 
         modalConfirmBtn.addEventListener('click', function () {
+            if (modalConfirmBtn.disabled) {
+                return;
+            }
+
+            modalConfirmBtn.disabled = true;
+            modalConfirmBtn.textContent = 'Submitting...';
             reservationForm.submit();
         });
 
