@@ -5,6 +5,7 @@
     .dashboard-shell {
         max-width: 1200px;
         margin: 0 auto;
+        padding: 0 1rem;
     }
 
     .summary-grid {
@@ -221,6 +222,24 @@
         }
     }
 
+    @media (max-width: 768px) {
+        .summary-card {
+            padding: 1rem;
+        }
+
+        .dashboard-panel {
+            padding: 1rem;
+        }
+
+        .panel-title h3 {
+            font-size: 1rem;
+        }
+
+        .occupancy-copy {
+            font-size: 0.9rem;
+        }
+    }
+
     @media (max-width: 640px) {
         .summary-grid {
             grid-template-columns: 1fr;
@@ -228,6 +247,27 @@
 
         .quick-actions {
             grid-template-columns: 1fr;
+        }
+
+        .dashboard-shell {
+            padding: 0 0.75rem;
+        }
+
+        .summary-card,
+        .dashboard-panel,
+        .snapshot-card,
+        .activity-item {
+            border-radius: 1rem;
+        }
+
+        .panel-title {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .activity-list {
+            gap: 0.6rem;
         }
     }
 </style>
@@ -277,14 +317,14 @@
                 <div class="progress-fill" id="occupancyBar"></div>
             </div>
             <p class="occupancy-copy">75% occupied (39 of 52 rooms)</p>
-            <div style="margin-top: 0.9rem; display: flex; gap: 0.7rem; flex-wrap: wrap;">
-                <div style="background: #fff8f2; border: 1px solid #f6dfcc; border-radius: 0.8rem; padding: 0.65rem 0.75rem; flex: 1; min-width: 120px;">
-                    <div style="font-size: 0.8rem; color: #9ca3af;">Occupied</div>
-                    <div style="font-size: 1rem; font-weight: 700; color: #111827;">39 Rooms</div>
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                <div class="rounded-xl border border-[#f6dfcc] bg-[#fff8f2] p-4">
+                    <div class="text-sm text-[#9ca3af]">Occupied</div>
+                    <div class="text-lg font-bold text-[#111827]">39 Rooms</div>
                 </div>
-                <div style="background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 0.8rem; padding: 0.65rem 0.75rem; flex: 1; min-width: 120px;">
-                    <div style="font-size: 0.8rem; color: #9ca3af;">Available</div>
-                    <div style="font-size: 1rem; font-weight: 700; color: #111827;">13 Rooms</div>
+                <div class="rounded-xl border border-[#e5e7eb] bg-[#f8fafc] p-4">
+                    <div class="text-sm text-[#9ca3af]">Available</div>
+                    <div class="text-lg font-bold text-[#111827]">13 Rooms</div>
                 </div>
             </div>
 

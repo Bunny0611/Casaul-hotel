@@ -4,13 +4,10 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
-
+use App\Http\Controllers\ProfileController;
 use App\Models\Message;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\ProfileController;
-
 
 // --- Public Routes ---
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -45,7 +42,7 @@ Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
 // --- Employee Portal ---
 Route::prefix('employee')->name('employee.')->group(function () {
-    Route::view('/', 'employee.employee')->name('index');
+    Route::redirect('/', '/employee/dashboard')->name('index');
     Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
     Route::view('/reservation', 'employee.reservation', [
         'reservations' => collect([]),
@@ -54,26 +51,30 @@ Route::prefix('employee')->name('employee.')->group(function () {
     Route::view('/checkin', 'employee.checkin')->name('checkin');
     Route::view('/room-status', 'employee.room-status')->name('room-status');
     Route::get('/guest-requests', function () {
-        $requests = session('employee_guest_requests', [
-            [
-                'id' => 1,
-                'title' => 'Room 305 - Extra Towels',
-                'requested_at' => '10:15 AM',
-                'status' => 'Pending',
-            ],
-            [
-                'id' => 2,
-                'title' => 'Room 208 - Late Checkout',
-                'requested_at' => '9:40 AM',
-                'status' => 'Approved',
-            ],
-            [
-                'id' => 3,
-                'title' => 'Room 101 - Wake-up Call',
-                'requested_at' => '7:30 AM',
-                'status' => 'Done',
-            ],
-        ]);
+        if (!session()->has('employee_guest_requests')) {
+            session()->put('employee_guest_requests', [
+                [
+                    'id' => 1,
+                    'title' => 'Room 305 - Extra Towels',
+                    'requested_at' => '10:15 AM',
+                    'status' => 'Pending',
+                ],
+                [
+                    'id' => 2,
+                    'title' => 'Room 208 - Late Checkout',
+                    'requested_at' => '9:40 AM',
+                    'status' => 'Approved',
+                ],
+                [
+                    'id' => 3,
+                    'title' => 'Room 101 - Wake-up Call',
+                    'requested_at' => '7:30 AM',
+                    'status' => 'Done',
+                ],
+            ]);
+        }
+
+        $requests = session('employee_guest_requests');
 
         return view('employee.guest-requests', compact('requests'));
     })->name('guest-requests');
@@ -87,13 +88,6 @@ Route::prefix('employee')->name('employee.')->group(function () {
         return view('employee.messages', compact('messages'));
     })->name('messages');
 
-    Route::view('/reservation', 'employee.reservation', ['reservations' => collect([]), 'rooms' => collect([])])->name('reservation');
-    Route::view('/checkin', 'employee.checkin')->name('checkin');
-    Route::view('/room-status', 'employee.room-status')->name('room-status');
-    Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
-    Route::post('/guest-requests/{id}/resolve', [AdminController::class, 'resolveGuestRequest'])->name('guest-requests.resolve');
-    Route::get('/messages', [AdminController::class, 'employeeMessages'])->name('messages');
-
     Route::post('/messages', [AdminController::class, 'storeEmployeeMessage'])->name('messages.store');
 });
 
@@ -104,6 +98,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
     Route::put('/rooms/{id}', [AdminController::class, 'updateRoom'])->name('rooms.update');
     Route::patch('/rooms/{id}/status', [AdminController::class, 'updateRoomStatus'])->name('rooms.status');
+    Route::match(['post', 'delete'], '/rooms/bulk-delete', [AdminController::class, 'bulkDestroyRooms'])->name('rooms.bulkDestroy');
     Route::delete('/rooms/{id}', [AdminController::class, 'destroyRoom'])->name('rooms.destroy');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
@@ -132,6 +127,9 @@ Route::prefix('housekeeping')->name('housekeeping.')->group(function () {
     Route::get('/room-status-update', [HousekeepingController::class, 'roomStatusUpdate'])->name('room-status-update');
     Route::get('/guest-requests', [HousekeepingController::class, 'guestRequests'])->name('guest-requests');
     Route::get('/maintenance-report', [HousekeepingController::class, 'maintenanceReport'])->name('maintenance-report');
+    Route::post('/maintenance-report', [HousekeepingController::class, 'storeMaintenanceReport'])->name('maintenance-report.store');
+    Route::put('/maintenance-report/{maintenanceReport}', [HousekeepingController::class, 'updateMaintenanceReport'])->name('maintenance-report.update');
+    Route::delete('/maintenance-report/{maintenanceReport}', [HousekeepingController::class, 'destroyMaintenanceReport'])->name('maintenance-report.destroy');
     Route::get('/cleaning-history', [HousekeepingController::class, 'cleaningHistory'])->name('cleaning-history');
 });
 
@@ -140,12 +138,12 @@ Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return redirect()->route('home');
+    return redirect('/');
 })->name('logout');
 
-Route::middleware('auth')->group(function(){
-    Route::get('/profile/edit', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+Route::middleware('auth')->group(function () {
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
 

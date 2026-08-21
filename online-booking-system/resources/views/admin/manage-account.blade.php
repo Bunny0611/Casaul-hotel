@@ -244,9 +244,9 @@
 </div>
 
 <!-- ===== Create Account Modal ===== -->
-<div id="createModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-    <div class="fixed inset-0 bg-black/50" onclick="closeModal('createModal')"></div>
-    <div class="relative mx-auto my-12 w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+<div id="createModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/50 p-4">
+    <div class="fixed inset-0" onclick="closeModal('createModal')"></div>
+    <div class="relative mx-auto my-6 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h3 class="text-xl font-bold text-slate-900">Create New Account</h3>
@@ -331,9 +331,9 @@
 </div>
 
 <!-- ===== Edit Account Modal ===== -->
-<div id="editModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-    <div class="fixed inset-0 bg-black/50" onclick="closeModal('editModal')"></div>
-    <div class="relative mx-auto my-12 w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+<div id="editModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/50 p-4">
+    <div class="fixed inset-0" onclick="closeModal('editModal')"></div>
+    <div class="relative mx-auto my-6 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h3 class="text-xl font-bold text-slate-900">Edit Account</h3>

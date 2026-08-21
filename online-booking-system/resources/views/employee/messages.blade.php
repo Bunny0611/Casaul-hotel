@@ -1,5 +1,6 @@
 @extends('employee.layout')
 
+@section('pageTitle', 'Message Management')
 @section('content')
 <div class="rounded-2xl bg-white p-6 shadow-md">
     <div class="mb-6 flex items-center justify-between">

@@ -168,6 +168,7 @@
                 padding-left: 1rem !important;
                 padding-right: 1rem !important;
             }
+            
         }
     </style>
 
@@ -249,11 +250,6 @@
                     class="nav-item px-5 py-3.5
                     {{ request()->routeIs('housekeeping.cleaning-history') ? 'active' : '' }}"
                 >
-                    <i class="fas fa-history w-6"></i>
-                    <span>Cleaning History</span>
-                </a>
-
-                <a href="{{ route('housekeeping.cleaning-history') }}" class="nav-item w-full flex items-center px-5 py-3.5 transition-all duration-300 {{ request()->routeIs('housekeeping.cleaning-history') ? 'active' : '' }}">
                     <i class="fas fa-history w-6"></i>
                     <span>Cleaning History</span>
                 </a>
@@ -382,6 +378,38 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+
+            document.addEventListener('submit', function (event) {
+
+                const form = event.target;
+
+                if (form.dataset.submitting === 'true') {
+                    event.preventDefault();
+                    return;
+                }
+
+                form.dataset.submitting = 'true';
+
+                const submitButton = event.submitter ||
+                    form.querySelector('button[type="submit"], input[type="submit"]');
+
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.setAttribute('aria-busy', 'true');
+                }
+
+                if (event.defaultPrevented) {
+                    setTimeout(function () {
+                        delete form.dataset.submitting;
+
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.removeAttribute('aria-busy');
+                        }
+                    }, 0);
+                }
+
+            });
 
             const sidebar = document.getElementById('sidebar');
             const backdrop = document.getElementById('sidebarBackdrop');

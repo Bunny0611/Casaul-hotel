@@ -6,27 +6,41 @@
 
      .maintenance-page {
     width: 100%;
-    min-height: 100%;
-    padding: 28px 32px 40px;
+    max-width: 100%;
+    min-height: 100vh;
     margin: 0;
+    padding: 28px 0 40px;
     background: #f6f7f9;
     color: #1f2937;
     box-sizing: border-box;
+    overflow-x: hidden;
 }
 
     .maintenance-container {
-        width: 100%;
-        max-width: 1600px;
-        margin: 0 auto;
-    }
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
 
-    .maintenance-header {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 25px;
-        margin-bottom: 28px;
-    }
+   .maintenance-header-container {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto 28px;
+    padding: 24px 30px;
+    background: #f8f9fb;
+    border: 1px solid #edf0f3;
+    border-radius: 16px;
+    box-sizing: border-box;
+}
+
+.maintenance-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+    margin-bottom: 0;
+}
 
     .header-label {
         margin: 0 0 7px;
@@ -312,10 +326,10 @@
     }
 
     .maintenance-table {
-        width: 100%;
-        min-width: 1050px;
-        border-collapse: collapse;
-    }
+    width: 100%;
+    min-width: 950px;
+    border-collapse: collapse;
+}
 
     .maintenance-table thead {
         background: #fafafa;
@@ -767,6 +781,22 @@
         background: #f8f9fa;
     }
 
+    .delete-button {
+        height: 40px;
+        padding: 0 17px;
+        border: 0;
+        border-radius: 10px;
+        background: #dc2626;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+    }
+
     .save-button {
         border: 0;
         background: #059669;
@@ -781,6 +811,10 @@
     @media (max-width: 1200px) {
         .statistics-grid {
             grid-template-columns: repeat(2, 1fr);
+        }
+
+         .maintenance-header-container {
+        padding: 22px 24px;
         }
 
         .maintenance-header {
@@ -821,30 +855,36 @@
     }
 
     @media (max-width: 650px) {
-        .maintenance-page {
-            padding: 18px 14px 30px;
-        }
 
-        .maintenance-title {
-            font-size: 25px;
-        }
+    .maintenance-page {
+        padding: 18px 14px 30px;
+    }
 
-        .maintenance-description {
-            font-size: 12px;
-        }
+    .maintenance-header-container {
+        padding: 20px 17px;
+        border-radius: 14px;
+    }
 
-        .header-actions {
-            flex-direction: column;
-            align-items: stretch;
-        }
+    .maintenance-title {
+        font-size: 25px;
+    }
 
-        .search-wrapper {
-            width: 100%;
-        }
+    .maintenance-description {
+        font-size: 12px;
+    }
 
-        .primary-button {
-            width: 100%;
-        }
+    .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-wrapper {
+        width: 100%;
+    }
+
+    .primary-button {
+        width: 100%;
+    }
 
         .statistics-grid {
             grid-template-columns: 1fr;
@@ -919,47 +959,53 @@
 
 
 <main class="maintenance-page">
-    <div class="maintenance-container">
 
-        <div class="maintenance-header">
+  <div class="maintenance-header-container">
 
-            <div>
-                <p class="header-label">Maintenance Overview</p>
+    <div class="maintenance-header">
 
-                <h1 class="maintenance-title">
-                    Maintenance Report
-                </h1>
+        <div>
+            <p class="header-label">
+                Maintenance Overview
+            </p>
 
-                <p class="maintenance-description">
-                    Track room repairs, pending issues, and completed
-                    maintenance work in one dashboard.
-                </p>
-            </div>
+            <h1 class="maintenance-title">
+                Maintenance Report
+            </h1>
 
-            <div class="header-actions">
-
-                <div class="search-wrapper">
-                    <i class="fas fa-search"></i>
-
-                    <input
-                        id="reportSearch"
-                        type="search"
-                        class="search-input"
-                        placeholder="Search reports..."
-                    >
-                </div>
-
-                <button
-                    type="button"
-                    onclick="openReportModal()"
-                    class="primary-button"
-                >
-                    <i class="fas fa-plus"></i>
-                    Create Report
-                </button>
-
-            </div>
+            <p class="maintenance-description">
+                Track room repairs, pending issues, and completed
+                maintenance work in one dashboard.
+            </p>
         </div>
+
+        <div class="header-actions">
+
+            <div class="search-wrapper">
+                <i class="fas fa-search"></i>
+
+                <input
+                    id="reportSearch"
+                    type="search"
+                    class="search-input"
+                    placeholder="Search reports..."
+                >
+            </div>
+
+            <button
+                type="button"
+                onclick="openReportModal()"
+                class="primary-button"
+            >
+                <i class="fas fa-plus"></i>
+                Create Report
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
         <div class="statistics-grid">
 
@@ -969,7 +1015,7 @@
 
                     <div>
                         <p class="stat-label">Total Reports</p>
-                        <p class="stat-number">2</p>
+                        <p class="stat-number">0</p>
 
                         <p class="stat-note">
                             <i class="fas fa-file-alt"></i>
@@ -992,7 +1038,7 @@
 
                     <div>
                         <p class="stat-label">Pending Issues</p>
-                        <p class="stat-number">1</p>
+                        <p class="stat-number">0</p>
 
                         <p class="stat-note">
                             <i class="fas fa-clock"></i>
@@ -1015,7 +1061,7 @@
 
                     <div>
                         <p class="stat-label">Under Repair</p>
-                        <p class="stat-number">1</p>
+                        <p class="stat-number">0</p>
 
                         <p class="stat-note">
                             <i class="fas fa-wrench"></i>
@@ -1073,15 +1119,15 @@
                 <div class="filter-badges">
 
                     <span class="filter-badge badge-all">
-                        All (2)
+                        All (0)
                     </span>
 
                     <span class="filter-badge badge-pending">
-                        Pending (1)
+                        Pending (0)
                     </span>
 
                     <span class="filter-badge badge-repairing">
-                        Repairing (1)
+                        Repairing (0)
                     </span>
 
                     <span class="filter-badge badge-completed">
@@ -1111,6 +1157,76 @@
 
                     <tbody>
 
+                        @foreach ($reports as $report)
+                            <tr>
+                                <td>
+                                    <div class="room-number">{{ $report->room_number }}</div>
+                                    <div class="room-type">{{ $report->room_type }}</div>
+                                </td>
+                                <td><span class="person-name">{{ $report->reported_by }}</span></td>
+                                <td>
+                                    <div class="category-priority">
+                                        <span class="category-badge">{{ $report->category }}</span>
+                                        <span class="priority-badge priority-{{ strtolower($report->priority) }}">{{ $report->priority }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="issue-title">{{ $report->problem }}</div>
+                                    <div class="issue-description">{{ $report->description }}</div>
+                                </td>
+                                <td><span class="date-text">{{ $report->date_reported->format('M d, Y') }}</span></td>
+                                <td><span class="technician-text">{{ $report->technician }}</span></td>
+                                <td><span class="status-badge status-{{ strtolower(str_replace(' ', '-', $report->status)) }}">{{ $report->status }}</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button
+                                            type="button"
+                                            class="table-action view-button"
+                                            onclick="openDetailModal(
+                                                {{ Js::from($report->room_number) }},
+                                                {{ Js::from($report->room_type) }},
+                                                {{ Js::from($report->reported_by) }},
+                                                {{ Js::from($report->category) }},
+                                                {{ Js::from($report->problem) }},
+                                                {{ Js::from($report->description) }},
+                                                {{ Js::from($report->priority) }},
+                                                {{ Js::from($report->date_reported->format('M d, Y')) }},
+                                                {{ Js::from($report->expected_date?->format('M d, Y') ?? '-') }},
+                                                {{ Js::from($report->technician) }},
+                                                {{ Js::from($report->status) }},
+                                                {{ $report->id }}
+                                            )"
+                                        >
+                                            <i class="fas fa-eye"></i>
+                                            View
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="table-action edit-button"
+                                            onclick="openEditModal(
+                                                {{ Js::from($report->room_number) }},
+                                                {{ Js::from($report->room_type) }},
+                                                {{ Js::from($report->reported_by) }},
+                                                {{ Js::from($report->category) }},
+                                                {{ Js::from($report->problem) }},
+                                                {{ Js::from($report->description) }},
+                                                {{ Js::from($report->priority) }},
+                                                {{ Js::from($report->date_reported->format('Y-m-d')) }},
+                                                {{ Js::from($report->expected_date?->format('Y-m-d') ?? '') }},
+                                                {{ Js::from($report->technician) }},
+                                                {{ Js::from($report->status) }},
+                                                {{ $report->id }}
+                                            )"
+                                        >
+                                            <i class="fas fa-pen"></i>
+                                            Edit
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+
+                        @if (false)
 
                         <tr>
 
@@ -1341,6 +1457,8 @@
 
                         </tr>
 
+                        @endif
+
                     </tbody>
 
                 </table>
@@ -1348,6 +1466,8 @@
             </div>
 
             <div class="mobile-records">
+
+                @if (false)
 
 
 
@@ -1583,6 +1703,8 @@
 
                 </article>
 
+                @endif
+
             </div>
 
         </section>
@@ -1618,7 +1740,8 @@
         </div>
 
 
-        <form class="modal-body">
+                <form id="maintenanceReportForm" class="modal-body" method="POST" action="{{ route('housekeeping.maintenance-report.store') }}">
+                    @csrf
 
             <div class="modal-section">
 
@@ -1635,7 +1758,7 @@
                             Room Number
                         </label>
 
-                        <select class="form-control">
+                        <select name="room_number" class="form-control" required>
                             <option>Room 101</option>
                             <option>Room 205</option>
                             <option>Room 302</option>
@@ -1649,7 +1772,7 @@
                             Room Type
                         </label>
 
-                        <select class="form-control">
+                        <select name="room_type" class="form-control" required>
                             <option>Deluxe Room</option>
                             <option>Suite Room</option>
                             <option>Standard Room</option>
@@ -1664,9 +1787,11 @@
                         </label>
 
                         <input
+                            name="reported_by"
                             type="text"
                             class="form-control"
                             placeholder="Housekeeper Name"
+                            required
                         >
 
                     </div>
@@ -1691,7 +1816,7 @@
                             Maintenance Category
                         </label>
 
-                        <select class="form-control">
+                        <select name="category" class="form-control" required>
                             <option>Air Conditioning</option>
                             <option>Electrical</option>
                             <option>Plumbing</option>
@@ -1708,7 +1833,7 @@
                             Priority Level
                         </label>
 
-                        <select class="form-control">
+                        <select name="priority" class="form-control" required>
                             <option>Low</option>
                             <option>Medium</option>
                             <option>High</option>
@@ -1720,12 +1845,30 @@
                     <div class="form-group full">
 
                         <label class="form-label">
+                            Problem
+                        </label>
+
+                        <input
+                            name="problem"
+                            type="text"
+                            class="form-control"
+                            placeholder="Example: Air conditioner"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="form-group full">
+
+                        <label class="form-label">
                             Problem Description
                         </label>
 
                         <textarea
+                            name="description"
                             class="form-control"
                             placeholder="Example: Air conditioner is not cooling properly."
+                            required
                         ></textarea>
 
                     </div>
@@ -1751,8 +1894,10 @@
                         </label>
 
                         <input
+                            name="date_reported"
                             type="date"
                             class="form-control"
+                            required
                         >
 
                     </div>
@@ -1764,6 +1909,7 @@
                         </label>
 
                         <input
+                            name="expected_date"
                             type="date"
                             class="form-control"
                         >
@@ -1777,9 +1923,11 @@
                         </label>
 
                         <input
+                            name="technician"
                             type="text"
                             class="form-control"
                             placeholder="Technician Name"
+                            required
                         >
 
                     </div>
@@ -1802,7 +1950,7 @@
                         Current Status
                     </label>
 
-                    <select class="form-control">
+                    <select name="status" class="form-control" required>
                         <option>Pending</option>
                         <option>In Progress</option>
                         <option>Completed</option>
@@ -1991,6 +2139,15 @@
 
         <div class="modal-footer">
 
+            <form id="deleteReportForm" method="POST" action="" style="display: none;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="delete-button">
+                    <i class="fas fa-trash"></i>
+                    Delete
+                </button>
+            </form>
+
             <button
                 type="button"
                 class="secondary-button"
@@ -2033,7 +2190,9 @@
         </div>
 
 
-        <form class="modal-body">
+        <form id="editReportForm" class="modal-body" method="POST" action="{{ url('/housekeeping/maintenance-report') }}">
+            @csrf
+            @method('PUT')
 
             <div class="modal-section">
 
@@ -2050,7 +2209,7 @@
                             Room Number
                         </label>
 
-                        <select id="editRoom" class="form-control">
+                        <select id="editRoom" name="room_number" class="form-control">
                             <option>Room 101</option>
                             <option>Room 205</option>
                             <option>Room 302</option>
@@ -2064,7 +2223,7 @@
                             Room Type
                         </label>
 
-                        <select id="editRoomType" class="form-control">
+                        <select id="editRoomType" name="room_type" class="form-control">
                             <option>Deluxe Room</option>
                             <option>Suite Room</option>
                             <option>Standard Room</option>
@@ -2080,6 +2239,7 @@
 
                         <input
                             id="editReportedBy"
+                            name="reported_by"
                             type="text"
                             class="form-control"
                         >
@@ -2106,7 +2266,7 @@
                             Maintenance Category
                         </label>
 
-                        <select id="editCategory" class="form-control">
+                        <select id="editCategory" name="category" class="form-control">
                             <option>Air Conditioning</option>
                             <option>Electrical</option>
                             <option>Plumbing</option>
@@ -2123,7 +2283,7 @@
                             Priority Level
                         </label>
 
-                        <select id="editPriority" class="form-control">
+                        <select id="editPriority" name="priority" class="form-control">
                             <option>Low</option>
                             <option>Medium</option>
                             <option>High</option>
@@ -2140,6 +2300,7 @@
 
                         <input
                             id="editProblem"
+                            name="problem"
                             type="text"
                             class="form-control"
                         >
@@ -2154,6 +2315,7 @@
 
                         <textarea
                             id="editDescription"
+                            name="description"
                             class="form-control"
                         ></textarea>
 
@@ -2181,6 +2343,7 @@
 
                         <input
                             id="editDateReported"
+                            name="date_reported"
                             type="text"
                             class="form-control"
                         >
@@ -2195,6 +2358,7 @@
 
                         <input
                             id="editExpectedDate"
+                            name="expected_date"
                             type="text"
                             class="form-control"
                         >
@@ -2209,6 +2373,7 @@
 
                         <input
                             id="editTechnician"
+                            name="technician"
                             type="text"
                             class="form-control"
                         >
@@ -2233,7 +2398,7 @@
                         Current Status
                     </label>
 
-                    <select id="editStatus" class="form-control">
+                    <select id="editStatus" name="status" class="form-control">
 
                         <option>Pending</option>
                         <option>Repairing</option>
@@ -2260,9 +2425,8 @@
             </button>
 
             <button
-                type="button"
+                    type="submit"
                 class="save-button"
-                onclick="closeEditModal()"
             >
                 <i class="fas fa-save"></i>
                 Save Changes
@@ -2308,7 +2472,8 @@
         dateReported,
         expectedDate,
         technician,
-        status
+        status,
+        reportId = null
     ) {
 
         document.getElementById("detailRoom").textContent = room;
@@ -2349,6 +2514,15 @@
 
         }
 
+        const deleteForm = document.getElementById("deleteReportForm");
+
+        deleteForm.style.display = reportId ? "block" : "none";
+
+        if (reportId) {
+            deleteForm.action =
+                "{{ url('/housekeeping/maintenance-report') }}/" + reportId;
+        }
+
         showModal("detailModal");
     }
 
@@ -2369,7 +2543,8 @@
         dateReported,
         expectedDate,
         technician,
-        status
+        status,
+        reportId = null
     ) {
 
         document.getElementById("editRoom").value = room;
@@ -2383,6 +2558,11 @@
         document.getElementById("editExpectedDate").value = expectedDate;
         document.getElementById("editTechnician").value = technician;
         document.getElementById("editStatus").value = status;
+
+        if (reportId) {
+            document.getElementById("editReportForm").action =
+                "{{ url('/housekeeping/maintenance-report') }}/" + reportId;
+        }
 
         showModal("editModal");
     }
@@ -2431,6 +2611,26 @@
         closeReportModal();
 
     });
+
+
+    document
+        .getElementById("maintenanceReportForm")
+        .addEventListener("submit", function (event) {
+
+            if (!this.checkValidity()) {
+                this.reportValidity();
+                return;
+            }
+
+        });
+
+    document
+        .getElementById("deleteReportForm")
+        .addEventListener("submit", function (event) {
+            if (!window.confirm("Are you sure you want to delete this maintenance report?")) {
+                event.preventDefault();
+            }
+        });
 
 
     document

@@ -1,12 +1,44 @@
 @extends('employee.layout')
 
+@section('pageTitle', 'Reservation Management')
 @section('content')
+
 @php
+    $reservations = $reservations ?? collect([]);
+    $roomReservations = $reservations;
+    $amenityReservations = $reservations->where('category', 'amenities');
+    $eventPlaceReservations = $reservations->where('category', 'event_place');
+    $diningReservations = $reservations->where('category', 'dining');
+
     $stats = [
-        'total' => $reservations->count(),
-        'pending' => $reservations->where('status', 'pending')->count(),
-        'confirmed' => $reservations->where('status', 'confirmed')->count(),
-        'completed' => $reservations->where('status', 'completed')->count(),
+        'rooms' => [
+            'total' => $roomReservations->count(),
+            'pending' => $roomReservations->where('status', 'pending')->count(),
+            'confirmed' => $roomReservations->where('status', 'confirmed')->count(),
+            'completed' => $roomReservations->where('status', 'completed')->count(),
+            'cancelled' => $roomReservations->where('status', 'cancelled')->count(),
+        ],
+        'amenities' => [
+            'total' => $amenityReservations->count(),
+            'pending' => $amenityReservations->where('status', 'pending')->count(),
+            'confirmed' => $amenityReservations->where('status', 'confirmed')->count(),
+            'completed' => $amenityReservations->where('status', 'completed')->count(),
+            'cancelled' => $amenityReservations->where('status', 'cancelled')->count(),
+        ],
+        'event_place' => [
+            'total' => $eventPlaceReservations->count(),
+            'pending' => $eventPlaceReservations->where('status', 'pending')->count(),
+            'confirmed' => $eventPlaceReservations->where('status', 'confirmed')->count(),
+            'completed' => $eventPlaceReservations->where('status', 'completed')->count(),
+            'cancelled' => $eventPlaceReservations->where('status', 'cancelled')->count(),
+        ],
+        'dining' => [
+            'total' => $diningReservations->count(),
+            'pending' => $diningReservations->where('status', 'pending')->count(),
+            'confirmed' => $diningReservations->where('status', 'confirmed')->count(),
+            'completed' => $diningReservations->where('status', 'completed')->count(),
+            'cancelled' => $diningReservations->where('status', 'cancelled')->count(),
+        ],
     ];
 @endphp
 
@@ -27,115 +59,481 @@
         </button>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-4">
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Total</p>
-            <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['total'] }}</p>
+    <div id="roomsTab" data-reservation-panel="rooms" class="space-y-4">
+        <div class="grid gap-4 md:grid-cols-5">
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Total</p>
+                <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['rooms']['total'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Pending</p>
+                <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['rooms']['pending'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Confirmed</p>
+                <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['rooms']['confirmed'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Completed</p>
+                <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['rooms']['completed'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Cancelled</p>
+                <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['rooms']['cancelled'] }}</p>
+            </div>
         </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Pending</p>
-            <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['pending'] }}</p>
-        </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Confirmed</p>
-            <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['confirmed'] }}</p>
-        </div>
-        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p class="text-sm text-gray-500">Completed</p>
-            <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['completed'] }}</p>
+
+        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div class="hidden overflow-x-auto md:block">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Room</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Check-in</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Check-out</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        @forelse($roomReservations as $reservation)
+                            <tr class="transition-colors hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">
+                                    {{ $reservation->room ? $reservation->room->room_number : 'N/A' }}
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_out instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_out->format('M d, Y') : $reservation->check_out }}</td>
+                                <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                        {{ ucfirst($reservation->status) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Cancel">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Complete">
+                                            <i class="fas fa-check-double"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="px-6 py-16 text-center text-gray-500">
+                                    <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
+                                    <p class="text-lg font-medium">No room reservations found.</p>
+                                    <p class="mt-1 text-sm">Create your first room reservation to get started.</p>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="space-y-4 p-4 md:hidden">
+                @forelse($roomReservations as $reservation)
+                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</h3>
+                                <p class="text-sm text-gray-500">{{ $reservation->guest_email }}</p>
+                            </div>
+                            <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                {{ ucfirst($reservation->status) }}
+                            </span>
+                        </div>
+                        <div class="mt-3 space-y-1 text-sm text-gray-600">
+                            <p><span class="font-medium text-gray-700">Room:</span> {{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Check-in:</span> {{ $reservation->check_in instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}</p>
+                            <p><span class="font-medium text-gray-700">Check-out:</span> {{ $reservation->check_out instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_out->format('M d, Y') : $reservation->check_out }}</p>
+                            <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount, 2) }}</p>
+                        </div>
+                        <div class="mt-4 flex items-center gap-2">
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
+                        </div>
+                    </div>
+                @empty
+                    <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
+                        <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
+                        <p class="text-lg font-medium">No room reservations found.</p>
+                        <p class="mt-1 text-sm">Create your first room reservation to get started.</p>
+                    </div>
+                @endforelse
+            </div>
         </div>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="hidden overflow-x-auto md:block">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Room</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Check-in</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Check-out</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 bg-white">
-                    @forelse($reservations as $reservation)
-                        <tr class="transition-colors hover:bg-gray-50">
-                            <td class="px-6 py-4">
-                                <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
-                                <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                {{ $reservation->room ? $reservation->room->room_number : 'N/A' }}
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_out instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_out->format('M d, Y') : $reservation->check_out }}</td>
-                            <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
-                            <td class="px-6 py-4">
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
-                                    {{ ucfirst($reservation->status) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2 text-sm">
-                                    <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                    <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Cancel">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                    <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Complete">
-                                        <i class="fas fa-check-double"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-6 py-16 text-center text-gray-500">
-                                <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
-                                <p class="text-lg font-medium">No reservations found.</p>
-                                <p class="mt-1 text-sm">Create your first reservation to get started.</p>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+    <div id="amenitiesTab" data-reservation-panel="amenities" class="hidden space-y-4">
+        <div class="grid gap-4 md:grid-cols-5">
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Total</p>
+                <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['amenities']['total'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Pending</p>
+                <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['amenities']['pending'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Confirmed</p>
+                <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['amenities']['confirmed'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Completed</p>
+                <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['amenities']['completed'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Cancelled</p>
+                <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['amenities']['cancelled'] }}</p>
+            </div>
         </div>
 
-        <div class="space-y-4 p-4 md:hidden">
-            @forelse($reservations as $reservation)
-                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</h3>
-                            <p class="text-sm text-gray-500">{{ $reservation->guest_email }}</p>
+        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div class="hidden overflow-x-auto md:block">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amenity</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Time</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Quantity/Guests</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        @forelse($amenityReservations as $reservation)
+                            <tr class="transition-colors hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->amenity_name ?? $reservation->amenity ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->date ?? $reservation->check_in ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->time ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->quantity ?? $reservation->guests ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount ?? 0, 2) }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                        {{ ucfirst($reservation->status) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Cancel">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Complete">
+                                            <i class="fas fa-check-double"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="px-6 py-16 text-center text-gray-500">
+                                    <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
+                                    <p class="text-lg font-medium">No amenity reservations found.</p>
+                                    <p class="mt-1 text-sm">Create your first amenity reservation to get started.</p>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="space-y-4 p-4 md:hidden">
+                @forelse($amenityReservations as $reservation)
+                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</h3>
+                                <p class="text-sm text-gray-500">{{ $reservation->guest_email }}</p>
+                            </div>
+                            <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                {{ ucfirst($reservation->status) }}
+                            </span>
                         </div>
-                        <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
-                            {{ ucfirst($reservation->status) }}
-                        </span>
+                        <div class="mt-3 space-y-1 text-sm text-gray-600">
+                            <p><span class="font-medium text-gray-700">Amenity:</span> {{ $reservation->amenity_name ?? $reservation->amenity ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Date:</span> {{ $reservation->date ?? $reservation->check_in ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Time:</span> {{ $reservation->time ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Guests:</span> {{ $reservation->quantity ?? $reservation->guests ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
+                        </div>
+                        <div class="mt-4 flex items-center gap-2">
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
+                        </div>
                     </div>
-                    <div class="mt-3 space-y-1 text-sm text-gray-600">
-                        <p><span class="font-medium text-gray-700">Room:</span> {{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</p>
-                        <p><span class="font-medium text-gray-700">Check-in:</span> {{ $reservation->check_in instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}</p>
-                        <p><span class="font-medium text-gray-700">Check-out:</span> {{ $reservation->check_out instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_out->format('M d, Y') : $reservation->check_out }}</p>
-                        <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount, 2) }}</p>
+                @empty
+                    <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
+                        <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
+                        <p class="text-lg font-medium">No amenity reservations found.</p>
+                        <p class="mt-1 text-sm">Create your first amenity reservation to get started.</p>
                     </div>
-                    <div class="mt-4 flex items-center gap-2">
-                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
-                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
-                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <div id="eventPlaceTab" data-reservation-panel="event_place" class="hidden space-y-4">
+        <div class="grid gap-4 md:grid-cols-5">
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Total</p>
+                <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['event_place']['total'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Pending</p>
+                <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['event_place']['pending'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Confirmed</p>
+                <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['event_place']['confirmed'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Completed</p>
+                <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['event_place']['completed'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Cancelled</p>
+                <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['event_place']['cancelled'] }}</p>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div class="hidden overflow-x-auto md:block">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest/Client</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Place</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Type</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Date</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Start Time</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">End Time</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        @forelse($eventPlaceReservations as $reservation)
+                            <tr class="transition-colors hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_place ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_type ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_date ?? $reservation->check_in ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->start_time ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->end_time ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount ?? 0, 2) }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                        {{ ucfirst($reservation->status) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Cancel">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Complete">
+                                            <i class="fas fa-check-double"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="9" class="px-6 py-16 text-center text-gray-500">
+                                    <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
+                                    <p class="text-lg font-medium">No event place reservations found.</p>
+                                    <p class="mt-1 text-sm">Create your first event place reservation to get started.</p>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="space-y-4 p-4 md:hidden">
+                @forelse($eventPlaceReservations as $reservation)
+                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</h3>
+                                <p class="text-sm text-gray-500">{{ $reservation->guest_email }}</p>
+                            </div>
+                            <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                {{ ucfirst($reservation->status) }}
+                            </span>
+                        </div>
+                        <div class="mt-3 space-y-1 text-sm text-gray-600">
+                            <p><span class="font-medium text-gray-700">Place:</span> {{ $reservation->event_place ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Type:</span> {{ $reservation->event_type ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Date:</span> {{ $reservation->event_date ?? $reservation->check_in ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Start:</span> {{ $reservation->start_time ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">End:</span> {{ $reservation->end_time ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
+                        </div>
+                        <div class="mt-4 flex items-center gap-2">
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
+                        </div>
                     </div>
-                </div>
-            @empty
-                <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
-                    <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
-                    <p class="text-lg font-medium">No reservations found.</p>
-                    <p class="mt-1 text-sm">Create your first reservation to get started.</p>
-                </div>
-            @endforelse
+                @empty
+                    <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
+                        <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
+                        <p class="text-lg font-medium">No event place reservations found.</p>
+                        <p class="mt-1 text-sm">Create your first event place reservation to get started.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <div id="diningTab" data-reservation-panel="dining" class="hidden space-y-4">
+        <div class="grid gap-4 md:grid-cols-5">
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Total</p>
+                <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['dining']['total'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Pending</p>
+                <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['dining']['pending'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Confirmed</p>
+                <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['dining']['confirmed'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Completed</p>
+                <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['dining']['completed'] }}</p>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <p class="text-sm text-gray-500">Cancelled</p>
+                <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['dining']['cancelled'] }}</p>
+            </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div class="hidden overflow-x-auto md:block">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Dining Area/Table</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Time</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Number of Guests</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        @forelse($diningReservations as $reservation)
+                            <tr class="transition-colors hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->dining_area ?? $reservation->table_name ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->date ?? $reservation->check_in ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->time ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->number_of_guests ?? $reservation->guests ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount ?? 0, 2) }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                        {{ ucfirst($reservation->status) }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Cancel">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Complete">
+                                            <i class="fas fa-check-double"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="px-6 py-16 text-center text-gray-500">
+                                    <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
+                                    <p class="text-lg font-medium">No dining reservations found.</p>
+                                    <p class="mt-1 text-sm">Create your first dining reservation to get started.</p>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="space-y-4 p-4 md:hidden">
+                @forelse($diningReservations as $reservation)
+                    <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</h3>
+                                <p class="text-sm text-gray-500">{{ $reservation->guest_email }}</p>
+                            </div>
+                            <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                {{ ucfirst($reservation->status) }}
+                            </span>
+                        </div>
+                        <div class="mt-3 space-y-1 text-sm text-gray-600">
+                            <p><span class="font-medium text-gray-700">Table:</span> {{ $reservation->dining_area ?? $reservation->table_name ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Date:</span> {{ $reservation->date ?? $reservation->check_in ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Time:</span> {{ $reservation->time ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Guests:</span> {{ $reservation->number_of_guests ?? $reservation->guests ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
+                        </div>
+                        <div class="mt-4 flex items-center gap-2">
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
+                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
+                        </div>
+                    </div>
+                @empty
+                    <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
+                        <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
+                        <p class="text-lg font-medium">No dining reservations found.</p>
+                        <p class="mt-1 text-sm">Create your first dining reservation to get started.</p>
+                    </div>
+                @endforelse
+            </div>
         </div>
     </div>
 </div>
@@ -163,6 +561,7 @@
 
         <form id="addReservationForm" action="{{ route('admin.reservations.store') }}" method="POST" class="space-y-4">
             @csrf
+            <input type="hidden" name="category" id="reservationCategory" value="{{ old('category', 'rooms') }}">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Guest Name</label>
@@ -280,10 +679,6 @@
                 closeAddReservationModal();
             }
         });
-
-        @if($errors->any())
-            openAddReservationModal();
-        @endif
     });
 </script>
 @endsection

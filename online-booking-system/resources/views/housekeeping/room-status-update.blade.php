@@ -1182,10 +1182,12 @@
             <form
                 id="statusUpdateForm"
                 method="POST"
-                action="#"
+                action="{{ route('housekeeping.rooms.cleaning', ['id' => '__ROOM_ID__']) }}"
+                data-action-template="{{ route('housekeeping.rooms.cleaning', ['id' => '__ROOM_ID__']) }}"
             >
 
                 @csrf
+                @method('PATCH')
 
 
                 <div class="modal-form-group">
@@ -1232,26 +1234,26 @@
 
                     <select
                         id="update_status"
-                        name="update_status"
+                        name="cleaning_status"
                     >
 
-                        <option value="Dirty">
+                        <option value="dirty">
                             Dirty
                         </option>
 
-                        <option value="Cleaning">
+                        <option value="in_progress">
                             Cleaning
                         </option>
 
-                        <option value="Cleaned">
+                        <option value="clean">
                             Cleaned
                         </option>
 
-                        <option value="Inspected">
+                        <option value="clean">
                             Inspected
                         </option>
 
-                        <option value="Available">
+                        <option value="clean">
                             Available
                         </option>
 
@@ -1307,6 +1309,7 @@
 function openStatusModal(roomNumber, roomType, currentStatus) {
 
     const modal = document.getElementById('statusModal');
+    const form = document.getElementById('statusUpdateForm');
 
     const roomNumberElement =
         document.getElementById('modalRoomNumber');
@@ -1327,12 +1330,25 @@ function openStatusModal(roomNumber, roomType, currentStatus) {
     roomTypeElement.textContent =
         roomType;
 
+    form.action = form.dataset.actionTemplate.replace(
+        '__ROOM_ID__',
+        roomNumber
+    );
+
+    const statusValueMap = {
+        Dirty: 'dirty',
+        Cleaning: 'in_progress',
+        Cleaned: 'clean',
+        Inspected: 'clean',
+        Available: 'clean'
+    };
+
 
     currentStatusElement.value =
         currentStatus;
 
     updateStatusElement.value =
-        currentStatus;
+        statusValueMap[currentStatus] || 'dirty';
 
 
     modal.classList.add('active');

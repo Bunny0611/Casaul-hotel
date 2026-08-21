@@ -1,4 +1,4 @@
- Premium is ad free YouTube, and ad free videos on the YouTube kids app. Try one one free sleeping bag I'm not gonna move got some words on carboard got you picture in my heads. Can you tell where I am? So try money understands can I do all way I'm sitting up here for you on the corruptsleep she all enjoy back it's all been done before and if you could only let it be you would see I like you the way you are when we're driving a car and your charge to me what on you become somebody else in your back that you can relax a fool to meet this few happywhere you are in twenty thousand when we start to vote take off you don't know they don't folk when you become twentieth anyway when we bumped into each other and maybe bounds the big mistake on alive since@extends('employee.layout')
+@extends('employee.layout')
 
 @section('pageTitle', 'Check-in / Check-out Management')
 
@@ -37,65 +37,15 @@
         white-space: nowrap;
     }
 
-    .checkout-detail-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 1.5rem;
-        background: #fafbff;
-        padding: 1.25rem;
-    }
-
-    .checkout-detail-row {
-        display: grid;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .checkout-detail-label {
-        font-size: 0.8rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #475569;
-    }
-
-    .checkout-detail-value {
-        padding: 0.95rem 1rem;
-        border-radius: 1rem;
+    .modal-panel {
+        border-radius: 1.75rem;
         background: #ffffff;
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        color: #0f172a;
-        font-weight: 600;
+        padding: 1.5rem;
+        max-width: 28rem;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
     }
 
-    .checkout-meta {
-        display: grid;
-        gap: 1rem;
-    }
-
-    .checkout-meta-summary {
-        border-radius: 1.5rem;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        padding: 1rem 1.25rem;
-    }
-
-    .checkout-meta-summary strong {
-        display: block;
-        margin-top: 0.25rem;
-        font-size: 1.05rem;
-        color: #0f172a;
-    }
-
-    .checkout-note {
-        border-radius: 1.5rem;
-        background: #fdf2f8;
-        border: 1px solid #fbcfe8;
-        color: #9d174d;
-        padding: 1rem 1.25rem;
-        font-size: 0.95rem;
-    }
-
-    .checkout-actions {
+    .modal-header {
         display: flex;
         flex-wrap: wrap;
         gap: 0.75rem;
@@ -131,46 +81,37 @@
 
     .check-form-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1.5rem;
         margin-bottom: 1.75rem;
-        align-items: stretch;
     }
 
     .check-form-card {
         border: 1px solid #e2e8f0;
         border-radius: 1.5rem;
         background: #ffffff;
-        box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08);
-        padding: 1.5rem;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        padding: 1.25rem;
         display: flex;
         flex-direction: column;
-        max-height: 640px;
+        max-height: 620px;
         min-height: 0;
-        overflow: hidden;
     }
 
     .check-form-body {
         overflow-y: auto;
-        overflow-x: hidden;
-        flex: 1 1 auto;
+        max-height: 460px;
+        flex: 1;
         min-height: 0;
-        max-height: 420px;
-        padding-right: 8px;
+        padding-right: 4px;
         margin-bottom: 0.75rem;
     }
 
     .check-form-body::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .check-form-body::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 999px;
+        width: 7px;
     }
 
     .check-form-body::-webkit-scrollbar-thumb {
-        background: rgba(100, 116, 139, 0.45);
+        background: rgba(100, 116, 139, 0.3);
         border-radius: 999px;
     }
 
@@ -178,61 +119,46 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 1rem;
         gap: 1rem;
+        margin-bottom: 1.25rem;
     }
 
-    .check-form-header h3 {
+    .modal-title {
         margin: 0;
-        font-size: 1.25rem;
-        font-weight: 700;
+        font-size: 1.4rem;
+        font-weight: 800;
         color: #0f172a;
     }
 
-    .check-form-header p {
-        margin: 0;
-        color: #64748b;
+    .modal-subtitle {
+        margin-top: 0.35rem;
+        color: #6b7280;
         font-size: 0.95rem;
+        line-height: 1.6;
     }
 
-    .check-form-fields {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1rem 1.25rem;
+    .modal-close-btn {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        font-size: 1.2rem;
+        line-height: 1;
     }
 
-    .check-form-field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-    }
-
-    .full-width-field {
-        grid-column: span 2;
-    }
-
-    .check-form-label {
-        font-size: 0.8rem;
-        font-weight: 700;
+    .modal-close-btn:hover {
         color: #475569;
     }
 
     .check-form-input,
-    .check-form-select,
-    .check-form-textarea {
+    .check-form-select {
         width: 100%;
         border-radius: 1rem;
         border: 1px solid #e2e8f0;
         background: #f8fafc;
-        color: #0f172a;
         padding: 0.95rem 1rem;
         font-size: 0.95rem;
         outline: none;
-    }
-
-    .check-form-textarea {
-        min-height: 110px;
-        resize: vertical;
     }
 
     .check-form-select {
@@ -253,19 +179,16 @@
     }
 
     .check-form-input:focus,
-    .check-form-select:focus,
-    .check-form-textarea:focus {
+    .check-form-select:focus {
         border-color: #38bdf8;
         box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
     }
 
     .check-form-footer {
-        margin-top: 1rem;
+        margin-top: 1.5rem;
         display: flex;
         justify-content: flex-end;
         gap: 1rem;
-        padding-top: 0.5rem;
-        border-top: 1px solid #eef2f7;
     }
 
     .check-form-title-group {
@@ -286,24 +209,36 @@
         font-size: 1rem;
     }
 
-    .check-form-header h3 {
-        margin: 0;
-        font-size: 1.25rem;
+    .check-form-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 1.5rem;
+        background: #ffffff;
+        box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08);
+        padding: 1.75rem;
+        display: flex;
+        flex-direction: column;
+        max-height: 680px;
+    }
+
+    .check-form-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+    }
+
+    .modal-detail-label {
+        font-size: 0.95rem;
         font-weight: 700;
         color: #0f172a;
     }
 
-    .check-form-header p {
-        margin: 0;
-        color: #64748b;
+    .modal-detail-value {
         font-size: 0.95rem;
     }
 
     @media (max-width: 900px) {
-        .check-form-grid {
-            grid-template-columns: 1fr;
-        }
-
         .check-form-fields {
             grid-template-columns: 1fr;
         }
@@ -312,27 +247,36 @@
         }
     }
 
-    .checkin-action-btn,
-    .checkout-action-btn {
+    .modal-btn {
         border-radius: 999px;
-        padding: 0.7rem 1.1rem;
+        min-width: 116px;
+        padding: 0.8rem 1.2rem;
+        font-size: 0.95rem;
         font-weight: 700;
-        font-size: 0.9rem;
-        border: none;
         cursor: pointer;
-        min-width: 110px;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
     }
 
-    .checkin-action-btn {
-        background: #059669;
+    .modal-btn-secondary {
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        color: #334155;
+    }
+
+    .modal-btn-secondary:hover {
+        background: #f8fafc;
+    }
+
+    .modal-btn-primary {
+        background: #10b981;
         color: #ffffff;
     }
 
-    .checkout-action-btn {
-        background: #dc2626;
-        color: #ffffff;
+    @media (max-width: 900px) {
+        .check-form-fields {
+            grid-template-columns: 1fr;
+        }
     }
-
 </style>
 
 <div class="space-y-6">
@@ -385,7 +329,7 @@
         </div>
     </div>
 
-    <div class="check-form-grid">
+    <div class="grid gap-4 lg:grid-cols-2 mb-6">
         <div class="check-form-card">
             <div class="check-form-header">
                 <div class="check-form-title-group">
@@ -403,48 +347,40 @@
                         <label class="check-form-label">Reservation ID</label>
                         <input type="text" class="check-form-input" value="RES-1024" readonly>
                     </div>
-                    <div class="check-form-field">
-                        <label class="check-form-label">Room</label>
-                        <input type="text" class="check-form-input" value="102 - Deluxe King" readonly>
-                    </div>
-                    <div class="check-form-field">
-                        <label class="check-form-label">Guests</label>
-                        <input type="text" class="check-form-input" value="2" readonly>
-                    </div>
-                    <div class="check-form-field">
-                        <label class="check-form-label">Arriving On</label>
-                        <input type="date" class="check-form-input" value="2026-07-31" readonly>
-                    </div>
-                    <div class="check-form-field">
-                        <label class="check-form-label">Status</label>
-                        <select class="check-form-select">
-                            <option>Fully Paid</option>
-                            <option>Reserved</option>
-                        </select>
-                    </div>
-                    <div class="check-form-field">
-                        <label class="check-form-label">Payment Method</label>
-                        <select class="check-form-select">
-                            <option>GCash</option>
-                            <option>Credit Card</option>
-                            <option>Landbank</option>
-                            <option>PayMaya</option>
-                            <option>Cash</option>
-                        </select>
-                    </div>
-                    <div class="check-form-field full-width-field">
-                        <label class="check-form-label">Remarks</label>
-                        <textarea class="check-form-textarea" rows="3" placeholder="Add special request or note"></textarea>
-                    </div>
-                    <div class="check-form-field full-width-field">
-                        <label class="check-form-label">Arrival Notes</label>
-                        <textarea class="check-form-textarea" rows="3" placeholder="Early check-in requested, late arrival, etc."></textarea>
-                    </div>
-                    <div class="check-form-field full-width-field">
-                        <label class="check-form-label">Guest Preferences</label>
-                        <textarea class="check-form-textarea" rows="3" placeholder="Room view, bedding preference, accessibility needs"></textarea>
-                    </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Room</label>
+                    <input type="text" class="check-form-input" value="102 - Deluxe King" readonly>
                 </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Guests</label>
+                    <input type="text" class="check-form-input" value="2" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Arriving On</label>
+                    <input type="date" class="check-form-input" value="2026-07-31" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Status</label>
+                    <select class="check-form-select">
+                        <option>Fully Paid</option>
+                        <option>Reserved</option>
+                    </select>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Payment Method</label>
+                    <select class="check-form-select">
+                        <option>GCash</option>
+                        <option>Credit Card</option>
+                        <option>Landbank</option>
+                        <option>PayMaya</option>
+                        <option>Cash</option>
+                    </select>
+                </div>
+                <div class="check-form-field full-width-field">
+                    <label class="check-form-label">Remarks</label>
+                    <textarea class="check-form-input" rows="3" placeholder="Add special request or note"></textarea>
+                </div>
+            </div>
             </div>
             <div class="check-form-footer">
                 <button type="button" class="checkin-action-btn">Check In</button>
@@ -515,7 +451,6 @@
                 <div class="check-form-field full-width-field">
                     <label class="check-form-label">Remarks</label>
                     <textarea class="check-form-input" rows="3" placeholder="Add departure note"></textarea>
-                </div>
                 </div>
             </div>
             <div class="check-form-footer">
@@ -592,102 +527,112 @@
 </div>
 
 <div id="checkInModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
-    <div class="w-full max-w-xl rounded-[32px] bg-white p-8 shadow-2xl">
-        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div class="modal-panel w-full max-w-lg">
+        <div class="modal-header">
             <div>
-                <h4 class="text-2xl font-semibold text-slate-900">Confirm Check-in</h4>
-                <p class="mt-1 text-sm text-slate-500">Review guest details and register arrival.</p>
+                <h4 class="modal-title">Confirm Check-in</h4>
+                <p class="modal-subtitle">Review guest details before proceeding.</p>
             </div>
-            <button type="button" class="text-slate-400 hover:text-slate-600" onclick="closeModal('checkInModal')"><i class="fas fa-times"></i></button>
+            <button type="button" class="modal-close-btn" onclick="closeModal('checkInModal')"><i class="fas fa-times"></i></button>
         </div>
-        <div class="grid gap-4 lg:grid-cols-2 lg:gap-6">
-            <div class="checkout-detail-card">
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Reservation ID</span>
-                    <div class="checkout-detail-value" id="checkInReservation"></div>
-                </div>
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Guest</span>
-                    <div class="checkout-detail-value" id="checkInGuest"></div>
-                </div>
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Room</span>
-                    <div class="checkout-detail-value" id="checkInRoom"></div>
-                </div>
+
+        <div class="modal-details">
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Reservation ID:</span>
+                <span class="modal-detail-value" id="checkInReservation"></span>
             </div>
-            <div class="checkout-detail-card">
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Check-in Date</span>
-                    <div class="checkout-detail-value" id="checkInDate"></div>
-                </div>
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Time</span>
-                    <div class="checkout-detail-value" id="checkInTime"></div>
-                </div>
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Notes</span>
-                    <div class="checkout-detail-value">No special notes</div>
-                </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Guest:</span>
+                <span class="modal-detail-value" id="checkInGuest"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Room:</span>
+                <span class="modal-detail-value" id="checkInRoom"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Check-in Date:</span>
+                <span class="modal-detail-value" id="checkInDate"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Time:</span>
+                <span class="modal-detail-value" id="checkInTime"></span>
             </div>
         </div>
-        <div class="checkout-actions mt-8">
-            <button type="button" class="checkout-cancel-btn" onclick="closeModal('checkInModal')">Cancel</button>
-            <button type="button" class="checkin-confirm-btn">Confirm Check-in</button>
+
+        <div class="modal-actions">
+            <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('checkInModal')">Cancel</button>
+            <button type="button" class="modal-btn modal-btn-primary">Confirm Check-in</button>
         </div>
     </div>
 </div>
 
 <div id="checkOutModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
-    <div class="w-full max-w-xl rounded-[32px] bg-white p-8 shadow-2xl">
-        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div class="modal-panel w-full max-w-lg">
+        <div class="modal-header">
             <div>
-                <h4 class="text-2xl font-semibold text-slate-900">Finalize Check-out</h4>
-                <p class="mt-1 text-sm text-slate-500">Confirm departure details and post any outstanding charges.</p>
+                <h4 class="modal-title">Confirm Check-out</h4>
+                <p class="modal-subtitle">Review departure details before completing checkout.</p>
             </div>
-            <button type="button" class="text-slate-400 hover:text-slate-600" onclick="closeModal('checkOutModal')"><i class="fas fa-times"></i></button>
+            <button type="button" class="modal-close-btn" onclick="closeModal('checkOutModal')"><i class="fas fa-times"></i></button>
         </div>
-        <div class="grid gap-4 lg:grid-cols-2 lg:gap-6">
-            <div class="checkout-detail-card">
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Reservation ID</span>
-                    <div class="checkout-detail-value" id="checkOutReservation"></div>
-                </div>
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Guest Name</span>
-                    <div class="checkout-detail-value" id="checkOutGuest"></div>
-                </div>
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Room</span>
-                    <div class="checkout-detail-value" id="checkOutRoom"></div>
-                </div>
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Check-out Date</span>
-                    <div class="checkout-detail-value" id="checkOutDate"></div>
-                </div>
+
+        <div class="modal-details">
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Reservation ID:</span>
+                <span class="modal-detail-value" id="checkOutReservation"></span>
             </div>
-            <div class="checkout-detail-card">
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Balance Due</span>
-                    <div class="checkout-detail-value font-semibold text-rose-600" id="checkOutBalance"></div>
-                </div>
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Status</span>
-                    <div class="checkout-detail-value">Ready for departure</div>
-                </div>
-                <div class="checkout-detail-row">
-                    <span class="checkout-detail-label">Next Step</span>
-                    <div class="checkout-detail-value checkout-note">Room will be marked for cleaning after checkout.</div>
-                </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Guest:</span>
+                <span class="modal-detail-value" id="checkOutGuest"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Room:</span>
+                <span class="modal-detail-value" id="checkOutRoom"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Check-out:</span>
+                <span class="modal-detail-value" id="checkOutDate"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Balance Due:</span>
+                <span class="modal-detail-value text-rose-600" id="checkOutBalance"></span>
             </div>
         </div>
-        <div class="checkout-actions mt-8">
-            <button type="button" class="checkout-cancel-btn" onclick="closeModal('checkOutModal')">Cancel</button>
-            <button type="button" class="checkout-confirm-btn">Confirm Check-out</button>
+
+        <div class="modal-actions">
+            <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('checkOutModal')">Cancel</button>
+            <button type="button" class="modal-btn modal-btn-primary">Confirm Check-out</button>
         </div>
     </div>
 </div>
 
 <script>
+    function applyFilters() {
+        const reservation = document.getElementById('searchReservation')?.value.toLowerCase() || '';
+        const guest = document.getElementById('searchGuest')?.value.toLowerCase() || '';
+        const date = document.getElementById('filterDate')?.value;
+        const status = document.getElementById('filterStatus')?.value.toLowerCase() || '';
+
+        document.querySelectorAll('tbody tr').forEach((row) => {
+            const rowReservation = row.getAttribute('data-reservation')?.toLowerCase() || '';
+            const rowGuest = row.getAttribute('data-guest')?.toLowerCase() || '';
+            const rowDate = row.getAttribute('data-date');
+            const rowStatus = row.getAttribute('data-status')?.toLowerCase() || '';
+
+            const matchesReservation = rowReservation.includes(reservation);
+            const matchesGuest = rowGuest.includes(guest);
+            const matchesDate = !date || rowDate === date;
+            const matchesStatus = !status || rowStatus === status;
+
+            row.style.display = matchesReservation && matchesGuest && matchesDate && matchesStatus ? '' : 'none';
+        });
+    }
+
+    ['searchReservation', 'searchGuest', 'filterDate', 'filterStatus'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('input', applyFilters);
+        document.getElementById(id)?.addEventListener('change', applyFilters);
+    });
+
     function openCheckInModal(reservation, guest, room, date, time) {
         document.getElementById('checkInReservation').textContent = reservation;
         document.getElementById('checkInGuest').textContent = guest;
@@ -715,45 +660,5 @@
             modal.classList.remove('flex');
         }
     }
-
-    function applyFilters() {
-        const reservation = document.getElementById('searchReservation').value.toLowerCase();
-        const guest = document.getElementById('searchGuest').value.toLowerCase();
-        const date = document.getElementById('filterDate').value;
-        const status = document.getElementById('filterStatus').value.toLowerCase();
-
-        document.querySelectorAll('tbody tr').forEach((row) => {
-            const rowReservation = row.getAttribute('data-reservation').toLowerCase();
-            const rowGuest = row.getAttribute('data-guest').toLowerCase();
-            const rowDate = row.getAttribute('data-date');
-            const rowStatus = row.getAttribute('data-status').toLowerCase();
-
-            const matchesReservation = rowReservation.includes(reservation);
-            const matchesGuest = rowGuest.includes(guest);
-            const matchesDate = !date || rowDate === date;
-            const matchesStatus = !status || rowStatus === status;
-
-            row.style.display = matchesReservation && matchesGuest && matchesDate && matchesStatus ? '' : 'none';
-        });
-    }
-
-    const toggleFormsBtn = document.getElementById('toggleFormsBtn');
-    const formsSection = document.getElementById('formsSection');
-
-    toggleFormsBtn?.addEventListener('click', () => {
-        const isHidden = formsSection.classList.contains('hidden');
-        formsSection.classList.toggle('hidden', !isHidden);
-        toggleFormsBtn.textContent = isHidden ? 'Hide Forms' : 'Show Forms';
-    });
-
-    ['searchReservation', 'searchGuest', 'filterDate', 'filterStatus'].forEach((id) => {
-        document.getElementById(id)?.addEventListener('input', applyFilters);
-        document.getElementById(id)?.addEventListener('change', applyFilters);
-    });
-
-    // Wire confirm check-in button to close modal (placeholder for actual action)
-    document.querySelector('.checkin-confirm-btn')?.addEventListener('click', function () {
-        closeModal('checkInModal');
-    });
 </script>
 @endsection

@@ -13,158 +13,348 @@
             <h2 class="text-3xl font-bold text-gray-800">Room Management</h2>
             <p class="mt-1 text-sm text-gray-500">Manage room inventory, availability, and maintenance from one place.</p>
         </div>
-        <button type="button" onclick="openAddRoomModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
-            <i class="fas fa-plus mr-2"></i>Add Room
-        </button>
+        <div class="flex items-center gap-3">
+            <button id="add-room-button" type="button" onclick="openAddRoomModal()" class="add-panel-button inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
+                <i class="fas fa-plus mr-2"></i>Add Room
+            </button>
+            <button id="add-amenities-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
+                <i class="fas fa-plus mr-2"></i>Add Amenities
+            </button>
+            <button id="add-event-place-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
+                <i class="fas fa-plus mr-2"></i>Add Event Place
+            </button>
+            <button id="add-dining-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
+                <i class="fas fa-plus mr-2"></i>Add Dining
+            </button>
+        </div>
     </div>
 
     <div class="mb-6 flex flex-wrap gap-4">
         <button type="button" data-tab="rooms" class="tab-button rounded-lg bg-orange-500 px-6 py-3 font-medium text-white transition hover:bg-orange-600">ROOMS</button>
-        <button type="button" data-tab="maintenance" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">MAINTENANCE</button>
+        <button type="button" data-tab="amenities" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">AMENITIES</button>
+        <button type="button" data-tab="event-place" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">EVENT PLACE</button>
+        <button type="button" data-tab="dining" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">DINING</button>
     </div>
 
-    <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-none">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
+            <div></div>
+            <div class="flex items-center gap-3">
+                <span id="bulkSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span>
+                <button type="button" onclick="confirmBulkDelete()" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected rooms">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        <form id="bulkDeleteForm" method="POST" action="{{ route('admin.rooms.bulkDestroy') }}">
+            @csrf
+            @method('DELETE')
+            <input type="hidden" name="room_ids" id="bulkRoomIds">
+        </form>
+        <div class="px-6 py-6">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-2 text-sm text-gray-700">
+                    <input id="selectAllRooms" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" onclick="toggleAllRoomCheckboxes(this)">
+                    <label for="selectAllRooms">Select all rooms</label>
+                </div>
+                {{-- total() = full room count across all pages (count() would only show the current page's 5 rows once paginated) --}}
+                <div class="text-sm text-gray-500">{{ $rooms->total() }} room{{ $rooms->total() === 1 ? '' : 's' }}</div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                                <input id="selectAllRoomsHeader" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" onclick="toggleAllRoomCheckboxes(this)">
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Room No</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Capacity</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        @forelse($rooms as $room)
+                        <tr class="transition-colors hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <input type="checkbox" class="room-checkbox h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" value="{{ $room->id }}" onclick="updateSelectAllCheckbox()">
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $room->room_number }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $room->room_type }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($room->price, 2) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $room->floor }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $room->capacity }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="rounded-full px-3 py-1 text-xs font-medium text-white bg-emerald-600">{{ ucfirst($room->status) }}</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
+                                        <i class='fas fa-edit'></i>
+                                    </button>
+                                    <button type="button" onclick="changeStatus({{ $room->id }})" class="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 transition hover:bg-emerald-100" aria-label="Change room status">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <form action="{{ route('admin.rooms.destroy', $room->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this room?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700 transition hover:bg-red-100" aria-label="Delete room">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                                <i class="fas fa-bed mb-4 text-4xl text-gray-300"></i>
+                                <p>No rooms found. Add your first room to get started.</p>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            {{ $rooms->links('pagination.admin-rooms') }}
+        </div>
+    </div>
+
+    <div data-panel="amenities" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="border-b border-gray-200 px-6 py-5">
+            <h3 class="text-lg font-semibold text-gray-800">Amenities</h3>
+            <p class="mt-1 text-sm text-gray-500">Add premium guest amenities and service upgrades for each room package.</p>
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Room No</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Capacity</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    @forelse($rooms as $room)
-                    <tr class="transition-colors hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $room->room_number }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $room->room_type }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱{{ number_format($room->price, 2) }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $room->floor }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $room->capacity }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="rounded-full px-3 py-1 text-xs font-medium text-white status-{{ $room->status }}">
-                                {{ ucfirst($room->status) }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <div class="flex items-center gap-2">
-                                <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status))' class='rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800' title='Edit'>
-                                    <i class='fas fa-edit'></i>
-                                </button>
-                                <button type="button" onclick="changeStatus({{ $room->id }})" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Status">
-                                    <i class="fas fa-exchange-alt"></i>
-                                </button>
-                                <form action="{{ route('admin.rooms.destroy', $room->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this room?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                            <i class="fas fa-bed mb-4 text-4xl text-gray-300"></i>
-                            <p>No rooms found. Add your first room to get started.</p>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div data-panel="maintenance" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="border-b border-gray-200 px-6 py-5">
-            <h3 class="text-lg font-semibold text-gray-800">Maintenance Rooms</h3>
-            <p class="mt-1 text-sm text-gray-500">View rooms currently marked for maintenance and return them to available status.</p>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Room No</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Capacity</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
-                    @forelse($rooms->where('status', 'maintenance') as $maintenanceRoom)
-                    <tr class="transition-colors hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $maintenanceRoom->room_number }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenanceRoom->room_type }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenanceRoom->floor }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $maintenanceRoom->capacity }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="rounded-full px-3 py-1 text-xs font-medium text-white status-{{ $maintenanceRoom->status }}">
-                                {{ ucfirst($maintenanceRoom->status) }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <button type="button" onclick="returnRoomFromMaintenance({{ $maintenanceRoom->id }})" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition hover:bg-green-100">
-                                Return Available
-                            </button>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                            <i class="fas fa-tools mb-4 text-4xl text-gray-300"></i>
-                            <p class="text-lg font-medium">No rooms currently in maintenance.</p>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
+                <tbody id="amenities-list" class="divide-y divide-gray-200"></tbody>
             </table>
         </div>
     </div>
 
-    <button type="button" onclick="openScheduleMaintenanceModal()" class="mt-6 w-full rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700 sm:w-auto">
-        <i class="fas fa-tools mr-2"></i>Schedule Maintenance
-    </button>
+    <div data-panel="event-place" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="border-b border-gray-200 px-6 py-5">
+            <h3 class="text-lg font-semibold text-gray-800">Event Place</h3>
+            <p class="mt-1 text-sm text-gray-500">Manage wedding, corporate, and celebration offerings for your event venue.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="event-place-list" class="divide-y divide-gray-200"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div data-panel="dining" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="border-b border-gray-200 px-6 py-5">
+            <h3 class="text-lg font-semibold text-gray-800">Dining</h3>
+            <p class="mt-1 text-sm text-gray-500">Track dining packages and culinary experiences available to your guests.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Name</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Category</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Available Time</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Quantity</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="dining-list" class="divide-y divide-gray-200"></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<div id="scheduleMaintenanceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+<div id="addAmenityModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
     <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
-        <button type="button" onclick="closeScheduleMaintenanceModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
+        <button type="button" onclick="closeAmenityModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
             <i class="fas fa-times text-xl"></i>
         </button>
 
         <div class="mb-6">
-            <h3 class="text-2xl font-bold text-gray-800">Schedule Maintenance</h3>
-            <p class="mt-1 text-sm text-gray-500">Select a room and set it to maintenance mode.</p>
+            <h3 class="text-2xl font-bold text-gray-800">Add Amenity</h3>
+            <p class="mt-1 text-sm text-gray-500">Create a new amenity option for guests.</p>
         </div>
 
-        <form id="scheduleMaintenanceForm" action="" method="POST" class="space-y-4">
-            @csrf
-            @method('PATCH')
-            <input type="hidden" name="status" value="maintenance">
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700">Room</label>
-                <select id="scheduleRoomId" name="room_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    <option value="">Choose a room</option>
-                    @foreach($rooms->where('status', '!=', 'maintenance') as $roomOption)
-                        <option value="{{ $roomOption->id }}">{{ $roomOption->room_number }} - {{ $roomOption->room_type }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-gray-700">Maintenance Notes</label>
-                <textarea name="maintenance_notes" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Optional note"></textarea>
+        <form id="addAmenityForm" class="space-y-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Amenity Name</label>
+                    <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Description</label>
+                    <textarea name="description" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label>
+                    <input type="number" name="price" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
+                    <select name="availability" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="Available">Available</option>
+                        <option value="Limited">Limited</option>
+                    </select>
+                </div>
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-                <button type="button" onclick="closeScheduleMaintenanceModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
-                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Schedule</button>
+                <button type="button" onclick="closeAmenityModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Amenity</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="addEventPlaceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+        <button type="button" onclick="closeEventPlaceModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+
+        <div class="mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">Add Event Place</h3>
+            <p class="mt-1 text-sm text-gray-500">Create a new event package or venue option.</p>
+        </div>
+
+        <form id="addEventPlaceForm" class="space-y-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Event Name</label>
+                    <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Description</label>
+                    <textarea name="description" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label>
+                    <input type="number" name="price" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label>
+                    <input type="number" name="capacity" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+            </div>
+            <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button type="button" onclick="closeEventPlaceModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Event Place</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="addDiningModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+        <div class="mb-6">
+            <h3 class="text-3xl font-bold text-gray-800">Add Dining Item</h3>
+            <p class="mt-2 text-base text-gray-600">Add a new menu item, package, or dining service available for guests.</p>
+        </div>
+
+        <form id="addDiningForm" class="space-y-6">
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div class="space-y-6">
+                    <div>
+                        <label class="mb-2 block text-base font-medium text-gray-700">Item Type <span class="text-red-500">*</span></label>
+                        <select name="serviceType" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="Menu / Meal">Menu / Meal</option>
+                            <option value="Package">Package</option>
+                            <option value="Dinner">Dinner</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-base font-medium text-gray-700">Item Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="name" required class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. Grilled Salmon">
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-base font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
+                        <select name="category" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="Dinner">Dinner</option>
+                            <option value="Breakfast">Breakfast</option>
+                            <option value="Lunch">Lunch</option>
+                            <option value="Dessert">Dessert</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-base font-medium text-gray-700">Price (₱) <span class="text-red-500">*</span></label>
+                        <input type="number" name="price" step="0.01" min="0" required class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 650.00">
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-base font-medium text-gray-700">Description</label>
+                        <textarea name="description" rows="5" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. Grilled salmon served with vegetables and mashed potatoes."></textarea>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="mb-2 block text-base font-medium text-gray-700">Available Time <span class="text-red-500">*</span></label>
+                        <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                            <input type="time" name="availableFrom" value="17:00" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <span class="text-lg text-gray-500">to</span>
+                            <input type="time" name="availableTo" value="21:00" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-base font-medium text-gray-700">Available Quantity</label>
+                        <input type="number" name="quantity" min="0" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 25">
+                        <p class="mt-2 text-sm text-gray-500">Optional. Leave blank if unlimited.</p>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-base font-medium text-gray-700">Status <span class="text-red-500">*</span></label>
+                        <select name="status" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="Available">Available</option>
+                            <option value="Limited">Limited</option>
+                            <option value="Unavailable">Unavailable</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-base font-medium text-gray-700">Image (Optional)</label>
+                        <div class="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
+                            <div class="mb-4 text-5xl text-gray-400">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <p class="text-lg text-gray-600">Click to upload or drag and drop</p>
+                            <p class="mt-2 text-sm text-gray-500">PNG, JPG up to 2MB</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-4 border-t border-gray-200 pt-6">
+                <button type="button" onclick="closeDiningModal()" class="rounded-xl border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="submit" class="rounded-xl bg-orange-500 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-orange-600">Save Dining Item</button>
             </div>
         </form>
     </div>
@@ -203,8 +393,6 @@
                     <select name="room_type" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="">Select Type</option>
                         <option value="Deluxe Room">Deluxe Room</option>
-                        <option value="Executive Suite">Executive Suite</option>
-                        <option value="Presidential Suite">Presidential Suite</option>
                         <option value="Standard Room">Standard Room</option>
                     </select>
                 </div>
@@ -258,8 +446,6 @@
                     <select name="room_type" id="editRoomType" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="">Select Type</option>
                         <option value="Deluxe Room">Deluxe Room</option>
-                        <option value="Executive Suite">Executive Suite</option>
-                        <option value="Presidential Suite">Presidential Suite</option>
                         <option value="Standard Room">Standard Room</option>
                     </select>
                 </div>
@@ -368,35 +554,172 @@
         document.getElementById('statusModal').classList.remove('flex');
     }
 
-    function openScheduleMaintenanceModal() {
-        document.getElementById('scheduleMaintenanceModal').classList.remove('hidden');
-        document.getElementById('scheduleMaintenanceModal').classList.add('flex');
+    function updateSelectedCount() {
+        const count = document.querySelectorAll('.room-checkbox:checked').length;
+        const label = document.getElementById('bulkSelectedCount');
+        if (label) {
+            label.textContent = count + (count === 1 ? ' selected' : ' selected');
+        }
     }
 
-    function closeScheduleMaintenanceModal() {
-        document.getElementById('scheduleMaintenanceModal').classList.add('hidden');
-        document.getElementById('scheduleMaintenanceModal').classList.remove('flex');
+    function toggleAllRoomCheckboxes(source) {
+        const checkboxes = document.querySelectorAll('.room-checkbox');
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = source.checked;
+        });
+        updateSelectedCount();
     }
 
-    function returnRoomFromMaintenance(id) {
-        var statusRoute = "{{ route('admin.rooms.status', ['id' => '__ID__']) }}";
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = statusRoute.replace('__ID__', id);
-        form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}">' +
-                         '<input type="hidden" name="_method" value="PATCH">' +
-                         '<input type="hidden" name="status" value="available">';
-        document.body.appendChild(form);
-        form.submit();
+    function updateSelectAllCheckbox() {
+        const checkboxes = document.querySelectorAll('.room-checkbox');
+        const allChecked = Array.from(checkboxes).every(function (checkbox) {
+            return checkbox.checked;
+        });
+        const selectAll = document.getElementById('selectAllRooms');
+        if (selectAll) {
+            selectAll.checked = allChecked;
+        }
+        updateSelectedCount();
+    }
+
+    function confirmBulkDelete() {
+        const selectedIds = Array.from(document.querySelectorAll('.room-checkbox:checked')).map(function (checkbox) {
+            return checkbox.value;
+        });
+
+        if (!selectedIds.length) {
+            alert('Please select at least one room to delete.');
+            return;
+        }
+
+        if (!confirm('Are you sure you want to delete the selected ' + selectedIds.length + ' room(s)?')) {
+            return;
+        }
+
+        const bulkRoomIds = document.getElementById('bulkRoomIds');
+        if (!bulkRoomIds) {
+            return;
+        }
+
+        bulkRoomIds.value = selectedIds.join(',');
+        document.getElementById('bulkDeleteForm').submit();
+    }
+
+    const panelCatalog = {
+        amenities: [
+            { name: 'Parking Lot', description: 'Secure vehicle parking for guests.', price: 500, availability: 'Available' },
+            { name: 'Nature Bonding', description: 'Outdoor bonding and eco-experience package.', price: 1200, availability: 'Available' },
+            { name: 'WiFi', description: 'High-speed internet access across the property.', price: 250, availability: 'Available' },
+            { name: 'Sports Court', description: 'Outdoor activity court for recreation and games.', price: 800, availability: 'Limited' }
+        ],
+        'event-place': [
+            { name: 'Wedding', description: 'Elegant wedding venue setup for memorable celebrations.', price: 18000, capacity: 120 },
+            { name: 'Birthday', description: 'Birthday event package with decor and dining setup.', price: 12000, capacity: 60 }
+        ],
+        dining: [
+            { name: 'Restaurant', description: 'Full restaurant dining experience for guests.', price: 1500, serviceType: 'Menu / Meal', category: 'Dinner', availableFrom: '17:00', availableTo: '21:00', quantity: 'Unlimited', status: 'Available' },
+            { name: 'Menu', description: 'Curated menu offering for private dining and events.', price: 900, serviceType: 'Menu / Meal', category: 'Lunch', availableFrom: '11:00', availableTo: '15:00', quantity: 25, status: 'Limited' }
+        ]
+    };
+
+    function renderItemList(listKey, containerId) {
+        const items = panelCatalog[listKey] || [];
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (!items.length) {
+            container.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-plus mb-4 text-4xl text-gray-300"></i><p>No items added yet.</p></td></tr>';
+            return;
+        }
+
+        if (listKey === 'dining') {
+            container.innerHTML = items.map(function (item) {
+                const price = item.price ? '₱' + Number(item.price).toLocaleString() : '—';
+                const availableTime = (item.availableFrom || '00:00') + ' - ' + (item.availableTo || '23:59');
+                const quantity = item.quantity || 'Unlimited';
+                const statusClass = item.status === 'Limited' ? 'bg-yellow-500' : 'bg-green-500';
+
+                return '<tr class="transition-colors hover:bg-gray-50">' +
+                    '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">' + (item.serviceType || 'Menu / Meal') + '</td>' +
+                    '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + (item.name || 'N/A') + '</td>' +
+                    '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + (item.category || 'Dinner') + '</td>' +
+                    '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + price + '</td>' +
+                    '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + availableTime + '</td>' +
+                    '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + quantity + '</td>' +
+                    '<td class="px-6 py-4 whitespace-nowrap"><span class="rounded-full px-3 py-1 text-xs font-medium text-white ' + statusClass + '">' + (item.status || 'Available') + '</span></td>' +
+                    '<td class="px-6 py-4 whitespace-nowrap text-sm">' +
+                        '<div class="flex items-center gap-2">' +
+                            '<button type="button" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Edit"><i class="fas fa-edit"></i></button>' +
+                            '<button type="button" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Delete"><i class="fas fa-trash"></i></button>' +
+                        '</div>' +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+            return;
+        }
+
+        container.innerHTML = items.map(function (item) {
+            const price = item.price ? '₱' + Number(item.price).toLocaleString() : '—';
+            const status = item.availability || item.serviceType || 'Active';
+            const floor = item.floor || 'Ground Floor';
+
+            return '<tr class="transition-colors hover:bg-gray-50">' +
+                '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">' + item.name + '</td>' +
+                '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + price + '</td>' +
+                '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + floor + '</td>' +
+                '<td class="px-6 py-4 whitespace-nowrap"><span class="rounded-full px-3 py-1 text-xs font-medium text-white bg-green-500">' + status + '</span></td>' +
+                '<td class="px-6 py-4 whitespace-nowrap text-sm">' +
+                    '<div class="flex items-center gap-2">' +
+                        '<button type="button" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Edit"><i class="fas fa-edit"></i></button>' +
+                        '<button type="button" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Delete"><i class="fas fa-trash"></i></button>' +
+                    '</div>' +
+                '</td>' +
+            '</tr>';
+        }).join('');
+    }
+
+    function openAmenityModal() {
+        document.getElementById('addAmenityModal').classList.remove('hidden');
+        document.getElementById('addAmenityModal').classList.add('flex');
+    }
+
+    function closeAmenityModal() {
+        document.getElementById('addAmenityModal').classList.add('hidden');
+        document.getElementById('addAmenityModal').classList.remove('flex');
+        document.getElementById('addAmenityForm').reset();
+    }
+
+    function openEventPlaceModal() {
+        document.getElementById('addEventPlaceModal').classList.remove('hidden');
+        document.getElementById('addEventPlaceModal').classList.add('flex');
+    }
+
+    function closeEventPlaceModal() {
+        document.getElementById('addEventPlaceModal').classList.add('hidden');
+        document.getElementById('addEventPlaceModal').classList.remove('flex');
+        document.getElementById('addEventPlaceForm').reset();
+    }
+
+    function openDiningModal() {
+        document.getElementById('addDiningModal').classList.remove('hidden');
+        document.getElementById('addDiningModal').classList.add('flex');
+    }
+
+    function closeDiningModal() {
+        document.getElementById('addDiningModal').classList.add('hidden');
+        document.getElementById('addDiningModal').classList.remove('flex');
+        document.getElementById('addDiningForm').reset();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
         const addModal = document.getElementById('addRoomModal');
         const editModal = document.getElementById('editRoomModal');
         const statusModal = document.getElementById('statusModal');
-        const scheduleModal = document.getElementById('scheduleMaintenanceModal');
+        const amenityModal = document.getElementById('addAmenityModal');
+        const eventPlaceModal = document.getElementById('addEventPlaceModal');
+        const diningModal = document.getElementById('addDiningModal');
 
-        [addModal, editModal, statusModal, scheduleModal].forEach(function (modal) {
+        [addModal, editModal, statusModal, amenityModal, eventPlaceModal, diningModal].forEach(function (modal) {
             if (modal) {
                 modal.addEventListener('click', function (event) {
                     if (event.target === modal) {
@@ -406,8 +729,12 @@
                             closeEditRoomModal();
                         } else if (modal === statusModal) {
                             closeStatusModal();
-                        } else if (modal === scheduleModal) {
-                            closeScheduleMaintenanceModal();
+                        } else if (modal === amenityModal) {
+                            closeAmenityModal();
+                        } else if (modal === eventPlaceModal) {
+                            closeEventPlaceModal();
+                        } else if (modal === diningModal) {
+                            closeDiningModal();
                         }
                     }
                 });
@@ -419,22 +746,15 @@
                 closeAddRoomModal();
                 closeEditRoomModal();
                 closeStatusModal();
-                closeScheduleMaintenanceModal();
+                closeAmenityModal();
+                closeEventPlaceModal();
+                closeDiningModal();
             }
         });
 
         const tabButtons = document.querySelectorAll('.tab-button');
         const panels = document.querySelectorAll('[data-panel]');
-        const scheduleMaintenanceForm = document.getElementById('scheduleMaintenanceForm');
-        const scheduleRoomSelect = document.getElementById('scheduleRoomId');
-
-        function setScheduleFormAction(roomId) {
-            if (!scheduleMaintenanceForm || !roomId) {
-                return;
-            }
-            const statusRoute = "{{ route('admin.rooms.status', ['id' => '__ID__']) }}";
-            scheduleMaintenanceForm.action = statusRoute.replace('__ID__', roomId);
-        }
+        const addButtons = document.querySelectorAll('.add-panel-button');
 
         function activateTab(targetName) {
             tabButtons.forEach(function(btn) {
@@ -447,6 +767,14 @@
             panels.forEach(function(panel) {
                 panel.classList.toggle('hidden', panel.getAttribute('data-panel') !== targetName);
             });
+            addButtons.forEach(function(button) {
+                const shouldShow =
+                    (targetName === 'rooms' && button.id === 'add-room-button') ||
+                    (targetName === 'amenities' && button.id === 'add-amenities-button') ||
+                    (targetName === 'event-place' && button.id === 'add-event-place-button') ||
+                    (targetName === 'dining' && button.id === 'add-dining-button');
+                button.classList.toggle('hidden', !shouldShow);
+            });
         }
 
         tabButtons.forEach(function(button) {
@@ -455,26 +783,62 @@
             });
         });
 
+        document.getElementById('add-amenities-button').addEventListener('click', openAmenityModal);
+        document.getElementById('add-event-place-button').addEventListener('click', openEventPlaceModal);
+        document.getElementById('add-dining-button').addEventListener('click', openDiningModal);
+
+        document.getElementById('addAmenityForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const item = {
+                name: formData.get('name'),
+                description: formData.get('description') || 'No description provided.',
+                price: Number(formData.get('price')) || 0,
+                availability: formData.get('availability') || 'Available'
+            };
+            panelCatalog.amenities.push(item);
+            renderItemList('amenities', 'amenities-list');
+            closeAmenityModal();
+        });
+
+        document.getElementById('addEventPlaceForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const item = {
+                name: formData.get('name'),
+                description: formData.get('description') || 'No description provided.',
+                price: Number(formData.get('price')) || 0,
+                capacity: Number(formData.get('capacity')) || 0
+            };
+            panelCatalog['event-place'].push(item);
+            renderItemList('event-place', 'event-place-list');
+            closeEventPlaceModal();
+        });
+
+        document.getElementById('addDiningForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const item = {
+                name: formData.get('name'),
+                description: formData.get('description') || 'No description provided.',
+                price: Number(formData.get('price')) || 0,
+                serviceType: formData.get('serviceType') || 'Menu / Meal',
+                category: formData.get('category') || 'Dinner',
+                availableFrom: formData.get('availableFrom') || '17:00',
+                availableTo: formData.get('availableTo') || '21:00',
+                quantity: formData.get('quantity') || 'Unlimited',
+                status: formData.get('status') || 'Available'
+            };
+            panelCatalog.dining.push(item);
+            renderItemList('dining', 'dining-list');
+            closeDiningModal();
+        });
+
+        renderItemList('amenities', 'amenities-list');
+        renderItemList('event-place', 'event-place-list');
+        renderItemList('dining', 'dining-list');
+        updateSelectedCount();
         activateTab('rooms');
-
-        if (scheduleMaintenanceForm && scheduleRoomSelect) {
-            if (scheduleRoomSelect.value) {
-                setScheduleFormAction(scheduleRoomSelect.value);
-            }
-
-            scheduleRoomSelect.addEventListener('change', function () {
-                setScheduleFormAction(this.value);
-            });
-
-            scheduleMaintenanceForm.addEventListener('submit', function(event) {
-                const roomId = scheduleRoomSelect.value;
-                if (!roomId) {
-                    event.preventDefault();
-                    return;
-                }
-                setScheduleFormAction(roomId);
-            });
-        }
 
         @if($errors->any())
             openAddRoomModal();
