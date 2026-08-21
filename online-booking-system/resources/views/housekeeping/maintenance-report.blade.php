@@ -2636,10 +2636,6 @@
             closeEditModal();
         }
 
-        if (event.target.id === "reportModal") {
-            closeReportModal();
-        }
-
     });
 
 
@@ -2651,7 +2647,6 @@
 
         closeDetailModal();
         closeEditModal();
-        closeReportModal();
 
     });
 
