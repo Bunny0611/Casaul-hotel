@@ -253,7 +253,7 @@
 
 <!-- ===== Create Account Modal ===== -->
 <div id="createModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/50 p-4">
-    <div class="fixed inset-0" onclick="closeModal('createModal')"></div>
+    <div class="fixed inset-0"></div>
     <div class="relative mx-auto my-6 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
         <div class="mb-6 flex items-center justify-between">
             <div>
@@ -340,7 +340,7 @@
 
 <!-- ===== Edit Account Modal ===== -->
 <div id="editModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/50 p-4">
-    <div class="fixed inset-0" onclick="closeModal('editModal')"></div>
+    <div class="fixed inset-0"></div>
     <div class="relative mx-auto my-6 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
         <div class="mb-6 flex items-center justify-between">
             <div>

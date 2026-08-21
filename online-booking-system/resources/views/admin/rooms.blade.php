@@ -778,32 +778,6 @@
         const editInventoryModal = document.getElementById('editInventoryModal');
         const inventoryStatusModal = document.getElementById('inventoryStatusModal');
 
-        [addModal, editModal, statusModal, amenityModal, eventPlaceModal, diningModal, editInventoryModal, inventoryStatusModal].forEach(function (modal) {
-            if (modal) {
-                modal.addEventListener('click', function (event) {
-                    if (event.target === modal) {
-                        if (modal === addModal) {
-                            closeAddRoomModal();
-                        } else if (modal === editModal) {
-                            closeEditRoomModal();
-                        } else if (modal === statusModal) {
-                            closeStatusModal();
-                        } else if (modal === amenityModal) {
-                            closeAmenityModal();
-                        } else if (modal === eventPlaceModal) {
-                            closeEventPlaceModal();
-                        } else if (modal === diningModal) {
-                            closeDiningModal();
-                        } else if (modal === editInventoryModal) {
-                            closeEditInventoryModal();
-                        } else if (modal === inventoryStatusModal) {
-                            closeInventoryStatusModal();
-                        }
-                    }
-                });
-            }
-        });
-
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
                 closeAddRoomModal();
