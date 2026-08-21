@@ -1163,7 +1163,6 @@ nav a:hover{
     display:flex;
     justify-content:center;
     align-items:center;
-    margin-top:75px;
     position:relative;
     overflow:hidden;
 }
@@ -1423,12 +1422,16 @@ nav a:hover{
     grid-template-columns: 1.9fr 1fr;
     gap: 32px;
     align-items: start;
+    max-height: calc(100vh - 180px);
 }
 
 .reservation-left {
     display: flex;
     flex-direction: column;
     gap: 24px;
+    max-height: calc(100vh - 180px);
+    overflow: hidden;
+    min-height: 520px;
 }
 
 .reservation-tabs {
@@ -1488,10 +1491,30 @@ nav a:hover{
     border-radius: 24px;
     padding: 28px;
     box-shadow: var(--shadow-sm);
+    min-height: 520px;
+    max-height: 72vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(30, 58, 95, 0.35) rgba(226, 232, 240, 0.65);
+    scroll-behavior: smooth;
 }
 
 .reservation-panel.active {
     display: block;
+}
+
+.reservation-panel::-webkit-scrollbar {
+    width: 8px;
+}
+
+.reservation-panel::-webkit-scrollbar-track {
+    background: rgba(226, 232, 240, 0.7);
+    border-radius: 999px;
+}
+
+.reservation-panel::-webkit-scrollbar-thumb {
+    background: rgba(30, 58, 95, 0.35);
+    border-radius: 999px;
 }
 
 .reservation-panel .panel-header {
@@ -1668,6 +1691,25 @@ nav a:hover{
     display: flex;
     flex-direction: column;
     gap: 20px;
+    max-height: 72vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(30, 58, 95, 0.35) rgba(226, 232, 240, 0.65);
+    min-height: 520px;
+}
+
+.reservation-summary::-webkit-scrollbar {
+    width: 8px;
+}
+
+.reservation-summary::-webkit-scrollbar-track {
+    background: rgba(226, 232, 240, 0.7);
+    border-radius: 999px;
+}
+
+.reservation-summary::-webkit-scrollbar-thumb {
+    background: rgba(30, 58, 95, 0.35);
+    border-radius: 999px;
 }
 
 .summary-card {

@@ -10,12 +10,15 @@ class ProfileController extends Controller
 {
     public function edit()
     {
+        abort_unless(auth()->user()->role === 'guest', 403);
+
         return view('profile.edit');
     }
 
     public function update(Request $request)
     {
         $user = Auth::user();
+        abort_unless($user->role === 'guest', 403);
 
         $data = $request->validate([
             'name' => 'required|string|max:255',

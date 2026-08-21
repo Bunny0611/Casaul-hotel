@@ -47,7 +47,77 @@
 
     .modal-header {
         display: flex;
-        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: flex-end;
+    }
+
+    .checkout-actions button {
+        min-width: 140px;
+        border-radius: 999px;
+        padding: 0.95rem 1.25rem;
+        font-weight: 700;
+    }
+
+    .checkout-confirm-btn {
+        background: #dc2626;
+        color: #ffffff;
+    }
+
+    .checkin-confirm-btn {
+        background: #10b981;
+        color: #ffffff;
+        border: none;
+        border-radius: 999px;
+        padding: 0.95rem 1.25rem;
+        font-weight: 700;
+    }
+
+    .checkout-cancel-btn {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+    }
+
+    .check-form-grid {
+        display: grid;
+        gap: 1.5rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .check-form-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 1.5rem;
+        background: #ffffff;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        max-height: 620px;
+        min-height: 0;
+    }
+
+    .check-form-body {
+        overflow-y: auto;
+        max-height: 460px;
+        flex: 1;
+        min-height: 0;
+        padding-right: 4px;
+        margin-bottom: 0.75rem;
+    }
+
+    .check-form-body::-webkit-scrollbar {
+        width: 7px;
+    }
+
+    .check-form-body::-webkit-scrollbar-thumb {
+        background: rgba(100, 116, 139, 0.3);
+        border-radius: 999px;
+    }
+
+    .check-form-header {
+        display: flex;
+        align-items: center;
         justify-content: space-between;
         gap: 1rem;
         margin-bottom: 1.25rem;
@@ -80,18 +150,81 @@
         color: #475569;
     }
 
-    .modal-details {
-        display: grid;
-        gap: 0.8rem;
-    }
-
-    .modal-detail-row {
-        border-radius: 1.25rem;
+    .check-form-input,
+    .check-form-select {
+        width: 100%;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
         background: #f8fafc;
         padding: 0.95rem 1rem;
+        font-size: 0.95rem;
+        outline: none;
+    }
+
+    .check-form-select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: linear-gradient(45deg, transparent 50%, #334155 50%), linear-gradient(135deg, #334155 50%, transparent 50%);
+        background-position: calc(100% - 16px) center, calc(100% - 12px) center;
+        background-size: 8px 8px;
+        background-repeat: no-repeat;
+        cursor: pointer;
+        padding-right: 2.5rem;
+    }
+
+    .check-form-input[type="date"],
+    .check-form-input[type="time"] {
+        background: #ffffff;
+    }
+
+    .check-form-input:focus,
+    .check-form-select:focus {
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+    }
+
+    .check-form-footer {
+        margin-top: 1.5rem;
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+    }
+
+    .check-form-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+    }
+
+    .check-form-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #d1fae5;
+        color: #047857;
+        font-size: 1rem;
+    }
+
+    .check-form-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 1.5rem;
+        background: #ffffff;
+        box-shadow: 0 16px 35px rgba(15, 23, 42, 0.08);
+        padding: 1.75rem;
+        display: flex;
+        flex-direction: column;
+        max-height: 680px;
+    }
+
+    .check-form-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        margin-bottom: 1.5rem;
         gap: 1rem;
     }
 
@@ -103,16 +236,15 @@
 
     .modal-detail-value {
         font-size: 0.95rem;
-        font-weight: 500;
-        color: #334155;
-        text-align: right;
     }
 
-    .modal-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.75rem;
-        margin-top: 1.5rem;
+    @media (max-width: 900px) {
+        .check-form-fields {
+            grid-template-columns: 1fr;
+        }
+        .full-width-field {
+            grid-column: span 1;
+        }
     }
 
     .modal-btn {
@@ -138,13 +270,13 @@
     .modal-btn-primary {
         background: #10b981;
         color: #ffffff;
-        border: 1px solid transparent;
     }
 
-    .modal-btn-primary:hover {
-        background: #0f766e;
+    @media (max-width: 900px) {
+        .check-form-fields {
+            grid-template-columns: 1fr;
+        }
     }
-
 </style>
 
 <div class="space-y-6">
@@ -193,6 +325,136 @@
                     <h4 class="mt-1 text-2xl font-semibold text-slate-800">8</h4>
                 </div>
                 <div class="stat-icon bg-amber-100 text-amber-700"><i class="fas fa-door-open"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-4 lg:grid-cols-2 mb-6">
+        <div class="check-form-card">
+            <div class="check-form-header">
+                <div class="check-form-title-group">
+                    <span class="check-form-icon"><i class="fas fa-user-check"></i></span>
+                    <div>
+                        <h3>Check-in Form</h3>
+                        <p>Register arrivals and confirm stay details.</p>
+                    </div>
+                </div>
+                <span class="pill bg-emerald-100 text-emerald-700">Check In</span>
+            </div>
+            <div class="check-form-body">
+                <div class="check-form-fields">
+                    <div class="check-form-field">
+                        <label class="check-form-label">Reservation ID</label>
+                        <input type="text" class="check-form-input" value="RES-1024" readonly>
+                    </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Room</label>
+                    <input type="text" class="check-form-input" value="102 - Deluxe King" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Guests</label>
+                    <input type="text" class="check-form-input" value="2" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Arriving On</label>
+                    <input type="date" class="check-form-input" value="2026-07-31" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Status</label>
+                    <select class="check-form-select">
+                        <option>Fully Paid</option>
+                        <option>Reserved</option>
+                    </select>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Payment Method</label>
+                    <select class="check-form-select">
+                        <option>GCash</option>
+                        <option>Credit Card</option>
+                        <option>Landbank</option>
+                        <option>PayMaya</option>
+                        <option>Cash</option>
+                    </select>
+                </div>
+                <div class="check-form-field full-width-field">
+                    <label class="check-form-label">Remarks</label>
+                    <textarea class="check-form-input" rows="3" placeholder="Add special request or note"></textarea>
+                </div>
+            </div>
+            </div>
+            <div class="check-form-footer">
+                <button type="button" class="checkin-action-btn">Check In</button>
+            </div>
+        </div>
+        <div class="check-form-card">
+            <div class="check-form-header">
+                <div class="check-form-title-group">
+                    <span class="check-form-icon"><i class="fas fa-sign-out-alt"></i></span>
+                    <div>
+                        <h3>Check-out Form</h3>
+                        <p>Finalize departures and review room billing.</p>
+                    </div>
+                </div>
+                <span class="pill bg-rose-100 text-rose-700">Check Out</span>
+            </div>
+            <div class="check-form-body">
+                <div class="check-form-fields">
+                    <div class="check-form-field">
+                        <label class="check-form-label">Reservation ID</label>
+                        <input type="text" class="check-form-input" value="RES-1042" readonly>
+                    </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Guest Name</label>
+                    <input type="text" class="check-form-input" value="James Rivera" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Room Number</label>
+                    <input type="text" class="check-form-input" value="305" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Room Type</label>
+                    <input type="text" class="check-form-input" value="Executive Suite" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Check-in Date</label>
+                    <input type="date" class="check-form-input" value="2026-07-27" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Check-out Date</label>
+                    <input type="date" class="check-form-input" value="2026-07-31" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Total Nights</label>
+                    <input type="text" class="check-form-input" value="4 Nights" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Total Amount</label>
+                    <input type="text" class="check-form-input" value="₱13,500" readonly>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Payment Method</label>
+                    <select class="check-form-select">
+                        <option>GCash</option>
+                        <option>Credit Card</option>
+                        <option>Landbank</option>
+                        <option>PayMaya</option>
+                        <option>Cash</option>
+                    </select>
+                </div>
+                <div class="check-form-field">
+                    <label class="check-form-label">Status</label>
+                    <select class="check-form-select">
+                        <option>Paid</option>
+                        <option>Pending</option>
+                    </select>
+                </div>
+                <div class="check-form-field full-width-field">
+                    <label class="check-form-label">Remarks</label>
+                    <textarea class="check-form-input" rows="3" placeholder="Add departure note"></textarea>
+                </div>
+            </div>
+            <div class="check-form-footer">
+                <button type="button" class="checkout-action-btn">Check Out</button>
             </div>
         </div>
     </div>

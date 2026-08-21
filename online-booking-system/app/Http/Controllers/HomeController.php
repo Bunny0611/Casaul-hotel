@@ -108,11 +108,15 @@ class HomeController extends Controller
 
     public function profile()
     {
+        abort_unless(auth()->user()->role === 'guest', 403);
+
         return view('profile');
     }
 
     public function records()
     {
+        abort_unless(auth()->user()->role === 'guest', 403);
+
         $reservations = Reservation::with('room')
             ->where('guest_email', auth()->user()->email)
             ->orderBy('created_at', 'desc')

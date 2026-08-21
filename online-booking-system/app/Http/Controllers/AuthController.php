@@ -34,10 +34,7 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required'],
 
-            'role' => ['required', 'in:admin,housekeeping,employee'],
-
             'role' => ['required', 'in:admin,employee,housekeeping'],
-
         ]);
 
         $user = User::where('email', $credentials['email'])
@@ -117,9 +114,6 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return redirect()->intended(route('profile'));
-
-        return redirect()->route('home');
-
     }
 
     /**
