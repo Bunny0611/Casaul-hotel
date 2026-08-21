@@ -61,7 +61,7 @@
             </div>
         </div>
 
-        <div id="roomsTab" data-reservation-panel="rooms" class="space-y-4 pt-4">
+        <div id="roomsTab" data-reservation-panel="rooms" class="space-y-4 pt-4 pb-3">
             <div class="summary-grid">
                 <article class="summary-card" data-tone="available">
                     <div class="summary-card-head">
