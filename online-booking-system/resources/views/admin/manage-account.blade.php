@@ -13,12 +13,6 @@
         </button>
     </div>
 
-    @if(session('success'))
-        <div class="mb-6 rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
-            <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
-        </div>
-    @endif
-
     @if($errors->any())
         <div class="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-800">
             <i class="fas fa-exclamation-circle mr-2"></i>{{ $errors->first() }}
