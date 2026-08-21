@@ -3,165 +3,79 @@
 @section('content')
 
 <style>
-    .confirmation-modal {
-        position: fixed;
-        inset: 0;
-        display: none;
-        justify-content: center;
-        align-items: center;
-        background: rgba(15, 23, 42, 0.6);
-        padding: 24px;
-        z-index: 9999;
+    /* Reservation page - visual refresh (scoped) */
+    :root {
+        --res-bg: #f6f7fb;
+        --card: #ffffff;
+        --muted: #6b7280;
+        --accent: #dc2626;
+        --accent-2: #f97316;
+        --radius-lg: 18px;
+        --radius-sm: 10px;
+        --shadow-soft: 0 10px 30px rgba(16, 24, 40, 0.08);
     }
 
-    .confirmation-modal.open {
-        display: flex;
+    .reservation-page { background: var(--res-bg); padding: 28px 0; }
+
+    .reservation-hero { margin: 6px 0 20px; max-width: 1200px; margin-left: auto; margin-right: auto; padding: 28px; background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.35)); border-radius: 14px; box-shadow: var(--shadow-soft); }
+    .reservation-hero .eyebrow { color: var(--muted); font-weight:700; letter-spacing:0.06em; }
+    .reservation-hero h1 { margin-top:8px; font-size:2rem; color:#0f172a; }
+    .reservation-hero p { color: #374151; margin-top:8px; }
+
+    .reservation-shell { display:flex; gap:24px; max-width:1200px; margin:20px auto; padding:0 20px; }
+    .reservation-left { flex:1 1 720px; }
+    .reservation-summary { width:360px; flex:0 0 360px; }
+
+    .reservation-tabs { display:flex; gap:10px; margin-bottom:16px; }
+    .tab-btn { background:transparent; border-radius:999px; padding:10px 14px; font-weight:700; color:#475569; border:1px solid transparent; transition:all .18s ease; }
+    .tab-btn.active { background: linear-gradient(90deg,var(--accent),var(--accent-2)); color:white; box-shadow: 0 8px 24px rgba(220,38,38,0.12); }
+
+    .reservation-panel { background: var(--card); border-radius: 12px; padding:14px; box-shadow: 0 8px 20px rgba(12,18,30,0.04); margin-bottom:18px; }
+
+    .reservation-card-grid { display:grid; grid-template-columns: repeat(2,1fr); gap:14px; }
+    .reservation-card { border-radius: 12px; overflow:hidden; background: linear-gradient(180deg,#fff,#fbfdff); display:flex; border:1px solid rgba(15,23,42,0.04); box-shadow: 0 6px 18px rgba(16,24,40,0.04); }
+    .reservation-card img{ width:40%; object-fit:cover; }
+    .reservation-card-body{ padding:14px; display:flex; flex-direction:column; gap:8px; }
+    .reservation-card h4{ margin:0; color:#0f172a; font-size:1.05rem; }
+    .reservation-card-meta{ color:var(--muted); font-size:0.92rem; display:flex; gap:8px; }
+    .reservation-card-footer{ margin-top:auto; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+
+    .select-option-btn{ background:transparent; border:1px solid rgba(15,23,42,0.06); padding:8px 12px; border-radius:999px; color:#0f172a; font-weight:700; cursor:pointer; transition:all .14s ease; }
+    .select-option-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+    .select-option-btn:hover:not(:disabled){ transform:translateY(-2px); box-shadow:0 8px 18px rgba(16,24,40,0.06); }
+
+    .summary-card{ background: linear-gradient(180deg,#fff,#fbfdff); padding:18px; border-radius:12px; box-shadow: var(--shadow-soft); border:1px solid rgba(15,23,42,0.04); }
+    .summary-card h3{ margin:0 0 12px 0; font-size:1.1rem; color:#0f172a; }
+    .summary-item-card{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px; border-radius:10px; background:transparent; border-bottom:1px solid rgba(15,23,42,0.03); }
+    .summary-item-card-left{ display:flex; gap:12px; align-items:center; }
+    .summary-item-title{ font-weight:700; color:#0f172a; margin:0; }
+    .summary-item-subtitle{ margin:0; color:var(--muted); font-size:0.9rem; }
+    .summary-item-price{ font-weight:800; color:#0f172a; }
+    .summary-edit-btn{ background:transparent; color:var(--accent); border:none; font-weight:700; cursor:pointer; }
+
+    .summary-total{ display:flex; justify-content:space-between; align-items:center; padding:18px 0 6px 0; }
+    .summary-total strong{ font-size:1.4rem; color:#0f172a; }
+
+    .confirmation-modal{ position:fixed; inset:0; display:none; align-items:flex-start; justify-content:center; background:rgba(2,6,23,0.55); z-index:9999; padding:20px; overflow-y:auto; }
+    .confirmation-modal.open{ display:flex; }
+    .confirmation-card{ width:min(760px,100%); max-height:calc(100vh - 40px); overflow-y:auto; box-sizing:border-box; border-radius:20px; padding:28px; background:linear-gradient(180deg,#fff,#fbfdff); box-shadow: 0 32px 80px rgba(2,6,23,0.18); border:1px solid rgba(15,23,42,0.06); }
+    .confirmation-item{ border-radius:12px; padding:12px; background:#f8fafc; color:#0f172a; }
+    .confirmation-total-amount{ font-size:1.6rem; color:#0f172a; }
+
+    .confirm-submit-btn{ background: var(--accent); color:white; border-radius:999px; padding:12px 22px; }
+    .confirm-cancel-btn{ background: #f3f4f6; border-radius:999px; padding:12px 22px; }
+
+    @media (max-width: 640px){
+        .confirmation-modal{ padding:12px; }
+        .confirmation-card{ max-height:calc(100vh - 24px); padding:20px; }
+        .confirmation-grid{ grid-template-columns:1fr !important; }
+        .confirmation-actions{ flex-wrap:wrap; }
+        .confirmation-actions button{ flex:1 1 100%; }
     }
 
-    .confirmation-card {
-        width: min(680px, 100%);
-        background: #ffffff;
-        border-radius: 28px;
-        padding: 32px;
-        box-shadow: 0 32px 80px rgba(15, 23, 42, 0.18);
-        border: 1px solid rgba(15, 23, 42, 0.08);
-    }
+    /* Responsive */
+    @media (max-width: 980px){ .reservation-shell{ flex-direction:column; } .reservation-summary{ width:100%; } .reservation-card-grid{ grid-template-columns: 1fr; } }
 
-    .confirmation-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 16px;
-    }
-
-    .confirmation-header h3 {
-        margin: 0;
-        font-size: 1.5rem;
-        color: #111827;
-    }
-
-    .confirmation-close {
-        border: none;
-        background: transparent;
-        color: #334155;
-        font-size: 1.5rem;
-        cursor: pointer;
-        line-height: 1;
-    }
-
-    .confirmation-text {
-        margin: 0 0 24px;
-        color: #4b5563;
-        font-size: 0.98rem;
-        line-height: 1.6;
-    }
-
-    .confirmation-form {
-        display: grid;
-        gap: 20px;
-    }
-
-    .confirmation-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px;
-    }
-
-    .confirmation-col {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-    }
-
-    .confirmation-field {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .confirmation-label {
-        color: #6b7280;
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-    }
-
-    .confirmation-input {
-        width: 100%;
-        border-radius: 16px;
-        border: 1px solid #d1d5db;
-        background: #f9fafb;
-        padding: 12px 14px;
-        color: #111827;
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-
-    .confirmation-input:focus {
-        outline: none;
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-    }
-
-    .confirmation-total-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-top: 16px;
-        border-top: 1px solid #e5e7eb;
-    }
-
-    .confirmation-total-label {
-        color: #6b7280;
-        font-weight: 700;
-        font-size: 0.9rem;
-    }
-
-    .confirmation-total-amount {
-        font-size: 1.2rem;
-        color: #111827;
-        font-weight: 700;
-    }
-
-    .confirmation-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
-        margin-top: 20px;
-    }
-
-    .confirm-submit-btn,
-    .confirm-cancel-btn,
-    .summary-actions button {
-        border-radius: 999px;
-        padding: 12px 20px;
-        font-weight: 700;
-        border: none;
-        cursor: pointer;
-    }
-
-    .confirm-submit-btn {
-        background: #dc2626;
-        color: #ffffff;
-    }
-
-    .confirm-cancel-btn,
-    .summary-clear {
-        background: #f3f4f6;
-        color: #111827;
-    }
-
-    .summary-actions button {
-        background: linear-gradient(135deg, #dc2626 0%, #f97316 100%);
-        color: white;
-    }
-
-    @media (max-width: 860px) {
-        .confirmation-grid {
-            grid-template-columns: 1fr;
-        }
-    }
 </style>
 
 <div class="reservation-page animate-on-scroll">
@@ -201,12 +115,13 @@
                         <input id="checkOut" type="date" class="field-input" />
                     </div>
                     <div class="panel-field">
-                        <label class="field-label">Guests</label>
-                        <select id="guestCount" class="field-input">
-                            <option value="1">1 Guest</option>
-                            <option value="2" selected>2 Guests</option>
-                            <option value="3">3 Guests</option>
-                            <option value="4">4 Guests</option>
+                        <label class="field-label">Add a Person</label>
+                        <select id="additionalGuests" class="field-input">
+                            <option value="0" selected>No extra persons</option>
+                            <option value="1">1 Person (₱650)</option>
+                            <option value="2">2 Persons (₱1,300)</option>
+                            <option value="3">3 Persons (₱1,950)</option>
+                            <option value="4">4 Persons (₱2,600)</option>
                         </select>
                     </div>
                 </div>
@@ -313,7 +228,7 @@
                     </div>
                     <div class="summary-item-card-right">
                         <span class="summary-item-price" id="summaryRoomPrice">₱0</span>
-                        <button type="button" class="summary-edit-btn">Edit</button>
+                        <button type="button" class="summary-edit-btn" data-target="room-tab">Edit</button>
                     </div>
                 </article>
                 <article class="summary-item-card">
@@ -326,7 +241,19 @@
                     </div>
                     <div class="summary-item-card-right">
                         <span class="summary-item-price" id="summaryAmenitiesPrice">₱0</span>
-                        <button type="button" class="summary-edit-btn">Edit</button>
+                        <button type="button" class="summary-edit-btn" data-target="amenities-tab">Edit</button>
+                    </div>
+                </article>
+                <article class="summary-item-card">
+                    <div class="summary-item-card-left">
+                        <div class="summary-item-icon"><i class="fas fa-user-plus"></i></div>
+                        <div class="summary-item-details">
+                            <p class="summary-item-title">Extra Person</p>
+                            <p class="summary-item-subtitle" id="summaryAdditionalGuests">None</p>
+                        </div>
+                    </div>
+                    <div class="summary-item-card-right">
+                        <span class="summary-item-price" id="summaryAdditionalGuestsPrice">₱0</span>
                     </div>
                 </article>
                 <article class="summary-item-card">
@@ -339,7 +266,7 @@
                     </div>
                     <div class="summary-item-card-right">
                         <span class="summary-item-price" id="summaryEventPrice">₱0</span>
-                        <button type="button" class="summary-edit-btn">Edit</button>
+                        <button type="button" class="summary-edit-btn" data-target="event-tab">Edit</button>
                     </div>
                 </article>
                 <article class="summary-item-card">
@@ -352,7 +279,7 @@
                     </div>
                     <div class="summary-item-card-right">
                         <span class="summary-item-price" id="summaryDiningPrice">₱0</span>
-                        <button type="button" class="summary-edit-btn">Edit</button>
+                        <button type="button" class="summary-edit-btn" data-target="dining-tab">Edit</button>
                     </div>
                 </article>
                 <div class="summary-total">
@@ -447,17 +374,20 @@
         const panels = document.querySelectorAll('.reservation-panel');
         const checkIn = document.getElementById('checkIn');
         const checkOut = document.getElementById('checkOut');
-        const guestCount = document.getElementById('guestCount');
+        const additionalGuests = document.getElementById('additionalGuests');
         const summaryRoom = document.getElementById('summaryRoom');
         const summaryRoomDetails = document.getElementById('summaryRoomDetails');
         const summaryRoomPrice = document.getElementById('summaryRoomPrice');
         const summaryItems = document.getElementById('summaryItems');
+        const summaryAdditionalGuests = document.getElementById('summaryAdditionalGuests');
+        const summaryAdditionalGuestsPrice = document.getElementById('summaryAdditionalGuestsPrice');
         const summaryEvent = document.getElementById('summaryEvent');
         const summaryDining = document.getElementById('summaryDining');
         const summaryAmenitiesPrice = document.getElementById('summaryAmenitiesPrice');
         const summaryEventPrice = document.getElementById('summaryEventPrice');
         const summaryDiningPrice = document.getElementById('summaryDiningPrice');
         const summaryTotal = document.getElementById('summaryTotal');
+        const summaryEditButtons = document.querySelectorAll('.summary-edit-btn');
         const confirmBtn = document.getElementById('confirmReservationBtn');
         const clearBtn = document.getElementById('clearReservationBtn');
         const reservationForm = document.getElementById('reservationForm');
@@ -497,34 +427,16 @@
             });
         });
 
-        const summaryEditButtons = document.querySelectorAll('.summary-edit-btn');
-        summaryEditButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                const title = this.closest('.summary-item-card').querySelector('.summary-item-title').textContent.trim().toLowerCase();
-                let targetId = 'room-tab';
-
-                if (title.startsWith('amenities')) {
-                    targetId = 'amenities-tab';
-                } else if (title.startsWith('event')) {
-                    targetId = 'event-tab';
-                } else if (title.startsWith('dining')) {
-                    targetId = 'dining-tab';
-                }
-
-                tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === targetId));
-                panels.forEach(panel => panel.classList.toggle('active', panel.id === targetId));
-                document.getElementById(targetId).scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-        });
-
         const updateSummary = () => {
             summaryRoom.textContent = selectedRoom ? selectedRoom : 'None';
-            summaryRoomDetails.textContent = selectedRoom ? `${checkIn.value || 'Date'} – ${checkOut.value || 'Date'} • ${guestCount.value} Guests` : 'Choose a room and dates';
+            summaryRoomDetails.textContent = selectedRoom ? `${checkIn.value || 'Date'} – ${checkOut.value || 'Date'}${additionalGuests.value > 0 ? ` • ${additionalGuests.value} Extra Person(s)` : ''}` : 'Choose a room and dates';
             summaryRoomPrice.textContent = `₱${roomPrice.toLocaleString()}`;
             summaryItems.textContent = selectedAmenities.length > 0 ? `${selectedAmenities.length} selected` : '0 selected';
+            summaryAdditionalGuests.textContent = additionalGuests.value > 0 ? `${additionalGuests.value} added` : 'None';
             summaryEvent.textContent = selectedEvent ? selectedEvent.title : 'None';
             summaryDining.textContent = selectedDining ? selectedDining.title : 'None';
             summaryAmenitiesPrice.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + item.price, 0).toLocaleString()}`;
+            summaryAdditionalGuestsPrice.textContent = `₱${(Number(additionalGuests.value) * 650).toLocaleString()}`;
             summaryEventPrice.textContent = `₱${(selectedEvent ? selectedEvent.price : 0).toLocaleString()}`;
             summaryDiningPrice.textContent = `₱${(selectedDining ? selectedDining.price : 0).toLocaleString()}`;
 
@@ -532,7 +444,7 @@
             confirmRoom.textContent = selectedRoom ? selectedRoom : 'None';
             confirmArrivingOn.textContent = checkIn.value || '—';
             confirmCheckOut.textContent = checkOut.value || '—';
-            confirmGuests.textContent = `${guestCount.value} Guests`;
+            confirmGuests.textContent = additionalGuests.value > 0 ? `${additionalGuests.value} Extra Person(s)` : 'None';
             confirmStatus.textContent = 'Reserved';
             confirmPaymentMethod.textContent = 'Cash';
             confirmAmenities.textContent = selectedAmenities.length > 0 ? `${selectedAmenities.length} selected` : '0 selected';
@@ -556,13 +468,14 @@
 
         checkIn.addEventListener('change', updateSummary);
         checkOut.addEventListener('change', updateSummary);
-        guestCount.addEventListener('change', updateSummary);
+        additionalGuests.addEventListener('change', updateSummary);
 
         const calculateTotal = () => {
             const amenitiesTotal = selectedAmenities.reduce((sum, item) => sum + item.price, 0);
             const eventTotal = selectedEvent ? selectedEvent.price : 0;
             const diningTotal = selectedDining ? selectedDining.price : 0;
-            return roomPrice + amenitiesTotal + eventTotal + diningTotal;
+            const extraGuestsTotal = Number(additionalGuests.value) * 650;
+            return roomPrice + amenitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
         };
 
         items.forEach(button => {
@@ -620,6 +533,26 @@
             });
         });
 
+        summaryEditButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const targetId = this.dataset.target;
+                if (!targetId) {
+                    return;
+                }
+
+                tabs.forEach(tab => tab.classList.remove('active'));
+                panels.forEach(panel => panel.classList.remove('active'));
+
+                const targetTab = Array.from(tabs).find(tab => tab.dataset.tab === targetId);
+                const targetPanel = document.getElementById(targetId);
+                if (targetTab && targetPanel) {
+                    targetTab.classList.add('active');
+                    targetPanel.classList.add('active');
+                    targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
         const openConfirmationModal = () => {
             confirmationModal.classList.add('open');
             confirmationModal.style.display = 'flex';
@@ -664,7 +597,7 @@
             roomPrice = 0;
             checkIn.value = '';
             checkOut.value = '';
-            guestCount.value = '2';
+            additionalGuests.value = '0';
             items.forEach(btn => {
                 btn.textContent = 'Add to Reservation';
                 btn.disabled = false;

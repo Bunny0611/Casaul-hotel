@@ -5,8 +5,8 @@
 @include('partials.section-hero', [
     'title' => 'CASAUL HOTEL',
     'subtitle' => 'Experience comfort, elegance, and unforgettable hospitality.',
-    'cta' => ['href' => route('accommodation'), 'label' => 'Book Now'],
-'backgroundImage' => 'image/HM.jpg',
+    'cta' => ['href' => route('reservation'), 'label' => 'Book Now'],
+    'backgroundImage' => 'image/HM.jpg',
 ])
 
 <section class="offers animate-on-scroll">

@@ -140,7 +140,7 @@ Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return redirect('/');
+    return redirect()->route('home');
 })->name('logout');
 
 Route::middleware('auth')->group(function(){

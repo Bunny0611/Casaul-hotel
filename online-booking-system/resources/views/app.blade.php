@@ -40,8 +40,6 @@
 
         <li><a href="{{ route('accommodation') }}">ACCOMMODATION</a></li>
 
-        <li><a href="{{ route('reservation') }}">RESERVATION</a></li>
-
         <li><a href="{{ route('offers') }}">OFFERS</a></li>
 
         <li><a href="{{ route('dining') }}">DINING</a></li>
@@ -64,7 +62,7 @@
             </form>
         </div>
 
-@auth
+@if(auth()->check() && auth()->user()->role === 'guest')
             <div class="profile-dropdown" id="profile-dropdown">
                 <button type="button" class="profile-trigger" id="profile-trigger" aria-label="My Account">
                     <span class="profile-trigger-avatar">
@@ -98,7 +96,7 @@
             </div>
         @else
             <button type="button" class="nav-signin-btn" id="guest-signin-trigger">SIGN IN</button>
-        @endauth
+        @endif
     </div>
 
 </nav>

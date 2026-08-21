@@ -33,11 +33,7 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-<<<<<<< HEAD
             'role' => ['required', 'in:admin,housekeeping,employee'],
-=======
-            'role' => ['required', 'in:admin,employee,housekeeping'],
->>>>>>> 567910577cfeffed3b9fcc998ab381d3b8efecfd
         ]);
 
         $user = User::where('email', $credentials['email'])
@@ -116,11 +112,7 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-<<<<<<< HEAD
         return redirect()->intended(route('profile'));
-=======
-        return redirect()->route('home');
->>>>>>> 9bf0e2af202095ba6597495b577172feed0a3429
     }
 
     /**
