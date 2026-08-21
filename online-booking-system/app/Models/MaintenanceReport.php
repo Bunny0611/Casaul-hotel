@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class MaintenanceReport extends Model
+{
+    protected $fillable = [
+        'room_number',
+        'room_type',
+        'reported_by',
+        'category',
+        'priority',
+        'problem',
+        'description',
+        'date_reported',
+        'expected_date',
+        'technician',
+        'status',
+    ];
+
+    protected $casts = [
+        'date_reported' => 'date',
+        'expected_date' => 'date',
+    ];
+}

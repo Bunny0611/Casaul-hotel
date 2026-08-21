@@ -956,6 +956,7 @@
                                 type="text"
                                 placeholder="John Smith"
                                 class="form-control"
+                                required
                             >
 
                         </div>
@@ -1017,6 +1018,7 @@
                                 type="text"
                                 placeholder="101"
                                 class="form-control"
+                                required
                             >
 
                         </div>
@@ -1086,6 +1088,7 @@
                                 type="text"
                                 placeholder="2 Guests"
                                 class="form-control"
+                                required
                             >
 
                         </div>
@@ -1255,6 +1258,7 @@
                                 name="scheduleDate"
                                 type="date"
                                 class="form-control"
+                                required
                             >
 
                         </div>
@@ -1316,6 +1320,7 @@
                             type="text"
                             placeholder="Maria Santos"
                             class="form-control"
+                                required
                         >
 
                     </div>
@@ -2147,6 +2152,11 @@
 
         const form =
             document.getElementById('assignTaskForm');
+
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
 
 
         const roomNumber =

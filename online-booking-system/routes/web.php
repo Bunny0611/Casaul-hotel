@@ -127,6 +127,9 @@ Route::prefix('housekeeping')->name('housekeeping.')->group(function () {
     Route::get('/room-status-update', [HousekeepingController::class, 'roomStatusUpdate'])->name('room-status-update');
     Route::get('/guest-requests', [HousekeepingController::class, 'guestRequests'])->name('guest-requests');
     Route::get('/maintenance-report', [HousekeepingController::class, 'maintenanceReport'])->name('maintenance-report');
+    Route::post('/maintenance-report', [HousekeepingController::class, 'storeMaintenanceReport'])->name('maintenance-report.store');
+    Route::put('/maintenance-report/{maintenanceReport}', [HousekeepingController::class, 'updateMaintenanceReport'])->name('maintenance-report.update');
+    Route::delete('/maintenance-report/{maintenanceReport}', [HousekeepingController::class, 'destroyMaintenanceReport'])->name('maintenance-report.destroy');
     Route::get('/cleaning-history', [HousekeepingController::class, 'cleaningHistory'])->name('cleaning-history');
 });
 

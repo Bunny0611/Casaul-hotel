@@ -379,6 +379,38 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
 
+            document.addEventListener('submit', function (event) {
+
+                const form = event.target;
+
+                if (form.dataset.submitting === 'true') {
+                    event.preventDefault();
+                    return;
+                }
+
+                form.dataset.submitting = 'true';
+
+                const submitButton = event.submitter ||
+                    form.querySelector('button[type="submit"], input[type="submit"]');
+
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.setAttribute('aria-busy', 'true');
+                }
+
+                if (event.defaultPrevented) {
+                    setTimeout(function () {
+                        delete form.dataset.submitting;
+
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.removeAttribute('aria-busy');
+                        }
+                    }, 0);
+                }
+
+            });
+
             const sidebar = document.getElementById('sidebar');
             const backdrop = document.getElementById('sidebarBackdrop');
             const toggle = document.getElementById('sidebarToggle');
