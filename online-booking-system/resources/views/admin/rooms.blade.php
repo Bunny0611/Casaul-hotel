@@ -254,13 +254,17 @@
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
         @endif
 
-        <form id="addAmenityForm" method="POST" action="{{ route('admin.inventory.store') }}" class="space-y-4">
+        <form id="addAmenityForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <input type="hidden" name="category" value="amenities">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Amenity Name</label>
                     <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Image (Optional)</label>
+                    <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Description</label>
@@ -300,7 +304,7 @@
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
         @endif
 
-        <form id="addEventPlaceForm" method="POST" action="{{ route('admin.inventory.store') }}" class="space-y-4">
+        <form id="addEventPlaceForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <input type="hidden" name="category" value="event_place">
             <input type="hidden" name="status" value="available">
@@ -308,6 +312,10 @@
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Event Name</label>
                     <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Image (Optional)</label>
+                    <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Description</label>
@@ -340,7 +348,7 @@
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
         @endif
 
-        <form id="addDiningForm" method="POST" action="{{ route('admin.inventory.store') }}" class="space-y-6">
+        <form id="addDiningForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
             <input type="hidden" name="category" value="dining">
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -407,13 +415,8 @@
 
                     <div>
                         <label class="mb-2 block text-base font-medium text-gray-700">Image (Optional)</label>
-                        <div class="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
-                            <div class="mb-4 text-5xl text-gray-400">
-                                <i class="fas fa-image"></i>
-                            </div>
-                            <p class="text-lg text-gray-600">Click to upload or drag and drop</p>
-                            <p class="mt-2 text-sm text-gray-500">PNG, JPG up to 2MB</p>
-                        </div>
+                        <input type="file" name="image" accept="image/*" class="block w-full rounded-xl border border-gray-300 bg-gray-50 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <p class="mt-2 text-sm text-gray-500">PNG, JPG, GIF, or WEBP up to 2MB</p>
                     </div>
                 </div>
             </div>
@@ -447,7 +450,7 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.rooms.store') }}" method="POST" class="space-y-4">
+        <form action="{{ route('admin.rooms.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <input type="hidden" name="status" value="available">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -480,6 +483,10 @@
                 <label class="mb-1 block text-sm font-medium text-gray-700">Description</label>
                 <textarea name="description" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
             </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Room Image (Optional)</label>
+                <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeAddRoomModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
                 <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Room</button>
@@ -499,7 +506,7 @@
             <p class="mt-1 text-sm text-gray-500">Update the room details below.</p>
         </div>
 
-        <form id="editRoomForm" action="" method="POST" class="space-y-4">
+        <form id="editRoomForm" action="" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf
             @method('PUT')
             <input type="hidden" name="id" id="editRoomId">
@@ -537,6 +544,10 @@
                         <option value="maintenance">Maintenance</option>
                     </select>
                 </div>
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Room Image (Optional)</label>
+                <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeEditRoomModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>

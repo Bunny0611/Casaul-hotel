@@ -18,6 +18,7 @@ class InventoryItem extends Model
         'available_from',
         'available_to',
         'quantity',
+        'image',
     ];
 
     protected $casts = [

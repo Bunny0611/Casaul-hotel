@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Models\Room;
 use App\Models\Reservation;
@@ -89,6 +90,39 @@ class AdminController extends Controller
         return view('admin.rooms', compact('rooms', 'amenities', 'eventPlaces', 'dining', 'activeTab'));
     }
 
+    protected function handleInventoryImageUpload(Request $request, ?InventoryItem $item = null): ?string
+    {
+        if (!$request->hasFile('image')) {
+            return $item?->image;
+        }
+
+        if ($item && $item->image && Storage::disk('public')->exists($item->image)) {
+            Storage::disk('public')->delete($item->image);
+        }
+
+        $file = $request->file('image');
+        $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('inventory', $filename, 'public');
+
+        return $path;
+    }
+
+    protected function handleRoomImageUpload(Request $request, ?Room $room = null): ?string
+    {
+        if (!$request->hasFile('image')) {
+            return $room?->image;
+        }
+
+        if ($room && $room->image && Storage::disk('public')->exists($room->image)) {
+            Storage::disk('public')->delete($room->image);
+        }
+
+        $file = $request->file('image');
+        $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+        return $file->storeAs('rooms', $filename, 'public');
+    }
+
     public function storeInventoryItem(Request $request)
     {
         $validated = $request->validate([
@@ -103,8 +137,13 @@ class AdminController extends Controller
             'available_from' => ['nullable', 'date_format:H:i'],
             'available_to' => ['nullable', 'date_format:H:i'],
             'quantity' => ['nullable', 'integer', 'min:0'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
         ]);
         $validated['status'] = strtolower($validated['status']);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $this->handleInventoryImageUpload($request);
+        }
 
         InventoryItem::create($validated);
 
@@ -126,8 +165,13 @@ class AdminController extends Controller
             'available_from' => ['nullable', 'date_format:H:i'],
             'available_to' => ['nullable', 'date_format:H:i'],
             'quantity' => ['nullable', 'integer', 'min:0'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
         ]);
         $validated['status'] = strtolower($validated['status']);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $this->handleInventoryImageUpload($request, $item);
+        }
 
         $item->update($validated);
 
@@ -185,9 +229,13 @@ class AdminController extends Controller
             'floor' => 'required|string',
             'capacity' => 'required|integer|min:1',
             'description' => 'nullable|string',
-            'image' => 'nullable|string',
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
         ]);
         $validated['status'] = 'available';
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $this->handleRoomImageUpload($request);
+        }
 
         Room::create($validated);
         return redirect()->route('admin.rooms')->with('success', 'Room created successfully!');
@@ -203,9 +251,13 @@ class AdminController extends Controller
             'floor' => 'required|string',
             'capacity' => 'required|integer|min:1',
             'description' => 'nullable|string',
-            'image' => 'nullable|string',
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
             'status' => 'required|in:available,occupied,reserved,maintenance',
         ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $this->handleRoomImageUpload($request, $room);
+        }
 
         $room->update($validated);
         return redirect()->route('admin.rooms')->with('success', 'Room updated successfully!');
@@ -264,15 +316,35 @@ class AdminController extends Controller
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:20'],
             'check_in' => ['required', 'date'],
+            'check_in_time' => ['nullable', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
-            'status' => ['required', 'in:pending,confirmed,cancelled,completed'],
+            'check_out_time' => ['nullable', 'date_format:H:i'],
+            'status' => ['required', 'in:pending,confirmed,checked-in,cancelled,completed'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'special_requests' => ['nullable', 'string'],
+            'submission_token' => ['nullable', 'string', 'max:100'],
         ]);
+
+        $submissionToken = $validated['submission_token'] ?? null;
+        $isEmployeeReservation = $request->routeIs('employee.reservations.store') || $request->user()?->role === 'employee';
+
+        if ($submissionToken && $request->session()->has('reservation_submission_' . $submissionToken)) {
+            return $isEmployeeReservation
+                ? redirect()->route('employee.reservation')
+                : redirect()->route('admin.reservations');
+        }
+
+        if ($submissionToken) {
+            $request->session()->put('reservation_submission_' . $submissionToken, true);
+        }
+
+        unset($validated['submission_token']);
 
         Reservation::create($validated);
 
-        return redirect()->route('admin.reservations')->with('success', 'Reservation created successfully!');
+        return $isEmployeeReservation
+            ? redirect()->route('employee.reservation')->with('success', 'Reservation created successfully!')
+            : redirect()->route('admin.reservations')->with('success', 'Reservation created successfully!');
     }
 
     public function updateReservationStatus(Request $request, $id)
@@ -281,6 +353,39 @@ class AdminController extends Controller
         $reservation->update(['status' => $request->status]);
 
         return redirect()->back()->with('success', 'Reservation status updated successfully!');
+    }
+
+    public function updateReservation(Request $request, $id)
+    {
+        $reservation = Reservation::findOrFail($id);
+        $validated = $request->validate([
+            'room_id' => ['required', 'exists:rooms,id'],
+            'guest_name' => ['required', 'string', 'max:255'],
+            'guest_email' => ['required', 'email', 'max:255'],
+            'guest_phone' => ['required', 'string', 'max:20'],
+            'check_in' => ['required', 'date'],
+            'check_in_time' => ['nullable', 'date_format:H:i'],
+            'check_out' => ['required', 'date', 'after_or_equal:check_in'],
+            'check_out_time' => ['nullable', 'date_format:H:i'],
+            'status' => ['required', 'in:pending,confirmed,checked-in,cancelled,completed'],
+            'total_amount' => ['required', 'numeric', 'min:0'],
+            'special_requests' => ['nullable', 'string'],
+        ]);
+
+        $reservation->update($validated);
+
+        return $request->routeIs('employee.reservations.update')
+            ? redirect()->route('employee.reservation')->with('success', 'Reservation updated successfully!')
+            : redirect()->route('admin.reservations')->with('success', 'Reservation updated successfully!');
+    }
+
+    public function destroyReservation(Request $request, $id)
+    {
+        Reservation::findOrFail($id)->delete();
+
+        return $request->routeIs('employee.reservations.destroy')
+            ? redirect()->route('employee.reservation')->with('success', 'Reservation deleted successfully!')
+            : redirect()->route('admin.reservations')->with('success', 'Reservation deleted successfully!');
     }
 
     public function guests()

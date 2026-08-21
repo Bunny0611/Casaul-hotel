@@ -38,18 +38,20 @@
     }
 
     .modal-panel {
+        width: min(100%, 34rem);
         border-radius: 1.75rem;
         background: #ffffff;
-        padding: 1.5rem;
-        max-width: 28rem;
-        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+        padding: 1.75rem;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
     }
 
     .modal-header {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        justify-content: flex-end;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid #e2e8f0;
     }
 
     .checkout-actions button {
@@ -135,6 +137,26 @@
         color: #6b7280;
         font-size: 0.95rem;
         line-height: 1.6;
+    }
+
+    .modal-details {
+        display: grid;
+        gap: 0.15rem;
+        margin: 1.25rem 0 1.5rem;
+        padding: 0.35rem 0;
+    }
+
+    .modal-detail-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.7rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .modal-detail-row:last-child {
+        border-bottom: 0;
     }
 
     .modal-close-btn {
@@ -236,6 +258,17 @@
 
     .modal-detail-value {
         font-size: 0.95rem;
+        color: #334155;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
     }
 
     @media (max-width: 900px) {
@@ -244,6 +277,35 @@
         }
         .full-width-field {
             grid-column: span 1;
+        }
+    }
+
+    @media (max-width: 520px) {
+        .modal-panel {
+            padding: 1.25rem;
+            border-radius: 1.25rem;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+        }
+
+        .modal-detail-row {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .modal-detail-value {
+            text-align: left;
+        }
+
+        .modal-actions {
+            flex-direction: column-reverse;
+        }
+
+        .modal-btn {
+            width: 100%;
         }
     }
 
