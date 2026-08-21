@@ -1404,14 +1404,6 @@
     }
 
 
-    document.getElementById('assignModal')?.addEventListener('click', function(event) {
-
-        if (event.target === this) {
-            closeModal();
-        }
-
-    })
-
     function formatTimestamp(date) {
 
         return date.toLocaleTimeString('en-US', {
