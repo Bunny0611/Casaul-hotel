@@ -125,6 +125,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::put('/manage-account/{id}', [AdminController::class, 'updateAccountUser'])->name('manage-account.update');
     Route::patch('/manage-account/{id}/status', [AdminController::class, 'updateUserStatus'])->name('manage-account.status');
     Route::delete('/manage-account/{id}', [AdminController::class, 'destroyUser'])->name('manage-account.destroy');
+    Route::match(['post', 'delete'], '/manage-account/bulk-delete', [AdminController::class, 'bulkDestroyUsers'])->name('manage-account.bulkDestroy');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings/account', [AdminController::class, 'updateAccount'])->name('settings.account');
 });

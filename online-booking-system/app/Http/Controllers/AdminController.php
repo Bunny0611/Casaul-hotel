@@ -711,15 +711,15 @@ class AdminController extends Controller
     {
         $this->ensureAdmin();
 
-        $users = User::with('creator')->latest()->get();
+        $users = User::with('creator')->latest()->paginate(5, ['*'], 'accounts_page');
 
         return view('admin.manage-account', [
             'users' => $users,
-            'totalUsers' => $users->count(),
-            'totalAdmins' => $users->where('role', 'admin')->count(),
-            'totalEmployees' => $users->where('role', 'employee')->count(),
-            'totalHousekeeping' => $users->where('role', 'housekeeping')->count(),
-            'activeUsers' => $users->where('is_active', true)->count(),
+            'totalUsers' => User::count(),
+            'totalAdmins' => User::where('role', 'admin')->count(),
+            'totalEmployees' => User::where('role', 'employee')->count(),
+            'totalHousekeeping' => User::where('role', 'housekeeping')->count(),
+            'activeUsers' => User::where('is_active', true)->count(),
         ]);
     }
 
@@ -822,6 +822,32 @@ class AdminController extends Controller
         $user->delete();
 
         return redirect()->route('admin.manage-account')->with('success', 'Account deleted successfully!');
+    }
+
+    public function bulkDestroyUsers(Request $request)
+    {
+        $this->ensureAdmin();
+
+        $ids = $request->input('user_ids', []);
+        if (is_string($ids)) {
+            $ids = explode(',', $ids);
+        }
+
+        $userIds = collect($ids)
+            ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => $id === (int) auth()->id())
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!count($userIds)) {
+            return redirect()->route('admin.manage-account')->withErrors(['No valid accounts selected for deletion.']);
+        }
+
+        $deleted = User::whereIn('id', $userIds)->delete();
+
+        return redirect()->route('admin.manage-account')->with('success', $deleted . ' account(s) deleted successfully!');
     }
 
     private function ensureAdmin(): void
