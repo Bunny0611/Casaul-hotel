@@ -4,6 +4,32 @@
 
 <style>
 
+    .form-alert {
+        max-width: 1600px;
+        margin: 0 auto 18px;
+        padding: 14px 18px;
+        border: 1px solid;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .form-alert-success {
+        color: #166534;
+        background: #f0fdf4;
+        border-color: #86efac;
+    }
+
+    .form-alert-error {
+        color: #991b1b;
+        background: #fef2f2;
+        border-color: #fca5a5;
+    }
+
+    .form-alert ul {
+        margin: 8px 0 0;
+        padding-left: 20px;
+    }
+
      .maintenance-page {
     width: 100%;
     max-width: 100%;
@@ -960,6 +986,21 @@
 
 <main class="maintenance-page">
 
+    @if (session('success'))
+        <div class="form-alert form-alert-success">{{ session('success') }}</div>
+    @endif
+
+    @if ($errors->any())
+        <div class="form-alert form-alert-error" role="alert">
+            <strong>Report could not be saved.</strong>
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
   <div class="maintenance-header-container">
 
     <div class="maintenance-header">
@@ -1758,11 +1799,13 @@
                             Room Number
                         </label>
 
-                        <select name="room_number" class="form-control" required>
-                            <option>Room 101</option>
-                            <option>Room 205</option>
-                            <option>Room 302</option>
-                        </select>
+                        <input
+                            name="room_number"
+                            type="text"
+                            class="form-control"
+                            placeholder="Room Number"
+                            required
+                        >
 
                     </div>
 

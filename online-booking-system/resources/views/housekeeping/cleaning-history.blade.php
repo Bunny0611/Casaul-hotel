@@ -41,6 +41,20 @@
         letter-spacing: -.5px;
     }
 
+    .history-table tbody tr:not(.empty-row) {
+        display: none;
+    }
+
+    .history-table tbody .empty-row {
+        display: table-row;
+    }
+
+    .empty-row td {
+        padding: 32px 20px;
+        color: #858585;
+        text-align: center;
+    }
+
     .history-title p {
         margin: 7px 0 0;
         color: #858585;
@@ -738,7 +752,7 @@
                     </p>
 
                     <h2 class="stat-value">
-                        45
+                        0
                     </h2>
 
                     <div class="stat-description">
@@ -776,7 +790,7 @@
                     </p>
 
                     <h2 class="stat-value">
-                        18
+                        0
                     </h2>
 
                     <div class="stat-description">
@@ -814,7 +828,7 @@
                     </p>
 
                     <h2 class="stat-value">
-                        35
+                        0
                         <span class="stat-unit">
                             mins
                         </span>
@@ -1003,7 +1017,7 @@
 
                 <i class="fas fa-file-alt"></i>
 
-                Total Records: 45
+                Total Records: 0
 
             </span>
 
@@ -1048,6 +1062,10 @@
 
 
                 <tbody>
+
+                    <tr class="empty-row">
+                        <td colspan="6">No completed cleaning records.</td>
+                    </tr>
 
 
                     <tr>
