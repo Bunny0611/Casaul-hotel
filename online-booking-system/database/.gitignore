@@ -1,5 +1,5 @@
-# The shared SQLite database is committed so collaborators receive the same data.
-# Only transient SQLite journal files are ignored.
+# MySQL is the shared database. SQLite files are local-only and should not be committed.
+*.sqlite
 *.sqlite-journal
 *.sqlite-wal
 *.sqlite-shm

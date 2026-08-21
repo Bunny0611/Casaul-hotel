@@ -16,12 +16,13 @@ Hotel booking system for CASAUL Hotel with staff login, reservations, rooms, hou
 1. `composer install`
 2. `npm install`
 3. Copy `.env.example` to `.env`, generate key: `php artisan key:generate`
-4. **Delete any local `database/database.sqlite` file you may have created earlier, then `git pull`.** The shared `database/database.sqlite` is committed to the repo, so pulling it gives you the same data (rooms, reservations, accounts) as everyone else.
-5. If you do not get the database file from git (first-time setup before it was committed), create it manually and seed defaults: `php -r "touch('database/database.sqlite');"` then `php artisan migrate --seed`.
+4. Start MySQL/MariaDB in XAMPP and create a database named `casaul_hotel` in phpMyAdmin.
+5. Import `database/casaul_hotel.sql` into `casaul_hotel` using phpMyAdmin, or run `mysql -u root casaul_hotel < database/casaul_hotel.sql`.
+6. Run `php artisan config:clear` and `php artisan migrate` for any schema migrations added after the export.
 
 ### Keeping the database in sync
 
-The SQLite database is a **shared file committed to git** so all collaborators read the same data:
+MySQL is the shared database. The repository includes `database/casaul_hotel.sql` as a snapshot of the current schema and data:
 
 - The seeder creates these staff accounts (password: `password`):
 
@@ -32,8 +33,7 @@ The SQLite database is a **shared file committed to git** so all collaborators r
   | Housekeeping| housekeeping@casaul.com  |
 
 - Admins create additional accounts (employee / housekeeping / other admins) from **Manage Account** in the admin dashboard. Created accounts can log in from any device using their email and password.
-- **After creating/changing accounts (or any data), commit and push the `database/database.sqlite` file** so collaborators get the update when they `git pull`.
-- Collaborators who modified their local DB should overwrite with the repo version (`git checkout database/database.sqlite`) before pulling to avoid conflicts.
+- After creating or changing data, export a new snapshot with `mysqldump` when collaborators need the same records.
 
 ## About Laravel
 
