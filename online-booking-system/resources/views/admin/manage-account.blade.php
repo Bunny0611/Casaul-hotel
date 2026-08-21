@@ -77,7 +77,7 @@
         </div>
     </div>
 
-    <div class="mt-6 rounded-3xl bg-white p-6 shadow-lg border border-slate-200">
+    <div class="mt-6 min-w-0 rounded-3xl bg-white p-6 shadow-lg border border-slate-200">
         <div class="grid gap-4 lg:grid-cols-3">
             <div>
                 <label class="text-sm font-medium text-slate-700">Filter by Role</label>
@@ -110,7 +110,7 @@
         </div>
     </div>
 
-    <div class="mt-6 rounded-3xl bg-white p-6 shadow-lg border border-slate-200">
+    <div class="mt-6 min-w-0 rounded-3xl bg-white p-6 shadow-lg border border-slate-200">
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h3 class="text-lg font-semibold text-slate-900">Accounts List</h3>
@@ -121,10 +121,6 @@
                 <button type="button" onclick="confirmBulkAccountDelete()"
                     class="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700">
                     <i class="fas fa-trash"></i> Delete Selected
-                </button>
-                <button type="button" onclick="window.location.reload()"
-                    class="inline-flex items-center gap-2 rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-600">
-                    <i class="fas fa-sync-alt"></i> Refresh
                 </button>
             </div>
         </div>
@@ -254,7 +250,7 @@
 <!-- ===== Create Account Modal ===== -->
 <div id="createModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/50 p-4">
     <div class="fixed inset-0"></div>
-    <div class="relative mx-auto my-6 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+    <div class="admin-modal-panel relative mx-auto my-6 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h3 class="text-xl font-bold text-slate-900">Create New Account</h3>
@@ -341,7 +337,7 @@
 <!-- ===== Edit Account Modal ===== -->
 <div id="editModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/50 p-4">
     <div class="fixed inset-0"></div>
-    <div class="relative mx-auto my-6 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+    <div class="admin-modal-panel relative mx-auto my-6 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h3 class="text-xl font-bold text-slate-900">Edit Account</h3>
