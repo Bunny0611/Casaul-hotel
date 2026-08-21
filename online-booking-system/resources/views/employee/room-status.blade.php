@@ -5,6 +5,8 @@
 @section('content')
 @php
     $reservations = $reservations ?? collect([]);
+    $rooms = $rooms ?? collect([]);
+    $inventoryItems = $inventoryItems ?? collect([]);
     $roomReservations = $reservations;
     $amenityReservations = $reservations->where('category', 'amenities');
     $eventPlaceReservations = $reservations->where('category', 'event_place');
@@ -12,11 +14,13 @@
 
     $stats = [
         'rooms' => [
-            'total' => $roomReservations->count(),
-            'pending' => $roomReservations->where('status', 'pending')->count(),
-            'confirmed' => $roomReservations->where('status', 'confirmed')->count(),
-            'completed' => $roomReservations->where('status', 'completed')->count(),
-            'cancelled' => $roomReservations->where('status', 'cancelled')->count(),
+            'total' => $rooms->count(),
+            'available' => $rooms->where('status', 'available')->count(),
+            'reserved' => $rooms->where('status', 'reserved')->count(),
+            'occupied' => $rooms->where('status', 'occupied')->count(),
+            'dirty' => $rooms->where('cleaning_status', 'dirty')->count(),
+            'cleaning' => $rooms->where('cleaning_status', 'in_progress')->count(),
+            'maintenance' => $rooms->where('status', 'maintenance')->count(),
         ],
         'amenities' => [
             'total' => $amenityReservations->count(),
@@ -68,42 +72,42 @@
                         <span class="summary-label"><span class="summary-icon"></span>Available Rooms</span>
                         <span class="summary-dot" style="background:#16a34a"></span>
                     </div>
-                    <div class="summary-value">12</div>
+                    <div class="summary-value">{{ $stats['rooms']['available'] }}</div>
                 </article>
                 <article class="summary-card" data-tone="reserved">
                     <div class="summary-card-head">
                         <span class="summary-label"><span class="summary-icon"></span>Reserved Rooms</span>
                         <span class="summary-dot" style="background:#2563eb"></span>
                     </div>
-                    <div class="summary-value">8</div>
+                    <div class="summary-value">{{ $stats['rooms']['reserved'] }}</div>
                 </article>
                 <article class="summary-card" data-tone="occupied">
                     <div class="summary-card-head">
                         <span class="summary-label"><span class="summary-icon"></span>Occupied Rooms</span>
                         <span class="summary-dot" style="background:#dc2626"></span>
                     </div>
-                    <div class="summary-value">17</div>
+                    <div class="summary-value">{{ $stats['rooms']['occupied'] }}</div>
                 </article>
                 <article class="summary-card" data-tone="dirty">
                     <div class="summary-card-head">
                         <span class="summary-label"><span class="summary-icon"></span>Dirty Rooms</span>
                         <span class="summary-dot" style="background:#6b7280"></span>
                     </div>
-                    <div class="summary-value">4</div>
+                    <div class="summary-value">{{ $stats['rooms']['dirty'] }}</div>
                 </article>
                 <article class="summary-card" data-tone="cleaning">
                     <div class="summary-card-head">
                         <span class="summary-label"><span class="summary-icon"></span>Cleaning Rooms</span>
                         <span class="summary-dot" style="background:#7c3aed"></span>
                     </div>
-                    <div class="summary-value">3</div>
+                    <div class="summary-value">{{ $stats['rooms']['cleaning'] }}</div>
                 </article>
                 <article class="summary-card" data-tone="maintenance">
                     <div class="summary-card-head">
                         <span class="summary-label"><span class="summary-icon"></span>Maintenance Rooms</span>
                         <span class="summary-dot" style="background:#d97706"></span>
                     </div>
-                    <div class="summary-value">2</div>
+                    <div class="summary-value">{{ $stats['rooms']['maintenance'] }}</div>
                 </article>
             </div>
         <form class="filter-panel" id="filter-form">
@@ -177,10 +181,18 @@
                     <table class="room-table">
                         <thead><tr><th>Amenity</th><th>Type</th><th>Location</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
                         <tbody>
+                            @foreach($inventoryItems->where('category', 'amenities') as $item)
+                                <tr data-amenity-row data-amenity-name="{{ $item->name }}" data-amenity-type="{{ $item->type ?: 'Amenity' }}" data-amenity-location="{{ $item->location ?: '—' }}" data-amenity-capacity="{{ $item->capacity ?: '—' }}" data-amenity-status="{{ $item->status }}" data-amenity-hours="—" data-amenity-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>{{ $item->type ?: 'Amenity' }}</td><td>{{ $item->location ?: '—' }}</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
+                            @endforeach
+                            @if($inventoryItems->where('category', 'amenities')->isEmpty())
+                                <tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No amenities added by the admin.</td></tr>
+                            @endif
+                            @if(false)
                             <tr data-amenity-row data-amenity-name="Swimming Pool" data-amenity-type="Recreation" data-amenity-location="Ground Floor" data-amenity-capacity="30" data-amenity-status="available" data-amenity-hours="6:00 AM - 10:00 PM" data-amenity-description="Outdoor swimming pool for hotel guests." data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="Today, 6:00 AM" data-maintenance-status="Operational" data-notes="—"><td>Swimming Pool</td><td>Recreation</td><td>Ground Floor</td><td>30</td><td><span class="status-badge available">Available</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
                             <tr data-amenity-row data-amenity-name="Gym" data-amenity-type="Fitness" data-amenity-location="2nd Floor" data-amenity-capacity="15" data-amenity-status="occupied" data-amenity-hours="5:00 AM - 11:00 PM" data-amenity-description="Fitness center with cardio and strength equipment." data-reservation-status="In Use" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="Today, 7:00 AM" data-maintenance-status="Operational" data-notes="—"><td>Gym</td><td>Fitness</td><td>2nd Floor</td><td>15</td><td><span class="status-badge occupied">In Use</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
                             <tr data-amenity-row data-amenity-name="Spa" data-amenity-type="Wellness" data-amenity-location="2nd Floor" data-amenity-capacity="8" data-amenity-status="reserved" data-amenity-hours="9:00 AM - 9:00 PM" data-amenity-description="Relaxation and wellness treatment area." data-reservation-status="Reserved" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="Yesterday, 8:00 PM" data-maintenance-status="Operational" data-notes="—"><td>Spa</td><td>Wellness</td><td>2nd Floor</td><td>8</td><td><span class="status-badge reserved">Reserved</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
                             <tr data-amenity-row data-amenity-name="Jacuzzi" data-amenity-type="Recreation" data-amenity-location="3rd Floor" data-amenity-capacity="6" data-amenity-status="cleaning" data-amenity-hours="8:00 AM - 10:00 PM" data-amenity-description="Private jacuzzi area." data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="In progress" data-maintenance-status="Cleaning" data-notes="Temporarily unavailable for cleaning."><td>Jacuzzi</td><td>Recreation</td><td>3rd Floor</td><td>6</td><td><span class="status-badge cleaning">Cleaning</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -220,10 +232,16 @@
             <div class="table-card">
                 <div class="table-scroll-hint">Tap the Details button for complete event place information</div>
                 <div class="table-scroll"><table class="room-table"><thead><tr><th>Event Place</th><th>Type</th><th>Location</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+                    @foreach($inventoryItems->where('category', 'event_place') as $item)
+                        <tr data-event-row data-event-name="{{ $item->name }}" data-event-type="{{ $item->type ?: 'Event Place' }}" data-event-location="{{ $item->location ?: '—' }}" data-event-capacity="{{ $item->capacity ?: '—' }}" data-event-status="{{ $item->status }}" data-event-size="—" data-event-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="—" data-cleaning-status="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>{{ $item->type ?: 'Event Place' }}</td><td>{{ $item->location ?: '—' }}</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
+                    @endforeach
+                    @if($inventoryItems->where('category', 'event_place')->isEmpty())<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No event places added by the admin.</td></tr>@endif
+                    @if(false)
                     <tr data-event-row data-event-name="Grand Ballroom" data-event-type="Ballroom" data-event-location="Ground Floor" data-event-capacity="300" data-event-status="available" data-event-size="500 sq m" data-event-description="Large formal event venue." data-reservation-status="—" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="Ready" data-cleaning-status="Complete" data-maintenance-status="Operational" data-notes="—"><td>Grand Ballroom</td><td>Ballroom</td><td>Ground Floor</td><td>300</td><td><span class="status-badge available">Available</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
                     <tr data-event-row data-event-name="Garden Pavilion" data-event-type="Outdoor" data-event-location="Garden" data-event-capacity="150" data-event-status="reserved" data-event-size="350 sq m" data-event-description="Open-air venue surrounded by gardens." data-reservation-status="Reserved" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="Scheduled" data-cleaning-status="Complete" data-maintenance-status="Operational" data-notes="—"><td>Garden Pavilion</td><td>Outdoor</td><td>Garden</td><td>150</td><td><span class="status-badge reserved">Reserved</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
                     <tr data-event-row data-event-name="Conference Hall" data-event-type="Meeting" data-event-location="2nd Floor" data-event-capacity="80" data-event-status="occupied" data-event-size="120 sq m" data-event-description="Meeting and conference venue." data-reservation-status="Ongoing" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="In Progress" data-cleaning-status="Pending" data-maintenance-status="Operational" data-notes="—"><td>Conference Hall</td><td>Meeting</td><td>2nd Floor</td><td>80</td><td><span class="status-badge occupied">In Use</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
                     <tr data-event-row data-event-name="Function Room A" data-event-type="Function Room" data-event-location="2nd Floor" data-event-capacity="50" data-event-status="available" data-event-size="75 sq m" data-event-description="Flexible function room for private events." data-reservation-status="—" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="Ready" data-cleaning-status="Complete" data-maintenance-status="Operational" data-notes="—"><td>Function Room A</td><td>Function Room</td><td>2nd Floor</td><td>50</td><td><span class="status-badge available">Available</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
+                    @endif
                 </tbody></table></div>
             </div>
         </div>
@@ -261,10 +279,16 @@
             <div class="table-card">
                 <div class="table-scroll-hint">Tap the Details button for complete dining information</div>
                 <div class="table-scroll"><table class="room-table"><thead><tr><th>Table / Area</th><th>Dining Type</th><th>Location</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+                    @foreach($inventoryItems->where('category', 'dining') as $item)
+                        <tr data-dining-row data-dining-name="{{ $item->name }}" data-dining-type="{{ $item->type ?: 'Dining' }}" data-dining-location="{{ $item->location ?: '—' }}" data-dining-capacity="{{ $item->capacity ?: '—' }}" data-dining-status="{{ $item->status }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-reservation-time="—" data-guests="—" data-order="—" data-seating-status="{{ ucfirst($item->status) }}" data-special-requests="—" data-notes="{{ $item->description ?: '—' }}"><td>{{ $item->name }}</td><td>{{ $item->type ?: 'Dining' }}</td><td>{{ $item->location ?: '—' }}</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-dining">Details</button></td></tr>
+                    @endforeach
+                    @if($inventoryItems->where('category', 'dining')->isEmpty())<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No dining items added by the admin.</td></tr>@endif
+                    @if(false)
                     <tr data-dining-row data-dining-name="Table 01" data-dining-type="Standard" data-dining-location="Main Dining" data-dining-capacity="4" data-dining-status="available" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-reservation-time="—" data-guests="—" data-order="—" data-seating-status="Ready" data-special-requests="—" data-notes="—"><td>Table 01</td><td>Standard</td><td>Main Dining</td><td>4</td><td><span class="status-badge available">Available</span></td><td><button class="action-btn" type="button" data-action="view-dining">Details</button></td></tr>
                     <tr data-dining-row data-dining-name="Table 02" data-dining-type="Standard" data-dining-location="Main Dining" data-dining-capacity="4" data-dining-status="reserved" data-reservation-status="Reserved" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-reservation-time="—" data-guests="—" data-order="—" data-seating-status="Reserved" data-special-requests="—" data-notes="—"><td>Table 02</td><td>Standard</td><td>Main Dining</td><td>4</td><td><span class="status-badge reserved">Reserved</span></td><td><button class="action-btn" type="button" data-action="view-dining">Details</button></td></tr>
                     <tr data-dining-row data-dining-name="Table 03" data-dining-type="Family" data-dining-location="Main Dining" data-dining-capacity="6" data-dining-status="occupied" data-reservation-status="Occupied" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-reservation-time="—" data-guests="—" data-order="—" data-seating-status="Occupied" data-special-requests="—" data-notes="—"><td>Table 03</td><td>Family</td><td>Main Dining</td><td>6</td><td><span class="status-badge occupied">Occupied</span></td><td><button class="action-btn" type="button" data-action="view-dining">Details</button></td></tr>
                     <tr data-dining-row data-dining-name="Table 04" data-dining-type="VIP" data-dining-location="Private Area" data-dining-capacity="8" data-dining-status="available" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-reservation-time="—" data-guests="—" data-order="—" data-seating-status="Ready" data-special-requests="—" data-notes="—"><td>Table 04</td><td>VIP</td><td>Private Area</td><td>8</td><td><span class="status-badge available">Available</span></td><td><button class="action-btn" type="button" data-action="view-dining">Details</button></td></tr>
+                    @endif
                 </tbody></table></div>
             </div>
         </div>
@@ -284,6 +308,14 @@
                         </tr>
                     </thead>
                     <tbody>
+                    @foreach($rooms as $room)
+                    @php($roomStatus = $room->status === 'maintenance' ? 'maintenance' : ($room->cleaning_status === 'in_progress' ? 'cleaning' : ($room->cleaning_status === 'dirty' ? 'dirty' : $room->status)))
+                    <tr data-room-row data-room-number="{{ $room->room_number }}" data-room-type="{{ $room->room_type }}" data-floor="{{ $room->floor }}" data-capacity="{{ $room->capacity }}" data-status="{{ $roomStatus }}" data-status-label="{{ ucfirst($roomStatus) }}" data-housekeeping-status="{{ ucfirst(str_replace('_', ' ', $room->cleaning_status ?: 'clean')) }}" data-housekeeper="—" data-guest="—" data-checkin="—" data-checkout="—" data-notes="{{ $room->description ?: '—' }}" data-room-label="{{ $room->room_number }}">
+                        <td>{{ $room->room_number }}</td><td>{{ $room->room_type }}</td><td>Floor {{ $room->floor }}</td><td><span class="status-badge {{ $roomStatus }}">{{ ucfirst($roomStatus) }}</span></td><td><span class="housekeeping-pill">{{ ucfirst(str_replace('_', ' ', $room->cleaning_status ?: 'clean')) }}</span></td><td><button class="action-btn" type="button" data-action="view">Details</button></td>
+                    </tr>
+                    @endforeach
+                    @if($rooms->isEmpty())<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No rooms have been added by the admin.</td></tr>@endif
+                    @if(false)
                     <tr data-room-row
                         data-room-number="101"
                         data-room-type="Deluxe"
@@ -410,6 +442,7 @@
                         <td><span class="housekeeping-pill">Paused</span></td>
                         <td><button class="action-btn" type="button" data-action="view">Details</button></td>
                     </tr>
+                    @endif
                     </tbody>
                 </table>
             </div>

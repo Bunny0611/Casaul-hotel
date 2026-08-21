@@ -841,7 +841,7 @@
                 </div>
 
                 <div>
-                    <strong>12</strong>
+                    <strong>{{ $rooms->where('cleaning_status', 'dirty')->count() }}</strong>
                     <span>Dirty Rooms</span>
                 </div>
 
@@ -855,7 +855,7 @@
                 </div>
 
                 <div>
-                    <strong>5</strong>
+                    <strong>{{ $rooms->where('cleaning_status', 'in_progress')->count() }}</strong>
                     <span>Being Cleaned</span>
                 </div>
 
@@ -869,7 +869,7 @@
                 </div>
 
                 <div>
-                    <strong>8</strong>
+                    <strong>{{ $rooms->where('cleaning_status', 'clean')->count() }}</strong>
                     <span>Cleaned Rooms</span>
                 </div>
 
@@ -883,7 +883,7 @@
                 </div>
 
                 <div>
-                    <strong>15</strong>
+                    <strong>{{ $rooms->where('status', 'available')->count() }}</strong>
                     <span>Available Rooms</span>
                 </div>
 
@@ -946,6 +946,20 @@
 
 
                 <tbody>
+                    @foreach($rooms as $room)
+                        @php($status = $room->cleaning_status ?: ($room->status === 'maintenance' ? 'maintenance' : 'clean'))
+                        @php($statusLabel = $status === 'in_progress' ? 'Cleaning' : ucfirst(str_replace('_', ' ', $status)))
+                        @php($statusClass = $status === 'in_progress' ? 'cleaning-badge' : ($status === 'clean' ? 'available-badge' : ($status === 'maintenance' ? 'maintenance-badge' : 'dirty-badge')))
+                        <tr>
+                            <td><div class="room-number"><span class="room-icon"><i class="fas fa-door-open"></i></span><strong>{{ $room->room_number }}</strong></div></td>
+                            <td>{{ $room->room_type }}</td>
+                            <td><span class="status-badge {{ $statusClass }}"><span></span>{{ $statusLabel }}</span></td>
+                            <td>{{ $room->updated_at ? $room->updated_at->format('M d, Y · h:i A') : '—' }}</td>
+                            <td><button type="button" class="table-update-button" onclick="openStatusModal('{{ $room->room_number }}', '{{ addslashes($room->room_type) }}', '{{ $statusLabel }}')"><i class="fas fa-edit"></i> Update</button></td>
+                        </tr>
+                    @endforeach
+                    @if($rooms->isEmpty())<tr><td colspan="5" class="py-10 text-center">No rooms have been added by the admin.</td></tr>@endif
+                    @if(false)
 
                     <!-- ROOM 101 -->
 
@@ -1093,6 +1107,7 @@
 
                     </tr>
 
+                    @endif
                 </tbody>
 
             </table>

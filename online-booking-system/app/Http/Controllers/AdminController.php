@@ -10,6 +10,7 @@ use App\Models\Room;
 use App\Models\Reservation;
 use App\Models\Message;
 use App\Models\User;
+use App\Models\InventoryItem;
 
 class AdminController extends Controller
 {
@@ -75,13 +76,36 @@ class AdminController extends Controller
     public function rooms()
     {
         $rooms = Room::orderBy('room_number')->paginate(5);
-        return view('admin.rooms', compact('rooms'));
+        $inventoryItems = InventoryItem::orderBy('name')->get();
+        return view('admin.rooms', compact('rooms', 'inventoryItems'));
+    }
+
+    public function storeInventoryItem(Request $request)
+    {
+        $validated = $request->validate([
+            'category' => ['required', 'in:amenities,event_place,dining'],
+            'name' => ['required', 'string', 'max:255'],
+            'type' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'status' => ['required', 'string', 'max:50'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'capacity' => ['nullable', 'integer', 'min:1'],
+            'available_from' => ['nullable', 'date_format:H:i'],
+            'available_to' => ['nullable', 'date_format:H:i'],
+            'quantity' => ['nullable', 'integer', 'min:0'],
+        ]);
+        $validated['status'] = strtolower($validated['status']);
+
+        InventoryItem::create($validated);
+
+        return redirect()->route('admin.rooms')->with('success', 'Inventory item added successfully.');
     }
 
     public function storeRoom(Request $request)
     {
         $validated = $request->validate([
-            'room_number' => 'required|string|unique:rooms',
+            'room_number' => 'required|string|max:255|unique:rooms,room_number',
             'room_type' => 'required|string',
             'price' => 'required|numeric|min:0',
             'floor' => 'required|string',
@@ -89,6 +113,7 @@ class AdminController extends Controller
             'description' => 'nullable|string',
             'image' => 'nullable|string',
         ]);
+        $validated['status'] = 'available';
 
         Room::create($validated);
         return redirect()->route('admin.rooms')->with('success', 'Room created successfully!');

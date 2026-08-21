@@ -49,7 +49,12 @@ Route::prefix('employee')->name('employee.')->group(function () {
         'rooms' => collect([]),
     ])->name('reservation');
     Route::view('/checkin', 'employee.checkin')->name('checkin');
-    Route::view('/room-status', 'employee.room-status')->name('room-status');
+    Route::get('/room-status', function () {
+        $rooms = \App\Models\Room::orderBy('room_number')->get();
+        $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();
+
+        return view('employee.room-status', compact('rooms', 'inventoryItems'));
+    })->name('room-status');
     Route::get('/guest-requests', function () {
         if (!session()->has('employee_guest_requests')) {
             session()->put('employee_guest_requests', [
@@ -96,6 +101,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/rooms', [AdminController::class, 'rooms'])->name('rooms');
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
+    Route::post('/inventory', [AdminController::class, 'storeInventoryItem'])->name('inventory.store');
     Route::put('/rooms/{id}', [AdminController::class, 'updateRoom'])->name('rooms.update');
     Route::patch('/rooms/{id}/status', [AdminController::class, 'updateRoomStatus'])->name('rooms.status');
     Route::match(['post', 'delete'], '/rooms/bulk-delete', [AdminController::class, 'bulkDestroyRooms'])->name('rooms.bulkDestroy');

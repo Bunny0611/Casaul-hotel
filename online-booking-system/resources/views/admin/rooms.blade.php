@@ -2,12 +2,6 @@
 
 @section('content')
 <div class="animate-fade-in">
-    @if(session('success'))
-        <div class="mb-6 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <div class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
             <h2 class="text-3xl font-bold text-gray-800">Room Management</h2>
@@ -139,7 +133,11 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
                     </tr>
                 </thead>
-                <tbody id="amenities-list" class="divide-y divide-gray-200"></tbody>
+                <tbody id="amenities-list" class="divide-y divide-gray-200">
+                    @foreach($inventoryItems->where('category', 'amenities') as $item)
+                        <tr><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm">—</td></tr>
+                    @endforeach
+                </tbody>
             </table>
         </div>
     </div>
@@ -160,7 +158,11 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
                     </tr>
                 </thead>
-                <tbody id="event-place-list" class="divide-y divide-gray-200"></tbody>
+                <tbody id="event-place-list" class="divide-y divide-gray-200">
+                    @foreach($inventoryItems->where('category', 'event_place') as $item)
+                        <tr><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm">—</td></tr>
+                    @endforeach
+                </tbody>
             </table>
         </div>
     </div>
@@ -184,7 +186,11 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
                     </tr>
                 </thead>
-                <tbody id="dining-list" class="divide-y divide-gray-200"></tbody>
+                <tbody id="dining-list" class="divide-y divide-gray-200">
+                    @foreach($inventoryItems->where('category', 'dining') as $item)
+                        <tr><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->type ?: 'Menu / Meal' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->available_from ? substr($item->available_from, 0, 5) : '—' }} - {{ $item->available_to ? substr($item->available_to, 0, 5) : '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->quantity ?: 'Unlimited' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm">—</td></tr>
+                    @endforeach
+                </tbody>
             </table>
         </div>
     </div>
@@ -201,7 +207,9 @@
             <p class="mt-1 text-sm text-gray-500">Create a new amenity option for guests.</p>
         </div>
 
-        <form id="addAmenityForm" class="space-y-4">
+        <form id="addAmenityForm" method="POST" action="{{ route('admin.inventory.store') }}" class="space-y-4">
+            @csrf
+            <input type="hidden" name="category" value="amenities">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Amenity Name</label>
@@ -217,9 +225,9 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
-                    <select name="availability" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="Available">Available</option>
-                        <option value="Limited">Limited</option>
+                    <select name="status" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="available">Available</option>
+                        <option value="limited">Limited</option>
                     </select>
                 </div>
             </div>
@@ -242,7 +250,10 @@
             <p class="mt-1 text-sm text-gray-500">Create a new event package or venue option.</p>
         </div>
 
-        <form id="addEventPlaceForm" class="space-y-4">
+        <form id="addEventPlaceForm" method="POST" action="{{ route('admin.inventory.store') }}" class="space-y-4">
+            @csrf
+            <input type="hidden" name="category" value="event_place">
+            <input type="hidden" name="status" value="available">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Event Name</label>
@@ -276,12 +287,14 @@
             <p class="mt-2 text-base text-gray-600">Add a new menu item, package, or dining service available for guests.</p>
         </div>
 
-        <form id="addDiningForm" class="space-y-6">
+        <form id="addDiningForm" method="POST" action="{{ route('admin.inventory.store') }}" class="space-y-6">
+            @csrf
+            <input type="hidden" name="category" value="dining">
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <div class="space-y-6">
                     <div>
                         <label class="mb-2 block text-base font-medium text-gray-700">Item Type <span class="text-red-500">*</span></label>
-                        <select name="serviceType" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <select name="type" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <option value="Menu / Meal">Menu / Meal</option>
                             <option value="Package">Package</option>
                             <option value="Dinner">Dinner</option>
@@ -295,7 +308,7 @@
 
                     <div>
                         <label class="mb-2 block text-base font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
-                        <select name="category" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <select name="menu_category" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <option value="Dinner">Dinner</option>
                             <option value="Breakfast">Breakfast</option>
                             <option value="Lunch">Lunch</option>
@@ -318,9 +331,9 @@
                     <div>
                         <label class="mb-2 block text-base font-medium text-gray-700">Available Time <span class="text-red-500">*</span></label>
                         <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                            <input type="time" name="availableFrom" value="17:00" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="time" name="available_from" value="17:00" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <span class="text-lg text-gray-500">to</span>
-                            <input type="time" name="availableTo" value="21:00" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="time" name="available_to" value="21:00" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                     </div>
 
@@ -383,30 +396,31 @@
 
         <form action="{{ route('admin.rooms.store') }}" method="POST" class="space-y-4">
             @csrf
+            <input type="hidden" name="status" value="available">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Room Number</label>
-                    <input type="text" name="room_number" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="text" name="room_number" value="{{ old('room_number') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Room Type</label>
                     <select name="room_type" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="">Select Type</option>
-                        <option value="Deluxe Room">Deluxe Room</option>
-                        <option value="Standard Room">Standard Room</option>
+                        <option value="Deluxe Room" @selected(old('room_type') === 'Deluxe Room')>Deluxe Room</option>
+                        <option value="Standard Room" @selected(old('room_type') === 'Standard Room')>Standard Room</option>
                     </select>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label>
-                    <input type="number" name="price" step="0.01" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="number" name="price" value="{{ old('price') }}" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Floor</label>
-                    <input type="text" name="floor" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="text" name="floor" value="{{ old('floor') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label>
-                    <input type="number" name="capacity" required min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="number" name="capacity" value="{{ old('capacity') }}" required min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
             </div>
             <div>
@@ -605,79 +619,6 @@
         document.getElementById('bulkDeleteForm').submit();
     }
 
-    const panelCatalog = {
-        amenities: [
-            { name: 'Parking Lot', description: 'Secure vehicle parking for guests.', price: 500, availability: 'Available' },
-            { name: 'Nature Bonding', description: 'Outdoor bonding and eco-experience package.', price: 1200, availability: 'Available' },
-            { name: 'WiFi', description: 'High-speed internet access across the property.', price: 250, availability: 'Available' },
-            { name: 'Sports Court', description: 'Outdoor activity court for recreation and games.', price: 800, availability: 'Limited' }
-        ],
-        'event-place': [
-            { name: 'Wedding', description: 'Elegant wedding venue setup for memorable celebrations.', price: 18000, capacity: 120 },
-            { name: 'Birthday', description: 'Birthday event package with decor and dining setup.', price: 12000, capacity: 60 }
-        ],
-        dining: [
-            { name: 'Restaurant', description: 'Full restaurant dining experience for guests.', price: 1500, serviceType: 'Menu / Meal', category: 'Dinner', availableFrom: '17:00', availableTo: '21:00', quantity: 'Unlimited', status: 'Available' },
-            { name: 'Menu', description: 'Curated menu offering for private dining and events.', price: 900, serviceType: 'Menu / Meal', category: 'Lunch', availableFrom: '11:00', availableTo: '15:00', quantity: 25, status: 'Limited' }
-        ]
-    };
-
-    function renderItemList(listKey, containerId) {
-        const items = panelCatalog[listKey] || [];
-        const container = document.getElementById(containerId);
-        if (!container) return;
-
-        if (!items.length) {
-            container.innerHTML = '<tr><td colspan="8" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-plus mb-4 text-4xl text-gray-300"></i><p>No items added yet.</p></td></tr>';
-            return;
-        }
-
-        if (listKey === 'dining') {
-            container.innerHTML = items.map(function (item) {
-                const price = item.price ? '₱' + Number(item.price).toLocaleString() : '—';
-                const availableTime = (item.availableFrom || '00:00') + ' - ' + (item.availableTo || '23:59');
-                const quantity = item.quantity || 'Unlimited';
-                const statusClass = item.status === 'Limited' ? 'bg-yellow-500' : 'bg-green-500';
-
-                return '<tr class="transition-colors hover:bg-gray-50">' +
-                    '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">' + (item.serviceType || 'Menu / Meal') + '</td>' +
-                    '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + (item.name || 'N/A') + '</td>' +
-                    '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + (item.category || 'Dinner') + '</td>' +
-                    '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + price + '</td>' +
-                    '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + availableTime + '</td>' +
-                    '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + quantity + '</td>' +
-                    '<td class="px-6 py-4 whitespace-nowrap"><span class="rounded-full px-3 py-1 text-xs font-medium text-white ' + statusClass + '">' + (item.status || 'Available') + '</span></td>' +
-                    '<td class="px-6 py-4 whitespace-nowrap text-sm">' +
-                        '<div class="flex items-center gap-2">' +
-                            '<button type="button" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Edit"><i class="fas fa-edit"></i></button>' +
-                            '<button type="button" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Delete"><i class="fas fa-trash"></i></button>' +
-                        '</div>' +
-                    '</td>' +
-                '</tr>';
-            }).join('');
-            return;
-        }
-
-        container.innerHTML = items.map(function (item) {
-            const price = item.price ? '₱' + Number(item.price).toLocaleString() : '—';
-            const status = item.availability || item.serviceType || 'Active';
-            const floor = item.floor || 'Ground Floor';
-
-            return '<tr class="transition-colors hover:bg-gray-50">' +
-                '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">' + item.name + '</td>' +
-                '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + price + '</td>' +
-                '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + floor + '</td>' +
-                '<td class="px-6 py-4 whitespace-nowrap"><span class="rounded-full px-3 py-1 text-xs font-medium text-white bg-green-500">' + status + '</span></td>' +
-                '<td class="px-6 py-4 whitespace-nowrap text-sm">' +
-                    '<div class="flex items-center gap-2">' +
-                        '<button type="button" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Edit"><i class="fas fa-edit"></i></button>' +
-                        '<button type="button" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Delete"><i class="fas fa-trash"></i></button>' +
-                    '</div>' +
-                '</td>' +
-            '</tr>';
-        }).join('');
-    }
-
     function openAmenityModal() {
         document.getElementById('addAmenityModal').classList.remove('hidden');
         document.getElementById('addAmenityModal').classList.add('flex');
@@ -787,56 +728,6 @@
         document.getElementById('add-event-place-button').addEventListener('click', openEventPlaceModal);
         document.getElementById('add-dining-button').addEventListener('click', openDiningModal);
 
-        document.getElementById('addAmenityForm').addEventListener('submit', function (event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            const item = {
-                name: formData.get('name'),
-                description: formData.get('description') || 'No description provided.',
-                price: Number(formData.get('price')) || 0,
-                availability: formData.get('availability') || 'Available'
-            };
-            panelCatalog.amenities.push(item);
-            renderItemList('amenities', 'amenities-list');
-            closeAmenityModal();
-        });
-
-        document.getElementById('addEventPlaceForm').addEventListener('submit', function (event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            const item = {
-                name: formData.get('name'),
-                description: formData.get('description') || 'No description provided.',
-                price: Number(formData.get('price')) || 0,
-                capacity: Number(formData.get('capacity')) || 0
-            };
-            panelCatalog['event-place'].push(item);
-            renderItemList('event-place', 'event-place-list');
-            closeEventPlaceModal();
-        });
-
-        document.getElementById('addDiningForm').addEventListener('submit', function (event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            const item = {
-                name: formData.get('name'),
-                description: formData.get('description') || 'No description provided.',
-                price: Number(formData.get('price')) || 0,
-                serviceType: formData.get('serviceType') || 'Menu / Meal',
-                category: formData.get('category') || 'Dinner',
-                availableFrom: formData.get('availableFrom') || '17:00',
-                availableTo: formData.get('availableTo') || '21:00',
-                quantity: formData.get('quantity') || 'Unlimited',
-                status: formData.get('status') || 'Available'
-            };
-            panelCatalog.dining.push(item);
-            renderItemList('dining', 'dining-list');
-            closeDiningModal();
-        });
-
-        renderItemList('amenities', 'amenities-list');
-        renderItemList('event-place', 'event-place-list');
-        renderItemList('dining', 'dining-list');
         updateSelectedCount();
         activateTab('rooms');
 
