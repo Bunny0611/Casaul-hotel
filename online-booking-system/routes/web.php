@@ -106,6 +106,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/rooms', [AdminController::class, 'rooms'])->name('rooms');
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
     Route::post('/inventory', [AdminController::class, 'storeInventoryItem'])->name('inventory.store');
+    Route::put('/inventory/{id}', [AdminController::class, 'updateInventoryItem'])->name('inventory.update');
+    Route::patch('/inventory/{id}/status', [AdminController::class, 'updateInventoryStatus'])->name('inventory.status');
+    Route::match(['post', 'delete'], '/inventory/bulk-delete', [AdminController::class, 'bulkDestroyInventoryItems'])->name('inventory.bulkDestroy');
+    Route::delete('/inventory/{id}', [AdminController::class, 'destroyInventoryItem'])->name('inventory.destroy');
     Route::put('/rooms/{id}', [AdminController::class, 'updateRoom'])->name('rooms.update');
     Route::patch('/rooms/{id}/status', [AdminController::class, 'updateRoomStatus'])->name('rooms.status');
     Route::match(['post', 'delete'], '/rooms/bulk-delete', [AdminController::class, 'bulkDestroyRooms'])->name('rooms.bulkDestroy');
