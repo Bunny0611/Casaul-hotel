@@ -591,7 +591,7 @@
 		<div class="panel">
 			<div class="card-head">
 				<h3>Priority Tasks</h3>
-				<a href="#">View all</a>
+				<a href="{{ route('housekeeping.assigned-rooms') }}">View all</a>
 			</div>
 
 			<div class="task-list">

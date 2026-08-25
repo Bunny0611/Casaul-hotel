@@ -725,13 +725,13 @@
         </div>
 
 
-        <a href="#" class="export-btn">
+        <button type="button" class="export-btn" id="exportHistoryButton">
 
             <i class="fas fa-download"></i>
 
             Export Report
 
-        </a>
+        </button>
 
     </div>
 
@@ -891,6 +891,7 @@
                     <i class="fas fa-bed"></i>
 
                     <input
+                        id="historyRoomFilter"
                         type="text"
                         placeholder="Room number"
                         class="filter-input"
@@ -913,6 +914,7 @@
                     <i class="fas fa-calendar-alt"></i>
 
                     <input
+                        id="historyDateFilter"
                         type="date"
                         class="filter-input"
                     >
@@ -942,7 +944,7 @@
                        ">
                     </i>
 
-                    <select class="filter-select">
+                    <select id="historyStaffFilter" class="filter-select">
 
                         <option>
                             All Staff
@@ -975,7 +977,7 @@
                     &nbsp;
                 </label>
 
-                <button class="filter-btn">
+                <button type="button" class="filter-btn" id="filterHistoryButton">
 
                     <i class="fas fa-search"></i>
 
@@ -1063,12 +1065,12 @@
 
                 <tbody>
 
-                    <tr class="empty-row">
+                    <tr class="empty-row" id="historyEmptyRow" style="display:none;">
                         <td colspan="6">No completed cleaning records.</td>
                     </tr>
 
 
-                    <tr>
+                    <tr class="history-record" data-room="101" data-date="2026-07-31" data-staff="Maria Santos">
 
                         <td>
 
@@ -1141,7 +1143,7 @@
 
                     </tr>
 
-                    <tr>
+                    <tr class="history-record" data-room="205" data-date="2026-07-30" data-staff="John Cruz">
 
                         <td>
 
@@ -1215,7 +1217,7 @@
                     </tr>
 
 
-                    <tr>
+                    <tr class="history-record" data-room="302" data-date="2026-07-29" data-staff="Anna Reyes">
 
                         <td>
 
@@ -1303,15 +1305,15 @@
 
                 Showing
 
-                <strong>1</strong>
+                <strong id="historyShowingFrom">1</strong>
 
                 to
 
-                <strong>3</strong>
+                <strong id="historyShowingTo">3</strong>
 
                 of
 
-                <strong>45</strong>
+                <strong id="historyTotal">3</strong>
 
                 records
 
@@ -1320,30 +1322,31 @@
 
             <div class="pagination">
 
-                <button
+                <button type="button"
                     class="page-btn"
+                    id="historyPrevious"
                     disabled
                 >
                     <i class="fas fa-chevron-left"></i>
                 </button>
 
 
-                <button class="page-btn active">
+                <button type="button" class="page-btn active history-page-number">
                     1
                 </button>
 
 
-                <button class="page-btn">
+                <button type="button" class="page-btn history-page-number">
                     2
                 </button>
 
 
-                <button class="page-btn">
+                <button type="button" class="page-btn history-page-number">
                     3
                 </button>
 
 
-                <button class="page-btn">
+                <button type="button" class="page-btn" id="historyNext">
                     <i class="fas fa-chevron-right"></i>
                 </button>
 
@@ -1356,5 +1359,70 @@
 
 
 </div>
+
+<script>
+(() => {
+    const rows = [...document.querySelectorAll('.history-record')];
+    const emptyRow = document.getElementById('historyEmptyRow');
+    const roomInput = document.getElementById('historyRoomFilter');
+    const dateInput = document.getElementById('historyDateFilter');
+    const staffInput = document.getElementById('historyStaffFilter');
+    const total = document.getElementById('historyTotal');
+    const from = document.getElementById('historyShowingFrom');
+    const to = document.getElementById('historyShowingTo');
+    let filteredRows = rows;
+    let page = 1;
+    const pageSize = 3;
+
+    function renderHistory() {
+        const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+        page = Math.min(page, pageCount);
+        const first = (page - 1) * pageSize;
+        rows.forEach(row => row.style.display = 'none');
+        filteredRows.slice(first, first + pageSize).forEach(row => row.style.display = '');
+        emptyRow.style.display = filteredRows.length ? 'none' : '';
+        total.textContent = filteredRows.length;
+        from.textContent = filteredRows.length ? first + 1 : 0;
+        to.textContent = Math.min(first + pageSize, filteredRows.length);
+        document.querySelectorAll('.history-page-number').forEach((button, index) => {
+            button.classList.toggle('active', index + 1 === page);
+            button.disabled = index + 1 > pageCount;
+        });
+        document.getElementById('historyPrevious').disabled = page === 1;
+        document.getElementById('historyNext').disabled = page === pageCount;
+    }
+
+    function filterHistory() {
+        const room = roomInput.value.trim().toLowerCase();
+        const date = dateInput.value;
+        const staff = staffInput.value;
+        filteredRows = rows.filter(row =>
+            (!room || row.dataset.room.includes(room)) &&
+            (!date || row.dataset.date === date) &&
+            (staff === 'All Staff' || row.dataset.staff === staff)
+        );
+        page = 1;
+        renderHistory();
+    }
+
+    function exportHistory() {
+        const header = ['Room', 'Task', 'Assigned Staff', 'Date', 'Time', 'Status'];
+        const data = filteredRows.map(row => [...row.querySelectorAll('td')].map(cell => cell.innerText.replace(/\s+/g, ' ').trim()));
+        const csv = [header, ...data].map(line => line.map(value => `"${value.replace(/"/g, '""')}"`).join(',')).join('\n');
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        link.download = 'cleaning-history.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    document.getElementById('filterHistoryButton').addEventListener('click', filterHistory);
+    document.getElementById('exportHistoryButton').addEventListener('click', exportHistory);
+    document.getElementById('historyPrevious').addEventListener('click', () => { page--; renderHistory(); });
+    document.getElementById('historyNext').addEventListener('click', () => { page++; renderHistory(); });
+    document.querySelectorAll('.history-page-number').forEach((button, index) => button.addEventListener('click', () => { page = index + 1; renderHistory(); }));
+    renderHistory();
+})();
+</script>
 
 @endsection

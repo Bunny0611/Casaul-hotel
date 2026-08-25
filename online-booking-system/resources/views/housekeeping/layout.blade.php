@@ -33,13 +33,18 @@
         body {
             margin: 0 !important;
             padding: 0 !important;
-            min-height: 100%;
+            height: 100%;
             width: 100%;
             background: #f3f4f6;
         }
 
         body {
-            overflow-x: hidden;
+            overflow: hidden;
+        }
+
+        .housekeeping-shell {
+            position: fixed;
+            inset: 0;
         }
 
         header {
@@ -66,7 +71,6 @@
                 #ff8c42 100%
             );
         }
-
 
         .nav-item {
             display: flex !important;
@@ -172,17 +176,18 @@
         }
     </style>
 
+    </head>
 
 <body class="bg-gray-100">
 
-    <div class="flex min-h-screen">
+    <div class="housekeeping-shell flex h-screen overflow-hidden">
 
 
         <aside
             id="sidebar"
             class="sidebar fixed inset-y-0 left-0 z-50 w-64 text-white overflow-y-auto
                    transform -translate-x-full transition-transform duration-300
-                   md:translate-x-0 md:flex md:flex-col"
+                     md:translate-x-0 md:relative md:flex-shrink-0 md:overflow-y-auto md:static flex flex-col"
         >
             <div class="p-6">
 
@@ -283,7 +288,7 @@
                    pointer-events-none transition-opacity duration-300 md:hidden"
         ></div>
 
-      <div class="flex-1 flex flex-col min-h-screen ml-0 md:ml-64">
+        <div class="flex-1 flex flex-col overflow-hidden md:ml-0">
 
     <header
         class="header z-30 text-white
@@ -351,7 +356,7 @@
 
             </header>
 
-            <main class="flex-1 px-4 sm:px-6 pb-6 pt-3">
+            <main class="flex-1 overflow-y-auto px-4 sm:px-6 pb-6 pt-3">
 
                 @if(session('success'))
 
