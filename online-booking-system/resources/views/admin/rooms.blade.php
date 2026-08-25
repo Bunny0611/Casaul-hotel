@@ -1,7 +1,23 @@
 @extends('admin.layout')
 
 @section('content')
-<div class="animate-fade-in">
+<style>
+    .room-management-page {
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    .room-management-page .room-table-shell {
+        min-width: 980px;
+    }
+
+    .room-management-page .room-table-shell table {
+        width: 100%;
+        min-width: 980px;
+    }
+</style>
+<div class="room-management-page animate-fade-in">
     <div class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
             <h2 class="text-3xl font-bold text-gray-800">Room Management</h2>
@@ -54,7 +70,7 @@
                 {{-- total() = full room count across all pages (count() would only show the current page's 5 rows once paginated) --}}
                 <div class="text-sm text-gray-500">{{ $rooms->total() }} room{{ $rooms->total() === 1 ? '' : 's' }}</div>
             </div>
-            <div class="overflow-x-auto">
+            <div class="room-table-shell overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>

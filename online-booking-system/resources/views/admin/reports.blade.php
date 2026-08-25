@@ -25,9 +25,6 @@
                     <button id="exportCsvBtn" type="button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
                         <i class="fas fa-file-csv mr-2"></i>Export Excel
                     </button>
-                     <button id="exportPdfBtn" type="button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
-                        <i class="fas fa-file-pdf mr-2"></i>Export PDF
-                    </button>
                     <button id="printBtn" type="button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                         <i class="fas fa-print mr-2"></i>Print
                     </button>
@@ -440,10 +437,9 @@
                 });
             });
         });
-        // Actions: Refresh, Export CSV, Export PDF (print view), Print
+        // Actions: Refresh, Export Excel, Print
         const refreshBtn = document.getElementById('reportsRefresh');
         const exportCsvBtn = document.getElementById('exportCsvBtn');
-        const exportPdfBtn = document.getElementById('exportPdfBtn');
         const printBtn = document.getElementById('printBtn');
 
         function buildQuery() {
@@ -466,14 +462,6 @@
                 const q = buildQuery();
                 const url = "{{ route('admin.reports.export.csv') }}" + q;
                 window.location.href = url;
-            });
-        }
-
-        if (exportPdfBtn) {
-            exportPdfBtn.addEventListener('click', function () {
-                const q = buildQuery();
-                const url = "{{ route('admin.reports.print') }}" + q;
-                window.open(url, '_blank');
             });
         }
 

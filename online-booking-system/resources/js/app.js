@@ -111,6 +111,35 @@ document.addEventListener('DOMContentLoaded', function () {
     const googleBtn = document.getElementById('google-signin-btn');
     const authMessage = document.getElementById('auth-message');
     const signupForm = document.getElementById('guest-signup-form');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    const profileTrigger = document.getElementById('profile-trigger');
+    const profileMenu = document.getElementById('profile-menu');
+
+    if (profileDropdown && profileTrigger && profileMenu) {
+        const closeProfileMenu = () => {
+            profileMenu.classList.remove('open');
+            profileTrigger.classList.remove('open');
+            profileTrigger.setAttribute('aria-expanded', 'false');
+        };
+
+        profileTrigger.addEventListener('click', () => {
+            const isOpen = profileMenu.classList.toggle('open');
+            profileTrigger.classList.toggle('open', isOpen);
+            profileTrigger.setAttribute('aria-expanded', String(isOpen));
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!profileDropdown.contains(event.target)) {
+                closeProfileMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeProfileMenu();
+            }
+        });
+    }
 
     if (searchToggle && searchForm && searchInput) {
         searchToggle.addEventListener('click', () => {
@@ -179,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        let isSignUp = false;
+        let isSignUp = signUpView?.classList.contains('auth-hidden') === false;
         switchBtn?.addEventListener('click', () => {
             isSignUp = !isSignUp;
             signInView?.classList.toggle('auth-hidden', isSignUp);

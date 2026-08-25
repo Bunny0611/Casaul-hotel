@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
 use App\Http\Controllers\ProfileController;
 use App\Models\Message;
+use App\Models\InventoryItem;
 use App\Models\Reservation;
 use App\Models\Room;
 use Illuminate\Support\Facades\Auth;
@@ -34,9 +35,9 @@ Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.
 Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
 
 // --- Guest Profile ---
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [HomeController::class, 'profile'])->name('profile');
-    Route::get('/profile/records', [HomeController::class, 'records'])->name('profile.records');
+Route::middleware(['auth', 'role:guest'])->group(function () {
+    Route::get('/guest/profile', [HomeController::class, 'profile'])->name('guest.profile');
+    Route::get('/guest/records', [HomeController::class, 'records'])->name('guest.records');
 });
 
 // --- Admin Logout ---
@@ -45,17 +46,41 @@ Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 // --- Employee Portal ---
 Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
     Route::redirect('/', '/employee/dashboard')->name('index');
-    Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
+    Route::get('/dashboard', [AdminController::class, 'employeeDashboard'])->name('dashboard');
     Route::get('/reservation', function () {
         $reservations = Reservation::with('room')->latest()->get();
         $rooms = Room::orderBy('room_number')->get();
+        $inventoryItems = InventoryItem::whereIn('category', ['amenities', 'event_place', 'dining'])
+            ->whereIn('status', ['available', 'limited'])
+            ->orderBy('name')
+            ->get();
 
-        return view('employee.reservation', compact('reservations', 'rooms'));
+        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems'));
     })->name('reservation');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
+    Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
-    Route::view('/checkin', 'employee.checkin')->name('checkin');
+    Route::get('/checkin', function () {
+        $today = now()->toDateString();
+
+        $checkIns = Reservation::with('room')
+            ->whereDate('check_in', $today)
+            ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
+            ->latest()
+            ->get();
+
+        $checkOuts = Reservation::with('room')
+            ->whereDate('check_out', $today)
+            ->whereIn('status', ['confirmed', 'checked-in'])
+            ->latest()
+            ->get();
+
+        $occupiedRooms = Room::where('status', 'occupied')->count();
+        $availableRooms = Room::where('status', 'available')->count();
+
+        return view('employee.checkin', compact('checkIns', 'checkOuts', 'occupiedRooms', 'availableRooms'));
+    })->name('checkin');
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();

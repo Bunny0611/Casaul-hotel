@@ -357,7 +357,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm text-slate-500">Today's Check-ins</p>
-                    <h4 class="mt-1 text-2xl font-semibold text-slate-800">18</h4>
+                    <h4 class="mt-1 text-2xl font-semibold text-slate-800">{{ $checkIns->count() }}</h4>
                 </div>
                 <div class="stat-icon bg-sky-100 text-sky-700"><i class="fas fa-sign-in-alt"></i></div>
             </div>
@@ -366,7 +366,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm text-slate-500">Today's Check-outs</p>
-                    <h4 class="mt-1 text-2xl font-semibold text-slate-800">12</h4>
+                    <h4 class="mt-1 text-2xl font-semibold text-slate-800">{{ $checkOuts->count() }}</h4>
                 </div>
                 <div class="stat-icon bg-emerald-100 text-emerald-700"><i class="fas fa-sign-out-alt"></i></div>
             </div>
@@ -375,7 +375,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm text-slate-500">Occupied Rooms</p>
-                    <h4 class="mt-1 text-2xl font-semibold text-slate-800">24</h4>
+                    <h4 class="mt-1 text-2xl font-semibold text-slate-800">{{ $occupiedRooms }}</h4>
                 </div>
                 <div class="stat-icon bg-violet-100 text-violet-700"><i class="fas fa-bed"></i></div>
             </div>
@@ -384,13 +384,12 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm text-slate-500">Available Rooms</p>
-                    <h4 class="mt-1 text-2xl font-semibold text-slate-800">8</h4>
+                    <h4 class="mt-1 text-2xl font-semibold text-slate-800">{{ $availableRooms }}</h4>
                 </div>
                 <div class="stat-icon bg-amber-100 text-amber-700"><i class="fas fa-door-open"></i></div>
             </div>
         </div>
     </div>
-
 
     <div class="grid gap-6 xl:grid-cols-2">
         <div class="soft-card p-6">
@@ -410,16 +409,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="border-b border-slate-100" data-reservation="BK1001" data-guest="Juan Dela Cruz" data-date="2026-07-31" data-time="2:00 PM" data-room="Deluxe 201" data-status="Confirmed" data-balance="₱0" data-payment="Paid">
-                            <td class="py-3 pr-3 whitespace-nowrap">BK1001</td>
-                            <td class="py-3 pr-3 truncate-cell" title="Juan Dela Cruz">Juan Dela Cruz</td>
-                            <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-emerald-600" onclick="openCheckInModal('BK1001', 'Juan Dela Cruz', 'Deluxe 201', 'July 31', '2:00 PM')">Check In</button></td>
-                        </tr>
-                        <tr class="border-b border-slate-100" data-reservation="BK1002" data-guest="Ana Reyes" data-date="2026-07-31" data-time="3:00 PM" data-room="Standard 105" data-status="Checked In" data-balance="₱0" data-payment="Partial">
-                            <td class="py-3 pr-3 whitespace-nowrap">BK1002</td>
-                            <td class="py-3 pr-3 truncate-cell" title="Ana Reyes">Ana Reyes</td>
-                            <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-emerald-600" onclick="openCheckInModal('BK1002', 'Ana Reyes', 'Standard 105', 'July 31', '3:00 PM')">Check In</button></td>
-                        </tr>
+                        @forelse($checkIns as $reservation)
+                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_in }}" data-time="{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-balance="₱{{ number_format($reservation->total_amount, 2) }}" data-payment="{{ $reservation->payment_method ?? 'N/A' }}">
+                                <td class="py-3 pr-3 whitespace-nowrap">RES-{{ $reservation->id }}</td>
+                                <td class="py-3 pr-3 truncate-cell" title="{{ $reservation->guest_name }}">{{ $reservation->guest_name }}</td>
+                                <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-emerald-600" onclick="openCheckInModal('RES-{{ $reservation->id }}', '{{ $reservation->guest_name }}', '{{ $reservation->room?->room_number ?? 'N/A' }}', '{{ $reservation->check_in }}', '{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A' }}')">Check In</button></td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-500">No check-ins scheduled for today.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -442,16 +442,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="border-b border-slate-100" data-reservation="BK1003" data-guest="Mark Villanueva" data-date="2026-07-31" data-time="12:00 PM" data-room="Suite 301" data-status="Checked Out" data-balance="₱0" data-payment="Paid">
-                            <td class="py-3 pr-3 whitespace-nowrap">BK1003</td>
-                            <td class="py-3 pr-3 truncate-cell" title="Mark Villanueva">Mark Villanueva</td>
-                            <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-rose-600" onclick="openCheckOutModal('BK1003', 'Mark Villanueva', 'Suite 301', 'July 31', '12:00 PM', '₱0')">Check Out</button></td>
-                        </tr>
-                        <tr class="border-b border-slate-100" data-reservation="BK1004" data-guest="Rose Dizon" data-date="2026-07-31" data-time="11:00 AM" data-room="Deluxe 102" data-status="Checked Out" data-balance="₱500" data-payment="Pending">
-                            <td class="py-3 pr-3 whitespace-nowrap">BK1004</td>
-                            <td class="py-3 pr-3 truncate-cell" title="Rose Dizon">Rose Dizon</td>
-                            <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-rose-600" onclick="openCheckOutModal('BK1004', 'Rose Dizon', 'Deluxe 102', 'July 31', '11:00 AM', '₱500')">Check Out</button></td>
-                        </tr>
+                        @forelse($checkOuts as $reservation)
+                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_out }}" data-time="{{ $reservation->check_out_time ? \Illuminate\Support\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-balance="₱{{ number_format($reservation->total_amount, 2) }}" data-payment="{{ $reservation->payment_method ?? 'N/A' }}">
+                                <td class="py-3 pr-3 whitespace-nowrap">RES-{{ $reservation->id }}</td>
+                                <td class="py-3 pr-3 truncate-cell" title="{{ $reservation->guest_name }}">{{ $reservation->guest_name }}</td>
+                                <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-rose-600" onclick="openCheckOutModal('RES-{{ $reservation->id }}', '{{ $reservation->guest_name }}', '{{ $reservation->room?->room_number ?? 'N/A' }}', '{{ $reservation->check_out }}', '{{ $reservation->check_out_time ? \Illuminate\Support\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A' }}', '₱{{ number_format($reservation->total_amount, 2) }}')">Check Out</button></td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="px-6 py-10 text-center text-sm text-slate-500">No check-outs scheduled for today.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -494,7 +495,12 @@
 
         <div class="modal-actions">
             <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('checkInModal')">Cancel</button>
-            <button type="button" class="modal-btn modal-btn-primary">Confirm Check-in</button>
+            <form id="checkInForm" method="POST" action="{{ route('employee.reservations.status', ['id' => '__ID__']) }}">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="status" value="checked-in">
+                <button type="submit" class="modal-btn modal-btn-primary">Confirm Check-in</button>
+            </form>
         </div>
     </div>
 </div>
@@ -534,7 +540,12 @@
 
         <div class="modal-actions">
             <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('checkOutModal')">Cancel</button>
-            <button type="button" class="modal-btn modal-btn-primary">Confirm Check-out</button>
+            <form id="checkOutForm" method="POST" action="{{ route('employee.reservations.status', ['id' => '__ID__']) }}">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="status" value="completed">
+                <button type="submit" class="modal-btn modal-btn-primary">Confirm Check-out</button>
+            </form>
         </div>
     </div>
 </div>
@@ -567,21 +578,25 @@
     });
 
     function openCheckInModal(reservation, guest, room, date, time) {
+        const reservationId = reservation.replace('RES-', '');
         document.getElementById('checkInReservation').textContent = reservation;
         document.getElementById('checkInGuest').textContent = guest;
         document.getElementById('checkInRoom').textContent = room;
         document.getElementById('checkInDate').textContent = date;
         document.getElementById('checkInTime').textContent = time;
+        document.getElementById('checkInForm').action = document.getElementById('checkInForm').action.replace('__ID__', reservationId);
         document.getElementById('checkInModal').classList.remove('hidden');
         document.getElementById('checkInModal').classList.add('flex');
     }
 
     function openCheckOutModal(reservation, guest, room, date, time, balance) {
+        const reservationId = reservation.replace('RES-', '');
         document.getElementById('checkOutReservation').textContent = reservation;
         document.getElementById('checkOutGuest').textContent = guest;
         document.getElementById('checkOutRoom').textContent = room;
         document.getElementById('checkOutDate').textContent = date + ' ' + time;
         document.getElementById('checkOutBalance').textContent = balance;
+        document.getElementById('checkOutForm').action = document.getElementById('checkOutForm').action.replace('__ID__', reservationId);
         document.getElementById('checkOutModal').classList.remove('hidden');
         document.getElementById('checkOutModal').classList.add('flex');
     }

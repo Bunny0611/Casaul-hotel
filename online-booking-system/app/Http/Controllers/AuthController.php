@@ -84,7 +84,7 @@ class AuthController extends Controller
         ], $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            return redirect()->intended(route('profile'));
+            return redirect()->route('home');
         }
 
         return back()->withErrors([
@@ -98,22 +98,30 @@ class AuthController extends Controller
     public function guestRegister(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:255',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'middle_initial' => 'required|string|max:3',
             'email' => 'required|email|unique:users,email',
+            'contact_no' => 'required|string|max:25',
             'password' => 'required|string|confirmed|min:6',
         ]);
 
         $user = User::create([
-            'name' => $data['name'],
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'middle_initial' => $data['middle_initial'],
+            'name' => trim($data['first_name'].' '.$data['middle_initial'].' '.$data['last_name']),
             'email' => $data['email'],
+            'contact_no' => $data['contact_no'],
             'password' => Hash::make($data['password']),
+            'role' => 'guest',
         ]);
 
         // auto-login and secure session
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('profile'));
+        return redirect()->route('home');
     }
 
     /**
