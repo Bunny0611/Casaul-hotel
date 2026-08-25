@@ -367,11 +367,15 @@ class AdminController extends Controller
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
+<<<<<<< HEAD
+            'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
+=======
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'amenity_id' => ['nullable', 'required_if:category,amenities', 'exists:inventory_items,id'],
             'event_place_id' => ['nullable', 'required_if:category,event_place', 'exists:inventory_items,id'],
             'dining_id' => ['nullable', 'required_if:category,dining', 'exists:inventory_items,id'],
             'duration_hours' => ['nullable', 'required_if:category,amenities', 'integer', 'min:1', 'max:24'],
+>>>>>>> 14fafde0eb610225d69073cf464d5d9a0a21610a
             'special_requests' => ['nullable', 'string'],
             'submission_token' => ['nullable', 'string', 'max:100'],
         ]);
