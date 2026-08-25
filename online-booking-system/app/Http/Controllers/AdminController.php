@@ -797,40 +797,163 @@ class AdminController extends Controller
         $from = $request->query('from');
         $to = $request->query('to');
 
-        $query = Reservation::with('room')->latest();
-        if ($from) $query->whereDate('created_at', '>=', $from);
-        if ($to) $query->whereDate('created_at', '<=', $to);
+        $reservationsQuery = Reservation::with('room')->latest();
+        if ($from) {
+            $reservationsQuery->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $reservationsQuery->whereDate('created_at', '<=', $to);
+        }
 
-        $reservations = $query->get();
+        $reservations = $reservationsQuery->get();
+        $completedReservations = $reservations->where('status', 'completed');
+        $confirmedReservations = $reservations->where('status', 'confirmed');
+        $pendingReservations = $reservations->where('status', 'pending');
+        $cancelledReservations = $reservations->where('status', 'cancelled');
 
-        $filename = 'reports_' . now()->format('Ymd_His') . '.csv';
+        $totalRevenue = (float) $completedReservations->sum('total_amount');
+        $totalPaymentsReceived = $totalRevenue;
+        $revenueThisMonth = (float) $completedReservations->filter(function ($reservation) {
+            return $reservation->updated_at && $reservation->updated_at->isSameMonth(now()) && $reservation->updated_at->isSameYear(now());
+        })->sum('total_amount');
+        $averageRevenuePerReservation = $completedReservations->count() > 0 ? $totalRevenue / $completedReservations->count() : 0;
 
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-        ];
+        $roomTypeRevenueCollection = $completedReservations->filter(fn ($reservation) => $reservation->room)
+            ->groupBy(fn ($reservation) => $reservation->room->room_type ?? 'Unknown')
+            ->map(fn ($group) => $group->sum('total_amount'));
 
-        $columns = ['Guest', 'Email', 'Phone', 'Room', 'Check In', 'Check Out', 'Status', 'Amount'];
+        $paymentMethodCollection = $reservations->filter(fn ($reservation) => ! empty($reservation->payment_method))
+            ->groupBy(fn ($reservation) => $reservation->payment_method)
+            ->map(fn ($group) => $group->count());
 
-        $callback = function () use ($reservations, $columns) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, $columns);
-            foreach ($reservations as $r) {
-                fputcsv($file, [
-                    $r->guest_name,
-                    $r->guest_email,
-                    $r->guest_phone,
-                    $r->room ? $r->room->room_number : 'N/A',
-                    $r->check_in,
-                    $r->check_out,
-                    $r->status,
-                    number_format($r->total_amount, 2),
-                ]);
+        $rooms = Room::orderBy('room_number')->get();
+        $availableRooms = $rooms->where('status', 'available')->count();
+        $occupiedRooms = $rooms->where('status', 'occupied')->count();
+        $maintenanceRooms = $rooms->where('status', 'maintenance')->count();
+        $reservedRooms = $rooms->where('status', 'reserved')->count();
+        $totalRooms = $rooms->count();
+        $occupancyRate = $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100) : 0;
+
+        $guestEmails = $reservations->pluck('guest_email')->filter()->unique();
+        $totalGuests = $guestEmails->count();
+        $returningGuests = $guestEmails->filter(function ($email) use ($reservations) {
+            return $reservations->where('guest_email', $email)->count() > 1;
+        })->count();
+        $newGuests = max(0, $totalGuests - $returningGuests);
+
+        $monthlyRevenue = Reservation::where('status', 'completed')
+            ->when($from, fn ($query) => $query->whereDate('updated_at', '>=', $from))
+            ->when($to, fn ($query) => $query->whereDate('updated_at', '<=', $to))
+            ->orderBy('updated_at')
+            ->get(['updated_at', 'total_amount'])
+            ->groupBy(fn ($reservation) => $reservation->updated_at->format('Y-m'))
+            ->map(fn ($group) => $group->sum('total_amount'))
+            ->slice(max(0, $reservations->count() > 0 ? 0 : 0));
+
+        $monthlyLabels = $monthlyRevenue->keys()->map(fn ($month) => Carbon::createFromFormat('Y-m', $month)->format('M Y'))->all();
+        $monthlyRevenueValues = $monthlyRevenue->values()->map(fn ($value) => (float) $value)->all();
+
+        $filename = 'hotel_reports_' . now()->format('Ymd_His') . '.xls';
+
+        $html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8" /><style>body{font-family:Arial,sans-serif;} table{border-collapse:collapse;width:100%;} td,th{border:1px solid #bdbdbd;padding:8px 10px;font-size:12px;vertical-align:top;} .title{font-size:18px;font-weight:bold;background:#ffffff;} .section{font-weight:bold;background:#f2f2f2;text-transform:uppercase;} .header{font-weight:bold;background:#eaeaea;} .metric{font-weight:bold;background:#fafafa;} .amount{text-align:right;} .label{font-weight:bold;} </style></head><body><table>';
+
+        $html .= '<tr><td colspan="2" class="title"><strong>CASAUL Hotel Reports</strong></td></tr>';
+        $html .= '<tr><td class="label">Generated At</td><td>' . e(now()->format('m/d/Y g:i A')) . '</td></tr>';
+        $html .= '<tr><td class="label">Date From</td><td>' . e($from ?: 'All') . '</td></tr>';
+        $html .= '<tr><td class="label">Date To</td><td>' . e($to ?: 'All') . '</td></tr>';
+        $html .= '<tr><td colspan="2">&nbsp;</td></tr>';
+
+        $html .= '<tr><td colspan="2" class="section">Financial Summary</td></tr>';
+        $html .= '<tr class="header"><th>Metric</th><th>Value</th></tr>';
+        $html .= '<tr><td class="metric">Total Revenue</td><td class="amount">₱' . number_format($totalRevenue, 2) . '</td></tr>';
+        $html .= '<tr><td class="metric">Total Payments Received</td><td class="amount">₱' . number_format($totalPaymentsReceived, 2) . '</td></tr>';
+        $html .= '<tr><td class="metric">Revenue This Month</td><td class="amount">₱' . number_format($revenueThisMonth, 2) . '</td></tr>';
+        $html .= '<tr><td class="metric">Average Revenue Per Reservation</td><td class="amount">₱' . number_format($averageRevenuePerReservation, 2) . '</td></tr>';
+        $html .= '<tr><td colspan="2">&nbsp;</td></tr>';
+
+        $html .= '<tr><td colspan="8" class="section">Payment Transactions</td></tr>';
+        $html .= '<tr class="header"><th>Guest</th><th>Email</th><th>Phone</th><th>Room</th><th>Check In</th><th>Check Out</th><th>Status</th><th>Amount</th></tr>';
+
+        foreach ($completedReservations as $reservation) {
+            $html .= '<tr>';
+            $html .= '<td>' . e($reservation->guest_name) . '</td>';
+            $html .= '<td>' . e($reservation->guest_email) . '</td>';
+            $html .= '<td>' . e($reservation->guest_phone ?? 'N/A') . '</td>';
+            $html .= '<td>' . e($reservation->room ? $reservation->room->room_number : 'N/A') . '</td>';
+            $html .= '<td>' . e($reservation->check_in ? $reservation->check_in->format('Y-m-d') : 'N/A') . '</td>';
+            $html .= '<td>' . e($reservation->check_out ? $reservation->check_out->format('Y-m-d') : 'N/A') . '</td>';
+            $html .= '<td>' . e($reservation->status) . '</td>';
+            $html .= '<td class="amount">₱' . number_format((float) $reservation->total_amount, 2) . '</td>';
+            $html .= '</tr>';
+        }
+
+        if ($completedReservations->isEmpty()) {
+            $html .= '<tr><td colspan="8">No completed payments found.</td></tr>';
+        }
+
+        $html .= '<tr><td colspan="2">&nbsp;</td></tr>';
+
+        $html .= '<tr><td colspan="2" class="section">Payment Method Breakdown</td></tr>';
+        $html .= '<tr class="header"><th>Method</th><th>Count</th></tr>';
+        if ($paymentMethodCollection->isNotEmpty()) {
+            foreach ($paymentMethodCollection as $method => $count) {
+                $html .= '<tr><td>' . e($method) . '</td><td>' . e($count) . '</td></tr>';
             }
-            fclose($file);
-        };
+        } else {
+            $html .= '<tr><td>Recorded Payments</td><td>' . e($completedReservations->count()) . '</td></tr>';
+        }
 
-        return response()->stream($callback, 200, $headers);
+        $html .= '<tr><td colspan="2">&nbsp;</td></tr>';
+
+        $html .= '<tr><td colspan="2" class="section">Revenue by Room Type</td></tr>';
+        $html .= '<tr class="header"><th>Room Type</th><th>Revenue</th></tr>';
+        foreach ($roomTypeRevenueCollection as $roomType => $amount) {
+            $html .= '<tr><td>' . e($roomType) . '</td><td class="amount">₱' . number_format((float) $amount, 2) . '</td></tr>';
+        }
+
+        $html .= '<tr><td colspan="2">&nbsp;</td></tr>';
+
+        $html .= '<tr><td colspan="2" class="section">Monthly Revenue</td></tr>';
+        $html .= '<tr class="header"><th>Month</th><th>Revenue</th></tr>';
+        foreach ($monthlyLabels as $index => $monthLabel) {
+            $html .= '<tr><td>' . e($monthLabel) . '</td><td class="amount">₱' . number_format((float) ($monthlyRevenueValues[$index] ?? 0), 2) . '</td></tr>';
+        }
+
+        $html .= '<tr><td colspan="2">&nbsp;</td></tr>';
+
+        $html .= '<tr><td colspan="2" class="section">Reservation Summary</td></tr>';
+        $html .= '<tr class="header"><th>Metric</th><th>Value</th></tr>';
+        $html .= '<tr><td class="metric">Total Reservations</td><td>' . e($reservations->count()) . '</td></tr>';
+        $html .= '<tr><td class="metric">Pending</td><td>' . e($pendingReservations->count()) . '</td></tr>';
+        $html .= '<tr><td class="metric">Confirmed</td><td>' . e($confirmedReservations->count()) . '</td></tr>';
+        $html .= '<tr><td class="metric">Completed</td><td>' . e($completedReservations->count()) . '</td></tr>';
+        $html .= '<tr><td class="metric">Cancelled</td><td>' . e($cancelledReservations->count()) . '</td></tr>';
+
+        $html .= '<tr><td colspan="2">&nbsp;</td></tr>';
+
+        $html .= '<tr><td colspan="2" class="section">Occupancy Summary</td></tr>';
+        $html .= '<tr class="header"><th>Metric</th><th>Value</th></tr>';
+        $html .= '<tr><td class="metric">Occupancy Rate</td><td>' . e($occupancyRate) . '%</td></tr>';
+        $html .= '<tr><td class="metric">Available Rooms</td><td>' . e($availableRooms) . '</td></tr>';
+        $html .= '<tr><td class="metric">Occupied Rooms</td><td>' . e($occupiedRooms) . '</td></tr>';
+        $html .= '<tr><td class="metric">Reserved Rooms</td><td>' . e($reservedRooms) . '</td></tr>';
+        $html .= '<tr><td class="metric">Maintenance Rooms</td><td>' . e($maintenanceRooms) . '</td></tr>';
+        $html .= '<tr><td class="metric">Total Rooms</td><td>' . e($totalRooms) . '</td></tr>';
+
+        $html .= '<tr><td colspan="2">&nbsp;</td></tr>';
+
+        $html .= '<tr><td colspan="2" class="section">Guest Summary</td></tr>';
+        $html .= '<tr class="header"><th>Metric</th><th>Value</th></tr>';
+        $html .= '<tr><td class="metric">Total Guests</td><td>' . e($totalGuests) . '</td></tr>';
+        $html .= '<tr><td class="metric">New Guests</td><td>' . e($newGuests) . '</td></tr>';
+        $html .= '<tr><td class="metric">Returning Guests</td><td>' . e($returningGuests) . '</td></tr>';
+
+        $html .= '</table></body></html>';
+
+        return response($html, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 
     public function printReports(Request $request)

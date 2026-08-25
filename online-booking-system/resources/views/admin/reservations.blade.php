@@ -1,6 +1,22 @@
 @extends('admin.layout')
 
 @section('content')
+<style>
+    .reservation-management-page {
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    .reservation-management-page .reservation-table-shell {
+        min-width: 980px;
+    }
+
+    .reservation-management-page .reservation-table-shell table {
+        width: 100%;
+        min-width: 980px;
+    }
+</style>
 @php
     $stats = [
         'total' => $reservations->count(),
@@ -10,7 +26,7 @@
     ];
 @endphp
 
-<div class="animate-fade-in space-y-6">
+<div class="reservation-management-page animate-fade-in space-y-6">
     @if(session('success'))
         <div class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
             <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
@@ -67,7 +83,7 @@
     <h3 class="text-lg font-semibold text-gray-800">Reservation List</h3>
 
     <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="hidden overflow-x-auto md:block">
+        <div class="reservation-table-shell hidden overflow-x-auto md:block">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
