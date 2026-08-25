@@ -62,29 +62,31 @@
             </form>
         </div>
 
-@if(auth()->check() && auth()->user()->role === 'guest')
+@auth
             <div class="profile-dropdown" id="profile-dropdown">
-                <button type="button" class="profile-trigger" id="profile-trigger" aria-label="My Account">
+                <button type="button" class="profile-trigger" id="profile-trigger" aria-label="My Account" aria-expanded="false" aria-controls="profile-menu">
                     <span class="profile-trigger-avatar">
-                        <i class="fas fa-user"></i>
+                        <i class="fas fa-user-circle"></i>
                     </span>
                     <span class="profile-trigger-name">{{ auth()->user()->name }}</span>
                     <i class="fas fa-chevron-down profile-trigger-caret"></i>
                 </button>
-                <div class="profile-menu" id="profile-menu">
+                <div class="profile-menu" id="profile-menu" role="menu" aria-labelledby="profile-trigger">
                     <div class="profile-menu-header">
-                        <span class="profile-menu-avatar"><i class="fas fa-user"></i></span>
+                        <span class="profile-menu-avatar"><i class="fas fa-user-circle"></i></span>
                         <div>
                             <p class="profile-menu-name">{{ auth()->user()->name }}</p>
                             <p class="profile-menu-email">{{ auth()->user()->email }}</p>
                         </div>
                     </div>
-                    <a href="{{ route('profile.records') }}" class="profile-menu-item">
-                        <i class="fas fa-list-alt"></i> View Records
-                    </a>
-                    <a href="{{ route('profile') }}" class="profile-menu-item">
-                        <i class="fas fa-user-circle"></i> View Profile
-                    </a>
+                    @if(auth()->user()->role === 'guest')
+                        <a href="{{ route('guest.records') }}" class="profile-menu-item" role="menuitem">
+                            <i class="fas fa-list-alt"></i> My Reservations
+                        </a>
+                        <a href="{{ route('guest.profile') }}" class="profile-menu-item" role="menuitem">
+                            <i class="fas fa-user-circle"></i> My Profile
+                        </a>
+                    @endif
                     <div class="profile-menu-divider"></div>
                     <form method="POST" action="{{ route('logout') }}" class="profile-menu-form">
                         @csrf
@@ -101,7 +103,8 @@
 
 </nav>
 
-<div class="auth-modal-backdrop" id="guest-auth-modal" aria-hidden="true">
+@php($signupHasErrors = $errors->any() && old('first_name') !== null)
+<div class="auth-modal-backdrop{{ $errors->any() ? ' open' : '' }}" id="guest-auth-modal" aria-hidden="{{ $errors->any() ? 'false' : 'true' }}">
     <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="guest-auth-title">
         <button type="button" class="auth-close-btn" id="guest-auth-close" aria-label="Close">×</button>
 
@@ -111,10 +114,16 @@
             <p>Sign in to continue or create a guest account.</p>
         </div>
 
-        <div id="auth-message" class="auth-message" style="display:none;"></div>
+        @if($errors->any())
+            <div id="auth-message" class="auth-message" role="alert">
+                {{ $errors->first() }}
+            </div>
+        @else
+            <div id="auth-message" class="auth-message" style="display:none;"></div>
+        @endif
 
         <div class="auth-content">
-            <div id="auth-signin-view" class="auth-panel">
+            <div id="auth-signin-view" class="auth-panel{{ $signupHasErrors ? ' auth-hidden' : '' }}">
                 <button type="button" class="auth-social-btn google-btn" id="google-signin-btn">
                     <i class="fab fa-google"></i>
                     Continue with Google
@@ -130,14 +139,14 @@
                 </form>
             </div>
 
-            <div id="auth-signup-view" class="auth-hidden auth-panel">
+            <div id="auth-signup-view" class="auth-panel{{ $signupHasErrors ? '' : ' auth-hidden' }}">
                 <form method="POST" action="{{ route('guest.register.submit') }}" class="auth-form" id="guest-signup-form">
                     @csrf
-                    <input type="text" name="first_name" class="auth-input" placeholder="First Name" required>
-                    <input type="text" name="last_name" class="auth-input" placeholder="Last Name" required>
-                    <input type="text" name="middle_initial" class="auth-input" placeholder="M.I" maxlength="3" required>
-                    <input type="email" name="email" class="auth-input" placeholder="Gmail Address" required>
-                    <input type="text" name="contact_no" class="auth-input" placeholder="Contact No." required>
+                    <input type="text" name="first_name" class="auth-input" placeholder="First Name" value="{{ old('first_name') }}" required>
+                    <input type="text" name="last_name" class="auth-input" placeholder="Last Name" value="{{ old('last_name') }}" required>
+                    <input type="text" name="middle_initial" class="auth-input" placeholder="M.I" maxlength="3" value="{{ old('middle_initial') }}" required>
+                    <input type="email" name="email" class="auth-input" placeholder="Gmail Address" value="{{ old('email') }}" required>
+                    <input type="text" name="contact_no" class="auth-input" placeholder="Contact No." value="{{ old('contact_no') }}" required>
                     <input type="password" name="password" class="auth-input" placeholder="Password" required>
                     <input type="password" name="password_confirmation" class="auth-input" placeholder="Re-Type Password" required>
                     <button type="submit" class="auth-submit-btn">Create Account</button>
