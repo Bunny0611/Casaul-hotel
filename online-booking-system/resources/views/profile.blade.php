@@ -31,7 +31,7 @@
         </div>
 
         <div class="profile-actions">
-            <a href="{{ route('profile.records') }}" class="profile-action-btn">
+            <a href="{{ route('guest.records') }}" class="profile-action-btn">
                 <i class="fas fa-list-alt"></i>
                 <span>View Records</span>
                 <small>See your reservation history</small>

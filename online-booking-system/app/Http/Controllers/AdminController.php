@@ -410,6 +410,8 @@ class AdminController extends Controller
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
+            'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'amenity_id' => ['nullable', 'required_if:category,amenities', 'exists:inventory_items,id'],
             'event_place_id' => ['nullable', 'required_if:category,event_place', 'exists:inventory_items,id'],
             'dining_id' => ['nullable', 'required_if:category,dining', 'exists:inventory_items,id'],
@@ -458,7 +460,13 @@ class AdminController extends Controller
         ]);
 
         DB::transaction(function () use ($id, $validated) {
-            $reservation = Reservation::with('room')->findOrFail($id);
+            $reservation = Reservation::with('room')->lockForUpdate()->findOrFail($id);
+            if ($validated['status'] === 'completed') {
+                $paid = (float) $reservation->payments()->sum('amount');
+                if (round((float) $reservation->total_amount - $paid, 2) > 0) {
+                    abort(422, 'The reservation must be paid in full before checkout.');
+                }
+            }
             $reservation->update(['status' => $validated['status']]);
 
             if (!$reservation->room) {
@@ -481,6 +489,45 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Reservation status updated successfully!');
     }
 
+    public function storePayment(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'payment_method' => ['required', Rule::in(['Cash', 'GCash', 'Bank Transfer', 'Credit/Debit Card'])],
+            'payment_date' => ['required', 'date'],
+            'reference_number' => ['nullable', 'string', 'max:255', 'required_unless:payment_method,Cash'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $result = DB::transaction(function () use ($request, $id, $validated) {
+            $reservation = Reservation::lockForUpdate()->findOrFail($id);
+            $paid = (float) $reservation->payments()->sum('amount');
+            $balance = round((float) $reservation->total_amount - $paid, 2);
+            if ((float) $validated['amount'] > $balance) {
+                abort(422, 'Payment amount cannot exceed the balance due.');
+            }
+
+            $payment = $reservation->payments()->create([
+                ...$validated,
+                'recorded_by' => $request->user()->id,
+            ]);
+            $newPaid = round($paid + (float) $payment->amount, 2);
+            $newBalance = max(round((float) $reservation->total_amount - $newPaid, 2), 0);
+            $reservation->update([
+                'amount_paid' => $newPaid,
+            ]);
+
+            return [
+                'total' => (float) $reservation->total_amount,
+                'paid' => $newPaid,
+                'balance' => $newBalance,
+                'status' => $newBalance === 0.0 ? 'Paid' : 'Partially Paid',
+            ];
+        });
+
+        return response()->json($result);
+    }
+
     public function updateReservation(Request $request, $id)
     {
         $reservation = Reservation::findOrFail($id);
@@ -499,6 +546,7 @@ class AdminController extends Controller
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'special_requests' => ['nullable', 'string'],
         ]);
 

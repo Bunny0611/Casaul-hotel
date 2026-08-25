@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        let isSignUp = false;
+        let isSignUp = signUpView?.classList.contains('auth-hidden') === false;
         switchBtn?.addEventListener('click', () => {
             isSignUp = !isSignUp;
             signInView?.classList.toggle('auth-hidden', isSignUp);
@@ -362,12 +362,22 @@ document.addEventListener('DOMContentLoaded', function () {
             const willOpen = !profileMenu.classList.contains('open');
             profileMenu.classList.toggle('open', willOpen);
             profileTrigger.classList.toggle('open', willOpen);
+            profileTrigger.setAttribute('aria-expanded', String(willOpen));
         });
 
         document.addEventListener('click', (event) => {
             if (!profileMenu.contains(event.target) && !profileTrigger.contains(event.target)) {
                 profileMenu.classList.remove('open');
                 profileTrigger.classList.remove('open');
+                profileTrigger.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                profileMenu.classList.remove('open');
+                profileTrigger.classList.remove('open');
+                profileTrigger.setAttribute('aria-expanded', 'false');
             }
         });
     }

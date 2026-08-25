@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\User;
+use App\Models\Payment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -90,6 +91,21 @@ class EmployeeCheckinTest extends TestCase
         ]);
 
         $this->actingAs($user)
+            ->postJson(route('employee.reservations.payments.store', $reservation->id), [
+                'amount' => 4800,
+                'payment_method' => 'Cash',
+                'payment_date' => now()->toDateString(),
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('payments', [
+            'reservation_id' => $reservation->id,
+            'amount' => 4800,
+            'payment_method' => 'Cash',
+            'recorded_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
             ->patch(route('employee.reservations.status', $reservation->id), ['status' => 'completed'])
             ->assertSessionHas('success');
 
@@ -98,5 +114,25 @@ class EmployeeCheckinTest extends TestCase
             'status' => 'available',
             'cleaning_status' => 'dirty',
         ]);
+    }
+
+    public function test_unpaid_reservation_cannot_be_checked_out(): void
+    {
+        $user = User::factory()->create(['role' => 'employee']);
+        $reservation = Reservation::create([
+            'guest_name' => 'Unpaid Guest',
+            'guest_email' => 'unpaid@example.com',
+            'guest_phone' => '09123456789',
+            'check_in' => now()->toDateString(),
+            'check_out' => now()->addDay()->toDateString(),
+            'status' => 'checked-in',
+            'total_amount' => 9000,
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('employee.reservations.status', $reservation->id), ['status' => 'completed'])
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('reservations', ['id' => $reservation->id, 'status' => 'checked-in']);
     }
 }

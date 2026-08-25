@@ -10,7 +10,7 @@
     </section>
 
     <div class="records-toolbar">
-        <a href="{{ route('profile') }}" class="btn btn-back">&larr; Back to Profile</a>
+        <a href="{{ route('guest.profile') }}" class="btn btn-back">&larr; Back to Profile</a>
     </div>
 
     @if($reservations->isEmpty())
