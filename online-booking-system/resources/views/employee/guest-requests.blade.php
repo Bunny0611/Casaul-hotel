@@ -6,10 +6,10 @@
 @php
     $requestCollection = collect($requests);
     $totalRequests = $requestCollection->count();
-    $newRequests = $requestCollection->where('status', 'Pending')->count();
-    $assignedRequests = $requestCollection->whereIn('status', ['Approved', 'Assigned'])->count();
-    $inProgressRequests = $requestCollection->whereIn('status', ['In Progress', 'Processing'])->count();
-    $completedRequests = $requestCollection->whereIn('status', ['Resolved', 'Done', 'Completed'])->count();
+    $newRequests = $requestCollection->where('status', 'New')->count();
+    $inProgressRequests = $requestCollection->where('status', 'In Progress')->count();
+    $completedRequests = $requestCollection->where('status', 'Completed')->count();
+    $assignedRequests = $requestCollection->whereNotNull('assigned_employee_id')->count();
     $visibleRequests = $requestCollection->take(5);
 @endphp
 
@@ -32,7 +32,7 @@
     .filters { display: grid; grid-template-columns: 1.5fr .8fr .9fr 1fr; gap: .65rem; padding: .8rem; border-bottom: 1px solid #edf0f3; }
     .filters input, .filters select { min-width: 0; border: 1px solid #dfe5ec; border-radius: 6px; padding: .6rem .7rem; color: #475569; background: #fff; font-size: .84rem; outline: none; }
     .filters input:focus, .filters select:focus { border-color: #dc2626; box-shadow: 0 0 0 2px #fee2e2; }
-    .request-table-wrap { overflow-x: auto; } .request-table { width: 100%; min-width: 690px; border-collapse: collapse; }
+    .request-table-wrap { overflow-x: auto; } .request-table { width: 100%; min-width: 620px; border-collapse: collapse; }
     .request-table th { padding: .8rem .7rem; text-align: left; color: #64748b; background: #fbfcfd; font-size: .72rem; font-weight: 600; text-transform: uppercase; }
     .request-table td { padding: .85rem .7rem; border-top: 1px solid #edf0f3; vertical-align: middle; font-size: .82rem; }
     .request-id { color: #dc2626; font-weight: 700; } .guest-name, .request-name { font-weight: 600; color: #273449; }
@@ -72,18 +72,16 @@
         <div class="request-left">
         <section id="request-table" class="request-panel">
             <div class="filters"><input type="search" placeholder="Search by guest name, room, or request ID..."><select><option>All Status</option></select><select><option>All Department</option></select><input type="text" value="May 1 - May 28, 2026" aria-label="Date range"></div>
-            <div class="request-table-wrap"><table class="request-table"><thead><tr><th>Request ID</th><th>Guest &amp; Room</th><th>Request</th><th>Department</th><th>Status</th><th>Priority</th><th>Date &amp; Time</th><th>Action</th></tr></thead><tbody>
+            <div class="request-table-wrap"><table class="request-table"><thead><tr><th>Request ID</th><th>Guest Name</th><th>Room Number</th><th>Request Type</th><th>Preferred Time</th><th>Priority</th><th>Submitted Date/Time</th><th>Status</th><th>Action</th></tr></thead><tbody>
                 @forelse($visibleRequests as $request)
                     @php
-                        $title = $request['title'] ?? 'Guest assistance request';
-                        $titleParts = explode(' - ', $title, 2);
-                        $status = $request['status'] ?? 'Pending';
-                        $isComplete = in_array($status, ['Resolved', 'Done', 'Completed'], true);
-                        $statusClass = $isComplete ? 'green' : ($status === 'Approved' || $status === 'Assigned' ? 'blue' : 'amber');
+                        $status = $request->status ?? 'New';
+                        $statusClass = $status === 'Completed' ? 'green' : ($status === 'In Progress' ? 'blue' : 'amber');
+                        $room = $request->room ?? $request->reservation?->room;
                     @endphp
-                    <tr><td><span class="request-id">RES-{{ str_pad($request['id'] ?? 0, 4, '0', STR_PAD_LEFT) }}</span><span class="badge blue">{{ $status }}</span></td><td><span class="guest-name">{{ $titleParts[0] }}</span></td><td><span class="request-name">{{ $titleParts[1] ?? $title }}</span></td><td><span class="badge purple"><i class="fas fa-concierge-bell"></i> Front Desk</span></td><td><span class="badge {{ $statusClass }}"><i class="fas {{ $isComplete ? 'fa-check-circle' : 'fa-circle' }}"></i> {{ $status }}</span></td><td><span class="priority">{{ $isComplete ? 'Low' : 'High' }}</span></td><td><span class="guest-name">{{ $request['requested_at'] ?? 'Today' }}</span><span class="muted">Today</span></td><td><a href="{{ route('employee.guest-requests.show', ['id' => $request['id']]) }}" class="view-button"><i class="fas fa-eye"></i> View</a></td></tr>
+                    <tr><td><span class="request-id">REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</span></td><td><span class="guest-name">{{ $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest' }}</span></td><td><span class="request-name">{{ $room?->room_number ?? 'N/A' }}</span></td><td><span class="request-name">{{ $request->request_type }}</span></td><td><span class="guest-name">{{ $request->preferred_time ?? 'Any time' }}</span></td><td><span class="priority {{ strtolower($request->priority) === 'low' ? 'low' : (strtolower($request->priority) === 'medium' ? 'medium' : '') }}">{{ $request->priority }}</span></td><td><span class="muted">{{ optional($request->submitted_at)->format('M d, Y g:i A') }}</span></td><td><span class="badge {{ $statusClass }}">{{ $status }}</span></td><td><a href="{{ route('employee.guest-requests.show', ['id' => $request->id]) }}" class="view-button"><i class="fas fa-eye"></i> View</a></td></tr>
                 @empty
-                    <tr><td colspan="8" style="text-align:center;padding:2rem;color:#64748b;">No guest requests found.</td></tr>
+                    <tr><td colspan="9" style="text-align:center;padding:2rem;color:#64748b;">No Employee requests found.</td></tr>
                 @endforelse
             </tbody></table></div>
             <div class="panel-footer"><span>Showing 1 to {{ $visibleRequests->count() }} of {{ $totalRequests }} requests</span><div class="pagination"><span>&lsaquo;</span><span class="current">1</span><span>2</span><span>3</span><span>&rsaquo;</span></div></div>
@@ -92,7 +90,7 @@
         <section class="request-panel departments"><div class="departments-heading"><i class="fas fa-sitemap"></i> Department Status Overview</div><div class="department-grid"><div class="department"><i class="fas fa-bed"></i><div><strong>Housekeeping</strong><span>{{ $totalRequests }} Active Requests</span><a href="#request-table">View Details <i class="fas fa-arrow-right"></i></a></div></div><div class="department"><i class="fas fa-utensils"></i><div><strong>Dining</strong><span>0 Active Requests</span><a href="#request-table">View Details <i class="fas fa-arrow-right"></i></a></div></div><div class="department"><i class="fas fa-wrench"></i><div><strong>Maintenance</strong><span>0 Active Requests</span><a href="#request-table">View Details <i class="fas fa-arrow-right"></i></a></div></div><div class="department"><i class="fas fa-users"></i><div><strong>Front Desk</strong><span>{{ $totalRequests }} Active Requests</span><a href="#request-table">View Details <i class="fas fa-arrow-right"></i></a></div></div></div></section>
         </div>
 
-        <aside class="request-sidebar"><section class="request-panel side-panel"><h3><i class="fas fa-chart-bar"></i> Request Summary</h3><div class="ring"><div class="ring-label"><strong>{{ $totalRequests }}</strong></div></div><div class="legend"><div class="legend-row"><span><i class="legend-dot dot-red"></i>New</span><b>{{ $newRequests }}</b></div><div class="legend-row"><span><i class="legend-dot dot-amber"></i>Assigned</span><b>{{ $assignedRequests }}</b></div><div class="legend-row"><span><i class="legend-dot dot-blue"></i>In Progress</span><b>{{ $inProgressRequests }}</b></div><div class="legend-row"><span><i class="legend-dot dot-green"></i>Completed</span><b>{{ $completedRequests }}</b></div></div></section><section class="request-panel side-panel activity-panel"><h3><i class="fas fa-history"></i> Recent Activity</h3><div class="activity-list">@foreach($visibleRequests->take(4) as $request)<div class="activity"><div class="activity-icon"><i class="fas fa-bell"></i></div><div><strong>New request RES-{{ str_pad($request['id'] ?? 0, 4, '0', STR_PAD_LEFT) }}</strong><span>{{ $request['requested_at'] ?? 'Today' }}</span></div></div>@endforeach</div><a class="activity-link" href="#request-table">View All Activity</a></section></aside>
+        <aside class="request-sidebar"><section class="request-panel side-panel"><h3><i class="fas fa-chart-bar"></i> Request Summary</h3><div class="ring"><div class="ring-label"><strong>{{ $totalRequests }}</strong></div></div><div class="legend"><div class="legend-row"><span><i class="legend-dot dot-red"></i>New</span><b>{{ $newRequests }}</b></div><div class="legend-row"><span><i class="legend-dot dot-amber"></i>Assigned</span><b>{{ $assignedRequests }}</b></div><div class="legend-row"><span><i class="legend-dot dot-blue"></i>In Progress</span><b>{{ $inProgressRequests }}</b></div><div class="legend-row"><span><i class="legend-dot dot-green"></i>Completed</span><b>{{ $completedRequests }}</b></div></div></section><section class="request-panel side-panel activity-panel"><h3><i class="fas fa-history"></i> Recent Activity</h3><div class="activity-list">@foreach($visibleRequests->take(4) as $request)<div class="activity"><div class="activity-icon"><i class="fas fa-bell"></i></div><div><strong>Request REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</strong><span>{{ optional($request->submitted_at)->format('M d, Y g:i A') }}</span></div></div>@endforeach</div><a class="activity-link" href="#request-table">View All Activity</a></section></aside>
     </div>
 
 </div>

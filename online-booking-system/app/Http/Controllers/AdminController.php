@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Models\InventoryItem;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
+use App\Models\GuestRequest;
 
 class AdminController extends Controller
 {
@@ -587,8 +588,44 @@ class AdminController extends Controller
 
     public function employeeGuestRequests()
     {
-        $requests = session()->get('employee_guest_requests', []);
-        return view('employee.guest-requests', compact('requests'));
+        $requests = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
+            ->where('department', 'Employee')
+            ->latest('submitted_at')
+            ->get();
+        $employees = User::where('role', 'employee')->orderBy('name')->get();
+
+        return view('employee.guest-requests', compact('requests', 'employees'));
+    }
+
+    public function employeeGuestRequest($id)
+    {
+        $guestRequest = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
+            ->where('department', 'Employee')
+            ->findOrFail($id);
+        $employees = User::where('role', 'employee')->orderBy('name')->get();
+
+        return view('employee.guest-request-detail', compact('guestRequest', 'employees'));
+    }
+
+    public function updateEmployeeGuestRequest(Request $request, $id)
+    {
+        $guestRequest = GuestRequest::where('department', 'Employee')->findOrFail($id);
+        $validated = $request->validate([
+            'status' => ['required', 'in:New,In Progress,Completed'],
+            'assigned_employee_id' => ['nullable', 'exists:users,id'],
+            'employee_notes' => ['nullable', 'string'],
+        ]);
+
+        if (!empty($validated['assigned_employee_id'])) {
+            abort_unless(User::whereKey($validated['assigned_employee_id'])->where('role', 'employee')->exists(), 422);
+        }
+
+        $guestRequest->fill($validated);
+        $guestRequest->completed_at = $validated['status'] === 'Completed' ? ($guestRequest->completed_at ?: now()) : null;
+        $guestRequest->save();
+
+        return redirect()->route('employee.guest-requests.show', $guestRequest->id)
+            ->with('success', 'Guest request updated successfully.');
     }
 
     public function replyMessage(Request $request, $id)
