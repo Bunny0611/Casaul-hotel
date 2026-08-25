@@ -904,10 +904,14 @@
 
         const activeTab = document.querySelector('[data-reservation-tab].bg-orange-500')?.dataset.reservationTab || 'rooms';
         document.getElementById('reservationCategory').value = activeTab;
+        const isEditing = !document.getElementById('reservationFormMethod').disabled;
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         modal.style.display = 'flex';
+        if (isEditing) {
+            document.getElementById('reservationModalTitle').textContent = 'Edit Reservation';
+        }
     }
 
     function resetAddReservationForm() {
@@ -957,9 +961,10 @@
         fields.check_in_time.value = timeValue(reservation.check_in_time);
         fields.check_out.value = reservation.check_out || '';
         fields.check_out_time.value = timeValue(reservation.check_out_time);
-        fields.status.value = reservation.status || 'pending';
         fields.total_amount.value = reservation.total_amount || 0;
         fields.special_requests.value = reservation.special_requests || '';
+        document.getElementById('reservationCategory').value = reservation.category || 'rooms';
+        document.querySelector(`[data-reservation-tab="${reservation.category || 'rooms'}"]`)?.click();
         document.getElementById('reservationFormMethod').disabled = false;
         form.action = "{{ route('employee.reservations.update', ['id' => '__ID__']) }}".replace('__ID__', reservation.id);
         document.getElementById('reservationModalTitle').textContent = 'Edit Reservation';

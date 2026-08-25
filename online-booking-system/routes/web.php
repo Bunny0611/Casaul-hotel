@@ -60,6 +60,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
+    Route::post('/reservations/{id}/payments', [AdminController::class, 'storePayment'])->name('reservations.payments.store');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::get('/checkin', function () {
         $today = now()->toDateString();
@@ -70,7 +71,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
             ->latest()
             ->get();
 
-        $checkOuts = Reservation::with('room')
+        $checkOuts = Reservation::with(['room', 'payments'])
             ->whereDate('check_out', $today)
             ->whereIn('status', ['confirmed', 'checked-in'])
             ->latest()
