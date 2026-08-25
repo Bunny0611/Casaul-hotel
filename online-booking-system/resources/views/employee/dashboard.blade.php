@@ -277,7 +277,7 @@
         <div class="summary-card orange">
             <div>
                 <p>Today's<br>arrivals</p>
-                <h4>18</h4>
+                <h4>{{ $todayArrivals }}</h4>
             </div>
             <div class="icon-wrap"><i class="fas fa-user-plus"></i></div>
         </div>
@@ -285,7 +285,7 @@
         <div class="summary-card red">
             <div>
                 <p>Today's<br>departures</p>
-                <h4>12</h4>
+                <h4>{{ $todayDepartures }}</h4>
             </div>
             <div class="icon-wrap"><i class="fas fa-sign-out-alt"></i></div>
         </div>
@@ -293,7 +293,7 @@
         <div class="summary-card green">
             <div>
                 <p>Available<br>rooms</p>
-                <h4>26</h4>
+                <h4>{{ $availableRooms }}</h4>
             </div>
             <div class="icon-wrap"><i class="fas fa-bed"></i></div>
         </div>
@@ -301,7 +301,7 @@
         <div class="summary-card yellow">
             <div>
                 <p>Pending<br>requests</p>
-                <h4>09</h4>
+                <h4>{{ $pendingRequests }}</h4>
             </div>
             <div class="icon-wrap"><i class="fas fa-bell"></i></div>
         </div>
@@ -316,33 +316,33 @@
             <div class="progress-track" aria-label="Occupancy rate">
                 <div class="progress-fill" id="occupancyBar"></div>
             </div>
-            <p class="occupancy-copy">75% occupied (39 of 52 rooms)</p>
+            <p class="occupancy-copy">{{ $occupancyRate }}% occupied ({{ $occupiedRooms }} of {{ $totalRooms }} rooms)</p>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div class="rounded-xl border border-[#f6dfcc] bg-[#fff8f2] p-4">
                     <div class="text-sm text-[#9ca3af]">Occupied</div>
-                    <div class="text-lg font-bold text-[#111827]">39 Rooms</div>
+                    <div class="text-lg font-bold text-[#111827]">{{ $occupiedRooms }} Rooms</div>
                 </div>
                 <div class="rounded-xl border border-[#e5e7eb] bg-[#f8fafc] p-4">
                     <div class="text-sm text-[#9ca3af]">Available</div>
-                    <div class="text-lg font-bold text-[#111827]">13 Rooms</div>
+                    <div class="text-lg font-bold text-[#111827]">{{ $availableRooms }} Rooms</div>
                 </div>
             </div>
 
             <div class="snapshot-grid">
                 <div class="snapshot-card">
-                    <strong>37%</strong>
+                    <strong>{{ $occupancyRate }}%</strong>
                     <span>Occupancy rate</span>
                 </div>
                 <div class="snapshot-card">
-                    <strong>12</strong>
-                    <span>Ready for check-in</span>
+                    <strong>{{ $todayArrivals }}</strong>
+                    <span>Arrivals today</span>
                 </div>
                 <div class="snapshot-card">
-                    <strong>4</strong>
+                    <strong>{{ $pendingRequests }}</strong>
                     <span>Need cleaning</span>
                 </div>
                 <div class="snapshot-card">
-                    <strong>2</strong>
+                    <strong>{{ $maintenanceRooms }}</strong>
                     <span>Under maintenance</span>
                 </div>
             </div>
@@ -353,47 +353,25 @@
                 <h3>Recent Activity</h3>
                 <span>Latest updates</span>
             </div>
-            <ul class="activity-list">
-                <li class="activity-item">
-                    <div class="activity-icon"><i class="fas fa-user-check"></i></div>
-                    <div>
-                        <strong>Guest John Doe checked in.</strong>
-                        <small>10 mins ago</small>
-                    </div>
-                </li>
-                <li class="activity-item">
-                    <div class="activity-icon"><i class="fas fa-broom"></i></div>
-                    <div>
-                        <strong>Room 203 marked as cleaned.</strong>
-                        <small>22 mins ago</small>
-                    </div>
-                </li>
-                <li class="activity-item">
-                    <div class="activity-icon"><i class="fas fa-check-circle"></i></div>
-                    <div>
-                        <strong>Reservation #102 approved.</strong>
-                        <small>41 mins ago</small>
-                    </div>
-                </li>
-                <li class="activity-item">
-                    <div class="activity-icon"><i class="fas fa-clock"></i></div>
-                    <div>
-                        <strong>Guest requested late checkout.</strong>
-                        <small>1 hr ago</small>
-                    </div>
-                </li>
-                <li class="activity-item">
-                    <div class="activity-icon"><i class="fas fa-money-bill-wave"></i></div>
-                    <div>
-                        <strong>Payment received for Suite 401.</strong>
-                        <small>2 hrs ago</small>
-                    </div>
-                </li>
-            </ul>
+            @if($recentActivity->isNotEmpty())
+                <ul class="activity-list">
+                    @foreach($recentActivity as $activity)
+                        <li class="activity-item">
+                            <div class="activity-icon"><i class="{{ $activity['icon'] }}"></i></div>
+                            <div>
+                                <strong>{{ $activity['title'] }}</strong>
+                                <small>{{ $activity['time'] }}</small>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            @else
+                <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                    No recent activity yet.
+                </div>
+            @endif
         </div>
     </div>
-
-    
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -401,7 +379,7 @@
 
         if (occupancyBar) {
             setTimeout(function () {
-                occupancyBar.style.width = '75%';
+                occupancyBar.style.width = '{{ $occupancyRate }}%';
             }, 120);
         }
     });

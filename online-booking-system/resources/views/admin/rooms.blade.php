@@ -1,13 +1,29 @@
 @extends('admin.layout')
 
 @section('content')
-<div class="animate-fade-in">
+<style>
+    .room-management-page {
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    .room-management-page .room-table-shell {
+        min-width: 980px;
+    }
+
+    .room-management-page .room-table-shell table {
+        width: 100%;
+        min-width: 980px;
+    }
+</style>
+<div class="room-management-page animate-fade-in">
     <div class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
             <h2 class="text-3xl font-bold text-gray-800">Room Management</h2>
             <p class="mt-1 text-sm text-gray-500">Manage room inventory, availability, and maintenance from one place.</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex w-full flex-wrap items-center gap-3 sm:w-auto">
             <button id="add-room-button" type="button" onclick="openAddRoomModal()" class="add-panel-button inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
                 <i class="fas fa-plus mr-2"></i>Add Room
             </button>
@@ -23,7 +39,7 @@
         </div>
     </div>
 
-    <div class="mb-6 flex flex-wrap gap-4">
+    <div class="mb-6 flex flex-wrap gap-2 sm:gap-4">
         <button type="button" data-tab="rooms" class="tab-button rounded-lg bg-orange-500 px-6 py-3 font-medium text-white transition hover:bg-orange-600">ROOMS</button>
         <button type="button" data-tab="amenities" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">AMENITIES</button>
         <button type="button" data-tab="event-place" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">EVENT PLACE</button>
@@ -54,7 +70,7 @@
                 {{-- total() = full room count across all pages (count() would only show the current page's 5 rows once paginated) --}}
                 <div class="text-sm text-gray-500">{{ $rooms->total() }} room{{ $rooms->total() === 1 ? '' : 's' }}</div>
             </div>
-            <div class="overflow-x-auto">
+            <div class="room-table-shell overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -118,6 +134,10 @@
     </div>
 
     <div data-panel="amenities" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
+            <div class="flex items-center gap-2 text-sm text-gray-700"><input id="selectAllAmenities" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="amenities" onclick="toggleAllInventoryCheckboxes('amenities', this)"><label for="selectAllAmenities">Select all amenities</label></div>
+            <div class="flex items-center gap-3"><span id="amenitiesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('amenities')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected amenities"><i class="fas fa-trash"></i></button></div>
+        </div>
         <div class="border-b border-gray-200 px-6 py-5">
             <h3 class="text-lg font-semibold text-gray-800">Amenities</h3>
             <p class="mt-1 text-sm text-gray-500">Add premium guest amenities and service upgrades for each room package.</p>
@@ -126,7 +146,7 @@
             <table class="w-full">
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllAmenitiesHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="amenities" onclick="toggleAllInventoryCheckboxes('amenities', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
@@ -134,15 +154,17 @@
                     </tr>
                 </thead>
                 <tbody id="amenities-list" class="divide-y divide-gray-200">
-                    @foreach($inventoryItems->where('category', 'amenities') as $item)
-                        <tr><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm">—</td></tr>
+                    @foreach($amenities as $item)
+                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-amenities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('amenities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item))' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit amenity"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status))' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change amenity status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete this amenity?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete amenity"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
+        {{ $amenities->links('pagination.admin-rooms') }}
     </div>
 
     <div data-panel="event-place" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4"><div class="flex items-center gap-2 text-sm text-gray-700"><input id="selectAllEventPlace" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="event_place" onclick="toggleAllInventoryCheckboxes('event_place', this)"><label for="selectAllEventPlace">Select all event places</label></div><div class="flex items-center gap-3"><span id="event_placeSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('event_place')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white" aria-label="Delete selected event places"><i class="fas fa-trash"></i></button></div></div>
         <div class="border-b border-gray-200 px-6 py-5">
             <h3 class="text-lg font-semibold text-gray-800">Event Place</h3>
             <p class="mt-1 text-sm text-gray-500">Manage wedding, corporate, and celebration offerings for your event venue.</p>
@@ -151,7 +173,7 @@
             <table class="w-full">
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllEventPlaceHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="event_place" onclick="toggleAllInventoryCheckboxes('event_place', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
@@ -159,15 +181,17 @@
                     </tr>
                 </thead>
                 <tbody id="event-place-list" class="divide-y divide-gray-200">
-                    @foreach($inventoryItems->where('category', 'event_place') as $item)
-                        <tr><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm">—</td></tr>
+                    @foreach($eventPlaces as $item)
+                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event_place h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event_place')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item))' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event place"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status))' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event place status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete this event place?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event place"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
+        {{ $eventPlaces->links('pagination.admin-rooms') }}
     </div>
 
     <div data-panel="dining" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4"><div class="flex items-center gap-2 text-sm text-gray-700"><input id="selectAllDining" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="dining" onclick="toggleAllInventoryCheckboxes('dining', this)"><label for="selectAllDining">Select all dining items</label></div><div class="flex items-center gap-3"><span id="diningSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('dining')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white" aria-label="Delete selected dining items"><i class="fas fa-trash"></i></button></div></div>
         <div class="border-b border-gray-200 px-6 py-5">
             <h3 class="text-lg font-semibold text-gray-800">Dining</h3>
             <p class="mt-1 text-sm text-gray-500">Track dining packages and culinary experiences available to your guests.</p>
@@ -176,7 +200,7 @@
             <table class="w-full">
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllDiningHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="dining" onclick="toggleAllInventoryCheckboxes('dining', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Category</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
@@ -187,17 +211,53 @@
                     </tr>
                 </thead>
                 <tbody id="dining-list" class="divide-y divide-gray-200">
-                    @foreach($inventoryItems->where('category', 'dining') as $item)
-                        <tr><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->type ?: 'Menu / Meal' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->available_from ? substr($item->available_from, 0, 5) : '—' }} - {{ $item->available_to ? substr($item->available_to, 0, 5) : '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->quantity ?: 'Unlimited' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm">—</td></tr>
+                    @foreach($dining as $item)
+                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-dining h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('dining')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->type ?: 'Menu / Meal' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->available_from ? substr($item->available_from, 0, 5) : '—' }} - {{ $item->available_to ? substr($item->available_to, 0, 5) : '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->quantity ?: 'Unlimited' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item))' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit dining item"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status))' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change dining status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete this dining item?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete dining item"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
+        {{ $dining->links('pagination.admin-rooms') }}
     </div>
 </div>
 
+<form id="bulkInventoryDeleteForm" method="POST" action="{{ route('admin.inventory.bulkDestroy') }}">
+    @csrf
+    @method('DELETE')
+    <input type="hidden" name="category" id="bulkInventoryCategory">
+    <input type="hidden" name="inventory_ids" id="bulkInventoryIds">
+</form>
+
+<div id="editInventoryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+        <button type="button" onclick="closeEditInventoryModal()" class="absolute right-4 top-4 text-gray-500 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
+        <div class="mb-6"><h3 class="text-2xl font-bold text-gray-800">Edit Inventory Item</h3><p class="mt-1 text-sm text-gray-500">Update the selected item details.</p></div>
+        <form id="editInventoryForm" action="" method="POST" class="space-y-4">
+            @csrf @method('PUT')
+            <input type="hidden" name="category" id="editInventoryCategory">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Name</label><input id="editInventoryName" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Type</label><input id="editInventoryType" name="type" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label><input id="editInventoryPrice" name="price" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Location / Category</label><input id="editInventoryLocation" name="location" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label><input id="editInventoryQuantity" name="quantity" type="number" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Available From</label><input id="editInventoryFrom" name="available_from" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Available To</label><input id="editInventoryTo" name="available_to" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Status</label><select id="editInventoryStatus" name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option></select></div>
+            </div>
+            <div><label class="mb-1 block text-sm font-medium text-gray-700">Description</label><textarea id="editInventoryDescription" name="description" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2"></textarea></div>
+            <div class="flex justify-end gap-3"><button type="button" onclick="closeEditInventoryModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700">Cancel</button><button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white">Update Item</button></div>
+        </form>
+    </div>
+</div>
+
+<div id="inventoryStatusModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="admin-modal-panel relative w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl"><button type="button" onclick="closeInventoryStatusModal()" class="absolute right-4 top-4 text-gray-500"><i class="fas fa-times text-xl"></i></button><h3 class="mb-4 text-2xl font-bold text-gray-800">Change Inventory Status</h3><form id="inventoryStatusForm" action="" method="POST" class="space-y-4">@csrf @method('PATCH')<select name="status" id="inventoryStatusSelect" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option></select><div class="flex justify-end gap-3"><button type="button" onclick="closeInventoryStatusModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700">Cancel</button><button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white">Update Status</button></div></form></div>
+</div>
+
 <div id="addAmenityModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+    <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         <button type="button" onclick="closeAmenityModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
             <i class="fas fa-times text-xl"></i>
         </button>
@@ -206,14 +266,21 @@
             <h3 class="text-2xl font-bold text-gray-800">Add Amenity</h3>
             <p class="mt-1 text-sm text-gray-500">Create a new amenity option for guests.</p>
         </div>
+        @if($errors->any() && old('category') === 'amenities')
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
+        @endif
 
-        <form id="addAmenityForm" method="POST" action="{{ route('admin.inventory.store') }}" class="space-y-4">
+        <form id="addAmenityForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <input type="hidden" name="category" value="amenities">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Amenity Name</label>
                     <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Image (Optional)</label>
+                    <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Description</label>
@@ -240,7 +307,7 @@
 </div>
 
 <div id="addEventPlaceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+    <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         <button type="button" onclick="closeEventPlaceModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
             <i class="fas fa-times text-xl"></i>
         </button>
@@ -249,8 +316,11 @@
             <h3 class="text-2xl font-bold text-gray-800">Add Event Place</h3>
             <p class="mt-1 text-sm text-gray-500">Create a new event package or venue option.</p>
         </div>
+        @if($errors->any() && old('category') === 'event_place')
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
+        @endif
 
-        <form id="addEventPlaceForm" method="POST" action="{{ route('admin.inventory.store') }}" class="space-y-4">
+        <form id="addEventPlaceForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <input type="hidden" name="category" value="event_place">
             <input type="hidden" name="status" value="available">
@@ -258,6 +328,10 @@
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Event Name</label>
                     <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Image (Optional)</label>
+                    <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Description</label>
@@ -281,13 +355,16 @@
 </div>
 
 <div id="addDiningModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+    <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
         <div class="mb-6">
             <h3 class="text-3xl font-bold text-gray-800">Add Dining Item</h3>
             <p class="mt-2 text-base text-gray-600">Add a new menu item, package, or dining service available for guests.</p>
         </div>
+        @if($errors->any() && old('category') === 'dining')
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
+        @endif
 
-        <form id="addDiningForm" method="POST" action="{{ route('admin.inventory.store') }}" class="space-y-6">
+        <form id="addDiningForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
             <input type="hidden" name="category" value="dining">
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -354,13 +431,8 @@
 
                     <div>
                         <label class="mb-2 block text-base font-medium text-gray-700">Image (Optional)</label>
-                        <div class="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center text-gray-500">
-                            <div class="mb-4 text-5xl text-gray-400">
-                                <i class="fas fa-image"></i>
-                            </div>
-                            <p class="text-lg text-gray-600">Click to upload or drag and drop</p>
-                            <p class="mt-2 text-sm text-gray-500">PNG, JPG up to 2MB</p>
-                        </div>
+                        <input type="file" name="image" accept="image/*" class="block w-full rounded-xl border border-gray-300 bg-gray-50 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <p class="mt-2 text-sm text-gray-500">PNG, JPG, GIF, or WEBP up to 2MB</p>
                     </div>
                 </div>
             </div>
@@ -373,8 +445,8 @@
     </div>
 </div>
 
-<div id="addRoomModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+<div id="addRoomModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-2 sm:p-4">
+    <div class="admin-modal-panel relative max-h-[95vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         <button type="button" onclick="closeAddRoomModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
             <i class="fas fa-times text-xl"></i>
         </button>
@@ -384,7 +456,7 @@
             <p class="mt-1 text-sm text-gray-500">Fill in the details below to create a new room.</p>
         </div>
 
-        @if($errors->any())
+        @if($errors->any() && !old('category'))
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 <ul class="list-disc space-y-1 pl-5">
                     @foreach($errors->all() as $error)
@@ -394,7 +466,7 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.rooms.store') }}" method="POST" class="space-y-4">
+        <form action="{{ route('admin.rooms.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <input type="hidden" name="status" value="available">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -427,6 +499,10 @@
                 <label class="mb-1 block text-sm font-medium text-gray-700">Description</label>
                 <textarea name="description" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
             </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Room Image (Optional)</label>
+                <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeAddRoomModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
                 <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Room</button>
@@ -436,7 +512,7 @@
 </div>
 
 <div id="editRoomModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+    <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         <button type="button" onclick="closeEditRoomModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
             <i class="fas fa-times text-xl"></i>
         </button>
@@ -446,7 +522,7 @@
             <p class="mt-1 text-sm text-gray-500">Update the room details below.</p>
         </div>
 
-        <form id="editRoomForm" action="" method="POST" class="space-y-4">
+        <form id="editRoomForm" action="" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf
             @method('PUT')
             <input type="hidden" name="id" id="editRoomId">
@@ -485,6 +561,10 @@
                     </select>
                 </div>
             </div>
+            <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Room Image (Optional)</label>
+                <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeEditRoomModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
                 <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Update Room</button>
@@ -494,7 +574,7 @@
 </div>
 
 <div id="statusModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+    <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         <button type="button" onclick="closeStatusModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
             <i class="fas fa-times text-xl"></i>
         </button>
@@ -619,6 +699,69 @@
         document.getElementById('bulkDeleteForm').submit();
     }
 
+    function toggleAllInventoryCheckboxes(category, source) {
+        document.querySelectorAll('.inventory-checkbox-' + category).forEach(function (checkbox) {
+            checkbox.checked = source.checked;
+        });
+        updateInventorySelectAll(category);
+    }
+
+    function updateInventorySelectAll(category) {
+        const checkboxes = Array.from(document.querySelectorAll('.inventory-checkbox-' + category));
+        const allChecked = checkboxes.length > 0 && checkboxes.every(function (checkbox) { return checkbox.checked; });
+        document.querySelectorAll('.inventory-select-all[data-category="' + category + '"]').forEach(function (checkbox) {
+            checkbox.checked = allChecked;
+        });
+        const count = document.querySelectorAll('.inventory-checkbox-' + category + ':checked').length;
+        const label = document.getElementById(category + 'SelectedCount');
+        if (label) label.textContent = count + ' selected';
+    }
+
+    function confirmBulkInventoryDelete(category) {
+        const selectedIds = Array.from(document.querySelectorAll('.inventory-checkbox-' + category + ':checked')).map(function (checkbox) { return checkbox.value; });
+        if (!selectedIds.length) { alert('Please select at least one item to delete.'); return; }
+        if (!confirm('Are you sure you want to delete the selected ' + selectedIds.length + ' item(s)?')) return;
+        document.getElementById('bulkInventoryCategory').value = category;
+        document.getElementById('bulkInventoryIds').value = selectedIds.join(',');
+        document.getElementById('bulkInventoryDeleteForm').submit();
+    }
+
+    function editInventory(id, item) {
+        document.getElementById('editInventoryCategory').value = item.category;
+        document.getElementById('editInventoryName').value = item.name || '';
+        document.getElementById('editInventoryType').value = item.type || '';
+        document.getElementById('editInventoryPrice').value = item.price || 0;
+        document.getElementById('editInventoryLocation').value = item.location || '';
+        document.getElementById('editInventoryCapacity').value = item.capacity || '';
+        document.getElementById('editInventoryQuantity').value = item.quantity || '';
+        document.getElementById('editInventoryFrom').value = item.available_from ? item.available_from.substring(0, 5) : '';
+        document.getElementById('editInventoryTo').value = item.available_to ? item.available_to.substring(0, 5) : '';
+        document.getElementById('editInventoryStatus').value = item.status || 'available';
+        document.getElementById('editInventoryDescription').value = item.description || '';
+        var route = "{{ route('admin.inventory.update', ['id' => '__ID__']) }}";
+        document.getElementById('editInventoryForm').action = route.replace('__ID__', id);
+        document.getElementById('editInventoryModal').classList.remove('hidden');
+        document.getElementById('editInventoryModal').classList.add('flex');
+    }
+
+    function closeEditInventoryModal() {
+        document.getElementById('editInventoryModal').classList.add('hidden');
+        document.getElementById('editInventoryModal').classList.remove('flex');
+    }
+
+    function changeInventoryStatus(id, status) {
+        var route = "{{ route('admin.inventory.status', ['id' => '__ID__']) }}";
+        document.getElementById('inventoryStatusForm').action = route.replace('__ID__', id);
+        document.getElementById('inventoryStatusSelect').value = status || 'available';
+        document.getElementById('inventoryStatusModal').classList.remove('hidden');
+        document.getElementById('inventoryStatusModal').classList.add('flex');
+    }
+
+    function closeInventoryStatusModal() {
+        document.getElementById('inventoryStatusModal').classList.add('hidden');
+        document.getElementById('inventoryStatusModal').classList.remove('flex');
+    }
+
     function openAmenityModal() {
         document.getElementById('addAmenityModal').classList.remove('hidden');
         document.getElementById('addAmenityModal').classList.add('flex');
@@ -659,28 +802,8 @@
         const amenityModal = document.getElementById('addAmenityModal');
         const eventPlaceModal = document.getElementById('addEventPlaceModal');
         const diningModal = document.getElementById('addDiningModal');
-
-        [addModal, editModal, statusModal, amenityModal, eventPlaceModal, diningModal].forEach(function (modal) {
-            if (modal) {
-                modal.addEventListener('click', function (event) {
-                    if (event.target === modal) {
-                        if (modal === addModal) {
-                            closeAddRoomModal();
-                        } else if (modal === editModal) {
-                            closeEditRoomModal();
-                        } else if (modal === statusModal) {
-                            closeStatusModal();
-                        } else if (modal === amenityModal) {
-                            closeAmenityModal();
-                        } else if (modal === eventPlaceModal) {
-                            closeEventPlaceModal();
-                        } else if (modal === diningModal) {
-                            closeDiningModal();
-                        }
-                    }
-                });
-            }
-        });
+        const editInventoryModal = document.getElementById('editInventoryModal');
+        const inventoryStatusModal = document.getElementById('inventoryStatusModal');
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
@@ -690,6 +813,8 @@
                 closeAmenityModal();
                 closeEventPlaceModal();
                 closeDiningModal();
+                closeEditInventoryModal();
+                closeInventoryStatusModal();
             }
         });
 
@@ -729,10 +854,15 @@
         document.getElementById('add-dining-button').addEventListener('click', openDiningModal);
 
         updateSelectedCount();
-        activateTab('rooms');
+        activateTab(@json($activeTab));
 
         @if($errors->any())
-            openAddRoomModal();
+            @if(old('category'))
+                activateTab(@json(old('category') === 'event_place' ? 'event-place' : old('category')));
+                @if(old('category') === 'amenities') openAmenityModal(); @elseif(old('category') === 'event_place') openEventPlaceModal(); @elseif(old('category') === 'dining') openDiningModal(); @endif
+            @else
+                openAddRoomModal();
+            @endif
         @endif
     });
 </script>

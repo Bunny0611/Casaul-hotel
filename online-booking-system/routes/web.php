@@ -6,6 +6,9 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
 use App\Http\Controllers\ProfileController;
 use App\Models\Message;
+use App\Models\InventoryItem;
+use App\Models\Reservation;
+use App\Models\Room;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -41,14 +44,43 @@ Route::middleware(['auth', 'role:guest'])->group(function () {
 Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
 // --- Employee Portal ---
-Route::prefix('employee')->name('employee.')->group(function () {
+Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
     Route::redirect('/', '/employee/dashboard')->name('index');
-    Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
-    Route::view('/reservation', 'employee.reservation', [
-        'reservations' => collect([]),
-        'rooms' => collect([]),
-    ])->name('reservation');
-    Route::view('/checkin', 'employee.checkin')->name('checkin');
+    Route::get('/dashboard', [AdminController::class, 'employeeDashboard'])->name('dashboard');
+    Route::get('/reservation', function () {
+        $reservations = Reservation::with('room')->latest()->get();
+        $rooms = Room::orderBy('room_number')->get();
+        $inventoryItems = InventoryItem::whereIn('category', ['amenities', 'event_place', 'dining'])
+            ->whereIn('status', ['available', 'limited'])
+            ->orderBy('name')
+            ->get();
+
+        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems'));
+    })->name('reservation');
+    Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
+    Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
+    Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
+    Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
+    Route::get('/checkin', function () {
+        $today = now()->toDateString();
+
+        $checkIns = Reservation::with('room')
+            ->whereDate('check_in', $today)
+            ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
+            ->latest()
+            ->get();
+
+        $checkOuts = Reservation::with('room')
+            ->whereDate('check_out', $today)
+            ->whereIn('status', ['confirmed', 'checked-in'])
+            ->latest()
+            ->get();
+
+        $occupiedRooms = Room::where('status', 'occupied')->count();
+        $availableRooms = Room::where('status', 'available')->count();
+
+        return view('employee.checkin', compact('checkIns', 'checkOuts', 'occupiedRooms', 'availableRooms'));
+    })->name('checkin');
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();
@@ -97,18 +129,24 @@ Route::prefix('employee')->name('employee.')->group(function () {
 });
 
 // --- Protected Admin Routes (requires authentication) ---
-Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/rooms', [AdminController::class, 'rooms'])->name('rooms');
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
     Route::post('/inventory', [AdminController::class, 'storeInventoryItem'])->name('inventory.store');
+    Route::put('/inventory/{id}', [AdminController::class, 'updateInventoryItem'])->name('inventory.update');
+    Route::patch('/inventory/{id}/status', [AdminController::class, 'updateInventoryStatus'])->name('inventory.status');
+    Route::match(['post', 'delete'], '/inventory/bulk-delete', [AdminController::class, 'bulkDestroyInventoryItems'])->name('inventory.bulkDestroy');
+    Route::delete('/inventory/{id}', [AdminController::class, 'destroyInventoryItem'])->name('inventory.destroy');
     Route::put('/rooms/{id}', [AdminController::class, 'updateRoom'])->name('rooms.update');
     Route::patch('/rooms/{id}/status', [AdminController::class, 'updateRoomStatus'])->name('rooms.status');
     Route::match(['post', 'delete'], '/rooms/bulk-delete', [AdminController::class, 'bulkDestroyRooms'])->name('rooms.bulkDestroy');
     Route::delete('/rooms/{id}', [AdminController::class, 'destroyRoom'])->name('rooms.destroy');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
+    Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
+    Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::get('/guests', [AdminController::class, 'guests'])->name('guests');
     Route::get('/messages', [AdminController::class, 'messages'])->name('messages');
     Route::post('/messages/{id}/reply', [AdminController::class, 'replyMessage'])->name('messages.reply');
@@ -121,12 +159,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::put('/manage-account/{id}', [AdminController::class, 'updateAccountUser'])->name('manage-account.update');
     Route::patch('/manage-account/{id}/status', [AdminController::class, 'updateUserStatus'])->name('manage-account.status');
     Route::delete('/manage-account/{id}', [AdminController::class, 'destroyUser'])->name('manage-account.destroy');
+    Route::match(['post', 'delete'], '/manage-account/bulk-delete', [AdminController::class, 'bulkDestroyUsers'])->name('manage-account.bulkDestroy');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings/account', [AdminController::class, 'updateAccount'])->name('settings.account');
 });
 
 // --- Housekeeping Portal ---
-Route::prefix('housekeeping')->name('housekeeping.')->group(function () {
+Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:housekeeping'])->group(function () {
     Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
     Route::patch('/rooms/{id}/cleaning', [HousekeepingController::class, 'updateStatus'])->name('rooms.cleaning');
     Route::get('/assigned-rooms', [HousekeepingController::class, 'assignedRooms'])->name('assigned-rooms');

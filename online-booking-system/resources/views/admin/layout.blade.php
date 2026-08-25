@@ -98,6 +98,24 @@
                 padding: 1rem;
             }
         }
+
+        html, body { max-width: 100%; overflow-x: hidden; }
+        .main-content-panel { min-width: 0; overflow-x: hidden; }
+        .main-content-panel > * { min-width: 0; max-width: 100%; }
+        .main-content-panel .overflow-x-auto { max-width: 100%; -webkit-overflow-scrolling: touch; }
+        .main-content-panel table { min-width: 42rem; }
+        .admin-modal-panel { max-width: calc(100vw - 2rem); }
+
+        @media (max-width: 640px) {
+            .main-content-panel { padding: 0.75rem; }
+            .header { padding: 0.75rem; }
+            .header h2 { max-width: calc(100vw - 4rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .main-content-panel h2 { font-size: 1.5rem; line-height: 2rem; }
+            .main-content-panel .p-6 { padding: 1rem; }
+            .main-content-panel .px-6 { padding-left: 1rem; padding-right: 1rem; }
+            .main-content-panel .tab-button { flex: 1 1 calc(50% - 0.5rem); min-width: 0; padding-left: 0.75rem; padding-right: 0.75rem; }
+            .admin-modal-panel { max-height: calc(100vh - 1rem); max-width: calc(100vw - 1rem); }
+        }
         
         .status-available { background: #10b981; }
         .status-occupied { background: #ef4444; }
