@@ -116,6 +116,13 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
 
         return view('employee.guest-requests', compact('requests'));
     })->name('guest-requests');
+    Route::get('/guest-requests/{id}', function ($id) {
+        $requestData = collect(session('employee_guest_requests', []))->firstWhere('id', (int) $id);
+
+        abort_unless($requestData, 404);
+
+        return view('employee.guest-request-detail', compact('requestData'));
+    })->name('guest-requests.show');
     Route::post('/guest-requests/{id}/resolve', [
         AdminController::class,
         'resolveGuestRequest',
