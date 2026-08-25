@@ -14,6 +14,8 @@ use App\Models\Reservation;
 use App\Models\Message;
 use App\Models\User;
 use App\Models\InventoryItem;
+use App\Models\DiningTable;
+use App\Models\DiningSchedule;
 
 class AdminController extends Controller
 {
@@ -120,13 +122,15 @@ class AdminController extends Controller
         $amenities = InventoryItem::where('category', 'amenities')->orderBy('name')->paginate(5, ['*'], 'amenities_page')->appends(['tab' => 'amenities']);
         $eventPlaces = InventoryItem::where('category', 'event_place')->orderBy('name')->paginate(5, ['*'], 'event_places_page')->appends(['tab' => 'event-place']);
         $dining = InventoryItem::where('category', 'dining')->orderBy('name')->paginate(5, ['*'], 'dining_page')->appends(['tab' => 'dining']);
+        $diningTables = DiningTable::orderBy('table_no')->get();
+        $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $activeTab = request()->query('tab', 'rooms');
 
         if (!in_array($activeTab, ['rooms', 'amenities', 'event-place', 'dining'], true)) {
             $activeTab = 'rooms';
         }
 
-        return view('admin.rooms', compact('rooms', 'amenities', 'eventPlaces', 'dining', 'activeTab'));
+        return view('admin.rooms', compact('rooms', 'amenities', 'eventPlaces', 'dining', 'diningTables', 'diningSchedules', 'activeTab'));
     }
 
     public function diningOverview()
@@ -136,38 +140,31 @@ class AdminController extends Controller
 
     public function diningTables()
     {
-        $tables = collect([
-            ['table_no' => 'T01', 'type' => 'Indoor', 'capacity' => 2, 'location' => 'Window', 'status' => 'Available'],
-            ['table_no' => 'T02', 'type' => 'Indoor', 'capacity' => 4, 'location' => 'Main Area', 'status' => 'Reserved'],
-            ['table_no' => 'T03', 'type' => 'Outdoor', 'capacity' => 6, 'location' => 'Garden', 'status' => 'Available'],
-            ['table_no' => 'T04', 'type' => 'Private', 'capacity' => 8, 'location' => 'Private Room', 'status' => 'Unavailable'],
-            ['table_no' => 'T05', 'type' => 'Indoor', 'capacity' => 4, 'location' => 'Main Area', 'status' => 'Available'],
-        ]);
+        $tables = DiningTable::orderBy('table_no')->get();
 
         return view('admin.dining.tables', compact('tables'));
     }
 
     public function diningMenu()
     {
-        $menus = collect([
-            ['name' => 'Filipino Breakfast', 'category' => 'Breakfast', 'price' => '₱250', 'available_time' => '7:00 AM - 10:00 AM', 'status' => 'Available'],
-            ['name' => 'Club Sandwich', 'category' => 'Lunch', 'price' => '₱320', 'available_time' => '11:00 AM - 2:00 PM', 'status' => 'Available'],
-            ['name' => 'Grilled Chicken', 'category' => 'Lunch', 'price' => '₱350', 'available_time' => '11:00 AM - 2:00 PM', 'status' => 'Available'],
-            ['name' => 'Steak', 'category' => 'Dinner', 'price' => '₱650', 'available_time' => '5:00 PM - 9:00 PM', 'status' => 'Unavailable'],
-            ['name' => 'Pasta Carbonara', 'category' => 'Dinner', 'price' => '₱380', 'available_time' => '5:00 PM - 9:00 PM', 'status' => 'Available'],
-        ]);
+        $menus = InventoryItem::where('category', 'dining')->orderBy('name')->get()->map(function ($menu) {
+            return [
+                'name' => $menu->name,
+                'category' => $menu->type ?: 'Menu / Meal',
+                'price' => '₱' . number_format((float) $menu->price, 2),
+                'available_time' => $menu->available_from && $menu->available_to
+                    ? Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . Carbon::parse($menu->available_to)->format('g:i A')
+                    : 'Any time',
+                'status' => ucfirst($menu->status),
+            ];
+        });
 
         return view('admin.dining.menu', compact('menus'));
     }
 
     public function diningSchedule()
     {
-        $schedules = collect([
-            ['period' => 'Breakfast', 'time' => '7:00 AM - 10:00 AM', 'max_guests' => 30, 'status' => 'Active'],
-            ['period' => 'Lunch', 'time' => '11:00 AM - 2:00 PM', 'max_guests' => 40, 'status' => 'Active'],
-            ['period' => 'Afternoon Snacks', 'time' => '2:00 PM - 5:00 PM', 'max_guests' => 20, 'status' => 'Active'],
-            ['period' => 'Dinner', 'time' => '5:00 PM - 9:00 PM', 'max_guests' => 40, 'status' => 'Active'],
-        ]);
+        $schedules = DiningSchedule::orderBy('available_from')->get();
 
         return view('admin.dining.schedule', compact('schedules'));
     }
@@ -404,6 +401,7 @@ class AdminController extends Controller
             'event_type' => ['nullable', 'required_if:category,event_place', 'string', 'max:100'],
             'number_of_guests' => ['nullable', 'required_if:category,event_place', 'integer', 'min:1'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
+            'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
             'quantity' => ['nullable', 'required_if:category,dining', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'required_if:category,amenities', 'date_format:H:i'],
@@ -540,6 +538,7 @@ class AdminController extends Controller
             'event_type' => ['nullable', 'required_if:category,event_place', 'string', 'max:100'],
             'number_of_guests' => ['nullable', 'required_if:category,event_place', 'integer', 'min:1'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
+            'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
             'quantity' => ['nullable', 'required_if:category,dining', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'date_format:H:i'],

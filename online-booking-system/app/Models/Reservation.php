@@ -20,6 +20,7 @@ class Reservation extends Model
         'event_type',
         'number_of_guests',
         'dining_area',
+        'dining_schedule',
         'quantity',
         'check_in',
         'check_in_time',

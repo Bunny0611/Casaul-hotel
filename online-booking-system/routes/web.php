@@ -9,6 +9,8 @@ use App\Models\Message;
 use App\Models\InventoryItem;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\DiningTable;
+use App\Models\DiningSchedule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -51,11 +53,13 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
         $reservations = Reservation::with('room')->latest()->get();
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::whereIn('category', ['amenities', 'event_place', 'dining'])
-            ->whereIn('status', ['available', 'limited'])
+            ->whereIn('status', ['available', 'limited', 'Available', 'Limited'])
             ->orderBy('name')
             ->get();
+        $diningTables = DiningTable::orderBy('table_no')->get();
+        $diningSchedules = DiningSchedule::orderBy('available_from')->get();
 
-        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems'));
+        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems', 'diningTables', 'diningSchedules'));
     })->name('reservation');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
