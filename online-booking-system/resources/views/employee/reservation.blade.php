@@ -645,9 +645,9 @@
                     <label class="mb-1 block text-sm font-medium text-gray-700">Dining Area/Table</label>
                     <select name="dining_area" data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="">Select a table</option>
-                        @for($table = 1; $table <= 10; $table++)
-                            <option value="Table {{ $table }}">Table {{ $table }}</option>
-                        @endfor
+                        @foreach(($diningTables ?? collect())->where('status', 'Available') as $table)
+                            <option value="{{ $table['table_no'] }}">{{ $table['table_no'] }} - {{ $table['type'] }} ({{ $table['capacity'] }} seats, {{ $table['location'] }})</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="hidden" data-reservation-fields="dining">
@@ -663,11 +663,20 @@
                     <input type="number" name="number_of_guests" data-reservation-input="dining" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="hidden" data-reservation-fields="dining">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Dining Item</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Menu</label>
                     <select name="dining_id" data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="">Select a dining option</option>
+                        <option value="">Select a menu</option>
                         @foreach(($inventoryItems ?? collect())->where('category', 'dining') as $item)
                             <option value="{{ $item->id }}">{{ $item->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="hidden" data-reservation-fields="dining">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Dining Schedule</label>
+                    <select name="dining_schedule" data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select a dining schedule</option>
+                        @foreach(($diningSchedules ?? collect())->where('status', 'Active') as $schedule)
+                            <option value="{{ $schedule->period }}" {{ old('dining_schedule') === $schedule->period ? 'selected' : '' }}>{{ $schedule->period }} ({{ date('g:i A', strtotime($schedule->available_from)) }} - {{ date('g:i A', strtotime($schedule->available_to)) }})</option>
                         @endforeach
                     </select>
                 </div>
@@ -904,10 +913,14 @@
 
         const activeTab = document.querySelector('[data-reservation-tab].bg-orange-500')?.dataset.reservationTab || 'rooms';
         document.getElementById('reservationCategory').value = activeTab;
+        const isEditing = !document.getElementById('reservationFormMethod').disabled;
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         modal.style.display = 'flex';
+        if (isEditing) {
+            document.getElementById('reservationModalTitle').textContent = 'Edit Reservation';
+        }
     }
 
     function resetAddReservationForm() {
@@ -957,9 +970,10 @@
         fields.check_in_time.value = timeValue(reservation.check_in_time);
         fields.check_out.value = reservation.check_out || '';
         fields.check_out_time.value = timeValue(reservation.check_out_time);
-        fields.status.value = reservation.status || 'pending';
         fields.total_amount.value = reservation.total_amount || 0;
         fields.special_requests.value = reservation.special_requests || '';
+        document.getElementById('reservationCategory').value = reservation.category || 'rooms';
+        document.querySelector(`[data-reservation-tab="${reservation.category || 'rooms'}"]`)?.click();
         document.getElementById('reservationFormMethod').disabled = false;
         form.action = "{{ route('employee.reservations.update', ['id' => '__ID__']) }}".replace('__ID__', reservation.id);
         document.getElementById('reservationModalTitle').textContent = 'Edit Reservation';

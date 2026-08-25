@@ -14,6 +14,9 @@ use App\Models\Reservation;
 use App\Models\Message;
 use App\Models\User;
 use App\Models\InventoryItem;
+use App\Models\DiningTable;
+use App\Models\DiningSchedule;
+use App\Models\GuestRequest;
 
 class AdminController extends Controller
 {
@@ -120,13 +123,51 @@ class AdminController extends Controller
         $amenities = InventoryItem::where('category', 'amenities')->orderBy('name')->paginate(5, ['*'], 'amenities_page')->appends(['tab' => 'amenities']);
         $eventPlaces = InventoryItem::where('category', 'event_place')->orderBy('name')->paginate(5, ['*'], 'event_places_page')->appends(['tab' => 'event-place']);
         $dining = InventoryItem::where('category', 'dining')->orderBy('name')->paginate(5, ['*'], 'dining_page')->appends(['tab' => 'dining']);
+        $diningTables = DiningTable::orderBy('table_no')->get();
+        $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $activeTab = request()->query('tab', 'rooms');
 
         if (!in_array($activeTab, ['rooms', 'amenities', 'event-place', 'dining'], true)) {
             $activeTab = 'rooms';
         }
 
-        return view('admin.rooms', compact('rooms', 'amenities', 'eventPlaces', 'dining', 'activeTab'));
+        return view('admin.rooms', compact('rooms', 'amenities', 'eventPlaces', 'dining', 'diningTables', 'diningSchedules', 'activeTab'));
+    }
+
+    public function diningOverview()
+    {
+        return redirect()->route('admin.rooms', ['tab' => 'dining']);
+    }
+
+    public function diningTables()
+    {
+        $tables = DiningTable::orderBy('table_no')->get();
+
+        return view('admin.dining.tables', compact('tables'));
+    }
+
+    public function diningMenu()
+    {
+        $menus = InventoryItem::where('category', 'dining')->orderBy('name')->get()->map(function ($menu) {
+            return [
+                'name' => $menu->name,
+                'category' => $menu->type ?: 'Menu / Meal',
+                'price' => '₱' . number_format((float) $menu->price, 2),
+                'available_time' => $menu->available_from && $menu->available_to
+                    ? Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . Carbon::parse($menu->available_to)->format('g:i A')
+                    : 'Any time',
+                'status' => ucfirst($menu->status),
+            ];
+        });
+
+        return view('admin.dining.menu', compact('menus'));
+    }
+
+    public function diningSchedule()
+    {
+        $schedules = DiningSchedule::orderBy('available_from')->get();
+
+        return view('admin.dining.schedule', compact('schedules'));
     }
 
     protected function handleInventoryImageUpload(Request $request, ?InventoryItem $item = null): ?string
@@ -361,20 +402,19 @@ class AdminController extends Controller
             'event_type' => ['nullable', 'required_if:category,event_place', 'string', 'max:100'],
             'number_of_guests' => ['nullable', 'required_if:category,event_place', 'integer', 'min:1'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
+            'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
             'quantity' => ['nullable', 'required_if:category,dining', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'required_if:category,amenities', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
-<<<<<<< HEAD
             'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
-=======
+            'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'amenity_id' => ['nullable', 'required_if:category,amenities', 'exists:inventory_items,id'],
             'event_place_id' => ['nullable', 'required_if:category,event_place', 'exists:inventory_items,id'],
             'dining_id' => ['nullable', 'required_if:category,dining', 'exists:inventory_items,id'],
             'duration_hours' => ['nullable', 'required_if:category,amenities', 'integer', 'min:1', 'max:24'],
->>>>>>> 14fafde0eb610225d69073cf464d5d9a0a21610a
             'special_requests' => ['nullable', 'string'],
             'submission_token' => ['nullable', 'string', 'max:100'],
         ]);
@@ -419,7 +459,13 @@ class AdminController extends Controller
         ]);
 
         DB::transaction(function () use ($id, $validated) {
-            $reservation = Reservation::with('room')->findOrFail($id);
+            $reservation = Reservation::with('room')->lockForUpdate()->findOrFail($id);
+            if ($validated['status'] === 'completed') {
+                $paid = (float) $reservation->payments()->sum('amount');
+                if (round((float) $reservation->total_amount - $paid, 2) > 0) {
+                    abort(422, 'The reservation must be paid in full before checkout.');
+                }
+            }
             $reservation->update(['status' => $validated['status']]);
 
             if (!$reservation->room) {
@@ -442,6 +488,45 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Reservation status updated successfully!');
     }
 
+    public function storePayment(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'payment_method' => ['required', Rule::in(['Cash', 'GCash', 'Bank Transfer', 'Credit/Debit Card'])],
+            'payment_date' => ['required', 'date'],
+            'reference_number' => ['nullable', 'string', 'max:255', 'required_unless:payment_method,Cash'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $result = DB::transaction(function () use ($request, $id, $validated) {
+            $reservation = Reservation::lockForUpdate()->findOrFail($id);
+            $paid = (float) $reservation->payments()->sum('amount');
+            $balance = round((float) $reservation->total_amount - $paid, 2);
+            if ((float) $validated['amount'] > $balance) {
+                abort(422, 'Payment amount cannot exceed the balance due.');
+            }
+
+            $payment = $reservation->payments()->create([
+                ...$validated,
+                'recorded_by' => $request->user()->id,
+            ]);
+            $newPaid = round($paid + (float) $payment->amount, 2);
+            $newBalance = max(round((float) $reservation->total_amount - $newPaid, 2), 0);
+            $reservation->update([
+                'amount_paid' => $newPaid,
+            ]);
+
+            return [
+                'total' => (float) $reservation->total_amount,
+                'paid' => $newPaid,
+                'balance' => $newBalance,
+                'status' => $newBalance === 0.0 ? 'Paid' : 'Partially Paid',
+            ];
+        });
+
+        return response()->json($result);
+    }
+
     public function updateReservation(Request $request, $id)
     {
         $reservation = Reservation::findOrFail($id);
@@ -454,12 +539,14 @@ class AdminController extends Controller
             'event_type' => ['nullable', 'required_if:category,event_place', 'string', 'max:100'],
             'number_of_guests' => ['nullable', 'required_if:category,event_place', 'integer', 'min:1'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
+            'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
             'quantity' => ['nullable', 'required_if:category,dining', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'special_requests' => ['nullable', 'string'],
         ]);
 
@@ -501,8 +588,44 @@ class AdminController extends Controller
 
     public function employeeGuestRequests()
     {
-        $requests = session()->get('employee_guest_requests', []);
-        return view('employee.guest-requests', compact('requests'));
+        $requests = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
+            ->where('department', 'Employee')
+            ->latest('submitted_at')
+            ->get();
+        $employees = User::where('role', 'employee')->orderBy('name')->get();
+
+        return view('employee.guest-requests', compact('requests', 'employees'));
+    }
+
+    public function employeeGuestRequest($id)
+    {
+        $guestRequest = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
+            ->where('department', 'Employee')
+            ->findOrFail($id);
+        $employees = User::where('role', 'employee')->orderBy('name')->get();
+
+        return view('employee.guest-request-detail', compact('guestRequest', 'employees'));
+    }
+
+    public function updateEmployeeGuestRequest(Request $request, $id)
+    {
+        $guestRequest = GuestRequest::where('department', 'Employee')->findOrFail($id);
+        $validated = $request->validate([
+            'status' => ['required', 'in:New,In Progress,Completed'],
+            'assigned_employee_id' => ['nullable', 'exists:users,id'],
+            'employee_notes' => ['nullable', 'string'],
+        ]);
+
+        if (!empty($validated['assigned_employee_id'])) {
+            abort_unless(User::whereKey($validated['assigned_employee_id'])->where('role', 'employee')->exists(), 422);
+        }
+
+        $guestRequest->fill($validated);
+        $guestRequest->completed_at = $validated['status'] === 'Completed' ? ($guestRequest->completed_at ?: now()) : null;
+        $guestRequest->save();
+
+        return redirect()->route('employee.guest-requests.show', $guestRequest->id)
+            ->with('success', 'Guest request updated successfully.');
     }
 
     public function replyMessage(Request $request, $id)

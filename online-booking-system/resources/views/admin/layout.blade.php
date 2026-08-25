@@ -210,7 +210,7 @@
                     </div>
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4">
                         <div class="relative header-search w-full sm:w-64">
-                            <input type="text" placeholder="Search..." class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-full">
+                            <input id="adminHeaderSearch" type="search" placeholder="Search..." aria-label="Search this page" autocomplete="off" class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-full">
                             <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
                         </div>
                         <div class="flex items-center justify-center space-x-2 bg-white/20 px-3 py-2 rounded-lg text-sm sm:text-base">
@@ -262,6 +262,64 @@
 
             toggle.addEventListener('click', openSidebar);
             backdrop.addEventListener('click', closeSidebar);
+
+            const searchInput = document.getElementById('adminHeaderSearch');
+            const contentPanel = document.querySelector('.main-content-panel');
+            let noResultsMessage = null;
+
+            function showSearchMessage(show) {
+                if (!contentPanel) return;
+
+                if (show && !noResultsMessage) {
+                    noResultsMessage = document.createElement('div');
+                    noResultsMessage.className = 'admin-search-empty mb-6 rounded-lg border border-gray-200 bg-white px-6 py-4 text-sm text-gray-500';
+                    noResultsMessage.textContent = 'No matching results found on this page.';
+                    contentPanel.insertBefore(noResultsMessage, contentPanel.querySelector('.room-management-page') || contentPanel.firstElementChild);
+                }
+
+                if (noResultsMessage) {
+                    noResultsMessage.classList.toggle('hidden', !show);
+                }
+            }
+
+            function filterAdminPage() {
+                if (!searchInput || !contentPanel) return;
+
+                const query = searchInput.value.trim().toLowerCase();
+                const rows = Array.from(contentPanel.querySelectorAll('table tbody tr'));
+                const searchableCards = rows.length ? [] : Array.from(contentPanel.querySelectorAll('[data-search]'));
+
+                if (!query) {
+                    rows.forEach(row => row.classList.remove('hidden'));
+                    searchableCards.forEach(card => card.classList.remove('hidden'));
+                    showSearchMessage(false);
+                    return;
+                }
+
+                const matchingRows = rows.filter(row => {
+                    const matches = row.textContent.toLowerCase().includes(query);
+                    row.classList.toggle('hidden', !matches);
+                    return matches;
+                });
+
+                const matchingCards = searchableCards.filter(card => {
+                    const matches = (card.dataset.search || card.textContent).toLowerCase().includes(query);
+                    card.classList.toggle('hidden', !matches);
+                    return matches;
+                });
+
+                showSearchMessage(matchingRows.length === 0 && matchingCards.length === 0);
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', filterAdminPage);
+                searchInput.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        filterAdminPage();
+                    }
+                });
+            }
         });
         // Apply persisted theme across all pages
         (function() {

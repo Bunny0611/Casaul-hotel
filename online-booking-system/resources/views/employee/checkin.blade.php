@@ -4,6 +4,7 @@
 
 @section('content')
 <style>
+    
     .soft-card {
         border: 1px solid #e2e8f0;
         border-radius: 1rem;
@@ -38,7 +39,13 @@
     }
 
     .modal-panel {
+        box-sizing: border-box;
         width: min(100%, 34rem);
+        max-height: calc(100vh - 2rem);
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
         border-radius: 1.75rem;
         background: #ffffff;
         padding: 1.75rem;
@@ -46,6 +53,7 @@
     }
 
     .modal-header {
+        flex-shrink: 0;
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
@@ -144,6 +152,21 @@
         gap: 0.15rem;
         margin: 1.25rem 0 1.5rem;
         padding: 0.35rem 0;
+    }
+
+    .modal-body {
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 0.25rem;
+    }
+
+    .modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .modal-body::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 999px;
     }
 
     .modal-detail-row {
@@ -264,6 +287,7 @@
     }
 
     .modal-actions {
+        flex-shrink: 0;
         display: flex;
         justify-content: flex-end;
         gap: 0.75rem;
@@ -410,10 +434,10 @@
                     </thead>
                     <tbody>
                         @forelse($checkIns as $reservation)
-                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_in }}" data-time="{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-balance="₱{{ number_format($reservation->total_amount, 2) }}" data-payment="{{ $reservation->payment_method ?? 'N/A' }}">
+                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_in }}" data-time="{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-guests="{{ $reservation->number_of_guests ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-balance="₱{{ number_format($reservation->total_amount, 2) }}" data-payment-status="{{ $reservation->payment_method ? 'Paid' : 'Unpaid' }}">
                                 <td class="py-3 pr-3 whitespace-nowrap">RES-{{ $reservation->id }}</td>
                                 <td class="py-3 pr-3 truncate-cell" title="{{ $reservation->guest_name }}">{{ $reservation->guest_name }}</td>
-                                <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-emerald-600" onclick="openCheckInModal('RES-{{ $reservation->id }}', '{{ $reservation->guest_name }}', '{{ $reservation->room?->room_number ?? 'N/A' }}', '{{ $reservation->check_in }}', '{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A' }}')">Check In</button></td>
+                                <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-emerald-600" onclick="openCheckInModal(this.closest('tr'))">Check In</button></td>
                             </tr>
                         @empty
                             <tr>
@@ -443,10 +467,11 @@
                     </thead>
                     <tbody>
                         @forelse($checkOuts as $reservation)
-                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_out }}" data-time="{{ $reservation->check_out_time ? \Illuminate\Support\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-balance="₱{{ number_format($reservation->total_amount, 2) }}" data-payment="{{ $reservation->payment_method ?? 'N/A' }}">
+                            @php($paid = $reservation->payments->sum('amount'))
+                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-check-in-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-check-out-date="{{ $reservation->check_out?->format('Y-m-d') }}" data-time="{{ $reservation->check_out_time ? \Illuminate\Support\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-total="{{ number_format($reservation->total_amount, 2, '.', '') }}" data-paid="{{ number_format($paid, 2, '.', '') }}" data-status="{{ ucfirst($reservation->status) }}">
                                 <td class="py-3 pr-3 whitespace-nowrap">RES-{{ $reservation->id }}</td>
                                 <td class="py-3 pr-3 truncate-cell" title="{{ $reservation->guest_name }}">{{ $reservation->guest_name }}</td>
-                                <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-rose-600" onclick="openCheckOutModal('RES-{{ $reservation->id }}', '{{ $reservation->guest_name }}', '{{ $reservation->room?->room_number ?? 'N/A' }}', '{{ $reservation->check_out }}', '{{ $reservation->check_out_time ? \Illuminate\Support\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A' }}', '₱{{ number_format($reservation->total_amount, 2) }}')">Check Out</button></td>
+                                <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-rose-600" onclick="openCheckOutModal(this.closest('tr'))">Check Out</button></td>
                             </tr>
                         @empty
                             <tr>
@@ -465,12 +490,13 @@
         <div class="modal-header">
             <div>
                 <h4 class="modal-title">Confirm Check-in</h4>
-                <p class="modal-subtitle">Review guest details before proceeding.</p>
+                <p class="modal-subtitle">Review guest and reservation details before proceeding.</p>
             </div>
             <button type="button" class="modal-close-btn" onclick="closeModal('checkInModal')"><i class="fas fa-times"></i></button>
         </div>
 
-        <div class="modal-details">
+        <div class="modal-body">
+            <div class="modal-details">
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Reservation ID:</span>
                 <span class="modal-detail-value" id="checkInReservation"></span>
@@ -484,12 +510,25 @@
                 <span class="modal-detail-value" id="checkInRoom"></span>
             </div>
             <div class="modal-detail-row">
+                <span class="modal-detail-label">Room Type:</span>
+                <span class="modal-detail-value" id="checkInRoomType"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Number of Guests:</span>
+                <span class="modal-detail-value" id="checkInGuests"></span>
+            </div>
+            <div class="modal-detail-row">
                 <span class="modal-detail-label">Check-in Date:</span>
                 <span class="modal-detail-value" id="checkInDate"></span>
             </div>
             <div class="modal-detail-row">
-                <span class="modal-detail-label">Time:</span>
+                <span class="modal-detail-label">Check-in Time:</span>
                 <span class="modal-detail-value" id="checkInTime"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Payment Status:</span>
+                <span class="modal-detail-value" id="checkInPaymentStatus"></span>
+            </div>
             </div>
         </div>
 
@@ -515,7 +554,8 @@
             <button type="button" class="modal-close-btn" onclick="closeModal('checkOutModal')"><i class="fas fa-times"></i></button>
         </div>
 
-        <div class="modal-details">
+        <div class="modal-body">
+            <div class="modal-details">
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Reservation ID:</span>
                 <span class="modal-detail-value" id="checkOutReservation"></span>
@@ -529,12 +569,38 @@
                 <span class="modal-detail-value" id="checkOutRoom"></span>
             </div>
             <div class="modal-detail-row">
-                <span class="modal-detail-label">Check-out:</span>
+                <span class="modal-detail-label">Room Type:</span>
+                <span class="modal-detail-value" id="checkOutRoomType"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Check-in Date:</span>
+                <span class="modal-detail-value" id="checkOutCheckInDate"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Check-out Date:</span>
                 <span class="modal-detail-value" id="checkOutDate"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Check-out Time:</span>
+                <span class="modal-detail-value" id="checkOutTime"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Total Amount:</span>
+                <span class="modal-detail-value" id="checkOutTotal"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Amount Paid:</span>
+                <span class="modal-detail-value" id="checkOutPaid"></span>
             </div>
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Balance Due:</span>
                 <span class="modal-detail-value text-rose-600" id="checkOutBalance"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Payment Status:</span>
+                <span class="modal-detail-value" id="checkOutPaymentStatus"></span>
+            </div>
+            <button type="button" id="recordPaymentButton" class="modal-btn modal-btn-secondary mt-4" onclick="openPaymentModal()">Record Payment</button>
             </div>
         </div>
 
@@ -544,9 +610,34 @@
                 @csrf
                 @method('PATCH')
                 <input type="hidden" name="status" value="completed">
-                <button type="submit" class="modal-btn modal-btn-primary">Confirm Check-out</button>
+                <button type="submit" id="confirmCheckOutButton" class="modal-btn modal-btn-primary" disabled>Confirm Check-out</button>
             </form>
         </div>
+    </div>
+</div>
+
+<div id="paymentModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+    <div class="modal-panel w-full max-w-lg">
+        <div class="modal-header">
+            <div><h4 class="modal-title">Record Payment</h4><p class="modal-subtitle">Save a payment against this reservation.</p></div>
+            <button type="button" class="modal-close-btn" onclick="closeModal('paymentModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="paymentForm" class="modal-body" method="POST">
+            @csrf
+            <div class="modal-details">
+                <div class="modal-detail-row"><span class="modal-detail-label">Reservation ID:</span><span class="modal-detail-value" id="paymentReservation"></span></div>
+                <div class="modal-detail-row"><span class="modal-detail-label">Guest:</span><span class="modal-detail-value" id="paymentGuest"></span></div>
+                <div class="modal-detail-row"><span class="modal-detail-label">Total Amount:</span><span class="modal-detail-value" id="paymentTotal"></span></div>
+                <div class="modal-detail-row"><span class="modal-detail-label">Amount Already Paid:</span><span class="modal-detail-value" id="paymentPaid"></span></div>
+                <div class="modal-detail-row"><span class="modal-detail-label">Balance Due:</span><span class="modal-detail-value text-rose-600" id="paymentBalance"></span></div>
+                <label class="mt-3 block text-sm font-medium text-slate-700">Payment Amount<input id="paymentAmount" name="amount" type="number" min="0.01" step="0.01" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" required></label>
+                <label class="mt-3 block text-sm font-medium text-slate-700">Payment Method<select id="paymentMethod" name="payment_method" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" required><option>Cash</option><option>GCash</option><option>Bank Transfer</option><option>Credit/Debit Card</option></select></label>
+                <label class="mt-3 block text-sm font-medium text-slate-700">Payment Date<input name="payment_date" type="date" value="{{ now()->toDateString() }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" required></label>
+                <label class="mt-3 block text-sm font-medium text-slate-700">Reference Number<input id="paymentReference" name="reference_number" type="text" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></label>
+                <label class="mt-3 block text-sm font-medium text-slate-700">Notes<textarea name="notes" rows="2" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"></textarea></label>
+            </div>
+            <div class="modal-actions mt-5"><button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('paymentModal')">Cancel</button><button type="submit" class="modal-btn modal-btn-primary">Record Payment</button></div>
+        </form>
     </div>
 </div>
 
@@ -577,28 +668,95 @@
         document.getElementById(id)?.addEventListener('change', applyFilters);
     });
 
-    function openCheckInModal(reservation, guest, room, date, time) {
+    function openCheckInModal(row) {
+        const reservation = row.dataset.reservation;
         const reservationId = reservation.replace('RES-', '');
+        const date = row.dataset.date ? new Date(`${row.dataset.date}T00:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A';
         document.getElementById('checkInReservation').textContent = reservation;
-        document.getElementById('checkInGuest').textContent = guest;
-        document.getElementById('checkInRoom').textContent = room;
+        document.getElementById('checkInGuest').textContent = row.dataset.guest || 'N/A';
+        document.getElementById('checkInRoom').textContent = row.dataset.room || 'N/A';
+        document.getElementById('checkInRoomType').textContent = row.dataset.roomType || 'N/A';
+        document.getElementById('checkInGuests').textContent = row.dataset.guests || 'N/A';
         document.getElementById('checkInDate').textContent = date;
-        document.getElementById('checkInTime').textContent = time;
+        document.getElementById('checkInTime').textContent = row.dataset.time || 'N/A';
+        document.getElementById('checkInPaymentStatus').textContent = row.dataset.paymentStatus || 'Unpaid';
         document.getElementById('checkInForm').action = document.getElementById('checkInForm').action.replace('__ID__', reservationId);
         document.getElementById('checkInModal').classList.remove('hidden');
         document.getElementById('checkInModal').classList.add('flex');
     }
 
-    function openCheckOutModal(reservation, guest, room, date, time, balance) {
+    function openCheckOutModal(row) {
+        window.currentCheckOutRow = row;
+        const reservation = row.dataset.reservation;
         const reservationId = reservation.replace('RES-', '');
         document.getElementById('checkOutReservation').textContent = reservation;
-        document.getElementById('checkOutGuest').textContent = guest;
-        document.getElementById('checkOutRoom').textContent = room;
-        document.getElementById('checkOutDate').textContent = date + ' ' + time;
-        document.getElementById('checkOutBalance').textContent = balance;
-        document.getElementById('checkOutForm').action = document.getElementById('checkOutForm').action.replace('__ID__', reservationId);
+        document.getElementById('checkOutGuest').textContent = row.dataset.guest || 'N/A';
+        document.getElementById('checkOutRoom').textContent = row.dataset.room || 'N/A';
+        document.getElementById('checkOutRoomType').textContent = row.dataset.roomType || 'N/A';
+        document.getElementById('checkOutCheckInDate').textContent = formatReservationDate(row.dataset.checkInDate);
+        document.getElementById('checkOutDate').textContent = formatReservationDate(row.dataset.checkOutDate);
+        document.getElementById('checkOutTime').textContent = row.dataset.time || 'N/A';
+        const total = Number(row.dataset.total || 0);
+        const paid = Number(row.dataset.paid || 0);
+        document.getElementById('checkOutTotal').textContent = formatCurrency(total);
+        document.getElementById('checkOutPaid').textContent = formatCurrency(paid);
+        document.getElementById('checkOutBalance').textContent = formatCurrency(Math.max(total - paid, 0));
+        updateCheckoutPaymentState(total, paid);
+        document.getElementById('checkOutForm').action = `{{ url('/employee/reservations') }}/${reservationId}/status`;
         document.getElementById('checkOutModal').classList.remove('hidden');
         document.getElementById('checkOutModal').classList.add('flex');
+    }
+
+    function updateCheckoutPaymentState(total, paid) {
+        const balance = Math.max(total - paid, 0);
+        document.getElementById('checkOutPaymentStatus').textContent = balance === 0 ? 'Paid' : 'Unpaid';
+        document.getElementById('recordPaymentButton').classList.toggle('hidden', balance === 0);
+        document.getElementById('confirmCheckOutButton').disabled = balance > 0;
+    }
+
+    function openPaymentModal() {
+        const row = window.currentCheckOutRow;
+        const total = Number(row.dataset.total || 0);
+        const paid = Number(row.dataset.paid || 0);
+        const balance = Math.max(total - paid, 0);
+        document.getElementById('paymentReservation').textContent = row.dataset.reservation;
+        document.getElementById('paymentGuest').textContent = row.dataset.guest || 'N/A';
+        document.getElementById('paymentTotal').textContent = formatCurrency(total);
+        document.getElementById('paymentPaid').textContent = formatCurrency(paid);
+        document.getElementById('paymentBalance').textContent = formatCurrency(balance);
+        document.getElementById('paymentAmount').value = balance.toFixed(2);
+        document.getElementById('paymentForm').action = `{{ url('/employee/reservations') }}/${row.dataset.reservation.replace('RES-', '')}/payments`;
+        document.getElementById('paymentModal').classList.remove('hidden');
+        document.getElementById('paymentModal').classList.add('flex');
+    }
+
+    document.getElementById('paymentMethod').addEventListener('change', (event) => {
+        document.getElementById('paymentReference').required = event.target.value !== 'Cash';
+    });
+
+    document.getElementById('paymentForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const response = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json' } });
+        const data = await response.json();
+        if (!response.ok) {
+            alert(data.message || 'Unable to record payment.');
+            return;
+        }
+        const row = window.currentCheckOutRow;
+        row.dataset.paid = data.paid.toFixed(2);
+        document.getElementById('checkOutPaid').textContent = formatCurrency(data.paid);
+        document.getElementById('checkOutBalance').textContent = formatCurrency(data.balance);
+        updateCheckoutPaymentState(data.total, data.paid);
+        closeModal('paymentModal');
+    });
+
+    function formatReservationDate(value) {
+        return value ? new Date(`${value}T00:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A';
+    }
+
+    function formatCurrency(value) {
+        return `₱${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
     function closeModal(id) {

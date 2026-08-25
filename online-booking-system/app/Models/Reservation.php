@@ -20,6 +20,7 @@ class Reservation extends Model
         'event_type',
         'number_of_guests',
         'dining_area',
+        'dining_schedule',
         'quantity',
         'check_in',
         'check_in_time',
@@ -27,6 +28,7 @@ class Reservation extends Model
         'check_out_time',
         'status',
         'total_amount',
+        'amount_paid',
         'amenity_id',
         'event_place_id',
         'dining_id',
@@ -37,5 +39,10 @@ class Reservation extends Model
     public function room()
     {
         return $this->belongsTo(Room::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
     }
 }
