@@ -45,7 +45,7 @@ Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 // --- Employee Portal ---
 Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
     Route::redirect('/', '/employee/dashboard')->name('index');
-    Route::view('/dashboard', 'employee.dashboard')->name('dashboard');
+    Route::get('/dashboard', [AdminController::class, 'employeeDashboard'])->name('dashboard');
     Route::get('/reservation', function () {
         $reservations = Reservation::with('room')->latest()->get();
         $rooms = Room::orderBy('room_number')->get();
@@ -54,8 +54,28 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     })->name('reservation');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
+    Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
-    Route::view('/checkin', 'employee.checkin')->name('checkin');
+    Route::get('/checkin', function () {
+        $today = now()->toDateString();
+
+        $checkIns = Reservation::with('room')
+            ->whereDate('check_in', $today)
+            ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
+            ->latest()
+            ->get();
+
+        $checkOuts = Reservation::with('room')
+            ->whereDate('check_out', $today)
+            ->whereIn('status', ['confirmed', 'checked-in'])
+            ->latest()
+            ->get();
+
+        $occupiedRooms = Room::where('status', 'occupied')->count();
+        $availableRooms = Room::where('status', 'available')->count();
+
+        return view('employee.checkin', compact('checkIns', 'checkOuts', 'occupiedRooms', 'availableRooms'));
+    })->name('checkin');
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();

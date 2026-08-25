@@ -7,6 +7,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use App\Models\Room;
 use App\Models\Reservation;
@@ -72,6 +73,44 @@ class AdminController extends Controller
             'avgDailyRevenue',
             'roomTypes',
             'recentReservations'
+        ));
+    }
+
+    public function employeeDashboard()
+    {
+        $totalRooms = Room::count();
+        $availableRooms = Room::where('status', 'available')->count();
+        $occupiedRooms = Room::where('status', 'occupied')->count();
+        $maintenanceRooms = Room::where('status', 'maintenance')->count();
+        $todayArrivals = Reservation::whereDate('check_in', today())->count();
+        $todayDepartures = Reservation::whereDate('check_out', today())->count();
+        $pendingRequests = Room::where('cleaning_status', 'dirty')->count();
+        $occupancyRate = $totalRooms > 0 ? min(100, round(($occupiedRooms / $totalRooms) * 100)) : 0;
+
+        $recentActivity = Reservation::with('room')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($reservation) {
+                $roomNumber = $reservation->room?->room_number ?? 'N/A';
+
+                return [
+                    'icon' => 'fas fa-user-check',
+                    'title' => $reservation->guest_name . ' booked room ' . $roomNumber,
+                    'time' => $reservation->created_at?->diffForHumans() ?? 'Recently',
+                ];
+            });
+
+        return view('employee.dashboard', compact(
+            'totalRooms',
+            'availableRooms',
+            'occupiedRooms',
+            'maintenanceRooms',
+            'todayArrivals',
+            'todayDepartures',
+            'pendingRequests',
+            'occupancyRate',
+            'recentActivity'
         ));
     }
 
@@ -349,8 +388,30 @@ class AdminController extends Controller
 
     public function updateReservationStatus(Request $request, $id)
     {
-        $reservation = Reservation::findOrFail($id);
-        $reservation->update(['status' => $request->status]);
+        $validated = $request->validate([
+            'status' => ['required', 'in:pending,confirmed,checked-in,cancelled,completed'],
+        ]);
+
+        DB::transaction(function () use ($id, $validated) {
+            $reservation = Reservation::with('room')->findOrFail($id);
+            $reservation->update(['status' => $validated['status']]);
+
+            if (!$reservation->room) {
+                return;
+            }
+
+            if ($validated['status'] === 'checked-in') {
+                $reservation->room->update([
+                    'status' => 'occupied',
+                    'cleaning_status' => 'clean',
+                ]);
+            } elseif ($validated['status'] === 'completed') {
+                $reservation->room->update([
+                    'status' => 'available',
+                    'cleaning_status' => 'dirty',
+                ]);
+            }
+        });
 
         return redirect()->back()->with('success', 'Reservation status updated successfully!');
     }

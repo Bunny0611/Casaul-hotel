@@ -650,7 +650,7 @@
 <script>
     function changeReservationStatus(id, status) {
         if (confirm(`Are you sure you want to change the status to ${status}?`)) {
-            var actionTemplate = "{{ route('admin.reservations.status', ['id' => '__ID__']) }}";
+            var actionTemplate = "{{ route('employee.reservations.status', ['id' => '__ID__']) }}";
             document.getElementById('reservationStatusForm').action = actionTemplate.replace('__ID__', id);
             document.getElementById('reservationStatus').value = status;
             document.getElementById('reservationStatusForm').submit();
