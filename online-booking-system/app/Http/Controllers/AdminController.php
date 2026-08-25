@@ -129,6 +129,49 @@ class AdminController extends Controller
         return view('admin.rooms', compact('rooms', 'amenities', 'eventPlaces', 'dining', 'activeTab'));
     }
 
+    public function diningOverview()
+    {
+        return redirect()->route('admin.rooms', ['tab' => 'dining']);
+    }
+
+    public function diningTables()
+    {
+        $tables = collect([
+            ['table_no' => 'T01', 'type' => 'Indoor', 'capacity' => 2, 'location' => 'Window', 'status' => 'Available'],
+            ['table_no' => 'T02', 'type' => 'Indoor', 'capacity' => 4, 'location' => 'Main Area', 'status' => 'Reserved'],
+            ['table_no' => 'T03', 'type' => 'Outdoor', 'capacity' => 6, 'location' => 'Garden', 'status' => 'Available'],
+            ['table_no' => 'T04', 'type' => 'Private', 'capacity' => 8, 'location' => 'Private Room', 'status' => 'Unavailable'],
+            ['table_no' => 'T05', 'type' => 'Indoor', 'capacity' => 4, 'location' => 'Main Area', 'status' => 'Available'],
+        ]);
+
+        return view('admin.dining.tables', compact('tables'));
+    }
+
+    public function diningMenu()
+    {
+        $menus = collect([
+            ['name' => 'Filipino Breakfast', 'category' => 'Breakfast', 'price' => '₱250', 'available_time' => '7:00 AM - 10:00 AM', 'status' => 'Available'],
+            ['name' => 'Club Sandwich', 'category' => 'Lunch', 'price' => '₱320', 'available_time' => '11:00 AM - 2:00 PM', 'status' => 'Available'],
+            ['name' => 'Grilled Chicken', 'category' => 'Lunch', 'price' => '₱350', 'available_time' => '11:00 AM - 2:00 PM', 'status' => 'Available'],
+            ['name' => 'Steak', 'category' => 'Dinner', 'price' => '₱650', 'available_time' => '5:00 PM - 9:00 PM', 'status' => 'Unavailable'],
+            ['name' => 'Pasta Carbonara', 'category' => 'Dinner', 'price' => '₱380', 'available_time' => '5:00 PM - 9:00 PM', 'status' => 'Available'],
+        ]);
+
+        return view('admin.dining.menu', compact('menus'));
+    }
+
+    public function diningSchedule()
+    {
+        $schedules = collect([
+            ['period' => 'Breakfast', 'time' => '7:00 AM - 10:00 AM', 'max_guests' => 30, 'status' => 'Active'],
+            ['period' => 'Lunch', 'time' => '11:00 AM - 2:00 PM', 'max_guests' => 40, 'status' => 'Active'],
+            ['period' => 'Afternoon Snacks', 'time' => '2:00 PM - 5:00 PM', 'max_guests' => 20, 'status' => 'Active'],
+            ['period' => 'Dinner', 'time' => '5:00 PM - 9:00 PM', 'max_guests' => 40, 'status' => 'Active'],
+        ]);
+
+        return view('admin.dining.schedule', compact('schedules'));
+    }
+
     protected function handleInventoryImageUpload(Request $request, ?InventoryItem $item = null): ?string
     {
         if (!$request->hasFile('image')) {
