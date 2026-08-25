@@ -344,22 +344,33 @@ class AdminController extends Controller
     {
         $reservations = Reservation::with('room')->latest()->get();
         $rooms = Room::orderBy('room_number')->get();
-        return view('admin.reservations', compact('reservations', 'rooms'));
+        $inventoryItems = InventoryItem::whereIn('category', ['amenities', 'event_place', 'dining'])->orderBy('name')->get();
+        return request()->routeIs('employee.reservation')
+            ? view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems'))
+            : view('admin.reservations', compact('reservations', 'rooms'));
     }
 
     public function storeReservation(Request $request)
     {
         $validated = $request->validate([
-            'room_id' => ['required', 'exists:rooms,id'],
+            'category' => ['required', 'in:rooms,amenities,event_place,dining'],
+            'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'guest_name' => ['required', 'string', 'max:255'],
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:20'],
+            'event_type' => ['nullable', 'required_if:category,event_place', 'string', 'max:100'],
+            'number_of_guests' => ['nullable', 'required_if:category,event_place', 'integer', 'min:1'],
+            'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
+            'quantity' => ['nullable', 'required_if:category,dining', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
-            'check_in_time' => ['nullable', 'date_format:H:i'],
+            'check_in_time' => ['nullable', 'required_if:category,amenities', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
-            'status' => ['required', 'in:pending,confirmed,checked-in,cancelled,completed'],
             'total_amount' => ['required', 'numeric', 'min:0'],
+            'amenity_id' => ['nullable', 'required_if:category,amenities', 'exists:inventory_items,id'],
+            'event_place_id' => ['nullable', 'required_if:category,event_place', 'exists:inventory_items,id'],
+            'dining_id' => ['nullable', 'required_if:category,dining', 'exists:inventory_items,id'],
+            'duration_hours' => ['nullable', 'required_if:category,amenities', 'integer', 'min:1', 'max:24'],
             'special_requests' => ['nullable', 'string'],
             'submission_token' => ['nullable', 'string', 'max:100'],
         ]);
@@ -378,6 +389,17 @@ class AdminController extends Controller
         }
 
         unset($validated['submission_token']);
+        $validated['status'] = 'pending';
+
+        if ($validated['category'] === 'amenities') {
+            $amenity = InventoryItem::where('category', 'amenities')->findOrFail($validated['amenity_id']);
+            $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $validated['check_in_time'])
+                ->addHours((int) $validated['duration_hours']);
+            $validated['check_out'] = $endTime->toDateString();
+            $validated['check_out_time'] = $endTime->format('H:i');
+            $validated['total_amount'] = (float) $amenity->price * (int) $validated['duration_hours'];
+            unset($validated['duration_hours']);
+        }
 
         Reservation::create($validated);
 
@@ -420,15 +442,19 @@ class AdminController extends Controller
     {
         $reservation = Reservation::findOrFail($id);
         $validated = $request->validate([
-            'room_id' => ['required', 'exists:rooms,id'],
+            'category' => ['required', 'in:rooms,amenities,event_place,dining'],
+            'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'guest_name' => ['required', 'string', 'max:255'],
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:20'],
+            'event_type' => ['nullable', 'required_if:category,event_place', 'string', 'max:100'],
+            'number_of_guests' => ['nullable', 'required_if:category,event_place', 'integer', 'min:1'],
+            'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
+            'quantity' => ['nullable', 'required_if:category,dining', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
-            'status' => ['required', 'in:pending,confirmed,checked-in,cancelled,completed'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'special_requests' => ['nullable', 'string'],
         ]);

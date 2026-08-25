@@ -12,16 +12,24 @@ class Reservation extends Model
     ];
 
     protected $fillable = [
+        'category',
         'room_id',
         'guest_name',
         'guest_email',
         'guest_phone',
+        'event_type',
+        'number_of_guests',
+        'dining_area',
+        'quantity',
         'check_in',
         'check_in_time',
         'check_out',
         'check_out_time',
         'status',
         'total_amount',
+        'amenity_id',
+        'event_place_id',
+        'dining_id',
         'payment_method',
         'special_requests',
     ];

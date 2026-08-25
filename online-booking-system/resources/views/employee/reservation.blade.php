@@ -5,7 +5,7 @@
 
 @php
     $reservations = $reservations ?? collect([]);
-    $roomReservations = $reservations;
+    $roomReservations = $reservations->where('category', 'rooms');
     $amenityReservations = $reservations->where('category', 'amenities');
     $eventPlaceReservations = $reservations->where('category', 'event_place');
     $diningReservations = $reservations->where('category', 'dining');
@@ -48,9 +48,18 @@
             <h2 class="text-2xl font-bold text-gray-800">Reservation Management</h2>
             <p class="mt-1 text-sm text-gray-500">Manage guest bookings, update statuses, and create new reservations from one place.</p>
         </div>
-        <button type="button" onclick="openAddReservationModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700" style="display: inline-flex !important; visibility: visible !important; opacity: 1 !important;">
-            <i class="fas fa-plus mr-2"></i>Add Reservation
+        <button id="addReservationButton" type="button" onclick="openAddReservationModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700" style="display: inline-flex !important; visibility: visible !important; opacity: 1 !important;">
+            <i class="fas fa-plus mr-2"></i><span id="addReservationButtonText">Add Room Reservation</span>
         </button>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap gap-2">
+            <button type="button" data-reservation-tab="rooms" class="reservation-tab inline-flex items-center rounded-full border border-orange-500 bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition">ROOMS</button>
+            <button type="button" data-reservation-tab="amenities" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">AMENITIES</button>
+            <button type="button" data-reservation-tab="event_place" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">EVENT PLACE</button>
+            <button type="button" data-reservation-tab="dining" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">DINING</button>
+        </div>
     </div>
 
     <div id="roomsTab" data-reservation-panel="rooms" class="space-y-4">
@@ -576,9 +585,9 @@
                     <input type="text" name="guest_phone" value="{{ old('guest_phone') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     @error('guest_phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
-                <div>
+                <div id="roomReservationField" data-reservation-fields="rooms">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Room</label>
-                    <select name="room_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <select name="room_id" data-required-for="rooms" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="">Select a room</option>
                         @foreach($rooms as $room)
                             <option value="{{ $room->id }}" {{ old('room_id') == $room->id ? 'selected' : '' }}>{{ $room->room_number }} - {{ $room->room_type }}</option>
@@ -586,39 +595,132 @@
                     </select>
                     @error('room_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
-                <div>
+                <div class="hidden" data-reservation-fields="amenities">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Amenity</label>
+                    <select name="amenity_id" data-reservation-input="amenities" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select an amenity</option>
+                        @foreach(($inventoryItems ?? collect())->where('category', 'amenities') as $item)
+                            <option value="{{ $item->id }}" data-price="{{ $item->price }}">{{ $item->name }} - ₱{{ number_format($item->price, 2) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="hidden" data-reservation-fields="event_place">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Event Place</label>
+                    <select name="event_place_id" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select an event place</option>
+                        @foreach(($inventoryItems ?? collect())->where('category', 'event_place') as $item)
+                            <option value="{{ $item->id }}">{{ $item->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="hidden" data-reservation-fields="event_place">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Event Date</label>
+                    <input type="date" id="eventDate" name="check_in" value="{{ old('check_in') }}" data-event-date data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="hidden" data-reservation-fields="event_place">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label>
+                    <select name="event_type" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select event type</option>
+                        <option value="Wedding">Wedding</option>
+                        <option value="Birthday">Birthday</option>
+                        <option value="Conference">Conference</option>
+                        <option value="Party">Party</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="hidden" data-reservation-fields="event_place">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Start Time</label>
+                    <input type="time" name="check_in_time" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="hidden" data-reservation-fields="event_place">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">End Time</label>
+                    <input type="time" name="check_out_time" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="hidden" data-reservation-fields="event_place">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Number of Guests</label>
+                    <input type="number" name="number_of_guests" data-reservation-input="event_place" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="hidden" name="check_out" value="{{ old('check_out', old('check_in')) }}" data-event-date-end>
+                </div>
+                <div class="hidden" data-reservation-fields="dining">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Dining Area/Table</label>
+                    <select name="dining_area" data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select a table</option>
+                        @for($table = 1; $table <= 10; $table++)
+                            <option value="Table {{ $table }}">Table {{ $table }}</option>
+                        @endfor
+                    </select>
+                </div>
+                <div class="hidden" data-reservation-fields="dining">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Dining Date</label>
+                    <input type="date" id="diningDate" name="check_in" value="{{ old('check_in') }}" data-dining-date data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="hidden" data-reservation-fields="dining">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Dining Time</label>
+                    <input type="time" id="diningTime" name="check_in_time" data-dining-time data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="hidden" data-reservation-fields="dining">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Number of Guests</label>
+                    <input type="number" name="number_of_guests" data-reservation-input="dining" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div class="hidden" data-reservation-fields="dining">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Dining Item</label>
+                    <select name="dining_id" data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select a dining option</option>
+                        @foreach(($inventoryItems ?? collect())->where('category', 'dining') as $item)
+                            <option value="{{ $item->id }}">{{ $item->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="hidden" data-reservation-fields="dining">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label>
+                    <input type="number" name="quantity" data-reservation-input="dining" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="hidden" name="check_out" value="{{ old('check_out', old('check_in')) }}" data-dining-date-end>
+                    <input type="hidden" name="check_out_time" value="{{ old('check_out_time', old('check_in_time')) }}" data-dining-time-end>
+                </div>
+                <div data-standard-reservation-field>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Check-in</label>
                     <input type="date" name="check_in" value="{{ old('check_in') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     @error('check_in')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
-                <div>
+                <div data-standard-reservation-field>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Check-out</label>
                     <input type="date" name="check_out" value="{{ old('check_out') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     @error('check_out')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
-                <div>
+                <div data-standard-reservation-field>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Check-in Time</label>
                     <input type="time" name="check_in_time" value="{{ old('check_in_time') }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     @error('check_in_time')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
-                <div>
+                <div data-standard-reservation-field>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Check-out Time</label>
                     <input type="time" name="check_out_time" value="{{ old('check_out_time') }}" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     @error('check_out_time')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Status</label>
-                    <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="pending" {{ old('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="confirmed" {{ old('status') == 'confirmed' ? 'selected' : '' }}>Confirmed</option>
-                        <option value="cancelled" {{ old('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                        <option value="completed" {{ old('status') == 'completed' ? 'selected' : '' }}>Completed</option>
-                    </select>
-                    @error('status')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                <div class="hidden md:col-span-2" data-amenity-reservation-field>
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Amenity Date</label>
+                            <input type="date" id="amenityDate" name="check_in" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Start Time</label>
+                            <input type="time" id="amenityStartTime" name="check_in_time" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Stay Duration (Hours)</label>
+                            <input type="number" id="amenityDurationHours" name="duration_hours" min="1" max="24" step="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Automatic End Time</label>
+                            <input type="time" id="amenityEndTime" name="check_out_time" readonly class="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-gray-600 focus:outline-none">
+                        </div>
+                    </div>
+                    <input type="hidden" id="amenityEndDate" name="check_out">
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Total Amount</label>
-                    <input type="number" name="total_amount" value="{{ old('total_amount') }}" min="0" step="0.01" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input id="reservationTotalAmount" type="number" name="total_amount" value="{{ old('total_amount') }}" min="0" step="0.01" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     @error('total_amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
@@ -648,6 +750,113 @@
 </form>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const reservationTypeLabels = {
+            rooms: 'Room',
+            amenities: 'Amenities',
+            event_place: 'Event Place',
+            dining: 'Dining'
+        };
+
+        function setActiveReservationTab(tabKey) {
+            const reservationType = reservationTypeLabels[tabKey] || reservationTypeLabels.rooms;
+
+            document.querySelectorAll('[data-reservation-tab]').forEach((button) => {
+                const isActive = button.dataset.reservationTab === tabKey;
+                button.classList.toggle('bg-orange-500', isActive);
+                button.classList.toggle('border-orange-500', isActive);
+                button.classList.toggle('text-white', isActive);
+                button.classList.toggle('bg-white', !isActive);
+                button.classList.toggle('border-gray-200', !isActive);
+                button.classList.toggle('text-gray-700', !isActive);
+            });
+
+            document.querySelectorAll('[data-reservation-panel]').forEach((panel) => {
+                panel.classList.toggle('hidden', panel.dataset.reservationPanel !== tabKey);
+            });
+
+            document.querySelectorAll('[data-reservation-fields]').forEach((fieldGroup) => {
+                const isActive = fieldGroup.dataset.reservationFields === tabKey;
+                fieldGroup.classList.toggle('hidden', !isActive);
+                fieldGroup.querySelectorAll('input, select, textarea').forEach((input) => {
+                    input.disabled = !isActive;
+                    input.required = isActive && input.dataset.reservationInput === tabKey;
+                });
+            });
+
+            document.querySelectorAll('[data-standard-reservation-field]').forEach((fieldGroup) => {
+                const isVisible = !['amenities', 'event_place', 'dining'].includes(tabKey);
+                fieldGroup.classList.toggle('hidden', !isVisible);
+                fieldGroup.querySelectorAll('input, select, textarea').forEach((input) => {
+                    input.disabled = !isVisible;
+                });
+            });
+
+            document.querySelectorAll('[data-amenity-reservation-field]').forEach((fieldGroup) => {
+                const isVisible = tabKey === 'amenities';
+                fieldGroup.classList.toggle('hidden', !isVisible);
+                fieldGroup.querySelectorAll('input').forEach((input) => {
+                    input.disabled = !isVisible;
+                    input.required = isVisible && ['amenityDate', 'amenityStartTime', 'amenityDurationHours'].includes(input.id);
+                });
+            });
+
+            document.getElementById('reservationTotalAmount').readOnly = tabKey === 'amenities';
+            updateAmenityReservationTotal();
+            document.getElementById('addReservationButtonText').textContent = `Add ${reservationType} Reservation`;
+            document.getElementById('reservationModalTitle').textContent = `Add ${reservationType} Reservation`;
+            document.getElementById('reservationCategory').value = tabKey;
+        }
+
+
+        function updateAmenityReservationTotal() {
+            const amenitySelect = document.querySelector('[data-reservation-input="amenities"]');
+            const durationInput = document.getElementById('amenityDurationHours');
+            const endTimeInput = document.getElementById('amenityEndTime');
+            const endDateInput = document.getElementById('amenityEndDate');
+            const totalInput = document.getElementById('reservationTotalAmount');
+            const startTime = document.getElementById('amenityStartTime').value;
+            const duration = Number(durationInput.value || 0);
+            const selectedOption = amenitySelect.options[amenitySelect.selectedIndex];
+            const price = Number(selectedOption?.dataset.price || 0);
+
+            totalInput.value = price && duration ? (price * duration).toFixed(2) : '';
+            endTimeInput.value = '';
+            endDateInput.value = document.getElementById('amenityDate').value;
+
+            if (startTime && duration > 0) {
+                const [hours, minutes] = startTime.split(':').map(Number);
+                const endMinutes = (hours * 60) + minutes + (duration * 60);
+                endTimeInput.value = `${String(Math.floor((endMinutes % 1440) / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+                if (endMinutes >= 1440) {
+                    const endDate = new Date(`${endDateInput.value}T00:00:00`);
+                    endDate.setDate(endDate.getDate() + 1);
+                    endDateInput.value = endDate.toISOString().slice(0, 10);
+                }
+            }
+        }
+
+        document.querySelectorAll('[data-reservation-tab]').forEach((button) => {
+            button.addEventListener('click', () => setActiveReservationTab(button.dataset.reservationTab));
+        });
+
+        document.querySelector('[data-reservation-input="amenities"]')?.addEventListener('change', updateAmenityReservationTotal);
+        document.getElementById('amenityDate')?.addEventListener('input', updateAmenityReservationTotal);
+        document.getElementById('amenityStartTime')?.addEventListener('input', updateAmenityReservationTotal);
+        document.getElementById('amenityDurationHours')?.addEventListener('input', updateAmenityReservationTotal);
+        document.querySelector('[data-event-date]')?.addEventListener('input', (event) => {
+            document.querySelector('[data-event-date-end]').value = event.target.value;
+        });
+        document.querySelector('[data-dining-date]')?.addEventListener('input', (event) => {
+            document.querySelector('[data-dining-date-end]').value = event.target.value;
+        });
+        document.querySelector('[data-dining-time]')?.addEventListener('input', (event) => {
+            document.querySelector('[data-dining-time-end]').value = event.target.value;
+        });
+
+        setActiveReservationTab('rooms');
+    });
+
     function changeReservationStatus(id, status) {
         if (confirm(`Are you sure you want to change the status to ${status}?`)) {
             var actionTemplate = "{{ route('employee.reservations.status', ['id' => '__ID__']) }}";
@@ -693,6 +902,9 @@
         const modal = document.getElementById('addReservationModal');
         if (!modal) return;
 
+        const activeTab = document.querySelector('[data-reservation-tab].bg-orange-500')?.dataset.reservationTab || 'rooms';
+        document.getElementById('reservationCategory').value = activeTab;
+
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         modal.style.display = 'flex';
@@ -707,10 +919,9 @@
         form.reset();
         methodInput.disabled = true;
         form.action = "{{ route('employee.reservations.store') }}";
-        document.getElementById('reservationModalTitle').textContent = 'Add New Reservation';
         const categoryInput = document.getElementById('reservationCategory');
         if (categoryInput) {
-            categoryInput.value = 'rooms';
+            categoryInput.value = document.querySelector('[data-reservation-tab].bg-orange-500')?.dataset.reservationTab || 'rooms';
         }
 
         const saveBtn = document.getElementById('saveReservationBtn');
@@ -730,6 +941,18 @@
         fields.guest_email.value = reservation.guest_email || '';
         fields.guest_phone.value = reservation.guest_phone || '';
         fields.room_id.value = reservation.room_id || '';
+        fields.event_place_id.value = reservation.event_place_id || '';
+        fields.event_type.value = reservation.event_type || '';
+        fields.number_of_guests.value = reservation.number_of_guests || '';
+        document.getElementById('eventDate').value = reservation.check_in || '';
+        document.querySelector('[data-event-date-end]').value = reservation.check_out || reservation.check_in || '';
+        fields.dining_area.value = reservation.dining_area || '';
+        fields.dining_id.value = reservation.dining_id || '';
+        fields.quantity.value = reservation.quantity || '';
+        document.getElementById('diningDate').value = reservation.check_in || '';
+        document.getElementById('diningTime').value = timeValue(reservation.check_in_time);
+        document.querySelector('[data-dining-date-end]').value = reservation.check_out || reservation.check_in || '';
+        document.querySelector('[data-dining-time-end]').value = timeValue(reservation.check_out_time || reservation.check_in_time);
         fields.check_in.value = reservation.check_in || '';
         fields.check_in_time.value = timeValue(reservation.check_in_time);
         fields.check_out.value = reservation.check_out || '';

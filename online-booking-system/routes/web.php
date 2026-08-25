@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
 use App\Http\Controllers\ProfileController;
 use App\Models\Message;
+use App\Models\InventoryItem;
 use App\Models\Reservation;
 use App\Models\Room;
 use Illuminate\Support\Facades\Auth;
@@ -49,8 +50,12 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/reservation', function () {
         $reservations = Reservation::with('room')->latest()->get();
         $rooms = Room::orderBy('room_number')->get();
+        $inventoryItems = InventoryItem::whereIn('category', ['amenities', 'event_place', 'dining'])
+            ->whereIn('status', ['available', 'limited'])
+            ->orderBy('name')
+            ->get();
 
-        return view('employee.reservation', compact('reservations', 'rooms'));
+        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems'));
     })->name('reservation');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
