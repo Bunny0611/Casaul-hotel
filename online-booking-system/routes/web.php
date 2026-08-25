@@ -132,6 +132,10 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/rooms', [AdminController::class, 'rooms'])->name('rooms');
+    Route::get('/dining', [AdminController::class, 'diningOverview'])->name('dining');
+    Route::get('/dining/tables', [AdminController::class, 'diningTables'])->name('dining.tables');
+    Route::get('/dining/menu', [AdminController::class, 'diningMenu'])->name('dining.menu');
+    Route::get('/dining/schedule', [AdminController::class, 'diningSchedule'])->name('dining.schedule');
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
     Route::post('/inventory', [AdminController::class, 'storeInventoryItem'])->name('inventory.store');
     Route::put('/inventory/{id}', [AdminController::class, 'updateInventoryItem'])->name('inventory.update');

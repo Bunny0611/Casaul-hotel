@@ -16,6 +16,46 @@
         width: 100%;
         min-width: 980px;
     }
+
+    .room-management-page .dining-table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .room-management-page .dining-table-scroll table {
+        width: 100%;
+        min-width: 720px;
+        table-layout: auto;
+    }
+
+    .room-management-page .dining-table-scroll th:last-child,
+    .room-management-page .dining-table-scroll td:last-child {
+        text-align: right;
+    }
+
+    .room-management-page .dining-table-scroll th:last-child {
+        min-width: 112px;
+    }
+
+    .room-management-page [data-dining-subpanel="overview"] {
+        display: none !important;
+    }
+
+    @media (max-width: 640px) {
+        .room-management-page .dining-card-header {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .room-management-page .dining-card-header button {
+            width: 100%;
+        }
+
+        .room-management-page .dining-subtab {
+            flex: 1 1 calc(50% - 0.5rem);
+            justify-content: center;
+        }
+    }
 </style>
 <div class="room-management-page animate-fade-in">
     <div class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -191,33 +231,141 @@
     </div>
 
     <div data-panel="dining" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4"><div class="flex items-center gap-2 text-sm text-gray-700"><input id="selectAllDining" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="dining" onclick="toggleAllInventoryCheckboxes('dining', this)"><label for="selectAllDining">Select all dining items</label></div><div class="flex items-center gap-3"><span id="diningSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('dining')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white" aria-label="Delete selected dining items"><i class="fas fa-trash"></i></button></div></div>
-        <div class="border-b border-gray-200 px-6 py-5">
-            <h3 class="text-lg font-semibold text-gray-800">Dining</h3>
-            <p class="mt-1 text-sm text-gray-500">Track dining packages and culinary experiences available to your guests.</p>
+        <div class="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-gray-50 px-4 py-3 sm:gap-4 sm:px-6">
+            <button type="button" data-dining-subtab="tables" class="dining-subtab inline-flex items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-white hover:text-gray-700">
+                <i class="fas fa-table text-xs"></i>
+                <span>Tables / Seating</span>
+            </button>
+            <button type="button" data-dining-subtab="menu" class="dining-subtab inline-flex items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-white hover:text-gray-700">
+                <i class="fas fa-utensils text-xs"></i>
+                <span>Menu / Meals</span>
+            </button>
+            <button type="button" data-dining-subtab="schedule" class="dining-subtab inline-flex items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-white hover:text-gray-700">
+                <i class="fas fa-calendar-alt text-xs"></i>
+                <span>Dining Schedule</span>
+            </button>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllDiningHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="dining" onclick="toggleAllInventoryCheckboxes('dining', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Name</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Category</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Available Time</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Quantity</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="dining-list" class="divide-y divide-gray-200">
-                    @foreach($dining as $item)
-                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-dining h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('dining')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->type ?: 'Menu / Meal' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->available_from ? substr($item->available_from, 0, 5) : '—' }} - {{ $item->available_to ? substr($item->available_to, 0, 5) : '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->quantity ?: 'Unlimited' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item))' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit dining item"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status))' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change dining status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete this dining item?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete dining item"><i class="fas fa-trash"></i></button></form></div></td></tr>
-                    @endforeach
-                </tbody>
-            </table>
+
+        <div data-dining-subpanel="overview" class="block">
+            <div class="grid gap-5 p-5 lg:grid-cols-3 lg:p-6">
+                <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                    <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4">
+                        <h3 class="text-xl font-semibold text-gray-800">Tables / Seating</h3>
+                        <button type="button" data-dining-add="table" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50">
+                            <i class="fas fa-plus mr-2"></i>Add Table
+                        </button>
+                    </div>
+                    <div class="dining-table-scroll">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Table No.</th>
+                                    <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                                    <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Capacity</th>
+                                    <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Location</th>
+                                    <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                                    <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">T01</td><td class="px-4 py-3 text-sm text-gray-700">Indoor</td><td class="px-4 py-3 text-sm text-gray-700">2</td><td class="px-4 py-3 text-sm text-gray-700">Window</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">T02</td><td class="px-4 py-3 text-sm text-gray-700">Indoor</td><td class="px-4 py-3 text-sm text-gray-700">4</td><td class="px-4 py-3 text-sm text-gray-700">Main Area</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-yellow-200 bg-yellow-100 px-2.5 py-1 text-[11px] font-medium text-yellow-700">Reserved</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">T03</td><td class="px-4 py-3 text-sm text-gray-700">Outdoor</td><td class="px-4 py-3 text-sm text-gray-700">6</td><td class="px-4 py-3 text-sm text-gray-700">Garden</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">T04</td><td class="px-4 py-3 text-sm text-gray-700">Private</td><td class="px-4 py-3 text-sm text-gray-700">8</td><td class="px-4 py-3 text-sm text-gray-700">Private Room</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-700">Unavailable</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">T05</td><td class="px-4 py-3 text-sm text-gray-700">Indoor</td><td class="px-4 py-3 text-sm text-gray-700">4</td><td class="px-4 py-3 text-sm text-gray-700">Main Area</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="border-t border-gray-200 px-4 py-4"><button type="button" class="inline-flex items-center justify-center rounded-xl border border-orange-300 bg-white px-4 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50">View All Tables</button></div>
+                </div>
+
+                <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                    <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Menu / Meals</h3><button type="button" data-dining-add="menu" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Menu</button></div>
+                    <div class="dining-table-scroll">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Filipino Breakfast</td><td class="px-4 py-3 text-sm text-gray-700">Breakfast</td><td class="px-4 py-3 text-sm text-gray-700">₱250</td><td class="px-4 py-3 text-sm text-gray-700">7:00 AM - 10:00 AM</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Club Sandwich</td><td class="px-4 py-3 text-sm text-gray-700">Lunch</td><td class="px-4 py-3 text-sm text-gray-700">₱320</td><td class="px-4 py-3 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Grilled Chicken</td><td class="px-4 py-3 text-sm text-gray-700">Lunch</td><td class="px-4 py-3 text-sm text-gray-700">₱350</td><td class="px-4 py-3 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Steak</td><td class="px-4 py-3 text-sm text-gray-700">Dinner</td><td class="px-4 py-3 text-sm text-gray-700">₱650</td><td class="px-4 py-3 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-700">Unavailable</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Pasta Carbonara</td><td class="px-4 py-3 text-sm text-gray-700">Dinner</td><td class="px-4 py-3 text-sm text-gray-700">₱380</td><td class="px-4 py-3 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="border-t border-gray-200 px-4 py-4"><button type="button" class="inline-flex items-center justify-center rounded-xl border border-orange-300 bg-white px-4 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50">View All Menus</button></div>
+                </div>
+
+                <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                    <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Dining Schedule</h3><button type="button" data-dining-add="schedule" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Schedule</button></div>
+                    <div class="dining-table-scroll">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Period</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Time</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Max Guests</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Breakfast</td><td class="px-4 py-3 text-sm text-gray-700">7:00 AM - 10:00 AM</td><td class="px-4 py-3 text-sm text-gray-700">30</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Lunch</td><td class="px-4 py-3 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-4 py-3 text-sm text-gray-700">40</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Afternoon Snacks</td><td class="px-4 py-3 text-sm text-gray-700">2:00 PM - 5:00 PM</td><td class="px-4 py-3 text-sm text-gray-700">20</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Dinner</td><td class="px-4 py-3 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-4 py-3 text-sm text-gray-700">40</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="border-t border-gray-200 px-4 py-4"><button type="button" class="inline-flex items-center justify-center rounded-xl border border-orange-300 bg-white px-4 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50">View All Schedules</button></div>
+                </div>
+            </div>
         </div>
-        {{ $dining->links('pagination.admin-rooms') }}
+
+        <div data-dining-subpanel="tables" class="hidden p-5 lg:p-6">
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Tables / Seating</h3><button type="button" data-dining-add="table" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Table</button></div>
+                <div class="dining-table-scroll">
+                    <table class="min-w-full text-left">
+                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Table No.</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Type</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Capacity</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Location</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">T01</td><td class="px-6 py-4 text-sm text-gray-700">Indoor</td><td class="px-6 py-4 text-sm text-gray-700">2</td><td class="px-6 py-4 text-sm text-gray-700">Window</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">T02</td><td class="px-6 py-4 text-sm text-gray-700">Indoor</td><td class="px-6 py-4 text-sm text-gray-700">4</td><td class="px-6 py-4 text-sm text-gray-700">Main Area</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-yellow-200 bg-yellow-100 px-2.5 py-1 text-[11px] font-medium text-yellow-700">Reserved</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">T03</td><td class="px-6 py-4 text-sm text-gray-700">Outdoor</td><td class="px-6 py-4 text-sm text-gray-700">6</td><td class="px-6 py-4 text-sm text-gray-700">Garden</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">T04</td><td class="px-6 py-4 text-sm text-gray-700">Private</td><td class="px-6 py-4 text-sm text-gray-700">8</td><td class="px-6 py-4 text-sm text-gray-700">Private Room</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-700">Unavailable</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">T05</td><td class="px-6 py-4 text-sm text-gray-700">Indoor</td><td class="px-6 py-4 text-sm text-gray-700">4</td><td class="px-6 py-4 text-sm text-gray-700">Main Area</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div data-dining-subpanel="menu" class="hidden p-5 lg:p-6">
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-2"><h3 class="text-xl font-semibold text-gray-800">Menu / Meals</h3><button type="button" data-dining-add="menu" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Menu</button></div>
+                <div class="dining-table-scroll">
+                    <table class="min-w-full text-left">
+                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Filipino Breakfast</td><td class="px-6 py-4 text-sm text-gray-700">Breakfast</td><td class="px-6 py-4 text-sm text-gray-700">₱250</td><td class="px-6 py-4 text-sm text-gray-700">7:00 AM - 10:00 AM</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Club Sandwich</td><td class="px-6 py-4 text-sm text-gray-700">Lunch</td><td class="px-6 py-4 text-sm text-gray-700">₱320</td><td class="px-6 py-4 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Grilled Chicken</td><td class="px-6 py-4 text-sm text-gray-700">Lunch</td><td class="px-6 py-4 text-sm text-gray-700">₱350</td><td class="px-6 py-4 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Steak</td><td class="px-6 py-4 text-sm text-gray-700">Dinner</td><td class="px-6 py-4 text-sm text-gray-700">₱650</td><td class="px-6 py-4 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-700">Unavailable</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Pasta Carbonara</td><td class="px-6 py-4 text-sm text-gray-700">Dinner</td><td class="px-6 py-4 text-sm text-gray-700">₱380</td><td class="px-6 py-4 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div data-dining-subpanel="schedule" class="hidden p-5 lg:p-6">
+            <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Dining Schedule</h3><button type="button" data-dining-add="schedule" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Schedule</button></div>
+                <div class="dining-table-scroll">
+                    <table class="min-w-full text-left">
+                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Period</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Max Guests</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Breakfast</td><td class="px-6 py-4 text-sm text-gray-700">7:00 AM - 10:00 AM</td><td class="px-6 py-4 text-sm text-gray-700">30</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Lunch</td><td class="px-6 py-4 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-6 py-4 text-sm text-gray-700">40</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Afternoon Snacks</td><td class="px-6 py-4 text-sm text-gray-700">2:00 PM - 5:00 PM</td><td class="px-6 py-4 text-sm text-gray-700">20</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Dinner</td><td class="px-6 py-4 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-6 py-4 text-sm text-gray-700">40</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -440,6 +588,52 @@
             <div class="flex items-center justify-end gap-4 border-t border-gray-200 pt-6">
                 <button type="button" onclick="closeDiningModal()" class="rounded-xl border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 transition hover:bg-gray-100">Cancel</button>
                 <button type="submit" class="rounded-xl bg-orange-500 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-orange-600">Save Dining Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editDiningModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+        <button type="button" onclick="closeEditDiningModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700" aria-label="Close edit dining item">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+        <div class="mb-6">
+            <h3 id="editDiningTitle" class="text-2xl font-bold text-gray-800">Edit Dining Item</h3>
+            <p class="mt-1 text-sm text-gray-500">Update the selected dining details below.</p>
+        </div>
+        <form id="editDiningForm" class="space-y-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                    <label id="editDiningNameLabel" for="editDiningName" class="mb-1 block text-sm font-medium text-gray-700">Name</label>
+                    <input id="editDiningName" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label id="editDiningTypeLabel" for="editDiningType" class="mb-1 block text-sm font-medium text-gray-700">Type</label>
+                    <input id="editDiningType" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label id="editDiningValueLabel" for="editDiningValue" class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label>
+                    <input id="editDiningValue" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label id="editDiningDetailLabel" for="editDiningDetail" class="mb-1 block text-sm font-medium text-gray-700">Location</label>
+                    <input id="editDiningDetail" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label for="editDiningStatus" class="mb-1 block text-sm font-medium text-gray-700">Status</label>
+                    <select id="editDiningStatus" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="Available">Available</option>
+                        <option value="Reserved">Reserved</option>
+                        <option value="Limited">Limited</option>
+                        <option value="Active">Active</option>
+                        <option value="Unavailable">Unavailable</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button type="button" onclick="closeEditDiningModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Update Item</button>
             </div>
         </form>
     </div>
@@ -795,6 +989,83 @@
         document.getElementById('addDiningForm').reset();
     }
 
+    function closeEditDiningModal() {
+        document.getElementById('editDiningModal').classList.add('hidden');
+        document.getElementById('editDiningModal').classList.remove('flex');
+    }
+
+    function openDiningCreateModal(kind) {
+        openDiningModal();
+        const form = document.getElementById('addDiningForm');
+        const type = form.querySelector('[name="type"]');
+        const category = form.querySelector('[name="menu_category"]');
+
+        if (kind === 'table') {
+            type.value = 'Package';
+            category.value = 'Dinner';
+        } else if (kind === 'schedule') {
+            type.value = 'Package';
+            category.value = 'Dinner';
+        } else {
+            type.value = 'Menu / Meal';
+            category.value = 'Dinner';
+        }
+    }
+
+    function editDiningRow(button) {
+        const row = button.closest('tr');
+        const cells = row.querySelectorAll('td');
+        const panel = row.closest('[data-dining-subpanel]');
+        const section = panel ? panel.getAttribute('data-dining-subpanel') : 'tables';
+        const isTable = section === 'tables';
+        const isSchedule = section === 'schedule';
+        const status = cells[isSchedule ? 3 : 4].textContent.trim();
+
+        document.getElementById('editDiningTitle').textContent = isTable ? 'Edit Table / Seating' : isSchedule ? 'Edit Dining Schedule' : 'Edit Menu / Meal';
+        document.getElementById('editDiningNameLabel').textContent = isTable ? 'Table Number' : isSchedule ? 'Meal Period' : 'Meal Name';
+        document.getElementById('editDiningTypeLabel').textContent = isTable ? 'Table Type' : isSchedule ? 'Schedule Type' : 'Category';
+        document.getElementById('editDiningValueLabel').textContent = isTable ? 'Capacity' : isSchedule ? 'Maximum Guests' : 'Price (₱)';
+        document.getElementById('editDiningDetailLabel').textContent = isTable ? 'Location' : 'Available Time';
+        document.getElementById('editDiningName').value = cells[0].textContent.trim();
+        document.getElementById('editDiningType').value = cells[1].textContent.trim();
+        document.getElementById('editDiningValue').value = cells[2].textContent.replace('₱', '').trim();
+        document.getElementById('editDiningDetail').value = cells[3].textContent.trim();
+        document.getElementById('editDiningStatus').value = status;
+        window.editingDiningRow = row;
+        document.getElementById('editDiningForm').dataset.section = section;
+        document.getElementById('editDiningForm').dataset.table = isTable ? 'true' : 'false';
+        document.getElementById('editDiningForm').dataset.schedule = isSchedule ? 'true' : 'false';
+        document.getElementById('editDiningModal').classList.remove('hidden');
+        document.getElementById('editDiningModal').classList.add('flex');
+    }
+
+    function saveDiningEdit(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const row = window.editingDiningRow;
+        if (!row) return;
+
+        const cells = row.querySelectorAll('td');
+        const value = document.getElementById('editDiningValue').value.trim();
+        const isTable = form.dataset.table === 'true';
+        const isSchedule = form.dataset.schedule === 'true';
+        cells[0].textContent = document.getElementById('editDiningName').value.trim();
+        cells[1].textContent = document.getElementById('editDiningType').value.trim();
+        cells[2].textContent = isTable || isSchedule ? value : '₱' + value;
+        cells[3].textContent = document.getElementById('editDiningDetail').value.trim();
+        cells[isSchedule ? 3 : 4].querySelector('span').textContent = document.getElementById('editDiningStatus').value;
+        closeEditDiningModal();
+    }
+
+    function deleteDiningRow(button) {
+        const row = button.closest('tr');
+        const itemName = row.querySelector('td')?.textContent.trim() || 'this item';
+
+        if (confirm('Delete ' + itemName + '?')) {
+            row.remove();
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const addModal = document.getElementById('addRoomModal');
         const editModal = document.getElementById('editRoomModal');
@@ -802,6 +1073,7 @@
         const amenityModal = document.getElementById('addAmenityModal');
         const eventPlaceModal = document.getElementById('addEventPlaceModal');
         const diningModal = document.getElementById('addDiningModal');
+        const editDiningModal = document.getElementById('editDiningModal');
         const editInventoryModal = document.getElementById('editInventoryModal');
         const inventoryStatusModal = document.getElementById('inventoryStatusModal');
 
@@ -813,6 +1085,7 @@
                 closeAmenityModal();
                 closeEventPlaceModal();
                 closeDiningModal();
+                closeEditDiningModal();
                 closeEditInventoryModal();
                 closeInventoryStatusModal();
             }
@@ -821,6 +1094,23 @@
         const tabButtons = document.querySelectorAll('.tab-button');
         const panels = document.querySelectorAll('[data-panel]');
         const addButtons = document.querySelectorAll('.add-panel-button');
+        const diningSubTabs = document.querySelectorAll('.dining-subtab');
+        const diningSubPanels = document.querySelectorAll('[data-dining-subpanel]');
+        const diningPanel = document.querySelector('[data-panel="dining"]');
+
+        function activateDiningSubTab(targetName) {
+            diningSubTabs.forEach(function(btn) {
+                const isActive = btn.getAttribute('data-dining-subtab') === targetName;
+                btn.classList.toggle('text-orange-600', isActive);
+                btn.classList.toggle('bg-white', isActive);
+                btn.classList.toggle('text-gray-600', !isActive);
+                btn.classList.toggle('border-transparent', !isActive);
+                btn.classList.toggle('border-orange-200', isActive);
+            });
+            diningSubPanels.forEach(function(panel) {
+                panel.classList.toggle('hidden', panel.getAttribute('data-dining-subpanel') !== targetName);
+            });
+        }
 
         function activateTab(targetName) {
             tabButtons.forEach(function(btn) {
@@ -841,6 +1131,9 @@
                     (targetName === 'dining' && button.id === 'add-dining-button');
                 button.classList.toggle('hidden', !shouldShow);
             });
+            if (targetName === 'dining') {
+                activateDiningSubTab('tables');
+            }
         }
 
         tabButtons.forEach(function(button) {
@@ -848,6 +1141,36 @@
                 activateTab(this.getAttribute('data-tab'));
             });
         });
+
+        diningSubTabs.forEach(function(button) {
+            button.addEventListener('click', function () {
+                activateDiningSubTab(this.getAttribute('data-dining-subtab'));
+            });
+        });
+
+        if (diningPanel) {
+            diningPanel.addEventListener('click', function (event) {
+                const button = event.target.closest('button');
+                if (!button) return;
+
+                const addType = button.getAttribute('data-dining-add');
+                if (addType) {
+                    openDiningCreateModal(addType);
+                    return;
+                }
+
+                if (button.querySelector('.fa-edit')) {
+                    editDiningRow(button);
+                    return;
+                }
+
+                if (button.querySelector('.fa-trash')) {
+                    deleteDiningRow(button);
+                }
+            });
+        }
+
+        document.getElementById('editDiningForm').addEventListener('submit', saveDiningEdit);
 
         document.getElementById('add-amenities-button').addEventListener('click', openAmenityModal);
         document.getElementById('add-event-place-button').addEventListener('click', openEventPlaceModal);
