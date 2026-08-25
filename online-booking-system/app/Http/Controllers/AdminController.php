@@ -321,6 +321,7 @@ class AdminController extends Controller
             'check_out_time' => ['nullable', 'date_format:H:i'],
             'status' => ['required', 'in:pending,confirmed,checked-in,cancelled,completed'],
             'total_amount' => ['required', 'numeric', 'min:0'],
+            'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'special_requests' => ['nullable', 'string'],
             'submission_token' => ['nullable', 'string', 'max:100'],
         ]);
