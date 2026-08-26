@@ -76,7 +76,9 @@ class AdminController extends Controller
             'cancelledReservations',
             'avgDailyRevenue',
             'roomTypes',
-            'recentReservations'
+            'recentReservations',
+            'activeReservations',
+            'totalGuests'
         ));
     }
 
