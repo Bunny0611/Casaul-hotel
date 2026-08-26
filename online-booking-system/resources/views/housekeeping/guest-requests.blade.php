@@ -455,27 +455,17 @@
     .pagination button { width: 27px; height: 27px; color: #718096; background: #fff; border: 1px solid #e5eaf0; border-radius: 6px; }
     .pagination .current { color: #fff; background: #dc2626; border-color: #dc2626; }
 
-    .request-side-stack { display: grid; gap: 14px; align-content: start; }
-    .request-side-stack .request-panel { border-radius: 15px; }
+    .request-side-stack { display: grid; gap: 14px; align-content: stretch; }
+    .request-side-stack .request-panel { height: 100%; display: flex; flex-direction: column; border-radius: 15px; }
     .request-side-stack .panel-header { padding: 13px 15px; }
-    .request-side-stack .panel-body { padding: 12px 15px; }
+    .request-side-stack .panel-body { flex: 1; display: flex; padding: 12px 15px; }
     .request-side-stack .panel-title-icon { width: 29px; height: 29px; border-radius: 9px; font-size: 12px; }
     .request-side-stack .panel-title { gap: 9px; }
     .request-side-stack .panel-title h3 { font-size: 13px; }
-    .request-side-stack .empty-state { min-height: 90px; padding: 14px; }
+    .request-side-stack .empty-state { flex: 1; min-height: 0; padding: 14px; }
     .request-side-stack .empty-icon { width: 30px; height: 30px; margin-bottom: 7px; font-size: 13px; }
     .request-side-stack .empty-state h4 { font-size: 11px; }
     .request-side-stack .empty-state p { margin-top: 3px; font-size: 10px; }
-
-    .notification-list { display: grid; gap: 12px; }
-    .notification-item { display: flex; align-items: flex-start; gap: 9px; }
-    .notification-icon { width: 27px; height: 27px; flex: 0 0 27px; display: grid; place-items: center; border-radius: 9px; color: #2563eb; background: #eaf1ff; font-size: 11px; }
-    .notification-icon.green { color: #059669; background: #dcfce7; }
-    .notification-icon.yellow { color: #d97706; background: #fef3c7; }
-    .notification-item strong { display: block; color: #334155; font-size: 10px; }
-    .notification-item p { margin: 2px 0 0; color: #718096; font-size: 9px; }
-    .notification-item time { margin-left: auto; color: #94a3b8; font-size: 9px; white-space: nowrap; }
-    .notification-footer { padding: 11px 15px; color: #dc2626; border-top: 1px solid #edf0f2; font-size: 10px; font-weight: 600; text-align: center; }
 
     .request-panel {
         background: #fff;
@@ -558,11 +548,6 @@
         background: #fff1eb;
         color: #ff6b35;
         font-size: 24px;
-    }
-
-    .notification-panel .empty-icon {
-        background: #eef4ff;
-        color: #3b82f6;
     }
 
     .empty-state h4 {
@@ -1001,19 +986,6 @@
                         <span class="panel-date"><i class="far fa-calendar-alt"></i> Today</span>
                     </div>
                     <div class="panel-body"><div class="empty-state"><div class="empty-state-content"><div class="empty-icon"><i class="fas fa-comments"></i></div><h4>No new messages</h4><p>You're all caught up!</p></div></div></div>
-                </div>
-
-                <div class="request-panel notification-panel">
-                    <div class="panel-header">
-                        <div class="panel-title"><div class="panel-title-icon"><i class="fas fa-bell"></i></div><h3>Notification Center</h3></div>
-                        <span class="panel-date"><i class="fas fa-circle" style="font-size:7px;color:#22c55e;"></i> Live</span>
-                    </div>
-                    <div class="panel-body notification-list">
-                        <div class="notification-item"><span class="notification-icon"><i class="fas fa-bell"></i></span><div><strong>New request from Room 101</strong><p>Extra towels and pillows requested</p></div><time>2m ago</time></div>
-                        <div class="notification-item"><span class="notification-icon green"><i class="fas fa-check"></i></span><div><strong>Request completed</strong><p>Room 205 - Toiletries delivered</p></div><time>1h ago</time></div>
-                        <div class="notification-item"><span class="notification-icon yellow"><i class="fas fa-bell"></i></span><div><strong>New request from Room 301</strong><p>Breakfast and water bottles</p></div><time>2h ago</time></div>
-                    </div>
-                    <button type="button" class="notification-footer" onclick="openRequestDetails()">View All Notifications <i class="fas fa-chevron-right"></i></button>
                 </div>
             </div>
         </section>

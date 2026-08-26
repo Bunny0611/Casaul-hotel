@@ -4,13 +4,13 @@
 
 @section('content')
 @php
-    $requestCollection = collect($requests);
+    $requestCollection = collect($allRequests);
     $totalRequests = $requestCollection->count();
     $newRequests = $requestCollection->where('status', 'New')->count();
     $inProgressRequests = $requestCollection->where('status', 'In Progress')->count();
     $completedRequests = $requestCollection->where('status', 'Completed')->count();
     $assignedRequests = $requestCollection->whereNotNull('assigned_employee_id')->count();
-    $visibleRequests = $requestCollection->take(5);
+    $visibleRequests = $requests;
 @endphp
 
 <style>
@@ -42,7 +42,7 @@
     .priority { white-space: nowrap; } .priority:before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: .3rem; border-radius: 50%; background: #ef4444; } .priority.medium:before { background: #f59e0b; } .priority.low:before { background: #10b981; }
     .view-button { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid #ef9a9a; border-radius: 5px; padding: .45rem .6rem; color: #b91c1c; background: #fff; font-size: .78rem; cursor: pointer; }
     .view-button:hover { background: #fff5f5; } .panel-footer { display: flex; justify-content: space-between; align-items: center; padding: .85rem 1rem; color: #64748b; font-size: .78rem; }
-    .pagination { display: flex; gap: .3rem; } .pagination span { display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border: 1px solid #e2e8f0; border-radius: 5px; } .pagination .current { color: white; background: #c91c25; border-color: #c91c25; }
+    .pagination { display: flex; gap: .3rem; } .pagination a, .pagination span { display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border: 1px solid #e2e8f0; border-radius: 5px; color: #64748b; text-decoration: none; } .pagination a:hover { color: #c91c25; border-color: #ef9a9a; } .pagination .current { color: white; background: #c91c25; border-color: #c91c25; } .pagination .disabled { color: #cbd5e1; background: #f8fafc; }
     .side-panel { padding: 1rem; } .side-panel h3 { color: #a8191f; font-size: .9rem; text-transform: uppercase; } .side-panel h3 i { margin-right: .35rem; }
     .ring { width: 92px; height: 92px; margin: 1rem auto .8rem; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(#c91c25 0 20%, #f5a623 20% 32%, #4d8de8 32% 39%, #42aa83 39% 100%); }
     .ring:after { content: ''; width: 61px; height: 61px; border-radius: 50%; background: #fff; grid-area: 1 / 1; } .ring-label { grid-area: 1 / 1; z-index: 1; text-align: center; } .ring-label strong { display: block; font-size: 1.35rem; color: #253247; } .ring-label span { color: #64748b; font-size: .5rem; }
@@ -84,7 +84,25 @@
                     <tr><td colspan="9" style="text-align:center;padding:2rem;color:#64748b;">No Employee requests found.</td></tr>
                 @endforelse
             </tbody></table></div>
-            <div class="panel-footer"><span>Showing 1 to {{ $visibleRequests->count() }} of {{ $totalRequests }} requests</span><div class="pagination"><span>&lsaquo;</span><span class="current">1</span><span>2</span><span>3</span><span>&rsaquo;</span></div></div>
+            <div class="panel-footer"><span>Showing {{ $requests->firstItem() ?? 0 }} to {{ $requests->lastItem() ?? 0 }} of {{ $requests->total() }} requests</span><div class="pagination" aria-label="Guest request pages">
+                @if ($requests->onFirstPage())
+                    <span class="disabled" aria-disabled="true">&lsaquo;</span>
+                @else
+                    <a href="{{ $requests->previousPageUrl() }}" aria-label="Previous page">&lsaquo;</a>
+                @endif
+                @for ($page = 1; $page <= $requests->lastPage(); $page++)
+                    @if ($page === $requests->currentPage())
+                        <span class="current" aria-current="page">{{ $page }}</span>
+                    @else
+                        <a href="{{ $requests->url($page) }}" aria-label="Page {{ $page }}">{{ $page }}</a>
+                    @endif
+                @endfor
+                @if ($requests->hasMorePages())
+                    <a href="{{ $requests->nextPageUrl() }}" aria-label="Next page">&rsaquo;</a>
+                @else
+                    <span class="disabled" aria-disabled="true">&rsaquo;</span>
+                @endif
+            </div></div>
         </section>
 
         <section class="request-panel departments"><div class="departments-heading"><i class="fas fa-sitemap"></i> Department Status Overview</div><div class="department-grid"><div class="department"><i class="fas fa-bed"></i><div><strong>Housekeeping</strong><span>{{ $totalRequests }} Active Requests</span><a href="#request-table">View Details <i class="fas fa-arrow-right"></i></a></div></div><div class="department"><i class="fas fa-utensils"></i><div><strong>Dining</strong><span>0 Active Requests</span><a href="#request-table">View Details <i class="fas fa-arrow-right"></i></a></div></div><div class="department"><i class="fas fa-wrench"></i><div><strong>Maintenance</strong><span>0 Active Requests</span><a href="#request-table">View Details <i class="fas fa-arrow-right"></i></a></div></div><div class="department"><i class="fas fa-users"></i><div><strong>Front Desk</strong><span>{{ $totalRequests }} Active Requests</span><a href="#request-table">View Details <i class="fas fa-arrow-right"></i></a></div></div></div></section>

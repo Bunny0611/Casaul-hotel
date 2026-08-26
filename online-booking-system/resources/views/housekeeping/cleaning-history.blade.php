@@ -41,10 +41,6 @@
         letter-spacing: -.5px;
     }
 
-    .history-table tbody tr:not(.empty-row) {
-        display: none;
-    }
-
     .history-table tbody .empty-row {
         display: table-row;
     }
@@ -538,6 +534,42 @@
     .completed-status i {
         font-size: 10px;
     }
+
+    .history-view-btn {
+        padding: 6px 10px;
+        border: 1px solid #ffb08e;
+        border-radius: 7px;
+        background: #fff;
+        color: #e95420;
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .history-view-btn:hover {
+        background: #fff7f2;
+    }
+
+    .history-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, .55);
+    }
+
+    .history-modal.open { display: flex; }
+    .history-modal-card { width: min(100%, 520px); max-height: 90vh; overflow-y: auto; padding: 24px; border-radius: 15px; background: #fff; box-shadow: 0 20px 45px rgba(15, 23, 42, .2); }
+    .history-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 18px; }
+    .history-modal-head h3 { margin: 0; color: #292929; font-size: 18px; }
+    .history-modal-close { border: 0; background: transparent; color: #888; font-size: 22px; cursor: pointer; }
+    .history-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .history-detail label { display: block; margin-bottom: 4px; color: #999; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .history-detail p { margin: 0; color: #444; font-size: 13px; }
 
     .records-footer {
         display: flex;
@@ -1054,9 +1086,8 @@
                             Time
                         </th>
 
-                        <th>
-                            Status
-                        </th>
+                                <th>Status</th>
+                                <th>Action</th>
 
                     </tr>
 
@@ -1065,9 +1096,7 @@
 
                 <tbody>
 
-                    <tr class="empty-row" id="historyEmptyRow" style="display:none;">
-                        <td colspan="6">No completed cleaning records.</td>
-                    </tr>
+                    <tr class="empty-row" id="historyEmptyRow" style="display:none;"><td colspan="7">No completed cleaning records.</td></tr>
 
 
                     <tr class="history-record" data-room="101" data-date="2026-07-31" data-staff="Maria Santos">
@@ -1360,9 +1389,19 @@
 
 </div>
 
+<div id="historyDetailsModal" class="history-modal" role="dialog" aria-modal="true" aria-labelledby="historyDetailsTitle">
+    <div class="history-modal-card">
+        <div class="history-modal-head">
+            <h3 id="historyDetailsTitle">Cleaning Task Details</h3>
+            <button type="button" class="history-modal-close" id="historyDetailsClose" aria-label="Close">&times;</button>
+        </div>
+        <div id="historyDetailsContent" class="history-detail-grid"></div>
+    </div>
+</div>
+
 <script>
 (() => {
-    const rows = [...document.querySelectorAll('.history-record')];
+    const tableBody = document.querySelector('.history-table tbody');
     const emptyRow = document.getElementById('historyEmptyRow');
     const roomInput = document.getElementById('historyRoomFilter');
     const dateInput = document.getElementById('historyDateFilter');
@@ -1370,20 +1409,84 @@
     const total = document.getElementById('historyTotal');
     const from = document.getElementById('historyShowingFrom');
     const to = document.getElementById('historyShowingTo');
-    let filteredRows = rows;
+    let records = [];
+    let filteredRecords = [];
     let page = 1;
     const pageSize = 3;
 
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function readCompletedRecords() {
+        try {
+            const tasks = JSON.parse(localStorage.getItem('housekeeping-assigned-tasks') || '[]');
+            return tasks.map(task => {
+                const state = JSON.parse(localStorage.getItem(`housekeeping-task-${task.id}`) || 'null');
+                return state && state.status === 'completed' ? { ...task, state } : null;
+            }).filter(Boolean).reverse();
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function formatDate(value) {
+        if (!value) return 'Not set';
+        const date = new Date(`${value}T00:00:00`);
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function formatTime(value) {
+        if (!value) return 'Not set';
+        const [hour, minute] = value.split(':');
+        const date = new Date(2000, 0, 1, Number(hour), Number(minute));
+        return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+
+    function formatStoredTime(value) {
+        if (!value) return 'Not started';
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function renderRecords() {
+        tableBody.querySelectorAll('.history-record').forEach(row => row.remove());
+        records.forEach(record => {
+            const row = document.createElement('tr');
+            row.className = 'history-record';
+            row.dataset.room = String(record.roomNumber || record.roomLabel || '').toLowerCase();
+            row.dataset.date = record.dayValue || '';
+            row.dataset.staff = record.assignedStaff || '';
+            row.innerHTML = `<td><div class="room-name">${escapeHtml(record.roomLabel || 'Room not set')}</div><span class="room-type room-standard">${escapeHtml(record.roomType || 'Room type not set')}</span></td><td><span class="task-name">${escapeHtml(record.task || 'General Cleaning')}</span></td><td><div class="staff-info"><div class="staff-avatar avatar-orange">${escapeHtml((record.assignedStaff || 'Staff').split(' ').map(part => part[0]).slice(0, 2).join('').toUpperCase())}</div><span class="staff-name">${escapeHtml(record.assignedStaff || 'Unassigned')}</span></div></td><td><span class="date-text">${escapeHtml(formatDate(record.dayValue) || record.day || 'Not set')}</span></td><td><span class="time-text">${escapeHtml(formatStoredTime(record.state.endTime))}</span></td><td><span class="completed-status"><i class="fas fa-check-circle"></i> Completed</span></td><td><button type="button" class="history-view-btn" data-history-id="${escapeHtml(record.id)}"><i class="fas fa-eye"></i> View</button></td>`;
+            tableBody.appendChild(row);
+        });
+    }
+
+    function updateStats() {
+        const completed = document.querySelector('.stat-green .stat-value');
+        const week = document.querySelector('.stat-blue .stat-value');
+        const average = document.querySelector('.stat-purple .stat-value');
+        const durations = records.map(record => parseInt(record.duration, 10)).filter(Number.isFinite);
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - 7);
+        const thisWeek = records.filter(record => record.state.endTime && new Date(record.state.endTime) >= weekStart).length;
+        if (completed) completed.textContent = records.length;
+        if (week) week.textContent = thisWeek;
+        if (average) average.firstChild.textContent = durations.length ? Math.round(durations.reduce((sum, value) => sum + value, 0) / durations.length) : '0';
+        const recordsTotal = document.querySelector('.records-total');
+        if (recordsTotal) recordsTotal.innerHTML = `<i class="fas fa-file-alt"></i> Total Records: ${records.length}`;
+    }
+
     function renderHistory() {
-        const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+        const pageCount = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
         page = Math.min(page, pageCount);
         const first = (page - 1) * pageSize;
-        rows.forEach(row => row.style.display = 'none');
-        filteredRows.slice(first, first + pageSize).forEach(row => row.style.display = '');
-        emptyRow.style.display = filteredRows.length ? 'none' : '';
-        total.textContent = filteredRows.length;
-        from.textContent = filteredRows.length ? first + 1 : 0;
-        to.textContent = Math.min(first + pageSize, filteredRows.length);
+        tableBody.querySelectorAll('.history-record').forEach(row => row.style.display = 'none');
+        filteredRecords.slice(first, first + pageSize).forEach(record => tableBody.querySelector(`[data-history-id="${CSS.escape(record.id)}"]`)?.closest('tr')?.style.removeProperty('display'));
+        emptyRow.style.display = filteredRecords.length ? 'none' : '';
+        total.textContent = filteredRecords.length;
+        from.textContent = filteredRecords.length ? first + 1 : 0;
+        to.textContent = Math.min(first + pageSize, filteredRecords.length);
         document.querySelectorAll('.history-page-number').forEach((button, index) => {
             button.classList.toggle('active', index + 1 === page);
             button.disabled = index + 1 > pageCount;
@@ -1396,24 +1499,35 @@
         const room = roomInput.value.trim().toLowerCase();
         const date = dateInput.value;
         const staff = staffInput.value;
-        filteredRows = rows.filter(row =>
-            (!room || row.dataset.room.includes(room)) &&
-            (!date || row.dataset.date === date) &&
-            (staff === 'All Staff' || row.dataset.staff === staff)
+        filteredRecords = records.filter(record =>
+            (!room || String(record.roomNumber || record.roomLabel).toLowerCase().includes(room)) &&
+            (!date || record.dayValue === date) &&
+            (staff === 'All Staff' || record.assignedStaff === staff)
         );
         page = 1;
         renderHistory();
     }
 
     function exportHistory() {
-        const header = ['Room', 'Task', 'Assigned Staff', 'Date', 'Time', 'Status'];
-        const data = filteredRows.map(row => [...row.querySelectorAll('td')].map(cell => cell.innerText.replace(/\s+/g, ' ').trim()));
-        const csv = [header, ...data].map(line => line.map(value => `"${value.replace(/"/g, '""')}"`).join(',')).join('\n');
+        const header = ['Room', 'Room Type', 'Occupancy', 'Task', 'Priority', 'Assigned Staff', 'Contact Number', 'Booking Reference', 'Scheduled Date', 'Scheduled Time', 'Estimated Duration', 'Started At', 'Finished At', 'Status', 'Notes'];
+        const data = filteredRecords.map(record => [record.roomLabel, record.roomType, record.occupancy, record.task, record.priority, record.assignedStaff, record.contactNumber, record.bookingReference, record.dayValue || record.day, formatTime(record.scheduleTime), record.duration, formatStoredTime(record.state.startTime), formatStoredTime(record.state.endTime), 'Completed', record.note]);
+        const csv = [header, ...data].map(line => line.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        link.download = 'cleaning-history.csv';
+        const downloadUrl = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+        link.href = downloadUrl;
+        link.download = 'cleaning-history-report.csv';
+        link.style.display = 'none';
+        document.body.appendChild(link);
         link.click();
-        URL.revokeObjectURL(link.href);
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    }
+
+    function openDetails(record) {
+        const content = document.getElementById('historyDetailsContent');
+        const fields = [['Room', record.roomLabel], ['Room Type', record.roomType], ['Occupancy', record.occupancy], ['Task', record.task], ['Priority', record.priority], ['Assigned Staff', record.assignedStaff], ['Contact Number', record.contactNumber || 'Not provided'], ['Booking Reference', record.bookingReference || 'Not provided'], ['Scheduled Date', formatDate(record.dayValue) || record.day], ['Scheduled Time', formatTime(record.scheduleTime)], ['Estimated Duration', record.duration || 'Not set'], ['Started At', formatStoredTime(record.state.startTime)], ['Finished At', formatStoredTime(record.state.endTime)], ['Notes', record.note || 'None']];
+        content.innerHTML = fields.map(([label, value]) => `<div class="history-detail"><label>${escapeHtml(label)}</label><p>${escapeHtml(value || 'Not set')}</p></div>`).join('');
+        document.getElementById('historyDetailsModal').classList.add('open');
     }
 
     document.getElementById('filterHistoryButton').addEventListener('click', filterHistory);
@@ -1421,6 +1535,13 @@
     document.getElementById('historyPrevious').addEventListener('click', () => { page--; renderHistory(); });
     document.getElementById('historyNext').addEventListener('click', () => { page++; renderHistory(); });
     document.querySelectorAll('.history-page-number').forEach((button, index) => button.addEventListener('click', () => { page = index + 1; renderHistory(); }));
+    tableBody.addEventListener('click', event => { const button = event.target.closest('[data-history-id]'); if (button) openDetails(records.find(record => record.id === button.dataset.historyId)); });
+    document.getElementById('historyDetailsClose').addEventListener('click', () => document.getElementById('historyDetailsModal').classList.remove('open'));
+    document.getElementById('historyDetailsModal').addEventListener('click', event => { if (event.target.id === 'historyDetailsModal') event.currentTarget.classList.remove('open'); });
+    records = readCompletedRecords();
+    filteredRecords = records;
+    renderRecords();
+    updateStats();
     renderHistory();
 })();
 </script>
