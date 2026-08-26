@@ -397,6 +397,34 @@ class AdminController extends Controller
         return redirect()->route('admin.rooms')->with('success', $deleted . ' room(s) deleted successfully!');
     }
 
+    public function bulkDestroyDining(Request $request)
+    {
+        $validated = $request->validate([
+            'type' => ['required', Rule::in(['tables', 'menus', 'schedules'])],
+            'dining_ids' => ['required'],
+        ]);
+
+        $ids = is_string($validated['dining_ids']) ? explode(',', $validated['dining_ids']) : $validated['dining_ids'];
+        $ids = collect($ids)
+            ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return redirect()->route('admin.rooms')->with('success', 'No dining items selected for deletion.');
+        }
+
+        $model = match ($validated['type']) {
+            'tables' => DiningTable::query(),
+            'menus' => DiningMenu::query(),
+            'schedules' => DiningSchedule::query(),
+        };
+        $deleted = $model->whereIn('id', $ids)->delete();
+
+        return redirect()->route('admin.rooms')->with('success', $deleted . ' dining item(s) deleted successfully.');
+    }
+
     public function reservations()
     {
         $reservations = Reservation::with('room')->latest()->get();
