@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Room;
 use App\Models\InventoryItem;
+use App\Models\Amenity;
+use App\Models\EventPlace;
+use App\Models\DiningMenu;
 use App\Models\Message;
 use App\Models\Reservation;
 
@@ -62,18 +65,15 @@ class HomeController extends Controller
     {
         $rooms = Room::where('status', 'available')->get();
 
-        $amenities = InventoryItem::where('category', 'amenities')
-            ->whereIn('status', ['available', 'limited'])
+        $amenities = Amenity::whereIn('status', ['available', 'limited'])
             ->orderBy('name')
             ->get();
 
-        $events = InventoryItem::where('category', 'event_place')
-            ->whereIn('status', ['available', 'limited'])
+        $events = EventPlace::whereIn('status', ['available', 'limited'])
             ->orderBy('name')
             ->get();
 
-        $dining = InventoryItem::where('category', 'dining')
-            ->whereIn('status', ['available', 'limited'])
+        $dining = DiningMenu::whereIn('status', ['available', 'limited'])
             ->orderBy('name')
             ->get();
 

@@ -14,8 +14,11 @@ use App\Models\Reservation;
 use App\Models\Message;
 use App\Models\User;
 use App\Models\InventoryItem;
+use App\Models\Amenity;
+use App\Models\EventPlace;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
+use App\Models\DiningMenu;
 use App\Models\GuestRequest;
 
 class AdminController extends Controller
@@ -63,8 +66,6 @@ class AdminController extends Controller
             'totalRevenue',
             'availableRooms',
             'totalRooms',
-            'activeReservations',
-            'totalGuests',
             'unreadMessages',
             'maintenanceRooms',
             'occupiedRooms',
@@ -112,7 +113,6 @@ class AdminController extends Controller
             'todayArrivals',
             'todayDepartures',
             'pendingRequests',
-            'occupancyRate',
             'recentActivity'
         ));
     }
@@ -120,9 +120,9 @@ class AdminController extends Controller
     public function rooms()
     {
         $rooms = Room::orderBy('room_number')->paginate(5);
-        $amenities = InventoryItem::where('category', 'amenities')->orderBy('name')->paginate(5, ['*'], 'amenities_page')->appends(['tab' => 'amenities']);
-        $eventPlaces = InventoryItem::where('category', 'event_place')->orderBy('name')->paginate(5, ['*'], 'event_places_page')->appends(['tab' => 'event-place']);
-        $dining = InventoryItem::where('category', 'dining')->orderBy('name')->paginate(5, ['*'], 'dining_page')->appends(['tab' => 'dining']);
+        $amenities = Amenity::orderBy('name')->paginate(5, ['*'], 'amenities_page')->appends(['tab' => 'amenities']);
+        $eventPlaces = EventPlace::orderBy('name')->paginate(5, ['*'], 'event_places_page')->appends(['tab' => 'event-place']);
+        $dining = DiningMenu::orderBy('name')->paginate(5, ['*'], 'dining_page')->appends(['tab' => 'dining']);
         $diningTables = DiningTable::orderBy('table_no')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $activeTab = request()->query('tab', 'rooms');
@@ -148,10 +148,10 @@ class AdminController extends Controller
 
     public function diningMenu()
     {
-        $menus = InventoryItem::where('category', 'dining')->orderBy('name')->get()->map(function ($menu) {
+        $menus = DiningMenu::orderBy('name')->get()->map(function ($menu) {
             return [
                 'name' => $menu->name,
-                'category' => $menu->type ?: 'Menu / Meal',
+            'category' => $menu->category ?: 'Menu / Meal',
                 'price' => '₱' . number_format((float) $menu->price, 2),
                 'available_time' => $menu->available_from && $menu->available_to
                     ? Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . Carbon::parse($menu->available_to)->format('g:i A')
@@ -225,7 +225,21 @@ class AdminController extends Controller
             $validated['image'] = $this->handleInventoryImageUpload($request);
         }
 
-        InventoryItem::create($validated);
+        if ($validated['category'] === 'dining') {
+            DiningMenu::create([
+                'name' => $validated['name'],
+                'category' => $request->input('menu_category', $validated['type'] ?: 'Menu / Meal'),
+                'description' => $validated['description'] ?? null,
+                'price' => $validated['price'],
+                'status' => $validated['status'],
+                'available_from' => $validated['available_from'] ?? null,
+                'available_to' => $validated['available_to'] ?? null,
+                'quantity' => $validated['quantity'] ?? null,
+                'image' => $validated['image'] ?? null,
+            ]);
+        } else {
+            InventoryItem::create($validated);
+        }
 
         return redirect()->route('admin.rooms')->with('success', 'Inventory item added successfully.');
     }
@@ -385,9 +399,12 @@ class AdminController extends Controller
     {
         $reservations = Reservation::with('room')->latest()->get();
         $rooms = Room::orderBy('room_number')->get();
-        $inventoryItems = InventoryItem::whereIn('category', ['amenities', 'event_place', 'dining'])->orderBy('name')->get();
+        $inventoryItems = InventoryItem::orderBy('name')->get();
+        $amenities = Amenity::orderBy('name')->get();
+        $eventPlaces = EventPlace::orderBy('name')->get();
+        $diningMenus = DiningMenu::orderBy('name')->get();
         return request()->routeIs('employee.reservation')
-            ? view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems'))
+            ? view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus'))
             : view('admin.reservations', compact('reservations', 'rooms'));
     }
 
@@ -411,9 +428,9 @@ class AdminController extends Controller
             'total_amount' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
-            'amenity_id' => ['nullable', 'required_if:category,amenities', 'exists:inventory_items,id'],
-            'event_place_id' => ['nullable', 'required_if:category,event_place', 'exists:inventory_items,id'],
-            'dining_id' => ['nullable', 'required_if:category,dining', 'exists:inventory_items,id'],
+            'amenity_id' => ['nullable', 'required_if:category,amenities', 'exists:amenities,id'],
+            'event_place_id' => ['nullable', 'required_if:category,event_place', 'exists:event_places,id'],
+            'dining_id' => ['nullable', 'required_if:category,dining', 'exists:dining_menus,id'],
             'duration_hours' => ['nullable', 'required_if:category,amenities', 'integer', 'min:1', 'max:24'],
             'special_requests' => ['nullable', 'string'],
             'submission_token' => ['nullable', 'string', 'max:100'],
@@ -436,7 +453,7 @@ class AdminController extends Controller
         $validated['status'] = 'pending';
 
         if ($validated['category'] === 'amenities') {
-            $amenity = InventoryItem::where('category', 'amenities')->findOrFail($validated['amenity_id']);
+            $amenity = Amenity::findOrFail($validated['amenity_id']);
             $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $validated['check_in_time'])
                 ->addHours((int) $validated['duration_hours']);
             $validated['check_out'] = $endTime->toDateString();

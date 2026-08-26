@@ -599,7 +599,7 @@
                     <label class="mb-1 block text-sm font-medium text-gray-700">Amenity</label>
                     <select name="amenity_id" data-reservation-input="amenities" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="">Select an amenity</option>
-                        @foreach(($inventoryItems ?? collect())->where('category', 'amenities') as $item)
+                        @foreach(($amenities ?? collect()) as $item)
                             <option value="{{ $item->id }}" data-price="{{ $item->price }}">{{ $item->name }} - ₱{{ number_format($item->price, 2) }}</option>
                         @endforeach
                     </select>
@@ -608,7 +608,7 @@
                     <label class="mb-1 block text-sm font-medium text-gray-700">Event Place</label>
                     <select name="event_place_id" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="">Select an event place</option>
-                        @foreach(($inventoryItems ?? collect())->where('category', 'event_place') as $item)
+                        @foreach(($eventPlaces ?? collect()) as $item)
                             <option value="{{ $item->id }}">{{ $item->name }}</option>
                         @endforeach
                     </select>
@@ -666,7 +666,7 @@
                     <label class="mb-1 block text-sm font-medium text-gray-700">Menu</label>
                     <select name="dining_id" data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="">Select a menu</option>
-                        @foreach(($inventoryItems ?? collect())->where('category', 'dining') as $item)
+                        @foreach(($diningMenus ?? collect()) as $item)
                             <option value="{{ $item->id }}">{{ $item->name }}</option>
                         @endforeach
                     </select>
