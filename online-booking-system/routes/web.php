@@ -9,6 +9,8 @@ use App\Models\Message;
 use App\Models\InventoryItem;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\DiningTable;
+use App\Models\DiningSchedule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -51,11 +53,13 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
         $reservations = Reservation::with('room')->latest()->get();
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::whereIn('category', ['amenities', 'event_place', 'dining'])
-            ->whereIn('status', ['available', 'limited'])
+            ->whereIn('status', ['available', 'limited', 'Available', 'Limited'])
             ->orderBy('name')
             ->get();
+        $diningTables = DiningTable::orderBy('table_no')->get();
+        $diningSchedules = DiningSchedule::orderBy('available_from')->get();
 
-        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems'));
+        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems', 'diningTables', 'diningSchedules'));
     })->name('reservation');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
@@ -88,45 +92,9 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
 
         return view('employee.room-status', compact('rooms', 'inventoryItems'));
     })->name('room-status');
-    Route::get('/guest-requests', function () {
-        if (!session()->has('employee_guest_requests')) {
-            session()->put('employee_guest_requests', [
-                [
-                    'id' => 1,
-                    'title' => 'Room 305 - Extra Towels',
-                    'requested_at' => '10:15 AM',
-                    'status' => 'Pending',
-                ],
-                [
-                    'id' => 2,
-                    'title' => 'Room 208 - Late Checkout',
-                    'requested_at' => '9:40 AM',
-                    'status' => 'Approved',
-                ],
-                [
-                    'id' => 3,
-                    'title' => 'Room 101 - Wake-up Call',
-                    'requested_at' => '7:30 AM',
-                    'status' => 'Done',
-                ],
-            ]);
-        }
-
-        $requests = session('employee_guest_requests');
-
-        return view('employee.guest-requests', compact('requests'));
-    })->name('guest-requests');
-    Route::get('/guest-requests/{id}', function ($id) {
-        $requestData = collect(session('employee_guest_requests', []))->firstWhere('id', (int) $id);
-
-        abort_unless($requestData, 404);
-
-        return view('employee.guest-request-detail', compact('requestData'));
-    })->name('guest-requests.show');
-    Route::post('/guest-requests/{id}/resolve', [
-        AdminController::class,
-        'resolveGuestRequest',
-    ])->name('guest-requests.resolve');
+    Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
+    Route::get('/guest-requests/{id}', [AdminController::class, 'employeeGuestRequest'])->name('guest-requests.show');
+    Route::patch('/guest-requests/{id}', [AdminController::class, 'updateEmployeeGuestRequest'])->name('guest-requests.update');
     Route::get('/messages', function () {
         $messages = Message::latest()->get();
 

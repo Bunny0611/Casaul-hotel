@@ -4,10 +4,11 @@
 
 @section('content')
 @php
-    $title = $requestData['title'] ?? 'Guest assistance request';
-    $titleParts = explode(' - ', $title, 2);
-    $status = $requestData['status'] ?? 'Pending';
-    $isComplete = in_array($status, ['Resolved', 'Done', 'Completed'], true);
+    $status = $guestRequest->status;
+    $guestName = $guestRequest->guest?->name ?? $guestRequest->reservation?->guest_name ?? 'Guest';
+    $room = $guestRequest->room ?? $guestRequest->reservation?->room;
+    $roomNumber = $room?->room_number ?? 'N/A';
+    $isComplete = $status === 'Completed';
 @endphp
 
 <style>
@@ -16,6 +17,7 @@
     .detail-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
     .detail-heading h1 { color: #172238; font-size: 1.7rem; font-weight: 700; } .detail-heading p { margin-top: .3rem; color: #64748b; font-size: .9rem; }
     .detail-status { border-radius: 999px; padding: .5rem .8rem; color: {{ $isComplete ? '#168463' : '#b7791f' }}; background: {{ $isComplete ? '#eaf8f2' : '#fff7df' }}; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+    .detail-form { padding: 1.15rem; } .detail-form label { display: block; margin-bottom: .35rem; color: #64748b; font-size: .75rem; } .detail-form select, .detail-form textarea { width: 100%; border: 1px solid #dfe5ec; border-radius: 6px; padding: .6rem; color: #273449; font-size: .85rem; }
     .detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 1rem; align-items: start; }
     .detail-panel { overflow: hidden; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; box-shadow: 0 5px 15px rgba(30, 41, 59, .06); }
     .detail-panel + .detail-panel { margin-top: 1rem; } .detail-panel-title { display: flex; align-items: center; gap: .5rem; padding: 1rem 1.15rem; border-bottom: 1px solid #edf0f3; color: #a8191f; font-size: .85rem; font-weight: 700; text-transform: uppercase; } .detail-panel-title i { font-size: .8rem; }
@@ -28,13 +30,13 @@
 
 <div class="detail-page">
     <a class="detail-back" href="{{ route('employee.guest-requests') }}"><i class="fas fa-arrow-left"></i> Back to Guest Requests</a>
-    <div class="detail-heading"><div><h1>{{ $titleParts[1] ?? $title }}</h1><p>View and manage guest requested service items.</p></div><span class="detail-status">Status: {{ $status }}</span></div>
+    <div class="detail-heading"><div><h1>{{ $guestRequest->request_type }}</h1><p>View and manage guest requested service items.</p></div><span class="detail-status">Status: {{ $status }}</span></div>
     <div class="detail-grid">
         <div>
-            <section class="detail-panel"><div class="detail-panel-title"><i class="fas fa-clipboard-list"></i> Reservation Information</div><div class="reservation-grid"><div><span class="detail-label">Reservation ID</span><span class="detail-value">RES-{{ str_pad($requestData['id'] ?? 0, 4, '0', STR_PAD_LEFT) }}</span></div><div><span class="detail-label">Guest Name</span><span class="detail-value">{{ $titleParts[0] }}</span></div><div><span class="detail-label">Room</span><span class="detail-value">Guest room request</span></div><div><span class="detail-label">Requested On</span><span class="detail-value">{{ $requestData['requested_at'] ?? 'Today' }}</span></div><div><span class="detail-label">Department</span><span class="detail-value">Front Desk</span></div><div><span class="detail-label">Priority</span><span class="detail-value">{{ $isComplete ? 'Low' : 'High' }}</span></div></div></section>
-            <section class="detail-panel"><div class="detail-panel-title"><i class="fas fa-concierge-bell"></i> Requested Service</div><div class="detail-table-wrap"><table class="addon-table"><thead><tr><th>Request Item</th><th>Guest Note</th><th>Status</th></tr></thead><tbody><tr><td><span class="addon-name">{{ $titleParts[1] ?? $title }}</span></td><td>Request received through guest portal</td><td><span class="addon-status">{{ $status }}</span></td></tr></tbody></table></div></section>
+            <section class="detail-panel"><div class="detail-panel-title"><i class="fas fa-clipboard-list"></i> Guest Information</div><div class="reservation-grid"><div><span class="detail-label">Guest Name</span><span class="detail-value">{{ $guestName }}</span></div><div><span class="detail-label">Room Number</span><span class="detail-value">{{ $roomNumber }}</span></div><div><span class="detail-label">Reservation ID</span><span class="detail-value">{{ $guestRequest->reservation_id ? 'RES-' . str_pad($guestRequest->reservation_id, 4, '0', STR_PAD_LEFT) : 'N/A' }}</span></div></div></section>
+            <section class="detail-panel"><div class="detail-panel-title"><i class="fas fa-concierge-bell"></i> Request Information</div><div class="reservation-grid"><div><span class="detail-label">Request ID</span><span class="detail-value">REQ-{{ str_pad($guestRequest->id, 4, '0', STR_PAD_LEFT) }}</span></div><div><span class="detail-label">Request Type</span><span class="detail-value">{{ $guestRequest->request_type }}</span></div><div><span class="detail-label">Preferred Time</span><span class="detail-value">{{ $guestRequest->preferred_time ?? 'Any time' }}</span></div><div><span class="detail-label">Priority</span><span class="detail-value">{{ $guestRequest->priority }}</span></div><div><span class="detail-label">Submitted Date/Time</span><span class="detail-value">{{ optional($guestRequest->submitted_at)->format('M d, Y g:i A') }}</span></div><div><span class="detail-label">Department</span><span class="detail-value">{{ $guestRequest->department }}</span></div></div><div class="detail-form"><span class="detail-label">Full Description</span><p class="detail-value">{{ $guestRequest->description }}</p></div></section>
         </div>
-        <aside><section class="detail-panel"><div class="detail-panel-title"><i class="fas fa-chart-bar"></i> Request Summary</div><div class="summary-body"><div class="summary-number"><i class="fas fa-clipboard"></i><div><span>Requested Items</span><strong>1</strong></div></div><div class="summary-row"><span>Requested On</span><strong>{{ $requestData['requested_at'] ?? 'Today' }}</strong></div><div class="summary-row"><span>Requested By</span><strong>{{ $titleParts[0] }}</strong></div><div class="summary-row"><span>Related Request</span><strong>RES-{{ str_pad($requestData['id'] ?? 0, 4, '0', STR_PAD_LEFT) }}</strong></div>@if(!$isComplete)<form method="POST" action="{{ route('employee.guest-requests.resolve', ['id' => $requestData['id']]) }}">@csrf<button class="detail-action" type="submit">Mark Request Complete <i class="fas fa-arrow-right"></i></button></form>@endif</div></section></aside>
+        <aside><section class="detail-panel"><div class="detail-panel-title"><i class="fas fa-user-cog"></i> Handling</div><form class="detail-form" method="POST" action="{{ route('employee.guest-requests.update', $guestRequest->id) }}">@csrf @method('PATCH')<div class="summary-row"><span>Assigned Employee</span><select name="assigned_employee_id"><option value="">Unassigned</option>@foreach($employees as $employee)<option value="{{ $employee->id }}" {{ $guestRequest->assigned_employee_id === $employee->id ? 'selected' : '' }}>{{ $employee->name }}</option>@endforeach</select></div><div class="summary-row"><label for="employee-notes">Employee Notes</label><textarea id="employee-notes" name="employee_notes" rows="4">{{ old('employee_notes', $guestRequest->employee_notes) }}</textarea></div><div class="summary-row"><label for="request-status">Status</label><select id="request-status" name="status"><option value="New" {{ $status === 'New' ? 'selected' : '' }}>New</option><option value="In Progress" {{ $status === 'In Progress' ? 'selected' : '' }}>In Progress</option><option value="Completed" {{ $status === 'Completed' ? 'selected' : '' }}>Completed</option></select></div><button class="detail-action" type="submit">Save Request Updates <i class="fas fa-arrow-right"></i></button></form></section></aside>
     </div>
 </div>
 @endsection

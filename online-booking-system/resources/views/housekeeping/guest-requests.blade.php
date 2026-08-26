@@ -4,9 +4,9 @@
 
 @php
     $stats = [
-        'pending' => 0,
-        'resolved' => 0,
-        'total' => 0,
+        'pending' => 2,
+        'resolved' => 1,
+        'total' => 3,
     ];
 @endphp
 
@@ -230,9 +230,252 @@
 
     .request-content-grid {
         display: grid;
-        grid-template-columns: 1.25fr 0.75fr;
+        grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
         gap: 20px;
     }
+
+    .request-table-panel {
+        min-width: 0;
+    }
+
+    .request-table-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #edf0f2;
+    }
+
+    .request-table-toolbar .panel-title {
+        gap: 10px;
+    }
+
+    .request-table-toolbar .panel-title-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        font-size: 12px;
+    }
+
+    .request-table-toolbar .panel-title h3 {
+        font-size: 14px;
+    }
+
+    .request-table-toolbar p {
+        margin: 2px 0 0;
+        color: #8a94a6;
+        font-size: 12px;
+    }
+
+    .view-all-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        color: #64748b;
+        background: #f8fafc;
+        border: 1px solid #e5eaf0;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .request-table-wrap {
+        overflow-x: auto;
+    }
+
+    .request-table {
+        width: 100%;
+        min-width: 720px;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .request-table th {
+        padding: 13px 15px;
+        color: #718096;
+        background: #fbfcfd;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .2px;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .request-table td {
+        padding: 14px 15px;
+        color: #516074;
+        border-top: 1px solid #edf0f2;
+        font-size: 12px;
+        vertical-align: middle;
+    }
+
+    .request-table th:nth-child(1), .request-table td:nth-child(1) { width: 16%; }
+    .request-table th:nth-child(2), .request-table td:nth-child(2) { width: 25%; }
+    .request-table th:nth-child(3), .request-table td:nth-child(3) { width: 20%; }
+    .request-table th:nth-child(4), .request-table td:nth-child(4) { width: 12%; }
+    .request-table th:nth-child(5), .request-table td:nth-child(5) { width: 15%; }
+    .request-table th:nth-child(6), .request-table td:nth-child(6) { width: 12%; }
+
+    .request-id {
+        display: block;
+        color: #dc2626;
+        font-weight: 700;
+    }
+
+    .new-badge, .addon-badge, .status-badge {
+        display: inline-block;
+        border-radius: 5px;
+        padding: 3px 7px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .new-badge { margin-top: 5px; color: #2563eb; background: #dbeafe; }
+    .addon-badge { color: #dc2626; background: #fee2e2; }
+    .status-badge { color: #475569; background: transparent; padding-left: 0; }
+    .status-badge::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #f59e0b; }
+    .status-badge.in-progress::before { background: #2563eb; }
+    .status-badge.completed::before { background: #10b981; }
+
+    .guest-name, .room-name { display: block; color: #273449; font-weight: 600; }
+    .room-detail, .date-detail { display: block; margin-top: 3px; color: #718096; font-size: 11px; }
+
+    .view-request {
+        width: 64px;
+        height: 30px;
+        padding: 0;
+        color: #dc2626;
+        background: #fff;
+        border: 1px solid #f08a8a;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .request-details-page { display: none; }
+    .request-details-page.show { display: block; }
+    .details-breadcrumb { display: none; }
+    .details-breadcrumb span { margin: 0 8px; color: #c0c7d1; }
+    .details-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 16px; }
+    .details-heading h2 { margin: 0; color: #273449; font-size: 22px; }
+    .details-heading p { margin: 4px 0 0; color: #718096; font-size: 12px; }
+    .details-status { padding: 8px 13px; color: #c2410c; background: #fff7ed; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+    .details-grid { display: grid; grid-template-columns: minmax(0, 1fr) 245px; gap: 20px; }
+    .details-grid.all-requests-mode { grid-template-columns: 1fr; }
+    .details-grid.all-requests-mode .summary-card { display: none; }
+    .details-main { display: grid; gap: 12px; min-width: 0; }
+    .specific-request-content { display: none; }
+    .specific-request-content.is-visible { display: block; }
+    .details-lower.specific-request-content.is-visible { display: grid; }
+    .details-actions.specific-request-content.is-visible { display: flex; }
+    .details-card { padding: 16px 18px; background: #fff; border: 1px solid #e7e9ed; border-radius: 8px; box-shadow: 0 4px 14px rgba(15,23,42,.04); }
+    .details-card h3 { margin: 0 0 14px; color: #991b1b; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .all-requests-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; }
+    .all-requests-table th { padding: 0 8px 10px; color: #718096; font-size: 10px; text-align: left; text-transform: uppercase; }
+    .all-requests-table td { padding: 11px 8px; border-top: 1px solid #edf0f2; color: #475569; font-size: 13px; vertical-align: middle; }
+    .all-requests-table th:nth-child(1), .all-requests-table td:nth-child(1) { width: 8%; }
+    .all-requests-table th:nth-child(2), .all-requests-table td:nth-child(2) { width: 10%; }
+    .all-requests-table th:nth-child(3), .all-requests-table td:nth-child(3) { width: 8%; }
+    .all-requests-table th:nth-child(4), .all-requests-table td:nth-child(4) { width: 10%; }
+    .all-requests-table th:nth-child(5), .all-requests-table td:nth-child(5) { width: 16%; }
+    .all-requests-table th:nth-child(6), .all-requests-table td:nth-child(6) { width: 10%; }
+    .all-requests-table th:nth-child(7), .all-requests-table td:nth-child(7) { width: 7%; }
+    .all-requests-table th:nth-child(8), .all-requests-table td:nth-child(8) { width: 12%; }
+    .all-requests-table th:nth-child(9), .all-requests-table td:nth-child(9) { width: 10%; }
+    .all-requests-table th:nth-child(10), .all-requests-table td:nth-child(10) { width: 9%; }
+    .all-requests-table td:first-child { color: #dc2626; font-weight: 700; }
+    .all-requests-table small { color: #718096; font-size: 10px; font-weight: 400; }
+    .all-requests-table td:nth-child(5), .all-requests-table td:nth-child(6), .all-requests-table td:nth-child(8) { overflow-wrap: anywhere; }
+    .all-request-status { display: inline-block; min-width: 76px; padding: 5px 8px; border-radius: 6px; color: #92400e; background: #fff7ed; font-size: 10px; font-weight: 600; }
+    .all-request-status.progress { color: #1d4ed8; background: #eff6ff; }
+    .all-request-status.completed { color: #047857; background: #ecfdf5; }
+    .priority-high, .priority-medium, .priority-low { display: inline-block; padding: 4px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; }
+    .priority-high { color: #b91c1c; background: #fee2e2; }
+    .priority-medium { color: #b45309; background: #fef3c7; }
+    .priority-low { color: #047857; background: #d1fae5; }
+    .reservation-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .reservation-grid + .reservation-grid { margin-top: 14px; padding-top: 14px; border-top: 1px solid #edf0f2; }
+    .detail-label { display: block; color: #8a94a6; font-size: 11px; text-transform: uppercase; }
+    .detail-value { display: block; margin-top: 4px; color: #273449; font-size: 14px; font-weight: 600; }
+    .addon-table { width: 100%; border-collapse: collapse; }
+    .addon-table th { padding: 0 8px 10px; color: #718096; font-size: 10px; text-align: left; text-transform: uppercase; }
+    .addon-table td { padding: 9px 8px; border-top: 1px solid #edf0f2; color: #475569; font-size: 13px; }
+    .addon-table td:first-child { color: #7f1d1d; font-weight: 600; }
+    .addon-status { display: inline-block; min-width: 72px; padding: 5px 8px; color: #475569; background: #fff7ed; border-radius: 6px; font-size: 10px; }
+    .addon-status.delivered { color: #047857; background: #ecfdf5; }
+    .details-lower { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .details-note { min-height: 54px; color: #475569; font-size: 14px; line-height: 1.5; }
+    #housekeepingNotes {
+        display: block;
+        width: 100%;
+        min-height: 110px;
+        box-sizing: border-box;
+        padding: 12px;
+        border: 1px solid #dfe3e8;
+        border-radius: 8px;
+        resize: vertical;
+    }
+    #housekeepingNotes:focus {
+        border-color: #ff6b35;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(255,107,53,0.12);
+    }
+    .details-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
+    .details-action { height: 36px; padding: 0 14px; border: 1px solid #ff6b35; border-radius: 6px; color: #dc2626; background: #fff; font-family: inherit; font-size: 13px; font-weight: 600; }
+    .details-action.primary { color: #fff; border-color: #dc2626; background: linear-gradient(90deg, #dc2626, #ff7a00); }
+    .summary-card { height: fit-content; }
+    .summary-total { display: flex; align-items: center; gap: 12px; padding: 15px; margin-bottom: 15px; background: #f8fafc; border-radius: 10px; }
+    .summary-total i { color: #2563eb; font-size: 24px; }
+    .summary-total strong { display: block; color: #273449; font-size: 20px; }
+    .summary-total span { color: #475569; font-size: 10px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #edf0f2; color: #475569; font-size: 11px; }
+    .summary-row b { color: #273449; }
+    .summary-info { padding: 12px 0; border-bottom: 1px solid #edf0f2; }
+    .summary-info label { display: block; color: #8a94a6; font-size: 10px; text-transform: uppercase; }
+    .summary-info strong { display: block; margin-top: 5px; color: #273449; font-size: 11px; }
+    .details-back { display: inline-block; margin-bottom: 14px; padding: 0; color: #718096; background: none; border: 0; font-family: inherit; font-size: 12px; cursor: pointer; }
+
+    .request-table-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 15px;
+        color: #718096;
+        font-size: 10px;
+        border-top: 1px solid #edf0f2;
+    }
+
+    .pagination { display: flex; align-items: center; gap: 8px; }
+    .pagination button { width: 27px; height: 27px; color: #718096; background: #fff; border: 1px solid #e5eaf0; border-radius: 6px; }
+    .pagination .current { color: #fff; background: #dc2626; border-color: #dc2626; }
+
+    .request-side-stack { display: grid; gap: 14px; align-content: start; }
+    .request-side-stack .request-panel { border-radius: 15px; }
+    .request-side-stack .panel-header { padding: 13px 15px; }
+    .request-side-stack .panel-body { padding: 12px 15px; }
+    .request-side-stack .panel-title-icon { width: 29px; height: 29px; border-radius: 9px; font-size: 12px; }
+    .request-side-stack .panel-title { gap: 9px; }
+    .request-side-stack .panel-title h3 { font-size: 13px; }
+    .request-side-stack .empty-state { min-height: 90px; padding: 14px; }
+    .request-side-stack .empty-icon { width: 30px; height: 30px; margin-bottom: 7px; font-size: 13px; }
+    .request-side-stack .empty-state h4 { font-size: 11px; }
+    .request-side-stack .empty-state p { margin-top: 3px; font-size: 10px; }
+
+    .notification-list { display: grid; gap: 12px; }
+    .notification-item { display: flex; align-items: flex-start; gap: 9px; }
+    .notification-icon { width: 27px; height: 27px; flex: 0 0 27px; display: grid; place-items: center; border-radius: 9px; color: #2563eb; background: #eaf1ff; font-size: 11px; }
+    .notification-icon.green { color: #059669; background: #dcfce7; }
+    .notification-icon.yellow { color: #d97706; background: #fef3c7; }
+    .notification-item strong { display: block; color: #334155; font-size: 10px; }
+    .notification-item p { margin: 2px 0 0; color: #718096; font-size: 9px; }
+    .notification-item time { margin-left: auto; color: #94a3b8; font-size: 9px; white-space: nowrap; }
+    .notification-footer { padding: 11px 15px; color: #dc2626; border-top: 1px solid #edf0f2; font-size: 10px; font-weight: 600; text-align: center; }
 
     .request-panel {
         background: #fff;
@@ -332,7 +575,7 @@
     .empty-state p {
         margin: 7px auto 0;
         color: #9ca3af;
-        font-size: 13px;
+        font-size: 15px;
         line-height: 1.6;
     }
 
@@ -426,7 +669,7 @@
         display: block;
         margin-bottom: 7px;
         color: #4b5563;
-        font-size: 13px;
+        font-size: 15px;
         font-weight: 600;
     }
 
@@ -441,7 +684,7 @@
         color: #374151;
         background: #fff;
         font-family: inherit;
-        font-size: 13px;
+        font-size: 15px;
         outline: none;
         transition: 0.2s;
     }
@@ -504,6 +747,8 @@
         .request-content-grid {
             grid-template-columns: 1fr;
         }
+
+        .details-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 850px) {
@@ -555,6 +800,14 @@
         .panel-body {
             padding: 17px;
         }
+
+        .request-table-toolbar { align-items: flex-start; flex-direction: column; }
+
+        .request-table-footer { align-items: flex-start; flex-direction: column; gap: 10px; }
+
+        .details-heading { align-items: flex-start; flex-direction: column; }
+        .reservation-grid, .details-lower { grid-template-columns: 1fr; }
+        .addon-table { min-width: 620px; }
 
         .form-grid {
             grid-template-columns: 1fr;
@@ -681,108 +934,175 @@
         </section>
 
         <section class="request-content-grid">
-
-
-            <div class="request-panel">
-
-                <div class="panel-header">
-
+            <div class="request-panel request-table-panel">
+                <div class="request-table-toolbar">
                     <div class="panel-title">
-
-                        <div class="panel-title-icon">
-                            <i class="fas fa-comment-dots"></i>
+                        <div class="panel-title-icon"><i class="fas fa-inbox"></i></div>
+                        <div>
+                            <h3>Housekeeping Add-On Requests</h3>
+                            <p>View and manage guest requested add-ons and amenities.</p>
                         </div>
-
-                        <h3>Guest Message Box</h3>
-
                     </div>
-
-                    <span class="panel-date">
-                        <i class="far fa-calendar-alt"></i>
-                        Today
-                    </span>
-
+                    <button type="button" class="view-all-button" onclick="openRequestDetails()">
+                        <i class="fas fa-list"></i> View All Requests
+                    </button>
                 </div>
 
-
-                <div class="panel-body">
-
-                    <div class="empty-state">
-
-                        <div class="empty-state-content">
-
-                            <div class="empty-icon">
-                                <i class="fas fa-inbox"></i>
-                            </div>
-
-                            <h4>No Guest Messages Yet</h4>
-
-                            <p>
-                                Requests from guests will appear here once they arrive.
-                                New service requests can be reviewed and managed from this section.
-                            </p>
-
-                        </div>
-
-                    </div>
-
+                <div class="request-table-wrap">
+                    <table class="request-table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Guest &amp; Room</th>
+                                <th>Date</th>
+                                <th>Add-Ons</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="request-id">REQ-3011</span><span class="new-badge">New</span></td>
+                                <td><span class="guest-name">Juan Dela Cruz</span><span class="room-detail">Deluxe Room - 101<br>2 Adults</span></td>
+                                <td><span class="room-name"><i class="far fa-calendar-alt"></i> Aug 25 - Aug 28, 2026</span><span class="date-detail">3 Nights</span></td>
+                                <td><span class="addon-badge">6 Items</span></td>
+                                <td><span class="status-badge">Pending</span></td>
+                                <td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3011')"><i class="far fa-eye"></i> View</button></td>
+                            </tr>
+                            <tr>
+                                <td><span class="request-id">REQ-3010</span><span class="new-badge">New</span></td>
+                                <td><span class="guest-name">Maria Santos</span><span class="room-detail">Standard Room - 205<br>2 Adults</span></td>
+                                <td><span class="room-name"><i class="far fa-calendar-alt"></i> Aug 24 - Aug 26, 2026</span><span class="date-detail">2 Nights</span></td>
+                                <td><span class="addon-badge">4 Items</span></td>
+                                <td><span class="status-badge in-progress">In Progress</span></td>
+                                <td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3010')"><i class="far fa-eye"></i> View</button></td>
+                            </tr>
+                            <tr>
+                                <td><span class="request-id">REQ-3009</span><span class="new-badge">New</span></td>
+                                <td><span class="guest-name">Ana Reyes</span><span class="room-detail">Suite Room - 301<br>3 Adults</span></td>
+                                <td><span class="room-name"><i class="far fa-calendar-alt"></i> Aug 23 - Aug 27, 2026</span><span class="date-detail">4 Nights</span></td>
+                                <td><span class="addon-badge">5 Items</span></td>
+                                <td><span class="status-badge completed">Completed</span></td>
+                                <td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3009')"><i class="far fa-eye"></i> View</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-
+                <div class="request-table-footer">
+                    <span>Showing 1 to 3 of 3 requests</span>
+                    <div class="pagination"><button type="button" disabled aria-label="Previous page"><i class="fas fa-chevron-left"></i></button><button type="button" class="current" aria-current="page">1</button><button type="button" disabled aria-label="Next page"><i class="fas fa-chevron-right"></i></button></div>
+                </div>
             </div>
 
-
-            <div class="request-panel notification-panel">
-
-                <div class="panel-header">
-
-                    <div class="panel-title">
-
-                        <div class="panel-title-icon">
-                            <i class="fas fa-bell"></i>
-                        </div>
-
-                        <h3>Notification Center</h3>
-
+            <div class="request-side-stack">
+                <div class="request-panel">
+                    <div class="panel-header">
+                        <div class="panel-title"><div class="panel-title-icon"><i class="fas fa-comment-dots"></i></div><h3>Guest Message Box</h3></div>
+                        <span class="panel-date"><i class="far fa-calendar-alt"></i> Today</span>
                     </div>
-
-                    <span class="panel-date">
-                        <i class="fas fa-circle" style="font-size:7px;color:#22c55e;"></i>
-                        Live
-                    </span>
-
+                    <div class="panel-body"><div class="empty-state"><div class="empty-state-content"><div class="empty-icon"><i class="fas fa-comments"></i></div><h4>No new messages</h4><p>You're all caught up!</p></div></div></div>
                 </div>
 
-
-                <div class="panel-body">
-
-                    <div class="empty-state">
-
-                        <div class="empty-state-content">
-
-                            <div class="empty-icon">
-                                <i class="fas fa-bell-slash"></i>
-                            </div>
-
-                            <h4>No Notifications Yet</h4>
-
-                            <p>
-                                Housekeeping notifications will appear here when action is required.
-                            </p>
-
-                        </div>
-
+                <div class="request-panel notification-panel">
+                    <div class="panel-header">
+                        <div class="panel-title"><div class="panel-title-icon"><i class="fas fa-bell"></i></div><h3>Notification Center</h3></div>
+                        <span class="panel-date"><i class="fas fa-circle" style="font-size:7px;color:#22c55e;"></i> Live</span>
                     </div>
-
+                    <div class="panel-body notification-list">
+                        <div class="notification-item"><span class="notification-icon"><i class="fas fa-bell"></i></span><div><strong>New request from Room 101</strong><p>Extra towels and pillows requested</p></div><time>2m ago</time></div>
+                        <div class="notification-item"><span class="notification-icon green"><i class="fas fa-check"></i></span><div><strong>Request completed</strong><p>Room 205 - Toiletries delivered</p></div><time>1h ago</time></div>
+                        <div class="notification-item"><span class="notification-icon yellow"><i class="fas fa-bell"></i></span><div><strong>New request from Room 301</strong><p>Breakfast and water bottles</p></div><time>2h ago</time></div>
+                    </div>
+                    <button type="button" class="notification-footer" onclick="openRequestDetails()">View All Notifications <i class="fas fa-chevron-right"></i></button>
                 </div>
-
             </div>
-
-
         </section>
 
     </div>
 
 </main>
+
+<section id="requestDetails" class="guest-request-page request-details-page" aria-hidden="true">
+    <div class="guest-request-container">
+        <button type="button" class="details-back" onclick="closeRequestDetails()"><i class="fas fa-chevron-left"></i> Back to Guest Requests</button>
+        <p class="details-breadcrumb">Guest Requests <span>&gt;</span> <strong>Add-On Request Details</strong></p>
+
+        <div class="details-heading">
+            <div>
+                <h2 id="detailsPageTitle">All Housekeeping Add-On Requests</h2>
+                <p id="detailsPageDescription">View and manage all guest requested add-ons and amenities.</p>
+            </div>
+            <span id="detailsPageStatus" class="details-status"><i class="far fa-clock"></i> All Requests</span>
+        </div>
+
+        <div id="detailsGrid" class="details-grid">
+            <div class="details-main">
+                <div id="allRequestsCard" class="details-card">
+                    <h3><i class="fas fa-list"></i> All Requests <small style="color:#718096;font-size:10px;font-weight:400;text-transform:none;">3 total requests</small></h3>
+                    <div class="request-table-wrap">
+                        <table class="all-requests-table">
+                            <thead><tr><th>Request ID</th><th>Guest Name</th><th>Room Number</th><th>Request Type</th><th>Description / Preview</th><th>Preferred Time</th><th>Priority</th><th>Submitted Date / Time</th><th>Status</th><th>Action</th></tr></thead>
+                            <tbody>
+                                <tr><td>REQ-3011<br><small>RES-3011</small></td><td><strong>Juan Dela Cruz</strong></td><td>101</td><td>Add-On Request</td><td>Extra towels and pillows requested</td><td>Before 3:00 PM</td><td><span class="priority-high">High</span></td><td>Aug 24, 2026<br><small>10:45 AM</small></td><td><span class="all-request-status">Pending</span></td><td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3011')"><i class="far fa-eye"></i> View</button></td></tr>
+                                <tr><td>REQ-3010<br><small>RES-3010</small></td><td><strong>Maria Santos</strong></td><td>205</td><td>Amenities</td><td>Toiletries and bottled water requested</td><td>Anytime</td><td><span class="priority-medium">Medium</span></td><td>Aug 24, 2026<br><small>9:20 AM</small></td><td><span class="all-request-status progress">In Progress</span></td><td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3010')"><i class="far fa-eye"></i> View</button></td></tr>
+                                <tr><td>REQ-3009<br><small>RES-3009</small></td><td><strong>Ana Reyes</strong></td><td>301</td><td>Room Service</td><td>Breakfast and water bottles requested</td><td>8:00 AM</td><td><span class="priority-low">Low</span></td><td>Aug 23, 2026<br><small>4:15 PM</small></td><td><span class="all-request-status completed">Completed</span></td><td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3009')"><i class="far fa-eye"></i> View</button></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="details-card specific-request-content">
+                    <h3><i class="far fa-calendar-alt"></i> Reservation Information</h3>
+                    <div class="reservation-grid">
+                        <div><span class="detail-label">Reservation ID</span><span id="detailReservationId" class="detail-value">RES-3011</span></div>
+                        <div><span class="detail-label">Guest Name</span><span id="detailGuestName" class="detail-value">Juan Dela Cruz</span></div>
+                        <div><span class="detail-label">Room</span><span id="detailRoom" class="detail-value">Deluxe Room - 101</span></div>
+                    </div>
+                    <div class="reservation-grid">
+                        <div><span class="detail-label">Check-in</span><span id="detailCheckIn" class="detail-value">Aug 25, 2026</span></div>
+                        <div><span class="detail-label">Check-out</span><span id="detailCheckOut" class="detail-value">Aug 28, 2026</span></div>
+                        <div><span class="detail-label">Nights / Guests</span><span id="detailNights" class="detail-value">3 Nights &nbsp;&nbsp; 2 Adults</span></div>
+                    </div>
+                </div>
+
+                <div class="details-card specific-request-content">
+                    <h3><i class="fas fa-concierge-bell"></i> Requested Add-Ons</h3>
+                    <div class="request-table-wrap">
+                        <table class="addon-table">
+                            <thead><tr><th>Add-On Item</th><th>Quantity</th><th>Guest Note</th><th>Status</th></tr></thead>
+                            <tbody>
+                                <tr><td>Extra Pillows<br><small>Additional pillows for comfort</small></td><td>2</td><td>-</td><td><span class="addon-status">Pending <i class="fas fa-chevron-down"></i></span></td></tr>
+                                <tr><td>Extra Towels<br><small>Bath towel set</small></td><td>3</td><td>Deliver to room<br>before 3:00 PM</td><td><span class="addon-status">Pending <i class="fas fa-chevron-down"></i></span></td></tr>
+                                <tr><td>Toiletries Set<br><small>Shampoo, soap, etc.</small></td><td>1</td><td>-</td><td><span class="addon-status">Pending <i class="fas fa-chevron-down"></i></span></td></tr>
+                                <tr><td>Water Bottles<br><small>Complimentary water</small></td><td>2</td><td>-</td><td><span class="addon-status delivered">Delivered <i class="fas fa-chevron-down"></i></span></td></tr>
+                                <tr><td>Slippers<br><small>Room slippers</small></td><td>2</td><td>-</td><td><span class="addon-status">Pending <i class="fas fa-chevron-down"></i></span></td></tr>
+                                <tr><td>Breakfast<br><small>In-room breakfast</small></td><td>2</td><td>Vegetarian meal</td><td><span class="addon-status">Pending <i class="fas fa-chevron-down"></i></span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="details-lower specific-request-content">
+                    <div class="details-card"><h3><i class="far fa-comment"></i> Special Request</h3><div class="details-note">Please deliver the extra towels before 3:00 PM.<br>Thank you!</div></div>
+                    <div class="details-card"><h3><i class="far fa-clock"></i> Estimated Arrival Time</h3><div class="details-note"><strong>3:00 PM</strong> <i class="fas fa-chevron-down" style="float:right"></i></div></div>
+                </div>
+                <div class="details-card specific-request-content"><h3><i class="far fa-edit"></i> Housekeeping Notes</h3><textarea id="housekeepingNotes" class="details-note" placeholder="Enter notes about request fulfillment, delivery time, or any issues..."></textarea></div>
+                <div class="details-actions specific-request-content"><button type="button" class="details-action" onclick="saveRequestProgress()">Save Progress</button><button type="button" class="details-action primary" onclick="markAllDelivered()">Mark All as Delivered</button></div>
+            </div>
+
+            <aside id="summaryCard" class="details-card summary-card">
+                <h3><i class="fas fa-clipboard-list"></i> Requests Summary</h3>
+                <div class="summary-total"><i class="far fa-clipboard"></i><div><span>All Requests</span><strong>3</strong><span>15 Total Add-Ons</span></div></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#f59e0b;font-size:7px"></i> Pending</span><b>1</b></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#3b82f6;font-size:7px"></i> In Progress</span><b>1</b></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#10b981;font-size:7px"></i> Completed</span><b>1</b></div>
+                <div class="summary-info"><label>Requested On</label><strong>Aug 24, 2026 &middot; 10:45 AM</strong></div>
+                <div class="summary-info"><label>Requested By</label><strong id="summaryGuestName">Juan Dela Cruz<br><small>(Guest)</small></strong></div>
+                <div class="summary-info"><label>Related Booking</label><strong id="summaryBooking">Deluxe Room - 101<br>Aug 25 - Aug 28, 2026</strong></div>
+                <button type="button" class="details-action" style="width:100%;margin-top:15px" onclick="openRequestDetails()">View Reservation Details <i class="fas fa-arrow-right"></i></button>
+            </aside>
+        </div>
+    </div>
+</section>
 
 
 <div id="requestModal">
@@ -808,7 +1128,7 @@
         </div>
 
 
-        <form class="request-form">
+        <form class="request-form" onsubmit="sendGuestMessage(event)">
 
             <div class="form-grid">
 
@@ -819,7 +1139,9 @@
 
                     <input
                         type="text"
-                        placeholder="Enter guest name">
+                        name="guest_name"
+                        placeholder="Enter guest name"
+                        required>
                 </div>
 
 
@@ -830,7 +1152,9 @@
 
                     <input
                         type="text"
-                        placeholder="e.g. 101">
+                        name="room_number"
+                        placeholder="e.g. 101"
+                        required>
                 </div>
 
             </div>
@@ -842,7 +1166,7 @@
                     Request Type
                 </label>
 
-                <select>
+                <select name="request_type">
 
                     <option>Extra Pillows</option>
                     <option>Towels</option>
@@ -861,7 +1185,9 @@
                 </label>
 
                 <textarea
-                    placeholder="Write the guest's message here..."></textarea>
+                    name="message"
+                    placeholder="Write the guest's message here..."
+                    required></textarea>
 
             </div>
 
@@ -897,6 +1223,115 @@
 
 
 <script>
+
+function openRequestDetails() {
+    const overview = document.querySelector('.guest-request-page:not(.request-details-page)');
+    const details = document.getElementById('requestDetails');
+    const detailsGrid = document.getElementById('detailsGrid');
+    const allRequests = document.getElementById('allRequestsCard');
+    const specificContent = document.querySelectorAll('.specific-request-content');
+    const title = document.getElementById('detailsPageTitle');
+    const description = document.getElementById('detailsPageDescription');
+    const status = document.getElementById('detailsPageStatus');
+
+    if (overview && details) {
+        overview.style.display = 'none';
+        details.classList.add('show');
+        detailsGrid.classList.add('all-requests-mode');
+        details.setAttribute('aria-hidden', 'false');
+        allRequests.style.display = '';
+        specificContent.forEach((element) => {
+            element.classList.remove('is-visible');
+            element.style.display = '';
+        });
+        title.textContent = 'All Housekeeping Add-On Requests';
+        description.textContent = 'View and manage all guest requested add-ons and amenities.';
+        status.innerHTML = '<i class="fas fa-list"></i> All Requests';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function openGuestRequest(requestId) {
+    const overview = document.querySelector('.guest-request-page:not(.request-details-page)');
+    const details = document.getElementById('requestDetails');
+    const detailsGrid = document.getElementById('detailsGrid');
+    const allRequests = document.getElementById('allRequestsCard');
+    const specificContent = document.querySelectorAll('.specific-request-content');
+    const title = document.getElementById('detailsPageTitle');
+    const description = document.getElementById('detailsPageDescription');
+    const status = document.getElementById('detailsPageStatus');
+    const requests = {
+        'REQ-3011': { reservation: 'RES-3011', guest: 'Juan Dela Cruz', room: 'Deluxe Room - 101', checkIn: 'Aug 25, 2026', checkOut: 'Aug 28, 2026', nights: '3 Nights &nbsp;&nbsp; 2 Adults', status: 'Pending' },
+        'REQ-3010': { reservation: 'RES-3010', guest: 'Maria Santos', room: 'Standard Room - 205', checkIn: 'Aug 24, 2026', checkOut: 'Aug 26, 2026', nights: '2 Nights &nbsp;&nbsp; 2 Adults', status: 'In Progress' },
+        'REQ-3009': { reservation: 'RES-3009', guest: 'Ana Reyes', room: 'Suite Room - 301', checkIn: 'Aug 23, 2026', checkOut: 'Aug 27, 2026', nights: '4 Nights &nbsp;&nbsp; 3 Adults', status: 'Completed' }
+    };
+    const request = requests[requestId];
+
+    if (overview && details && request) {
+        currentGuestRequestId = requestId;
+        overview.style.display = 'none';
+        details.classList.add('show');
+        detailsGrid.classList.remove('all-requests-mode');
+        details.setAttribute('aria-hidden', 'false');
+        allRequests.style.display = 'none';
+        specificContent.forEach((element) => element.classList.add('is-visible'));
+        title.textContent = 'Housekeeping Add-On Request';
+        description.textContent = 'View and manage this guest\'s requested add-ons and amenities.';
+        status.innerHTML = '<i class="far fa-clock"></i> Status: ' + (localStorage.getItem('housekeeping-request-status-' + requestId) || request.status);
+        document.getElementById('detailReservationId').textContent = request.reservation;
+        document.getElementById('detailGuestName').textContent = request.guest;
+        document.getElementById('detailRoom').textContent = request.room;
+        document.getElementById('detailCheckIn').textContent = request.checkIn;
+        document.getElementById('detailCheckOut').textContent = request.checkOut;
+        document.getElementById('detailNights').innerHTML = request.nights;
+        document.getElementById('summaryGuestName').innerHTML = request.guest + '<br><small>(Guest)</small>';
+        document.getElementById('summaryBooking').innerHTML = request.room + '<br>' + request.checkIn + ' - ' + request.checkOut;
+        document.getElementById('housekeepingNotes').value = localStorage.getItem('housekeeping-request-notes-' + requestId) || '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function closeRequestDetails() {
+    const overview = document.querySelector('.guest-request-page:not(.request-details-page)');
+    const details = document.getElementById('requestDetails');
+
+    if (overview && details) {
+        overview.style.display = '';
+        details.classList.remove('show');
+        details.setAttribute('aria-hidden', 'true');
+    }
+}
+
+let currentGuestRequestId = null;
+
+function saveRequestProgress() {
+    if (!currentGuestRequestId) return;
+    localStorage.setItem(
+        'housekeeping-request-notes-' + currentGuestRequestId,
+        document.getElementById('housekeepingNotes').value
+    );
+    alert('Housekeeping progress saved.');
+}
+
+function markAllDelivered() {
+    if (!currentGuestRequestId) return;
+    document.querySelectorAll('.addon-status').forEach((element) => {
+        element.classList.add('delivered');
+        element.innerHTML = 'Delivered <i class="fas fa-chevron-down"></i>';
+    });
+    document.getElementById('detailsPageStatus').innerHTML = '<i class="fas fa-check-circle"></i> Status: Completed';
+    localStorage.setItem('housekeeping-request-status-' + currentGuestRequestId, 'Completed');
+    alert('All requested add-ons marked as delivered.');
+}
+
+function sendGuestMessage(event) {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.reportValidity()) return;
+    closeRequestModal();
+    form.reset();
+    alert('Guest message sent successfully.');
+}
 
 function openRequestModal() {
 
