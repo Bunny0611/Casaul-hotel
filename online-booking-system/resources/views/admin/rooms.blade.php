@@ -217,7 +217,7 @@
                 </thead>
                 <tbody id="amenities-list" class="divide-y divide-gray-200">
                     @foreach($amenities as $item)
-                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-amenities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('amenities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item))' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit amenity"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status))' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change amenity status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete this amenity?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete amenity"><i class="fas fa-trash"></i></button></form></div></td></tr>
+                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-amenities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('amenities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">—</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "amenities")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit amenity"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "amenities")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change amenity status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=amenities" method="POST" onsubmit="return confirm('Delete this amenity?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete amenity"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @endforeach
                 </tbody>
             </table>
@@ -240,7 +240,7 @@
                 </thead>
                 <tbody id="event-place-list" class="divide-y divide-gray-200">
                     @foreach($eventPlaces as $item)
-                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event_place h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event_place')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item))' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event place"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status))' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event place status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete this event place?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event place"><i class="fas fa-trash"></i></button></form></div></td></tr>
+                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event_place h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event_place')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "event_place")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event place"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "event_place")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event place status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=event_place" method="POST" onsubmit="return confirm('Delete this event place?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event place"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @endforeach
                 </tbody>
             </table>
@@ -983,8 +983,9 @@
         document.getElementById('bulkDiningDeleteForm').submit();
     }
 
-    function editInventory(id, item) {
-        document.getElementById('editInventoryCategory').value = item.category;
+    function editInventory(id, item, category) {
+        category = category || item.category || 'dining';
+        document.getElementById('editInventoryCategory').value = category;
         document.getElementById('editInventoryName').value = item.name || '';
         document.getElementById('editInventoryType').value = item.type || '';
         document.getElementById('editInventoryPrice').value = item.price || 0;
@@ -1006,9 +1007,9 @@
         document.getElementById('editInventoryModal').classList.remove('flex');
     }
 
-    function changeInventoryStatus(id, status) {
+    function changeInventoryStatus(id, status, category) {
         var route = "{{ route('admin.inventory.status', ['id' => '__ID__']) }}";
-        document.getElementById('inventoryStatusForm').action = route.replace('__ID__', id);
+        document.getElementById('inventoryStatusForm').action = route.replace('__ID__', id) + '?category=' + encodeURIComponent(category || 'dining');
         document.getElementById('inventoryStatusSelect').value = status || 'available';
         document.getElementById('inventoryStatusModal').classList.remove('hidden');
         document.getElementById('inventoryStatusModal').classList.add('flex');

@@ -22,4 +22,9 @@ class Room extends Model
     {
         return $this->hasMany(Reservation::class);
     }
+
+    public function housekeepingTasks()
+    {
+        return $this->hasMany(HousekeepingTask::class);
+    }
 }
