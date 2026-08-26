@@ -11,6 +11,7 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
+use App\Models\DiningMenu;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -89,8 +90,11 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();
+        $diningTables = DiningTable::orderBy('table_no')->get();
+        $dining = DiningMenu::orderBy('name')->get();
+        $diningSchedules = DiningSchedule::orderBy('available_from')->get();
 
-        return view('employee.room-status', compact('rooms', 'inventoryItems'));
+        return view('employee.room-status', compact('rooms', 'inventoryItems', 'diningTables', 'dining', 'diningSchedules'));
     })->name('room-status');
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
     Route::get('/guest-requests/{id}', [AdminController::class, 'employeeGuestRequest'])->name('guest-requests.show');

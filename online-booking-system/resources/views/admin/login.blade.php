@@ -136,13 +136,6 @@
             </button>
         </form>
 
-        <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-            <p class="font-semibold text-slate-700">Demo staff accounts</p>
-            <p class="mt-1">Admin: admin@casaul.com / password</p>
-            <p>Employee: employee@casaul.com / password</p>
-            <p>Housekeeping: housekeeping@casaul.com / password</p>
-        </div>
-
         <div class="login-footer">
             <a href="{{ route('home') }}"><i class="fas fa-arrow-left"></i> Back to Website</a>
         </div>

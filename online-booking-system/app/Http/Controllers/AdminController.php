@@ -112,6 +112,7 @@ class AdminController extends Controller
             'availableRooms',
             'occupiedRooms',
             'maintenanceRooms',
+            'occupancyRate',
             'todayArrivals',
             'todayDepartures',
             'pendingRequests',
