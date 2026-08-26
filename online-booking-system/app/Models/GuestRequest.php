@@ -29,7 +29,7 @@ class GuestRequest extends Model
 
     public function guest()
     {
-        return $this->belongsTo(User::class, 'guest_id');
+        return $this->belongsTo(Guest::class, 'guest_id');
     }
 
     public function reservation()
@@ -44,6 +44,6 @@ class GuestRequest extends Model
 
     public function assignedEmployee()
     {
-        return $this->belongsTo(User::class, 'assigned_employee_id');
+        return $this->belongsTo(Staff::class, 'assigned_employee_id');
     }
 }

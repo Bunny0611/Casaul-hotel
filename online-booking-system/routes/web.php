@@ -37,7 +37,7 @@ Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.
 Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
 
 // --- Guest Profile ---
-Route::middleware(['auth', 'role:guest'])->group(function () {
+Route::middleware(['auth:guest', 'role:guest'])->group(function () {
     Route::get('/guest/profile', [HomeController::class, 'profile'])->name('guest.profile');
     Route::get('/guest/records', [HomeController::class, 'records'])->name('guest.records');
 });
@@ -166,7 +166,7 @@ Route::post('/logout', function () {
     return redirect('/');
 })->name('logout');
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:guest')->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });

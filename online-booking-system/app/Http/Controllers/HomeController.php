@@ -10,6 +10,7 @@ use App\Models\EventPlace;
 use App\Models\DiningMenu;
 use App\Models\Message;
 use App\Models\Reservation;
+use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
 {
@@ -118,17 +119,18 @@ class HomeController extends Controller
 
     public function profile()
     {
-        abort_unless(auth()->user()->role === 'guest', 403);
+        abort_unless(Auth::guard('guest')->check(), 403);
 
         return view('profile');
     }
 
     public function records()
     {
-        abort_unless(auth()->user()->role === 'guest', 403);
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
 
         $reservations = Reservation::with('room')
-            ->where('guest_email', auth()->user()->email)
+            ->where('guest_email', $guest->email)
             ->orderBy('created_at', 'desc')
             ->get();
 

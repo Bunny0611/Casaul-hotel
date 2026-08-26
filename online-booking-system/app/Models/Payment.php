@@ -20,6 +20,6 @@ class Payment extends Model
 
     public function recorder()
     {
-        return $this->belongsTo(User::class, 'recorded_by');
+        return $this->belongsTo(Staff::class, 'recorded_by');
     }
 }

@@ -21,10 +21,10 @@
                 <i class="fas fa-user"></i>
             </div>
             <div class="profile-info">
-                <h2>{{ auth()->user()->name }}</h2>
-                <p class="profile-meta"><i class="fas fa-envelope"></i> {{ auth()->user()->email }}</p>
-                @if(auth()->user()->contact_no)
-                    <p class="profile-meta"><i class="fas fa-phone"></i> {{ auth()->user()->contact_no }}</p>
+                <h2>{{ auth('guest')->user()->name }}</h2>
+                <p class="profile-meta"><i class="fas fa-envelope"></i> {{ auth('guest')->user()->email }}</p>
+                @if(auth('guest')->user()->contact_no)
+                    <p class="profile-meta"><i class="fas fa-phone"></i> {{ auth('guest')->user()->contact_no }}</p>
                 @endif
                 <p class="profile-meta"><i class="fas fa-id-badge"></i> Guest Account</p>
             </div>

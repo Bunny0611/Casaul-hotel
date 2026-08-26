@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\Guest;
+use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -37,7 +38,7 @@ class AuthController extends Controller
             'role' => ['required', 'in:admin,employee,housekeeping'],
         ]);
 
-        $user = User::where('email', $credentials['email'])
+        $user = Staff::where('email', $credentials['email'])
             ->where('role', $credentials['role'])
             ->first();
 
@@ -48,7 +49,7 @@ class AuthController extends Controller
                 ])->onlyInput('email');
             }
 
-            Auth::login($user, $request->boolean('remember'));
+            Auth::guard('web')->login($user, $request->boolean('remember'));
             $request->session()->regenerate();
 
             if ($credentials['role'] === 'housekeeping') {
@@ -77,10 +78,9 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt([
+        if (Auth::guard('guest')->attempt([
             'email' => $credentials['email'],
             'password' => $credentials['password'],
-            'role' => 'guest',
         ], $request->boolean('remember'))) {
             $request->session()->regenerate();
 
@@ -101,12 +101,12 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'middle_initial' => 'required|string|max:3',
-            'email' => 'required|email|unique:users,email',
+            'email' => ['required', 'email', 'unique:staff_users,email', 'unique:guest_users,email'],
             'contact_no' => 'required|string|max:25',
             'password' => 'required|string|confirmed|min:6',
         ]);
 
-        $user = User::create([
+        $user = Guest::create([
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
             'middle_initial' => $data['middle_initial'],
@@ -114,11 +114,10 @@ class AuthController extends Controller
             'email' => $data['email'],
             'contact_no' => $data['contact_no'],
             'password' => Hash::make($data['password']),
-            'role' => 'guest',
         ]);
 
         // auto-login and secure session
-        Auth::login($user);
+        Auth::guard('guest')->login($user);
         $request->session()->regenerate();
 
         return redirect()->route('home');
@@ -129,7 +128,7 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        Auth::logout();
+        Auth::guard($request->user('guest') ? 'guest' : 'web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

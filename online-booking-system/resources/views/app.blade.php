@@ -62,24 +62,24 @@
             </form>
         </div>
 
-@auth
+@auth('guest')
             <div class="profile-dropdown" id="profile-dropdown">
                 <button type="button" class="profile-trigger" id="profile-trigger" aria-label="My Account" aria-expanded="false" aria-controls="profile-menu">
                     <span class="profile-trigger-avatar">
                         <i class="fas fa-user-circle"></i>
                     </span>
-                    <span class="profile-trigger-name">{{ auth()->user()->name }}</span>
+                    <span class="profile-trigger-name">{{ auth('guest')->user()->name }}</span>
                     <i class="fas fa-chevron-down profile-trigger-caret"></i>
                 </button>
                 <div class="profile-menu" id="profile-menu" role="menu" aria-labelledby="profile-trigger">
                     <div class="profile-menu-header">
                         <span class="profile-menu-avatar"><i class="fas fa-user-circle"></i></span>
                         <div>
-                            <p class="profile-menu-name">{{ auth()->user()->name }}</p>
-                            <p class="profile-menu-email">{{ auth()->user()->email }}</p>
+                            <p class="profile-menu-name">{{ auth('guest')->user()->name }}</p>
+                            <p class="profile-menu-email">{{ auth('guest')->user()->email }}</p>
                         </div>
                     </div>
-                    @if(auth()->user()->role === 'guest')
+                    @if(auth('guest')->check())
                         <a href="{{ route('guest.records') }}" class="profile-menu-item" role="menuitem">
                             <i class="fas fa-list-alt"></i> My Reservations
                         </a>
