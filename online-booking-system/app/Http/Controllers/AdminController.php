@@ -247,6 +247,56 @@ class AdminController extends Controller
         return redirect()->route('admin.rooms')->with('success', 'Inventory item added successfully.');
     }
 
+    public function storeDiningItem(Request $request)
+    {
+        $validated = $request->validate([
+            'dining_type' => ['required', Rule::in(['tables', 'menus', 'schedules'])],
+            'name' => ['required', 'string', 'max:255'],
+            'menu_category' => ['nullable', 'string', 'max:255'],
+            'type' => ['nullable', 'string', 'max:255'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'available_from' => ['nullable', 'date_format:H:i'],
+            'available_to' => ['nullable', 'date_format:H:i'],
+            'capacity' => ['nullable', 'integer', 'min:1'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'max_guests' => ['nullable', 'integer', 'min:1'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'status' => ['required', 'string', 'max:50'],
+        ]);
+
+        $image = $request->hasFile('image') ? $this->handleInventoryImageUpload($request) : null;
+
+        if ($validated['dining_type'] === 'tables') {
+            DiningTable::create([
+                'table_no' => $validated['name'],
+                'type' => $validated['type'] ?: 'Standard',
+                'capacity' => $validated['capacity'],
+                'location' => $validated['location'] ?? null,
+                'status' => strtolower($validated['status']),
+            ]);
+        } elseif ($validated['dining_type'] === 'schedules') {
+            DiningSchedule::create([
+                'period' => $validated['name'],
+                'available_from' => $validated['available_from'],
+                'available_to' => $validated['available_to'],
+                'max_guests' => $validated['max_guests'] ?? null,
+                'status' => strtolower($validated['status']),
+            ]);
+        } else {
+            DiningMenu::create([
+                'name' => $validated['name'],
+                'category' => $validated['menu_category'] ?? null,
+                'price' => $validated['price'] ?? 0,
+                'status' => strtolower($validated['status']),
+                'available_from' => $validated['available_from'] ?? null,
+                'available_to' => $validated['available_to'] ?? null,
+                'image' => $image,
+            ]);
+        }
+
+        return redirect()->route('admin.rooms', ['tab' => 'dining'])->with('success', 'Dining item added successfully.');
+    }
+
     public function updateInventoryItem(Request $request, $id)
     {
         $item = InventoryItem::findOrFail($id);

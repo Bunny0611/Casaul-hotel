@@ -37,8 +37,30 @@
         min-width: 112px;
     }
 
+    .room-management-page .dining-form-column {
+        display: contents;
+    }
+
+    @media (max-width: 1023px) {
+        .room-management-page #diningFieldsGrid > [id$="Field"] {
+            grid-column: span 1;
+        }
+    }
+
     .room-management-page [data-dining-subpanel="overview"] {
         display: none !important;
+    }
+
+    .room-management-page [data-dining-subpanel="tables"] .dining-card-header h3,
+    .room-management-page [data-dining-subpanel="menu"] .dining-card-header h3,
+    .room-management-page [data-dining-subpanel="schedule"] .dining-card-header h3 {
+        display: none;
+    }
+
+    .room-management-page [data-dining-subpanel="tables"] .dining-card-header,
+    .room-management-page [data-dining-subpanel="menu"] .dining-card-header,
+    .room-management-page [data-dining-subpanel="schedule"] .dining-card-header {
+        justify-content: flex-end;
     }
 
     .room-management-page .dining-card-header button[onclick^="confirmBulkDiningDelete"] {
@@ -495,33 +517,23 @@
 <div id="addDiningModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
     <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
         <div class="mb-6">
-            <h3 class="text-3xl font-bold text-gray-800">Add Dining Item</h3>
-            <p class="mt-2 text-base text-gray-600">Add a new menu item, package, or dining service available for guests.</p>
+            <h3 id="addDiningTitle" class="text-3xl font-bold text-gray-800">Add Menu / Meal</h3>
+            <p class="mt-2 text-base text-gray-600">Add the details needed for this dining section.</p>
         </div>
         @if($errors->any() && old('category') === 'dining')
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
         @endif
 
-        <form id="addDiningForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-6">
+        <form id="addDiningForm" method="POST" action="{{ route('admin.dining.store') }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
-            <input type="hidden" name="category" value="dining">
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div class="space-y-6">
-                    <div>
-                        <label class="mb-2 block text-base font-medium text-gray-700">Item Type <span class="text-red-500">*</span></label>
-                        <select name="type" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                            <option value="Menu / Meal">Menu / Meal</option>
-                            <option value="Package">Package</option>
-                            <option value="Dinner">Dinner</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="mb-2 block text-base font-medium text-gray-700">Item Name <span class="text-red-500">*</span></label>
+            <input type="hidden" name="dining_type" id="diningFormType" value="menus">
+            <div id="diningFieldsGrid" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div id="diningNameField">
+                        <label id="diningNameLabel" class="mb-2 block text-base font-medium text-gray-700">Meal Name <span class="text-red-500">*</span></label>
                         <input type="text" name="name" required class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. Grilled Salmon">
                     </div>
 
-                    <div>
+                    <div id="diningMenuCategoryField">
                         <label class="mb-2 block text-base font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
                         <select name="menu_category" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <option value="Dinner">Dinner</option>
@@ -531,34 +543,46 @@
                         </select>
                     </div>
 
-                    <div>
+                    <div id="diningTypeField">
+                        <label id="diningTypeLabel" class="mb-2 block text-base font-medium text-gray-700">Type</label>
+                        <input type="text" name="type" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. Indoor">
+                    </div>
+
+                    <div id="diningCapacityField" class="hidden">
+                        <label class="mb-2 block text-base font-medium text-gray-700">Capacity <span class="text-red-500">*</span></label>
+                        <input type="number" name="capacity" min="1" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 4">
+                    </div>
+
+                    <div id="diningLocationField" class="hidden">
+                        <label class="mb-2 block text-base font-medium text-gray-700">Location</label>
+                        <input type="text" name="location" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. Main Area">
+                    </div>
+
+                    <div id="diningPriceField">
                         <label class="mb-2 block text-base font-medium text-gray-700">Price (₱) <span class="text-red-500">*</span></label>
                         <input type="number" name="price" step="0.01" min="0" required class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 650.00">
                     </div>
 
-                    <div>
-                        <label class="mb-2 block text-base font-medium text-gray-700">Description</label>
-                        <textarea name="description" rows="5" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. Grilled salmon served with vegetables and mashed potatoes."></textarea>
+                    <div id="diningImageField">
+                        <label class="mb-2 block text-base font-medium text-gray-700">Image (Optional)</label>
+                        <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" class="block w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     </div>
-                </div>
 
-                <div class="space-y-6">
-                    <div>
+                    <div id="diningMaxGuestsField" class="hidden">
+                        <label class="mb-2 block text-base font-medium text-gray-700">Maximum Guests</label>
+                        <input type="number" name="max_guests" min="1" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 40">
+                    </div>
+
+                    <div id="diningScheduleTimeField" class="hidden">
                         <label class="mb-2 block text-base font-medium text-gray-700">Available Time <span class="text-red-500">*</span></label>
                         <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                            <input type="time" name="available_from" value="17:00" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="time" name="available_from" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <span class="text-lg text-gray-500">to</span>
-                            <input type="time" name="available_to" value="21:00" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="time" name="available_to" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                     </div>
 
-                    <div>
-                        <label class="mb-2 block text-base font-medium text-gray-700">Available Quantity</label>
-                        <input type="number" name="quantity" min="0" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 25">
-                        <p class="mt-2 text-sm text-gray-500">Optional. Leave blank if unlimited.</p>
-                    </div>
-
-                    <div>
+                    <div id="diningStatusField">
                         <label class="mb-2 block text-base font-medium text-gray-700">Status <span class="text-red-500">*</span></label>
                         <select name="status" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <option value="Available">Available</option>
@@ -567,17 +591,11 @@
                         </select>
                     </div>
 
-                    <div>
-                        <label class="mb-2 block text-base font-medium text-gray-700">Image (Optional)</label>
-                        <input type="file" name="image" accept="image/*" class="block w-full rounded-xl border border-gray-300 bg-gray-50 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <p class="mt-2 text-sm text-gray-500">PNG, JPG, GIF, or WEBP up to 2MB</p>
-                    </div>
-                </div>
             </div>
 
             <div class="flex items-center justify-end gap-4 border-t border-gray-200 pt-6">
                 <button type="button" onclick="closeDiningModal()" class="rounded-xl border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 transition hover:bg-gray-100">Cancel</button>
-                <button type="submit" class="rounded-xl bg-orange-500 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-orange-600">Save Dining Item</button>
+                <button id="addDiningSubmit" type="submit" class="rounded-xl bg-orange-500 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-orange-600">Save Menu / Meal</button>
             </div>
         </form>
     </div>
@@ -1039,22 +1057,58 @@
         document.getElementById('editDiningModal').classList.remove('flex');
     }
 
+    function configureDiningFieldLayout(type) {
+        const fields = ['diningNameField', 'diningMenuCategoryField', 'diningTypeField', 'diningCapacityField', 'diningLocationField', 'diningPriceField', 'diningImageField', 'diningScheduleTimeField', 'diningMaxGuestsField', 'diningStatusField'];
+        fields.forEach(function (id) {
+            const field = document.getElementById(id);
+            if (field) {
+                field.style.order = '';
+                field.style.gridColumn = '';
+            }
+        });
+
+        const layout = type === 'tables'
+            ? { diningNameField: 1, diningStatusField: 2, diningTypeField: 3, diningCapacityField: 4, diningLocationField: 5 }
+            : type === 'schedules'
+                ? { diningNameField: 1, diningStatusField: 2, diningScheduleTimeField: 3, diningMaxGuestsField: 4 }
+                : { diningNameField: 1, diningStatusField: 2, diningMenuCategoryField: 3, diningPriceField: 4, diningImageField: 5 };
+
+        Object.keys(layout).forEach(function (id) {
+            const field = document.getElementById(id);
+            if (field) field.style.order = layout[id];
+        });
+
+        const fullWidthField = document.getElementById(type === 'menus' ? 'diningImageField' : 'diningLocationField');
+        if (fullWidthField) fullWidthField.style.gridColumn = '1 / -1';
+    }
+
     function openDiningCreateModal(kind) {
         openDiningModal();
         const form = document.getElementById('addDiningForm');
-        const type = form.querySelector('[name="type"]');
         const category = form.querySelector('[name="menu_category"]');
-
-        if (kind === 'table') {
-            type.value = 'Package';
-            category.value = 'Dinner';
-        } else if (kind === 'schedule') {
-            type.value = 'Package';
-            category.value = 'Dinner';
-        } else {
-            type.value = 'Menu / Meal';
-            category.value = 'Dinner';
-        }
+        const type = kind === 'table' ? 'tables' : kind === 'schedule' ? 'schedules' : 'menus';
+        const isTable = type === 'tables';
+        const isSchedule = type === 'schedules';
+        const sectionTitle = isTable ? 'Table / Seating' : isSchedule ? 'Dining Schedule' : 'Menu / Meal';
+        configureDiningFieldLayout(type);
+        document.getElementById('addDiningTitle').textContent = 'Add ' + sectionTitle;
+        document.getElementById('addDiningSubmit').textContent = 'Save ' + sectionTitle;
+        document.getElementById('diningFormType').value = type;
+        document.getElementById('diningNameLabel').firstChild.textContent = isTable ? 'Table No. ' : isSchedule ? 'Meal Period ' : 'Meal Name ';
+        form.querySelector('[name="name"]').placeholder = isTable ? 'e.g. T01' : isSchedule ? 'e.g. Breakfast' : 'e.g. Grilled Salmon';
+        document.getElementById('diningMenuCategoryField').classList.toggle('hidden', isTable || isSchedule);
+        document.getElementById('diningTypeField').classList.toggle('hidden', !isTable);
+        document.getElementById('diningCapacityField').classList.toggle('hidden', !isTable);
+        document.getElementById('diningLocationField').classList.toggle('hidden', !isTable);
+        document.getElementById('diningPriceField').classList.toggle('hidden', isTable || isSchedule);
+        document.getElementById('diningImageField').classList.toggle('hidden', isTable || isSchedule);
+        document.getElementById('diningScheduleTimeField').classList.toggle('hidden', !isSchedule);
+        document.getElementById('diningMaxGuestsField').classList.toggle('hidden', !isSchedule);
+        form.querySelector('[name="price"]').required = !isTable && !isSchedule;
+        form.querySelector('[name="capacity"]').required = isTable;
+        form.querySelector('[name="available_from"]').required = isSchedule;
+        form.querySelector('[name="available_to"]').required = isSchedule;
+        if (category) category.value = 'Dinner';
     }
 
     function editDiningRow(button) {
