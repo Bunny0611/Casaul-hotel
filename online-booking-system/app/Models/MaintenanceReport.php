@@ -22,7 +22,7 @@ class MaintenanceReport extends Model
     ];
 
     protected $casts = [
-        'date_reported' => 'date',
+        'date_reported' => 'datetime',
         'expected_date' => 'date',
     ];
 }

@@ -749,6 +749,112 @@
         box-shadow: 0 0 0 4px rgba(245, 158, 11, .09);
     }
 
+    #reportModal .modal-box {
+        max-width: 720px;
+        border: 1px solid #e5e7eb;
+        border-top: 4px solid #f97316;
+    }
+
+    #reportModal .modal-header {
+        padding: 24px 26px 20px;
+        background: #fffaf5;
+    }
+
+    #reportModal .modal-title {
+        font-size: 21px;
+        letter-spacing: -.2px;
+    }
+
+    #reportModal .modal-subtitle {
+        font-size: 12px;
+        color: #7c8493;
+    }
+
+    #reportModal .modal-body {
+        padding: 24px 26px 12px;
+    }
+
+    #reportModal .modal-section {
+        margin-bottom: 22px;
+        padding: 18px;
+        border: 1px solid #edf0f3;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    #reportModal .modal-section-title {
+        margin-bottom: 16px;
+        color: #273142;
+        font-size: 11px;
+        letter-spacing: 1px;
+    }
+
+    #reportModal .modal-section-title i {
+        display: inline-flex;
+        width: 27px;
+        height: 27px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: #fff1e8;
+        color: #ea580c;
+    }
+
+    #reportModal .form-grid {
+        gap: 16px;
+    }
+
+    #reportModal .form-label {
+        margin-bottom: 7px;
+        color: #374151;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    #reportModal .form-control {
+        height: 44px;
+        border-color: #dfe3e8;
+        border-radius: 9px;
+        background: #fbfcfd;
+        font-size: 12px;
+    }
+
+    #reportModal textarea.form-control {
+        min-height: 116px;
+        line-height: 1.55;
+    }
+
+    #reportModal .form-control[readonly] {
+        background: #f3f4f6;
+        color: #6b7280;
+        cursor: default;
+    }
+
+    #reportModal input[type="file"].form-control {
+        height: auto;
+        padding: 12px;
+        border: 1px dashed #cfd6df;
+        background: #fafbfc;
+        cursor: pointer;
+    }
+
+    #reportModal input[type="file"]::file-selector-button {
+        margin-right: 10px;
+        padding: 7px 11px;
+        border: 0;
+        border-radius: 7px;
+        background: #fff1e8;
+        color: #c2410c;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #reportModal .modal-footer {
+        padding: 16px 26px 22px;
+        background: #fafbfc;
+    }
+
     .detail-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -1214,7 +1320,7 @@
                                 <td>
                                     <div class="issue-description">{{ $report->description }}</div>
                                 </td>
-                                <td><span class="date-text">{{ $report->date_reported->format('M d, Y') }}</span></td>
+                                <td><span class="date-text">{{ $report->date_reported->format('M d, Y h:i A') }}</span></td>
                                 <td><span class="priority-badge priority-{{ strtolower($report->priority) }}">{{ $report->priority }}</span></td>
                                 <td><span class="status-badge status-{{ strtolower(str_replace(' ', '-', $report->status)) }}">{{ $report->status }}</span></td>
                                 <td><span class="person-name">{{ $report->reported_by }}</span></td>
@@ -1771,9 +1877,9 @@
                         </label>
 
                         <input
-                            type="datetime-local"
+                            type="text"
                             class="form-control"
-                            value="{{ now()->format('Y-m-d\\TH:i') }}"
+                            value="{{ now()->format('M d, Y h:i A') }}"
                             readonly
                         >
 
@@ -1859,8 +1965,6 @@
 
             </div>
 
-
-            <div class="modal-section">
 
             <div class="modal-section">
 
