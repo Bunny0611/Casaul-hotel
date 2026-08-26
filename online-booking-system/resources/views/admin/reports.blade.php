@@ -109,45 +109,6 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between mb-5">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800">Recent Payment Transactions</h3>
-                    <p class="text-sm text-gray-500">Latest completed reservations and revenue movement</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                            <th class="px-4 py-3">Guest</th>
-                            <th class="px-4 py-3">Room</th>
-                            <th class="px-4 py-3">Amount</th>
-                            <th class="px-4 py-3">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse($recentPayments as $reservation)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->guest_name }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</td>
-                            <td class="px-4 py-3 font-medium text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
-                            <td class="px-4 py-3">
-                                <span class="px-3 py-1 rounded-full text-xs font-medium text-white status-{{ $reservation->status }}">
-                                    {{ ucfirst($reservation->status) }}
-                                </span>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-gray-500">No payment transactions found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Payment Method Breakdown</h3>
@@ -215,49 +176,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between mb-5">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800">Recent Reservations</h3>
-                    <p class="text-sm text-gray-500">Latest booking activity from the system</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                            <th class="px-4 py-3">Guest</th>
-                            <th class="px-4 py-3">Room</th>
-                            <th class="px-4 py-3">Dates</th>
-                            <th class="px-4 py-3">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse($reservations->take(8) as $reservation)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->guest_name }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</td>
-                            <td class="px-4 py-3 text-gray-900">
-                                {{ optional($reservation->check_in)->format('M d') ?? 'N/A' }}
-                                -
-                                {{ optional($reservation->check_out)->format('M d') ?? 'N/A' }}
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="px-3 py-1 rounded-full text-xs font-medium text-white status-{{ $reservation->status }}">
-                                    {{ ucfirst($reservation->status) }}
-                                </span>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-gray-500">No reservations found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </div>
 
     <div data-panel="occupancy" class="hidden space-y-6">
@@ -292,41 +210,6 @@
                 <div class="flex items-center justify-center h-[320px]">
                     <canvas id="roomStatusChart" class="max-w-[320px] max-h-[320px] w-full h-full"></canvas>
                 </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between mb-5">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800">Current Room Status</h3>
-                    <p class="text-sm text-gray-500">Live room availability snapshot</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                            <th class="px-4 py-3">Room</th>
-                            <th class="px-4 py-3">Type</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Capacity</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse($rooms->take(10) as $room)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 text-gray-900">{{ $room->room_number }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $room->room_type }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ ucfirst($room->status) }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $room->capacity }}</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-gray-500">No room data found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
@@ -370,47 +253,6 @@
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Average Stay Duration</h3>
             <div class="relative h-[320px]">
                 <canvas id="stayDurationChart" class="w-full h-full"></canvas>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between mb-5">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800">Recent Guest Activity</h3>
-                    <p class="text-sm text-gray-500">Latest guest booking behavior</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                            <th class="px-4 py-3">Guest</th>
-                            <th class="px-4 py-3">Email</th>
-                            <th class="px-4 py-3">Room</th>
-                            <th class="px-4 py-3">Stay</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse($recentGuestActivity as $reservation)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->guest_name }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->guest_email }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</td>
-                            <td class="px-4 py-3 text-gray-900">
-                                @if($reservation->check_in && $reservation->check_out)
-                                    {{ $reservation->check_in->diffInDays($reservation->check_out) }} days
-                                @else
-                                    N/A
-                                @endif
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-gray-500">No guest activity found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
