@@ -588,13 +588,14 @@ class AdminController extends Controller
 
     public function employeeGuestRequests()
     {
-        $requests = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
+        $requestQuery = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
             ->where('department', 'Employee')
-            ->latest('submitted_at')
-            ->get();
+            ->latest('submitted_at');
+        $requests = $requestQuery->paginate(5)->withQueryString();
+        $allRequests = (clone $requestQuery)->get();
         $employees = User::where('role', 'employee')->orderBy('name')->get();
 
-        return view('employee.guest-requests', compact('requests', 'employees'));
+        return view('employee.guest-requests', compact('requests', 'allRequests', 'employees'));
     }
 
     public function employeeGuestRequest($id)

@@ -2244,6 +2244,14 @@
 
             roomLabel,
 
+            roomNumber,
+
+            contactNumber:
+                document.getElementById('contactNumber').value.trim(),
+
+            bookingReference:
+                document.getElementById('bookingReference').value.trim(),
+
             roomType,
 
             occupancy:
@@ -2260,7 +2268,15 @@
                 notes || 'New task assigned',
 
             day:
-                dayLabel
+                dayLabel,
+
+            dayValue,
+
+            scheduleTime:
+                document.getElementById('scheduleTime').value,
+
+            duration:
+                document.getElementById('duration').value.trim()
 
         };
 
