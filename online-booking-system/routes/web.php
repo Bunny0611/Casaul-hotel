@@ -11,6 +11,7 @@ use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
+use App\Models\DiningMenu;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -37,7 +38,7 @@ Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.
 Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
 
 // --- Guest Profile ---
-Route::middleware(['auth', 'role:guest'])->group(function () {
+Route::middleware(['auth:guest', 'role:guest'])->group(function () {
     Route::get('/guest/profile', [HomeController::class, 'profile'])->name('guest.profile');
     Route::get('/guest/records', [HomeController::class, 'records'])->name('guest.records');
 });
@@ -89,8 +90,11 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();
+        $diningTables = DiningTable::orderBy('table_no')->get();
+        $dining = DiningMenu::orderBy('name')->get();
+        $diningSchedules = DiningSchedule::orderBy('available_from')->get();
 
-        return view('employee.room-status', compact('rooms', 'inventoryItems'));
+        return view('employee.room-status', compact('rooms', 'inventoryItems', 'diningTables', 'dining', 'diningSchedules'));
     })->name('room-status');
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
     Route::get('/guest-requests/{id}', [AdminController::class, 'employeeGuestRequest'])->name('guest-requests.show');
@@ -167,7 +171,7 @@ Route::post('/logout', function () {
     return redirect('/');
 })->name('logout');
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:guest')->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });

@@ -1,19 +1,31 @@
 <?php
 
+namespace App\Http\Controllers\Auth;
+
+use App\Models\Guest;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
-public function store(Request $request)
+class RegisterController extends Controller
 {
-    // validate & create user...
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-        // other fields...
-    ]);
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:guest_users,email', 'unique:staff_users,email'],
+            'password' => ['required', 'string', 'confirmed', 'min:6'],
+        ]);
 
-    // automatically log in the new user
-    Auth::login($user);
+        $user = Guest::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+        ]);
 
-    return redirect()->route('home');
+        Auth::guard('guest')->login($user);
+
+        return redirect()->route('home');
+    }
 }

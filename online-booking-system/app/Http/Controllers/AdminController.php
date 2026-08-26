@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 use App\Models\Room;
 use App\Models\Reservation;
 use App\Models\Message;
-use App\Models\User;
+use App\Models\Staff;
 use App\Models\InventoryItem;
 use App\Models\Amenity;
 use App\Models\EventPlace;
@@ -112,6 +112,7 @@ class AdminController extends Controller
             'availableRooms',
             'occupiedRooms',
             'maintenanceRooms',
+            'occupancyRate',
             'todayArrivals',
             'todayDepartures',
             'pendingRequests',
@@ -640,7 +641,7 @@ class AdminController extends Controller
             ->latest('submitted_at');
         $requests = $requestQuery->paginate(5)->withQueryString();
         $allRequests = (clone $requestQuery)->get();
-        $employees = User::where('role', 'employee')->orderBy('name')->get();
+        $employees = Staff::where('role', 'employee')->orderBy('name')->get();
 
         return view('employee.guest-requests', compact('requests', 'allRequests', 'employees'));
     }
@@ -650,7 +651,7 @@ class AdminController extends Controller
         $guestRequest = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
             ->where('department', 'Employee')
             ->findOrFail($id);
-        $employees = User::where('role', 'employee')->orderBy('name')->get();
+        $employees = Staff::where('role', 'employee')->orderBy('name')->get();
 
         return view('employee.guest-request-detail', compact('guestRequest', 'employees'));
     }
@@ -660,12 +661,12 @@ class AdminController extends Controller
         $guestRequest = GuestRequest::where('department', 'Employee')->findOrFail($id);
         $validated = $request->validate([
             'status' => ['required', 'in:New,In Progress,Completed'],
-            'assigned_employee_id' => ['nullable', 'exists:users,id'],
+            'assigned_employee_id' => ['nullable', 'exists:staff_users,id'],
             'employee_notes' => ['nullable', 'string'],
         ]);
 
         if (!empty($validated['assigned_employee_id'])) {
-            abort_unless(User::whereKey($validated['assigned_employee_id'])->where('role', 'employee')->exists(), 422);
+            abort_unless(Staff::whereKey($validated['assigned_employee_id'])->where('role', 'employee')->exists(), 422);
         }
 
         $guestRequest->fill($validated);
@@ -1202,15 +1203,15 @@ class AdminController extends Controller
     {
         $this->ensureAdmin();
 
-        $users = User::with('creator')->latest()->paginate(5, ['*'], 'accounts_page');
+        $users = Staff::with('creator')->latest()->paginate(5, ['*'], 'accounts_page');
 
         return view('admin.manage-account', [
             'users' => $users,
-            'totalUsers' => User::count(),
-            'totalAdmins' => User::where('role', 'admin')->count(),
-            'totalEmployees' => User::where('role', 'employee')->count(),
-            'totalHousekeeping' => User::where('role', 'housekeeping')->count(),
-            'activeUsers' => User::where('is_active', true)->count(),
+            'totalUsers' => Staff::count(),
+            'totalAdmins' => Staff::where('role', 'admin')->count(),
+            'totalEmployees' => Staff::where('role', 'employee')->count(),
+            'totalHousekeeping' => Staff::where('role', 'housekeeping')->count(),
+            'activeUsers' => Staff::where('is_active', true)->count(),
         ]);
     }
 
@@ -1222,7 +1223,7 @@ class AdminController extends Controller
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'middle_initial' => ['nullable', 'string', 'max:3'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', 'unique:staff_users,email', 'unique:guest_users,email'],
             'contact_no' => ['nullable', 'string', 'max:25'],
             'role' => ['required', 'in:admin,employee,housekeeping'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
@@ -1230,7 +1231,7 @@ class AdminController extends Controller
 
         $middleInitial = $validated['middle_initial'] ?? null;
 
-        User::create([
+        Staff::create([
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'middle_initial' => $middleInitial,
@@ -1250,13 +1251,13 @@ class AdminController extends Controller
     {
         $this->ensureAdmin();
 
-        $user = User::findOrFail($id);
+        $user = Staff::findOrFail($id);
 
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'middle_initial' => ['nullable', 'string', 'max:3'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'email' => ['required', 'email', 'max:255', 'unique:staff_users,email,' . $user->id, 'unique:guest_users,email'],
             'contact_no' => ['nullable', 'string', 'max:25'],
             'role' => ['required', 'in:admin,employee,housekeeping'],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
@@ -1285,7 +1286,7 @@ class AdminController extends Controller
     {
         $this->ensureAdmin();
 
-        $user = User::findOrFail($id);
+        $user = Staff::findOrFail($id);
 
         if ($user->id === auth()->id()) {
             return redirect()->route('admin.manage-account')->withErrors(['You cannot deactivate your own account.']);
@@ -1304,7 +1305,7 @@ class AdminController extends Controller
     {
         $this->ensureAdmin();
 
-        $user = User::findOrFail($id);
+        $user = Staff::findOrFail($id);
 
         if ($user->id === auth()->id()) {
             return redirect()->route('admin.manage-account')->withErrors(['You cannot delete your own account.']);
@@ -1336,7 +1337,7 @@ class AdminController extends Controller
             return redirect()->route('admin.manage-account')->withErrors(['No valid accounts selected for deletion.']);
         }
 
-        $deleted = User::whereIn('id', $userIds)->delete();
+        $deleted = Staff::whereIn('id', $userIds)->delete();
 
         return redirect()->route('admin.manage-account')->with('success', $deleted . ' account(s) deleted successfully!');
     }
@@ -1357,7 +1358,7 @@ class AdminController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'email' => ['required', 'email', 'max:255', 'unique:staff_users,email,' . $user->id, 'unique:guest_users,email'],
             'current_password' => ['required', 'string'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);

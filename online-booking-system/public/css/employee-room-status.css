@@ -8,6 +8,7 @@
     --available: #16a34a;
     --reserved: #2563eb;
     --occupied: #dc2626;
+    --unavailable: #dc2626;
     --dirty: #64748b;
     --cleaning: #7c3aed;
     --maintenance: #d97706;
@@ -278,6 +279,7 @@ body {
 .status-badge.available { background: var(--available); }
 .status-badge.reserved { background: var(--reserved); }
 .status-badge.occupied { background: var(--occupied); }
+.status-badge.unavailable { background: var(--unavailable); }
 .status-badge.dirty { background: var(--dirty); }
 .status-badge.cleaning { background: var(--cleaning); }
 .status-badge.maintenance { background: var(--maintenance); }

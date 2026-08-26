@@ -8,8 +8,11 @@ use App\Models\InventoryItem;
 use App\Models\Amenity;
 use App\Models\EventPlace;
 use App\Models\DiningMenu;
+use App\Models\DiningSchedule;
+use App\Models\DiningTable;
 use App\Models\Message;
 use App\Models\Reservation;
+use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
 {
@@ -73,11 +76,19 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
-        $dining = DiningMenu::whereIn('status', ['available', 'limited'])
+        $dining = DiningMenu::with('diningSchedule')
+            ->whereIn('status', ['available', 'limited'])
+            ->where(function ($query) {
+                $query->whereNull('dining_schedule_id')
+                    ->orWhereHas('diningSchedule', fn ($schedule) => $schedule->where('status', 'Active'));
+            })
             ->orderBy('name')
             ->get();
 
-        return view('reservation', compact('rooms', 'amenities', 'events', 'dining'));
+        $diningSchedules = DiningSchedule::where('status', 'Active')->orderBy('available_from')->get();
+        $diningTables = DiningTable::where('status', 'Available')->orderBy('table_no')->get();
+
+        return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningSchedules', 'diningTables'));
     }
 
     public function storeReservation(Request $request)
@@ -91,6 +102,10 @@ class HomeController extends Controller
             'guest_phone' => 'required|string|max:20',
             'total_amount' => 'required|numeric|min:0',
             'special_requests' => 'nullable|string',
+            'dining_id' => 'nullable|exists:dining_menus,id',
+            'dining_area' => 'nullable|string|max:100',
+            'dining_schedule' => 'nullable|string|max:100',
+            'quantity' => 'nullable|integer|min:1',
             'submission_token' => 'nullable|string|max:100',
         ]);
 
@@ -118,17 +133,18 @@ class HomeController extends Controller
 
     public function profile()
     {
-        abort_unless(auth()->user()->role === 'guest', 403);
+        abort_unless(Auth::guard('guest')->check(), 403);
 
         return view('profile');
     }
 
     public function records()
     {
-        abort_unless(auth()->user()->role === 'guest', 403);
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
 
         $reservations = Reservation::with('room')
-            ->where('guest_email', auth()->user()->email)
+            ->where('guest_email', $guest->email)
             ->orderBy('created_at', 'desc')
             ->get();
 
