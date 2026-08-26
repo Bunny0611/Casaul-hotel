@@ -173,19 +173,19 @@ class AdminController extends Controller
         return view('admin.dining.schedule', compact('schedules'));
     }
 
-    protected function handleInventoryImageUpload(Request $request, ?InventoryItem $item = null): ?string
+    protected function handleCatalogImageUpload(Request $request, ?string $currentImage = null): ?string
     {
         if (!$request->hasFile('image')) {
-            return $item?->image;
+            return $currentImage;
         }
 
-        if ($item && $item->image && Storage::disk('public')->exists($item->image)) {
-            Storage::disk('public')->delete($item->image);
+        if ($currentImage && Storage::disk('public')->exists($currentImage)) {
+            Storage::disk('public')->delete($currentImage);
         }
 
         $file = $request->file('image');
         $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs('inventory', $filename, 'public');
+        $path = $file->storeAs('catalog', $filename, 'public');
 
         return $path;
     }
@@ -210,7 +210,7 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'category' => ['required', 'in:amenities,event_place,dining'],
-            'name' => ['required', 'string', 'max:255', Rule::unique('inventory_items', 'name')->where(fn ($query) => $query->where('category', $request->category))],
+            'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -224,35 +224,97 @@ class AdminController extends Controller
         ]);
         $validated['status'] = strtolower($validated['status']);
 
-        if ($request->hasFile('image')) {
-            $validated['image'] = $this->handleInventoryImageUpload($request);
+        $catalogModel = match ($validated['category']) {
+            'amenities' => Amenity::class,
+            'event_place' => EventPlace::class,
+            default => DiningMenu::class,
+        };
+        if ($catalogModel::where('name', $validated['name'])->exists()) {
+            return back()->withErrors(['name' => 'An item with this name already exists.'])->withInput();
         }
 
-        if ($validated['category'] === 'dining') {
-            DiningMenu::create([
-                'name' => $validated['name'],
-                'category' => $request->input('menu_category', $validated['type'] ?: 'Menu / Meal'),
-                'description' => $validated['description'] ?? null,
-                'price' => $validated['price'],
-                'status' => $validated['status'],
-                'available_from' => $validated['available_from'] ?? null,
-                'available_to' => $validated['available_to'] ?? null,
-                'quantity' => $validated['quantity'] ?? null,
-                'image' => $validated['image'] ?? null,
+        if ($request->hasFile('image')) {
+            $validated['image'] = $this->handleCatalogImageUpload($request);
+        }
+
+        match ($validated['category']) {
+            'amenities' => Amenity::create([
+                'name' => $validated['name'], 'description' => $validated['description'] ?? null,
+                'price' => $validated['price'], 'status' => $validated['status'], 'image' => $validated['image'] ?? null,
+            ]),
+            'event_place' => EventPlace::create([
+                'name' => $validated['name'], 'description' => $validated['description'] ?? null,
+                'price' => $validated['price'], 'capacity' => $validated['capacity'] ?? null,
+                'location' => $validated['location'] ?? null, 'status' => $validated['status'], 'image' => $validated['image'] ?? null,
+            ]),
+            default => DiningMenu::create([
+                'name' => $validated['name'], 'category' => $request->input('menu_category', $validated['type'] ?: 'Menu / Meal'),
+                'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'status' => $validated['status'],
+                'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null,
+                'quantity' => $validated['quantity'] ?? null, 'image' => $validated['image'] ?? null,
+            ]),
+        };
+
+        return redirect()->route('admin.rooms')->with('success', 'Item added successfully.');
+    }
+
+    public function storeDiningItem(Request $request)
+    {
+        $validated = $request->validate([
+            'dining_type' => ['required', Rule::in(['tables', 'menus', 'schedules'])],
+            'name' => ['required', 'string', 'max:255'],
+            'menu_category' => ['nullable', 'string', 'max:255'],
+            'type' => ['nullable', 'string', 'max:255'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'available_from' => ['nullable', 'date_format:H:i'],
+            'available_to' => ['nullable', 'date_format:H:i'],
+            'capacity' => ['nullable', 'integer', 'min:1'],
+            'location' => ['nullable', 'string', 'max:255'],
+            'max_guests' => ['nullable', 'integer', 'min:1'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'status' => ['required', 'string', 'max:50'],
+        ]);
+
+        $image = $request->hasFile('image') ? $this->handleInventoryImageUpload($request) : null;
+
+        if ($validated['dining_type'] === 'tables') {
+            DiningTable::create([
+                'table_no' => $validated['name'],
+                'type' => $validated['type'] ?: 'Standard',
+                'capacity' => $validated['capacity'],
+                'location' => $validated['location'] ?? null,
+                'status' => strtolower($validated['status']),
+            ]);
+        } elseif ($validated['dining_type'] === 'schedules') {
+            DiningSchedule::create([
+                'period' => $validated['name'],
+                'available_from' => $validated['available_from'],
+                'available_to' => $validated['available_to'],
+                'max_guests' => $validated['max_guests'] ?? null,
+                'status' => strtolower($validated['status']),
             ]);
         } else {
-            InventoryItem::create($validated);
+            DiningMenu::create([
+                'name' => $validated['name'],
+                'category' => $validated['menu_category'] ?? null,
+                'price' => $validated['price'] ?? 0,
+                'status' => strtolower($validated['status']),
+                'available_from' => $validated['available_from'] ?? null,
+                'available_to' => $validated['available_to'] ?? null,
+                'image' => $image,
+            ]);
         }
 
-        return redirect()->route('admin.rooms')->with('success', 'Inventory item added successfully.');
+        return redirect()->route('admin.rooms', ['tab' => 'dining'])->with('success', 'Dining item added successfully.');
     }
 
     public function updateInventoryItem(Request $request, $id)
     {
-        $item = InventoryItem::findOrFail($id);
+        $category = $request->input('category');
+        $item = $category === 'amenities' ? Amenity::findOrFail($id) : ($category === 'event_place' ? EventPlace::findOrFail($id) : DiningMenu::findOrFail($id));
         $validated = $request->validate([
             'category' => ['required', 'in:amenities,event_place,dining'],
-            'name' => ['required', 'string', 'max:255', Rule::unique('inventory_items', 'name')->where(fn ($query) => $query->where('category', $request->category))->ignore($item->id)],
+            'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -266,18 +328,28 @@ class AdminController extends Controller
         ]);
         $validated['status'] = strtolower($validated['status']);
 
-        if ($request->hasFile('image')) {
-            $validated['image'] = $this->handleInventoryImageUpload($request, $item);
+        $model = $category === 'amenities' ? Amenity::class : ($category === 'event_place' ? EventPlace::class : DiningMenu::class);
+        if ($model::where('name', $validated['name'])->where('id', '!=', $item->id)->exists()) {
+            return back()->withErrors(['name' => 'An item with this name already exists.'])->withInput();
         }
 
-        $item->update($validated);
+        if ($request->hasFile('image')) {
+            $validated['image'] = $this->handleCatalogImageUpload($request, $item->image);
+        }
+
+        $item->update($category === 'amenities'
+            ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
+            : ($category === 'event_place'
+                ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
+                : $validated));
 
         return redirect()->route('admin.rooms')->with('success', 'Inventory item updated successfully.');
     }
 
     public function updateInventoryStatus(Request $request, $id)
     {
-        $item = InventoryItem::findOrFail($id);
+        $category = $request->input('category', 'dining');
+        $item = $category === 'amenities' ? Amenity::findOrFail($id) : ($category === 'event_place' ? EventPlace::findOrFail($id) : DiningMenu::findOrFail($id));
         $validated = $request->validate(['status' => ['required', 'string', 'max:50']]);
         $item->update(['status' => strtolower($validated['status'])]);
 
@@ -286,10 +358,11 @@ class AdminController extends Controller
 
     public function destroyInventoryItem($id)
     {
-        $item = InventoryItem::findOrFail($id);
+        $category = request()->input('category', 'dining');
+        $item = $category === 'amenities' ? Amenity::findOrFail($id) : ($category === 'event_place' ? EventPlace::findOrFail($id) : DiningMenu::findOrFail($id));
         $item->delete();
 
-        return redirect()->route('admin.rooms')->with('success', 'Inventory item deleted successfully.');
+        return redirect()->route('admin.rooms')->with('success', 'Item deleted successfully.');
     }
 
     public function bulkDestroyInventoryItems(Request $request)
@@ -312,7 +385,8 @@ class AdminController extends Controller
             return redirect()->route('admin.rooms')->with('success', 'No inventory items selected for deletion.');
         }
 
-        $deleted = InventoryItem::where('category', $category)->whereIn('id', $inventoryIds)->delete();
+        $model = $category === 'amenities' ? Amenity::class : ($category === 'event_place' ? EventPlace::class : DiningMenu::class);
+        $deleted = $model::whereIn('id', $inventoryIds)->delete();
 
         return redirect()->route('admin.rooms')->with('success', $deleted . ' inventory item(s) deleted successfully.');
     }
