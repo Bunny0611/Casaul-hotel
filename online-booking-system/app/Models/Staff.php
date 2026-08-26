@@ -34,6 +34,11 @@ class Staff extends Authenticatable
         return $this->belongsTo(self::class, 'created_by');
     }
 
+    public function housekeepingTasks()
+    {
+        return $this->hasMany(HousekeepingTask::class, 'assigned_staff_id');
+    }
+
     protected function casts(): array
     {
         return [

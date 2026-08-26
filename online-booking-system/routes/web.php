@@ -153,6 +153,10 @@ Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:
     Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
     Route::patch('/rooms/{id}/cleaning', [HousekeepingController::class, 'updateStatus'])->name('rooms.cleaning');
     Route::get('/assigned-rooms', [HousekeepingController::class, 'assignedRooms'])->name('assigned-rooms');
+    Route::post('/tasks', [HousekeepingController::class, 'storeTask'])->name('tasks.store');
+    Route::patch('/tasks/{housekeepingTask}/start', [HousekeepingController::class, 'startTask'])->name('tasks.start');
+    Route::patch('/tasks/{housekeepingTask}/complete', [HousekeepingController::class, 'completeTask'])->name('tasks.complete');
+    Route::delete('/tasks/{housekeepingTask}', [HousekeepingController::class, 'destroyTask'])->name('tasks.destroy');
     Route::get('/room-status-update', [HousekeepingController::class, 'roomStatusUpdate'])->name('room-status-update');
     Route::get('/guest-requests', [HousekeepingController::class, 'guestRequests'])->name('guest-requests');
     Route::get('/maintenance-report', [HousekeepingController::class, 'maintenanceReport'])->name('maintenance-report');
