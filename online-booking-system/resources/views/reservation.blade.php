@@ -2,6 +2,8 @@
 
 @section('content')
 
+@php($guest = auth('guest')->user())
+
 <style>
     /* Reservation page - visual refresh (scoped) */
     :root {
@@ -223,6 +225,26 @@
     .details-mode .details-form-section > small { font-size:11px; }
     .details-mode .payment-method-option { font-size:11px; }
     .details-mode .confirmation-actions button { font-size:12px; }
+    .payment-method-panel { margin-top:14px; padding:14px 12px; border-top:1px solid #f0d6da; }
+    .payment-method-panel h5 { margin:0 0 12px; color:#d20b26; font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
+    .payment-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px 14px; }
+    .payment-field label { display:block; margin-bottom:5px; color:#384359; font-size:10px; font-weight:700; }
+    .payment-field input, .payment-field select { width:100%; box-sizing:border-box; min-height:34px; border:1px solid #dfe4ec; border-radius:6px; padding:7px 10px; color:#4b5563; background:#fff; font-size:10px; }
+    .payment-field input[type="file"] { padding:6px; }
+    .payment-field.full-width { grid-column:1 / -1; }
+    @media (max-width:700px){ .payment-fields { grid-template-columns:1fr; } .payment-field.full-width { grid-column:auto; } }
+    .details-mode.confirm-step .reservation-progress .progress-step:nth-of-type(2) .progress-number { background:#e3e7f0; color:#71809a; }
+    .details-mode.confirm-step .reservation-progress .progress-step:nth-of-type(3) .progress-number { background:#d20b26; color:#fff; }
+    .confirm-step .details-form-grid,
+    .confirm-step .payment-method-section { display:none; }
+    .payment-method-section { padding:14px 12px; border:1px solid #f0d6da; border-radius:8px; background:#fff; }
+    .payment-method-section > h4 { color:#d20b26; font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
+    .payment-method-section > p { margin:-7px 0 12px; color:#788398; font-size:10px; }
+    .payment-details { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:14px; padding-top:12px; border-top:1px solid #f0d6da; }
+    .payment-details label { display:block; margin-bottom:5px; color:#384359; font-size:10px; font-weight:700; }
+    .payment-details input, .payment-details select { width:100%; box-sizing:border-box; min-height:34px; border:1px solid #dfe4ec; border-radius:6px; padding:7px 10px; color:#4b5563; background:#fff; font-size:10px; }
+    .payment-details input[readonly] { background:#f3f4f6; }
+    @media (max-width:700px){ .payment-details { grid-template-columns:1fr; } }
 
     /* Improve readability while preserving the compact layout. */
     .reservation-page .tab-btn { font-size:13px; }
@@ -292,7 +314,7 @@
             <div class="reservation-tabs">
                 <button type="button" class="tab-btn active" data-tab="room-tab"><span class="tab-icon"><i class="fas fa-bed"></i></span>Rooms</button>
                 <button type="button" class="tab-btn" data-tab="amenities-tab"><span class="tab-icon"><i class="fas fa-concierge-bell"></i></span>Amenities</button>
-                <button type="button" class="tab-btn" data-tab="event-place-tab"><span class="tab-icon"><i class="fas fa-calendar-check"></i></span>Event/Pool</button>
+                <button type="button" class="tab-btn" data-tab="event-place-tab"><span class="tab-icon"><i class="fas fa-calendar-check"></i></span>Event Place</button>
                 <button type="button" class="tab-btn" data-tab="dining-tab"><span class="tab-icon"><i class="fas fa-utensils"></i></span>Dining</button>
             </div>
 
@@ -309,7 +331,7 @@
                     <h3><i class="fas fa-bed"></i> Select Your Room and Dates</h3>
                     <p>Choose your preferred dates and room that suits your needs.</p>
                 </div>
-                <div class="panel-row">
+                <div class="panel-row room-date-row">
                     <div class="panel-field">
                         <label class="field-label">Check-in</label>
                         <input id="checkIn" type="date" class="field-input" />
@@ -319,20 +341,15 @@
                         <input id="checkOut" type="date" class="field-input" />
                     </div>
                     <div class="panel-field">
-                        <label class="field-label">Add a Person</label>
-                        <select id="additionalGuests" class="field-input">
-                            <option value="0" selected>No extra persons</option>
-                            <option value="1">1 Person (₱650)</option>
-                            <option value="2">2 Persons (₱1,300)</option>
-                            <option value="3">3 Persons (₱1,950)</option>
-                            <option value="4">4 Persons (₱2,600)</option>
-                        </select>
+                        <label class="field-label" for="arrivalTime">Arrival Time</label>
+                        <input id="arrivalTime" type="time" class="field-input" value="15:00" />
                     </div>
                 </div>
 
                 <div class="reservation-card-grid">
                     @foreach($rooms as $room)
-                        <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}">
+                        @php($extraGuestPrice = str_contains(strtolower($room->room_type), 'standard') ? 500 : 650)
+                        <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-extra-guest-price="{{ $extraGuestPrice }}">
                             <img src="{{ $room->image ? asset(str_starts_with($room->image, 'rooms/') ? 'storage/' . $room->image : $room->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $room->room_type }}</h4>
@@ -341,6 +358,14 @@
                                     <span><i class="fas fa-bed"></i>1 Queen Bed</span>
                                 </div>
                                 <p>{{ $room->description ?? 'Premium stay with comfortable bedding and modern amenities.' }}</p>
+                                <label class="field-label" for="extraGuests-{{ $room->id }}">Add a Person</label>
+                                <select id="extraGuests-{{ $room->id }}" class="field-input room-extra-guests">
+                                    <option value="0" selected>No extra persons</option>
+                                    <option value="1">1 Person (₱{{ number_format($extraGuestPrice, 0) }})</option>
+                                    <option value="2">2 Persons (₱{{ number_format($extraGuestPrice * 2, 0) }})</option>
+                                    <option value="3">3 Persons (₱{{ number_format($extraGuestPrice * 3, 0) }})</option>
+                                    <option value="4">4 Persons (₱{{ number_format($extraGuestPrice * 4, 0) }})</option>
+                                </select>
                                 <div class="reservation-card-footer">
                                     <span class="price">₱{{ number_format($room->price, 0) }}/night</span>
                                     <button type="button" class="select-option-btn" data-title="{{ $room->room_type }}" data-price="{{ $room->price }}" data-room-id="{{ $room->id }}">Add to Reservation</button>
@@ -402,14 +427,41 @@
                     <h3>Dining</h3>
                     <p>Choose a dining experience for your stay.</p>
                 </div>
+                <div class="panel-row dining-selection-row">
+                    <div>
+                        <label class="field-label" for="diningSchedule">Meal Schedule</label>
+                        <select id="diningSchedule" class="field-input">
+                            <option value="">Select schedule</option>
+                            @foreach($diningSchedules as $schedule)
+                                <option value="{{ $schedule->period }}">{{ $schedule->period }} ({{ \Carbon\Carbon::parse($schedule->available_from)->format('g:i A') }} - {{ \Carbon\Carbon::parse($schedule->available_to)->format('g:i A') }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label" for="diningTable">Dining Table</label>
+                        <select id="diningTable" class="field-input">
+                            <option value="">Select available table</option>
+                            @foreach($diningTables as $table)
+                                <option value="{{ $table->table_no }}">{{ $table->table_no }} - {{ $table->type }} ({{ $table->capacity }} seats{{ $table->location ? ', ' . $table->location : '' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label" for="diningDate">Dining Date</label>
+                        <input id="diningDate" class="field-input" type="date" aria-label="Dining date" placeholder="MM/DD/YY">
+                    </div>
+                </div>
                 <div class="reservation-card-grid">
                     @foreach($dining as $meal)
-                        <article class="reservation-card" data-category="dining" data-price="{{ $meal->price }}" data-title="{{ $meal->name }}">
+                        <article class="reservation-card" data-category="dining" data-price="{{ $meal->price }}" data-title="{{ $meal->name }}" data-dining-id="{{ $meal->id }}" data-schedule="{{ $meal->diningSchedule?->period }}">
                             <img src="{{ $meal->image ? asset('storage/' . $meal->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $meal->name }}</h4>
                                 <p>{{ $meal->description ?: 'A dining option for your stay.' }}</p>
-                                <p class="text-muted">{{ $meal->type ?: 'Dining package' }}</p>
+                                <p class="text-muted">{{ $meal->category ?: 'Dining package' }}</p>
+                                @if($meal->diningSchedule)
+                                    <p class="text-muted">{{ $meal->diningSchedule->period }}: {{ \Carbon\Carbon::parse($meal->diningSchedule->available_from)->format('g:i A') }} - {{ \Carbon\Carbon::parse($meal->diningSchedule->available_to)->format('g:i A') }}</p>
+                                @endif
                                 <div class="reservation-card-footer">
                                     <span class="price">₱{{ number_format($meal->price, 0) }}</span>
                                     <button type="button" class="select-option-btn" data-title="{{ $meal->name }}" data-price="{{ $meal->price }}">Add to Reservation</button>
@@ -554,11 +606,11 @@
                 <section class="details-form-section">
                     <h4><i class="fas fa-user"></i> Guest Information</h4>
                     <label for="detailsGuestName">Guest Name</label>
-                    <input id="detailsGuestName" type="text" value="{{ auth()->user()->name ?? '' }}" placeholder="Enter guest name">
+                    <input id="detailsGuestName" type="text" value="{{ $guest?->name ?? '' }}" readonly>
                     <label for="detailsGuestEmail">Email</label>
-                    <input id="detailsGuestEmail" type="email" value="{{ auth()->user()->email ?? '' }}" placeholder="Enter email address">
+                    <input id="detailsGuestEmail" type="email" value="{{ $guest?->email ?? '' }}" readonly>
                     <label for="detailsGuestPhone">Mobile Number</label>
-                    <input id="detailsGuestPhone" type="tel" value="{{ auth()->user()->contact_no ?? '' }}" placeholder="Enter mobile number">
+                    <input id="detailsGuestPhone" type="tel" value="{{ $guest?->contact_no ?? '' }}" readonly>
                 </section>
                 <section class="details-form-section">
                     <h4><i class="fas fa-clock"></i> Estimated Arrival</h4>
@@ -567,12 +619,6 @@
                         <option value="12:00">12:00 PM</option>
                         <option value="18:00">6:00 PM</option>
                     </select>
-                    <h4 style="margin-top:12px;"><i class="fas fa-plus-circle"></i> Add-ons</h4>
-                    <div class="details-addons">
-                        <label><input type="checkbox"> Extra Pillow</label>
-                        <label><input type="checkbox"> Towels</label>
-                        <label><input type="checkbox"> Breakfast</label>
-                    </div>
                 </section>
             </div>
             <div class="details-form-grid">
@@ -588,7 +634,6 @@
                 <section class="details-form-section">
                     <h4><i class="fas fa-receipt"></i> Price Summary</h4>
                     <p style="display:flex;justify-content:space-between;margin:4px 0;font-size:9px;">Room <strong id="detailsRoomPrice">₱0</strong></p>
-                    <p style="display:flex;justify-content:space-between;margin:4px 0;font-size:9px;">Add-ons <strong id="detailsAddonsPrice">₱0</strong></p>
                     <p style="display:flex;justify-content:space-between;margin:7px 0 0;padding-top:6px;border-top:1px solid #e6eaf0;font-size:10px;">TOTAL <strong id="detailsTotal">₱0</strong></p>
                 </section>
             </div>
@@ -602,6 +647,7 @@
 
             <div class="payment-method-section">
                 <h4>Payment Method</h4>
+                <p>Please select your preferred payment method.</p>
                 <div class="payment-method-options">
                     <button type="button" class="payment-method-option selected" data-payment-method="Cash / Pay at Hotel">Cash / Pay at Hotel</button>
                     <button type="button" class="payment-method-option" data-payment-method="GCash">GCash</button>
@@ -609,10 +655,51 @@
                     <button type="button" class="payment-method-option" data-payment-method="Credit / Debit Card">Credit / Debit Card</button>
                     <button type="button" class="payment-method-option" data-payment-method="Bank Transfer">Bank Transfer</button>
                 </div>
+                <div class="payment-method-panel" data-payment-panel="GCash" hidden>
+                    <h5>GCash Payment</h5>
+                    <div class="payment-fields">
+                        <div class="payment-field"><label for="gcashAccountName">GCash Account Name</label><input id="gcashAccountName" type="text" placeholder="Enter account name"></div>
+                        <div class="payment-field"><label for="gcashNumber">GCash Number</label><input id="gcashNumber" type="tel" placeholder="09XX XXX XXXX"></div>
+                        <div class="payment-field"><label for="gcashReferenceNumber">Reference Number</label><input id="gcashReferenceNumber" type="text" placeholder="Enter reference number"></div>
+                        <div class="payment-field"><label for="gcashPaymentAmount">Payment Amount</label><input id="gcashPaymentAmount" type="text" value="₱0.00" readonly></div>
+                        <div class="payment-field full-width"><label for="gcashPaymentProof">Upload Payment Proof</label><input id="gcashPaymentProof" type="file" accept="image/*,.pdf"></div>
+                    </div>
+                </div>
+                <div class="payment-method-panel" data-payment-panel="Maya" hidden>
+                    <h5>Maya Payment</h5>
+                    <div class="payment-fields">
+                        <div class="payment-field"><label for="mayaAccountName">Maya Account Name</label><input id="mayaAccountName" type="text" placeholder="Enter account name"></div>
+                        <div class="payment-field"><label for="mayaNumber">Maya Number</label><input id="mayaNumber" type="tel" placeholder="09XX XXX XXXX"></div>
+                        <div class="payment-field"><label for="mayaReferenceNumber">Reference Number</label><input id="mayaReferenceNumber" type="text" placeholder="Enter reference number"></div>
+                        <div class="payment-field"><label for="mayaPaymentAmount">Payment Amount</label><input id="mayaPaymentAmount" type="text" value="₱0.00" readonly></div>
+                        <div class="payment-field full-width"><label for="mayaPaymentProof">Upload Payment Proof</label><input id="mayaPaymentProof" type="file" accept="image/*,.pdf"></div>
+                    </div>
+                </div>
+                <div class="payment-method-panel" data-payment-panel="Credit / Debit Card" hidden>
+                    <h5>Card Payment</h5>
+                    <div class="payment-fields">
+                        <div class="payment-field full-width"><label for="cardholderName">Cardholder Name</label><input id="cardholderName" type="text" placeholder="Enter cardholder name"></div>
+                        <div class="payment-field full-width"><label for="cardNumber">Card Number</label><input id="cardNumber" type="text" inputmode="numeric" placeholder="**** **** **** ****"></div>
+                        <div class="payment-field"><label for="cardExpiration">Expiration Date</label><input id="cardExpiration" type="text" placeholder="MM / YY"></div>
+                        <div class="payment-field"><label for="cardCvv">CVV</label><input id="cardCvv" type="password" inputmode="numeric" placeholder="***"></div>
+                        <div class="payment-field full-width"><label for="cardPaymentAmount">Payment Amount</label><input id="cardPaymentAmount" type="text" value="₱0.00" readonly></div>
+                    </div>
+                </div>
+                <div class="payment-method-panel" data-payment-panel="Bank Transfer" hidden>
+                    <h5>Bank Transfer</h5>
+                    <div class="payment-fields">
+                        <div class="payment-field"><label for="bankAccountName">Account Name</label><input id="bankAccountName" type="text" placeholder="Enter account name"></div>
+                        <div class="payment-field"><label for="bankName">Bank</label><select id="bankName"><option value="">Select Bank</option><option>BDO</option><option>BPI</option><option>Metrobank</option><option>Other</option></select></div>
+                        <div class="payment-field"><label for="bankReferenceNumber">Reference Number</label><input id="bankReferenceNumber" type="text" placeholder="Enter reference number"></div>
+                        <div class="payment-field"><label for="transferDate">Transfer Date</label><input id="transferDate" type="date"></div>
+                        <div class="payment-field"><label for="transferAmount">Amount Transferred</label><input id="transferAmount" type="text" value="₱0.00" readonly></div>
+                        <div class="payment-field"><label for="bankPaymentProof">Upload Payment Proof</label><input id="bankPaymentProof" type="file" accept="image/*,.pdf"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="confirmation-actions" style="display:flex; gap:12px; justify-content:flex-end;">
-                <button type="button" id="modalConfirmBtn" class="confirm-submit-btn" style="border-radius:999px; padding:14px 26px; font-weight:700; border:none; cursor:pointer; background:#dc2626; color:#ffffff;">Submit Reservation</button>
+                <button type="button" id="modalConfirmBtn" class="confirm-submit-btn" style="border-radius:999px; padding:14px 26px; font-weight:700; border:none; cursor:pointer; background:#dc2626; color:#ffffff;">Confirm Reservation</button>
                 <button type="button" id="modalCancelBtn" class="confirm-cancel-btn" style="border-radius:999px; padding:14px 26px; font-weight:700; border:none; cursor:pointer; background:#f3f4f6; color:#111827;">Back to Select</button>
             </div>
         </div>
@@ -625,11 +712,15 @@
     <input type="hidden" name="room_id" id="reservationRoomId">
     <input type="hidden" name="check_in" id="reservationCheckIn">
     <input type="hidden" name="check_out" id="reservationCheckOut">
-    <input type="hidden" name="guest_name" id="reservationGuestName" value="{{ auth()->user()->name ?? 'Guest' }}">
-    <input type="hidden" name="guest_email" id="reservationGuestEmail" value="{{ auth()->user()->email ?? 'guest@example.com' }}">
-    <input type="hidden" name="guest_phone" id="reservationGuestPhone" value="{{ auth()->user()->contact_no ?? '0000000000' }}">
+    <input type="hidden" name="guest_name" id="reservationGuestName" value="{{ $guest?->name ?? 'Guest' }}">
+    <input type="hidden" name="guest_email" id="reservationGuestEmail" value="{{ $guest?->email ?? 'guest@example.com' }}">
+    <input type="hidden" name="guest_phone" id="reservationGuestPhone" value="{{ $guest?->contact_no ?? '0000000000' }}">
     <input type="hidden" name="total_amount" id="reservationTotalAmount">
     <input type="hidden" name="special_requests" id="reservationSpecialRequests" value="">
+    <input type="hidden" name="dining_id" id="reservationDiningId">
+    <input type="hidden" name="dining_area" id="reservationDiningArea">
+    <input type="hidden" name="dining_schedule" id="reservationDiningSchedule">
+    <input type="hidden" name="quantity" id="reservationDiningQuantity">
 </form>
 
 <script>
@@ -640,7 +731,6 @@
         const panels = document.querySelectorAll('.reservation-panel');
         const checkIn = document.getElementById('checkIn');
         const checkOut = document.getElementById('checkOut');
-        const additionalGuests = document.getElementById('additionalGuests');
         const summaryRoom = document.getElementById('summaryRoom');
         const summaryRoomDetails = document.getElementById('summaryRoomDetails');
         const summaryRoomPrice = document.getElementById('summaryRoomPrice');
@@ -665,6 +755,12 @@
         const reservationGuestPhone = document.getElementById('reservationGuestPhone');
         const reservationTotalAmount = document.getElementById('reservationTotalAmount');
         const reservationSpecialRequests = document.getElementById('reservationSpecialRequests');
+        const reservationDiningId = document.getElementById('reservationDiningId');
+        const reservationDiningArea = document.getElementById('reservationDiningArea');
+        const reservationDiningSchedule = document.getElementById('reservationDiningSchedule');
+        const reservationDiningQuantity = document.getElementById('reservationDiningQuantity');
+        const diningSchedule = document.getElementById('diningSchedule');
+        const diningTable = document.getElementById('diningTable');
         const paymentMethodChoices = document.querySelectorAll('.payment-method-option');
         const confirmationModal = document.getElementById('confirmationModal');
         const confirmationOriginalParent = confirmationModal.parentElement;
@@ -685,20 +781,24 @@
         const detailsRoomDates = document.getElementById('detailsRoomDates');
         const detailsRoomGuests = document.getElementById('detailsRoomGuests');
         const detailsRoomPrice = document.getElementById('detailsRoomPrice');
-        const detailsAddonsPrice = document.getElementById('detailsAddonsPrice');
         const detailsTotal = document.getElementById('detailsTotal');
         const detailsGuestName = document.getElementById('detailsGuestName');
         const detailsGuestEmail = document.getElementById('detailsGuestEmail');
         const detailsGuestPhone = document.getElementById('detailsGuestPhone');
         const detailsSpecialRequest = document.getElementById('detailsSpecialRequest');
         const detailsArrival = document.getElementById('detailsArrival');
+        const arrivalTime = document.getElementById('arrivalTime');
         const detailsTerms = document.getElementById('detailsTerms');
+        const paymentPanels = document.querySelectorAll('[data-payment-panel]');
+        const methodPaymentAmounts = document.querySelectorAll('#gcashPaymentAmount, #mayaPaymentAmount, #cardPaymentAmount, #transferAmount');
 
         let selectedRoom = null;
         let roomPrice = 0;
         let selectedAmenities = [];
         let selectedEvent = null;
         let selectedDining = null;
+        let selectedExtraGuests = 0;
+        let selectedExtraGuestPrice = 650;
         let selectedPaymentMethod = 'Cash / Pay at Hotel';
 
         const items = document.querySelectorAll('.select-option-btn');
@@ -714,30 +814,29 @@
 
         const updateSummary = () => {
             summaryRoom.textContent = selectedRoom ? selectedRoom : 'None';
-            summaryRoomDetails.textContent = selectedRoom ? `${checkIn.value || 'Date'} – ${checkOut.value || 'Date'}${additionalGuests.value > 0 ? ` • ${additionalGuests.value} Extra Person(s)` : ''}` : 'Choose a room and dates';
+            summaryRoomDetails.textContent = selectedRoom ? `${checkIn.value || 'Date'} – ${checkOut.value || 'Date'}${selectedExtraGuests > 0 ? ` • ${selectedExtraGuests} Extra Person(s)` : ''}` : 'Choose a room and dates';
             summaryRoomPrice.textContent = `₱${roomPrice.toLocaleString()}`;
             summaryItems.textContent = selectedAmenities.length > 0 ? `${selectedAmenities.length} selected` : '0 selected';
-            summaryAdditionalGuests.textContent = additionalGuests.value > 0 ? `${additionalGuests.value} added` : 'None';
+            summaryAdditionalGuests.textContent = selectedExtraGuests > 0 ? `${selectedExtraGuests} added` : 'None';
             summaryEvent.textContent = selectedEvent ? selectedEvent.title : 'None';
-            summaryDining.textContent = selectedDining ? selectedDining.title : 'None';
+            summaryDining.textContent = selectedDining ? `${selectedDining.title}${selectedDining.schedule ? ` / ${selectedDining.schedule}` : ''}${selectedDining.table ? ` / ${selectedDining.table}` : ''}` : 'None';
             summaryAmenitiesPrice.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + item.price, 0).toLocaleString()}`;
-            summaryAdditionalGuestsPrice.textContent = `₱${(Number(additionalGuests.value) * 650).toLocaleString()}`;
+            summaryAdditionalGuestsPrice.textContent = `₱${(selectedExtraGuests * selectedExtraGuestPrice).toLocaleString()}`;
             summaryEventPrice.textContent = `₱${(selectedEvent ? selectedEvent.price : 0).toLocaleString()}`;
             summaryDiningPrice.textContent = `₱${(selectedDining ? selectedDining.price : 0).toLocaleString()}`;
 
             const total = calculateTotal();
             detailsRoomName.textContent = selectedRoom || 'None selected';
             detailsRoomDates.textContent = `${checkIn.value || 'Check-in'} to ${checkOut.value || 'Check-out'}`;
-            detailsRoomGuests.textContent = `${Number(additionalGuests.value) + 2} Guests`;
+            detailsRoomGuests.textContent = `${selectedExtraGuests + 2} Guests`;
             detailsRoomPrice.textContent = `₱${roomPrice.toLocaleString()}`;
-            detailsAddonsPrice.textContent = `₱${(total - roomPrice).toLocaleString()}`;
             detailsTotal.textContent = `₱${total.toLocaleString()}`;
 
             confirmReservationId.textContent = selectedRoom ? `RES-${Math.floor(Math.random() * 9000) + 1000}` : 'RES-0000';
             confirmRoom.textContent = selectedRoom ? selectedRoom : 'None';
             confirmArrivingOn.textContent = checkIn.value || '—';
             confirmCheckOut.textContent = checkOut.value || '—';
-            confirmGuests.textContent = additionalGuests.value > 0 ? `${additionalGuests.value} Extra Person(s)` : 'None';
+            confirmGuests.textContent = selectedExtraGuests > 0 ? `${selectedExtraGuests} Extra Person(s)` : 'None';
             confirmStatus.textContent = 'Reserved';
             confirmPaymentMethod.textContent = selectedPaymentMethod;
             confirmAmenities.textContent = selectedAmenities.length > 0 ? `${selectedAmenities.length} selected` : '0 selected';
@@ -748,11 +847,17 @@
                 return parts.length ? parts.join(' / ') : 'None';
             })();
             confirmTotalAmount.textContent = `₱${calculateTotal().toLocaleString()}`;
+            const paymentTotal = `₱${calculateTotal().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            methodPaymentAmounts.forEach(input => input.value = paymentTotal);
 
             summaryTotal.textContent = `₱${total.toLocaleString()}`;
             reservationTotalAmount.value = total;
             reservationCheckIn.value = checkIn.value;
             reservationCheckOut.value = checkOut.value;
+            reservationDiningId.value = selectedDining ? selectedDining.id : '';
+            reservationDiningArea.value = selectedDining ? selectedDining.table : '';
+            reservationDiningSchedule.value = selectedDining ? selectedDining.schedule : '';
+            reservationDiningQuantity.value = selectedDining ? '1' : '';
             reservationTotalAmount.value = total;
             reservationCheckIn.value = checkIn.value;
             reservationCheckOut.value = checkOut.value;
@@ -760,10 +865,17 @@
 
         checkIn.addEventListener('change', updateSummary);
         checkOut.addEventListener('change', updateSummary);
-        additionalGuests.addEventListener('change', updateSummary);
+        arrivalTime.addEventListener('change', function () {
+            if (Array.from(detailsArrival.options).some(option => option.value === this.value)) {
+                detailsArrival.value = this.value;
+            }
+        });
         paymentMethodChoices.forEach(choice => choice.addEventListener('click', function () {
             selectedPaymentMethod = this.dataset.paymentMethod;
             paymentMethodChoices.forEach(button => button.classList.toggle('selected', button === this));
+            paymentPanels.forEach(panel => {
+                panel.hidden = panel.dataset.paymentPanel !== selectedPaymentMethod;
+            });
             updateSummary();
         }));
 
@@ -771,9 +883,33 @@
             const amenitiesTotal = selectedAmenities.reduce((sum, item) => sum + item.price, 0);
             const eventTotal = selectedEvent ? selectedEvent.price : 0;
             const diningTotal = selectedDining ? selectedDining.price : 0;
-            const extraGuestsTotal = Number(additionalGuests.value) * 650;
+            const extraGuestsTotal = selectedExtraGuests * selectedExtraGuestPrice;
             return roomPrice + amenitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
         };
+
+        diningSchedule.addEventListener('change', function () {
+            if (selectedDining) {
+                selectedDining.schedule = this.value;
+                updateSummary();
+            }
+        });
+        diningTable.addEventListener('change', function () {
+            if (selectedDining) {
+                selectedDining.table = this.value;
+                updateSummary();
+            }
+        });
+
+        document.querySelectorAll('.room-extra-guests').forEach(select => {
+            select.addEventListener('change', function () {
+                const card = this.closest('.reservation-card');
+                if (selectedRoom === card.dataset.name) {
+                    selectedExtraGuests = Number(this.value);
+                    selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice);
+                    updateSummary();
+                }
+            });
+        });
 
         items.forEach(button => {
             button.addEventListener('click', function () {
@@ -786,6 +922,8 @@
                 if (category === 'room') {
                     selectedRoom = title;
                     roomPrice = price;
+                    selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice || 650);
+                    selectedExtraGuests = Number(card.querySelector('.room-extra-guests')?.value || 0);
                     reservationRoomId.value = card.dataset.roomId || '';
                     items.forEach(btn => {
                         if (btn.closest('.reservation-card').dataset.category === 'room') {
@@ -821,7 +959,13 @@
                             previousDiningBtn.disabled = false;
                         }
                     }
-                    selectedDining = { title, price };
+                    selectedDining = {
+                        id: card.dataset.diningId,
+                        title,
+                        price,
+                        schedule: diningSchedule.value || card.dataset.schedule || '',
+                        table: diningTable.value || '',
+                    };
                     this.textContent = 'Selected';
                     this.disabled = true;
                 }
@@ -861,6 +1005,7 @@
         const closeConfirmationModal = () => {
             confirmationOriginalParent.appendChild(confirmationModal);
             reservationPage.classList.remove('details-mode');
+            reservationPage.classList.remove('confirm-step');
             confirmationModal.classList.remove('open');
             confirmationModal.style.display = 'none';
             confirmationModal.setAttribute('aria-hidden', 'true');
@@ -879,7 +1024,16 @@
         });
 
         confirmationCloseBtn.addEventListener('click', closeConfirmationModal);
-        modalCancelBtn.addEventListener('click', closeConfirmationModal);
+        modalCancelBtn.addEventListener('click', function () {
+            if (reservationPage.classList.contains('confirm-step')) {
+                reservationPage.classList.remove('confirm-step');
+                modalConfirmBtn.textContent = 'Confirm Reservation';
+                modalCancelBtn.textContent = 'Back to Select';
+                return;
+            }
+
+            closeConfirmationModal();
+        });
         confirmationModal.addEventListener('click', function (event) {
             if (event.target === confirmationModal) {
                 closeConfirmationModal();
@@ -888,6 +1042,13 @@
 
         modalConfirmBtn.addEventListener('click', function () {
             if (modalConfirmBtn.disabled) {
+                return;
+            }
+
+            if (!reservationPage.classList.contains('confirm-step')) {
+                reservationPage.classList.add('confirm-step');
+                modalConfirmBtn.textContent = 'Submit Reservation';
+                modalCancelBtn.textContent = 'Back to Details';
                 return;
             }
 
@@ -905,7 +1066,7 @@
             reservationGuestPhone.value = detailsGuestPhone.value || '0000000000';
             reservationSpecialRequests.value = detailsSpecialRequest.value;
             reservationForm.appendChild(Object.assign(document.createElement('input'), {
-                type: 'hidden', name: 'check_in_time', value: detailsArrival.value
+                type: 'hidden', name: 'check_in_time', value: arrivalTime.value || detailsArrival.value
             }));
             const paymentMethodInput = document.createElement('input');
             paymentMethodInput.type = 'hidden';
@@ -920,11 +1081,17 @@
             selectedAmenities = [];
             selectedEvent = null;
             selectedDining = null;
+            diningSchedule.value = '';
+            diningTable.value = '';
             selectedPaymentMethod = 'Cash / Pay at Hotel';
             roomPrice = 0;
             checkIn.value = '';
             checkOut.value = '';
-            additionalGuests.value = '0';
+            arrivalTime.value = '15:00';
+            detailsArrival.value = '15:00';
+            selectedExtraGuests = 0;
+            selectedExtraGuestPrice = 650;
+            document.querySelectorAll('.room-extra-guests').forEach(select => select.value = '0');
             items.forEach(btn => {
                 btn.textContent = 'Add to Reservation';
                 btn.disabled = false;
