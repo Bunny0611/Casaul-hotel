@@ -21,6 +21,12 @@ class HousekeepingController extends Controller
         $dirtyRooms = $rooms->where('cleaning_status', 'dirty')->count();
         $inProgress = $rooms->where('cleaning_status', 'in_progress')->count();
         $occupiedRooms = $rooms->where('status', 'occupied')->count();
+        $pendingTasks = HousekeepingTask::with(['room', 'assignedStaff'])
+            ->whereIn('status', ['pending', 'in_progress'])->get();
+        $priorityTasks = $pendingTasks->sortBy(function (HousekeepingTask $task) {
+            return ['urgent' => 1, 'high' => 2, 'medium' => 3, 'low' => 4][$task->priority] ?? 5;
+        })->take(4);
+        $cleaningPercentage = $totalRooms > 0 ? (int) round(($cleanRooms / $totalRooms) * 100) : 0;
 
         return view('housekeeping.dashboard', compact(
             'rooms',
@@ -28,7 +34,10 @@ class HousekeepingController extends Controller
             'cleanRooms',
             'dirtyRooms',
             'inProgress',
-            'occupiedRooms'
+            'occupiedRooms',
+            'pendingTasks',
+            'priorityTasks',
+            'cleaningPercentage'
         ));
     }
 

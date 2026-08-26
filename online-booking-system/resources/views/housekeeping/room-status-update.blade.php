@@ -445,8 +445,8 @@
 .status-modal {
     width: 100%;
     max-width: 520px;
-    max-height: 90vh;
-    overflow-y: auto;
+    max-height: calc(100vh - 40px);
+    overflow: hidden;
     background: #ffffff;
     border-radius: 18px;
     box-shadow: 0 25px 70px rgba(39, 29, 25, 0.25);
@@ -524,6 +524,8 @@
 
 .modal-body {
     padding: 22px;
+    max-height: calc(100vh - 135px);
+    overflow-y: auto;
 }
 
 .room-information {
@@ -1216,24 +1218,16 @@
                         name="current_status"
                     >
 
-                        <option value="Dirty">
+                        <option value="dirty">
                             Dirty
                         </option>
 
-                        <option value="Cleaning">
-                            Cleaning
+                        <option value="in_progress">
+                            In Progress
                         </option>
 
-                        <option value="Cleaned">
-                            Cleaned
-                        </option>
-
-                        <option value="Inspected">
-                            Inspected
-                        </option>
-
-                        <option value="Available">
-                            Available
+                        <option value="clean">
+                            Clean
                         </option>
 
                     </select>
@@ -1257,19 +1251,11 @@
                         </option>
 
                         <option value="in_progress">
-                            Cleaning
+                            In Progress
                         </option>
 
                         <option value="clean">
-                            Cleaned
-                        </option>
-
-                        <option value="clean">
-                            Inspected
-                        </option>
-
-                        <option value="clean">
-                            Available
+                            Clean
                         </option>
 
                     </select>
@@ -1352,7 +1338,9 @@ function openStatusModal(roomNumber, roomType, currentStatus) {
 
     const statusValueMap = {
         Dirty: 'dirty',
+        'In Progress': 'in_progress',
         Cleaning: 'in_progress',
+        Clean: 'clean',
         Cleaned: 'clean',
         Inspected: 'clean',
         Available: 'clean'
@@ -1360,7 +1348,7 @@ function openStatusModal(roomNumber, roomType, currentStatus) {
 
 
     currentStatusElement.value =
-        currentStatus;
+        statusValueMap[currentStatus] || currentStatus;
 
     updateStatusElement.value =
         statusValueMap[currentStatus] || 'dirty';
