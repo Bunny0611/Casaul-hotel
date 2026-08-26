@@ -207,12 +207,12 @@
     .reservation-page:not(.details-mode) #confirmReservationBtn,
     .reservation-page:not(.details-mode) .summary-clear { font-size:12px; }
 
-    .reservation-progress { gap:16px; padding:16px 24px; }
-    .progress-step { gap:10px; }
-    .progress-number { width:34px; height:34px; flex-basis:34px; font-size:15px; }
-    .progress-copy { gap:3px; }
-    .progress-copy strong { font-size:12px; }
-    .progress-copy span { font-size:10px; }
+    .reservation-progress { gap:22px; padding:22px 30px; }
+    .progress-step { gap:13px; }
+    .progress-number { width:44px; height:44px; flex-basis:44px; font-size:18px; }
+    .progress-copy { gap:4px; }
+    .progress-copy strong { font-size:15px; }
+    .progress-copy span { font-size:12px; }
     .details-mode .details-form-section h4 { font-size:12px; }
     .details-mode .details-form-section,
     .details-mode .details-form-section strong { font-size:12px; }
@@ -263,6 +263,14 @@
     .details-mode .details-form-section textarea { font-size:12px; }
     .details-mode .details-form-section > small { font-size:12px; }
     .details-mode .details-form-section p { font-size:12px !important; }
+
+    @media (max-width:700px) {
+        .reservation-progress { gap:8px; padding:16px 14px; }
+        .progress-step { gap:7px; }
+        .progress-number { width:36px; height:36px; flex-basis:36px; font-size:15px; }
+        .progress-copy strong { font-size:12px; }
+        .progress-copy span { display:none; }
+    }
 
 </style>
 
