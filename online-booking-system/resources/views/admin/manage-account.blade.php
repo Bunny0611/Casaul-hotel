@@ -118,8 +118,8 @@
             </div>
             <div class="flex flex-wrap gap-3">
                 <span id="selectedAccountCount" class="self-center text-sm font-medium text-slate-500">0 selected</span>
-                <button type="button" onclick="confirmBulkAccountDelete()"
-                    class="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700">
+                <button id="bulkAccountDeleteButton" type="button" onclick="confirmBulkAccountDelete()"
+                    class="hidden inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700">
                     <i class="fas fa-trash"></i> Delete Selected
                 </button>
             </div>
@@ -434,6 +434,10 @@
         }
         if (count) {
             count.textContent = selected.length + ' selected';
+        }
+        const deleteButton = document.getElementById('bulkAccountDeleteButton');
+        if (deleteButton) {
+            deleteButton.classList.toggle('hidden', !selectAll || !selectAll.checked);
         }
     }
 

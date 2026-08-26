@@ -41,6 +41,16 @@
         display: none !important;
     }
 
+    .room-management-page .dining-card-header button[onclick^="confirmBulkDiningDelete"] {
+        display: none;
+    }
+
+    .room-management-page [data-panel="rooms"] button[onclick="confirmBulkDelete()"],
+    .room-management-page [data-panel="amenities"] button[onclick^="confirmBulkInventoryDelete"],
+    .room-management-page [data-panel="event-place"] button[onclick^="confirmBulkInventoryDelete"] {
+        display: none;
+    }
+
     @media (max-width: 640px) {
         .room-management-page .dining-card-header {
             align-items: stretch;
@@ -73,9 +83,6 @@
             <button id="add-event-place-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
                 <i class="fas fa-plus mr-2"></i>Add Event Place
             </button>
-            <button id="add-dining-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
-                <i class="fas fa-plus mr-2"></i>Add Dining
-            </button>
         </div>
     </div>
 
@@ -88,7 +95,7 @@
 
     <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-none">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
-            <div></div>
+            <div class="text-sm text-gray-500">{{ $rooms->total() }} room{{ $rooms->total() === 1 ? '' : 's' }}</div>
             <div class="flex items-center gap-3">
                 <span id="bulkSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span>
                 <button type="button" onclick="confirmBulkDelete()" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected rooms">
@@ -101,14 +108,11 @@
             @method('DELETE')
             <input type="hidden" name="room_ids" id="bulkRoomIds">
         </form>
-        <div class="px-6 py-6">
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
-                <div class="flex items-center gap-2 text-sm text-gray-700">
-                    <input id="selectAllRooms" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" onclick="toggleAllRoomCheckboxes(this)">
-                    <label for="selectAllRooms">Select all rooms</label>
-                </div>
+        <div class="px-6 py-2">
+            <div class="flex flex-wrap items-center justify-between gap-4">
                 {{-- total() = full room count across all pages (count() would only show the current page's 5 rows once paginated) --}}
-                <div class="text-sm text-gray-500">{{ $rooms->total() }} room{{ $rooms->total() === 1 ? '' : 's' }}</div>
+                <div></div>
+                <div></div>
             </div>
             <div class="room-table-shell overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -175,12 +179,8 @@
 
     <div data-panel="amenities" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
-            <div class="flex items-center gap-2 text-sm text-gray-700"><input id="selectAllAmenities" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="amenities" onclick="toggleAllInventoryCheckboxes('amenities', this)"><label for="selectAllAmenities">Select all amenities</label></div>
+            <div></div>
             <div class="flex items-center gap-3"><span id="amenitiesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('amenities')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected amenities"><i class="fas fa-trash"></i></button></div>
-        </div>
-        <div class="border-b border-gray-200 px-6 py-5">
-            <h3 class="text-lg font-semibold text-gray-800">Amenities</h3>
-            <p class="mt-1 text-sm text-gray-500">Add premium guest amenities and service upgrades for each room package.</p>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full">
@@ -204,11 +204,7 @@
     </div>
 
     <div data-panel="event-place" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4"><div class="flex items-center gap-2 text-sm text-gray-700"><input id="selectAllEventPlace" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="event_place" onclick="toggleAllInventoryCheckboxes('event_place', this)"><label for="selectAllEventPlace">Select all event places</label></div><div class="flex items-center gap-3"><span id="event_placeSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('event_place')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white" aria-label="Delete selected event places"><i class="fas fa-trash"></i></button></div></div>
-        <div class="border-b border-gray-200 px-6 py-5">
-            <h3 class="text-lg font-semibold text-gray-800">Event Place</h3>
-            <p class="mt-1 text-sm text-gray-500">Manage wedding, corporate, and celebration offerings for your event venue.</p>
-        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4"><div></div><div class="flex items-center gap-3"><span id="event_placeSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('event_place')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white" aria-label="Delete selected event places"><i class="fas fa-trash"></i></button></div></div>
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
@@ -259,6 +255,7 @@
                         <table class="min-w-full text-left">
                             <thead class="bg-gray-50">
                                 <tr>
+                                    <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600"></th>
                                     <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Table No.</th>
                                     <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Type</th>
                                     <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Capacity</th>
@@ -276,12 +273,12 @@
                     <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Menu / Meals</h3><button type="button" data-dining-add="menu" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Menu</button></div>
                     <div class="dining-table-scroll">
                         <table class="min-w-full text-left">
-                            <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                            <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600"></th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                             <tbody class="divide-y divide-gray-200">
                                 @forelse($dining as $menu)
-                                    <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $menu->name }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ $menu->category ?: 'Menu / Meal' }}</td><td class="px-4 py-3 text-sm text-gray-700">₱{{ number_format((float) $menu->price, 2) }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-4 py-3"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower($menu->status) === 'available' ? 'border-green-200 bg-green-100 text-green-700' : 'border-red-200 bg-red-100 text-red-700' }}">{{ ucfirst($menu->status) }}</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                    <tr class="bg-white"><td class="px-4 py-3 text-sm"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $menu->id }}"></td><td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $menu->name }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ $menu->category ?: 'Menu / Meal' }}</td><td class="px-4 py-3 text-sm text-gray-700">₱{{ number_format((float) $menu->price, 2) }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-4 py-3"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower($menu->status) === 'available' ? 'border-green-200 bg-green-100 text-green-700' : 'border-red-200 bg-red-100 text-red-700' }}">{{ ucfirst($menu->status) }}</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
                                 @empty
-                                    <tr><td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">No menu items found.</td></tr>
+                                    <tr><td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500">No menu items found.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -301,15 +298,15 @@
 
         <div data-dining-subpanel="tables" class="hidden p-5 lg:p-6">
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Tables / Seating</h3><button type="button" data-dining-add="table" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Table</button></div>
+                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Tables / Seating</h3><div class="flex items-center gap-3"><span id="diningTablesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkDiningDelete('tables')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected tables"><i class="fas fa-trash"></i></button><button type="button" data-dining-add="table" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Table</button></div></div>
                 <div class="dining-table-scroll">
                     <table class="min-w-full text-left">
-                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Table No.</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Type</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Capacity</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Location</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="dining-table-select-all h-4 w-4 rounded border-gray-300 text-orange-600" onclick="toggleAllDiningCheckboxes('tables', this)"></th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Table No.</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Type</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Capacity</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Location</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                         <tbody class="divide-y divide-gray-200">
                             @forelse($diningTables as $table)
-                                <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $table->table_no }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->type }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->capacity }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->location ?: '—' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium">{{ ucfirst($table->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-table-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $table->id }}" onclick="updateDiningSelectCount('tables')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $table->table_no }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->type }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->capacity }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->location ?: '—' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium">{{ ucfirst($table->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
                             @empty
-                                <tr><td colspan="6" class="px-6 py-6 !text-center text-sm text-gray-500">No tables found.</td></tr>
+                                <tr><td colspan="7" class="px-6 py-6 !text-center text-sm text-gray-500">No tables found.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -319,15 +316,15 @@
 
         <div data-dining-subpanel="menu" class="hidden p-5 lg:p-6">
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-2"><h3 class="text-xl font-semibold text-gray-800">Menu / Meals</h3><button type="button" data-dining-add="menu" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Menu</button></div>
+                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-2"><h3 class="text-xl font-semibold text-gray-800">Menu / Meals</h3><div class="flex items-center gap-3"><span id="diningMenusSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkDiningDelete('menus')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected menus"><i class="fas fa-trash"></i></button><button type="button" data-dining-add="menu" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Menu</button></div></div>
                 <div class="dining-table-scroll">
                     <table class="min-w-full text-left">
-                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="dining-menu-select-all h-4 w-4 rounded border-gray-300 text-orange-600" onclick="toggleAllDiningCheckboxes('menus', this)"></th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                         <tbody class="divide-y divide-gray-200">
                             @forelse($dining as $menu)
-                                <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $menu->name }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $menu->category ?: 'Menu / Meal' }}</td><td class="px-6 py-4 text-sm text-gray-700">₱{{ number_format((float) $menu->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower($menu->status) === 'available' ? 'border-green-200 bg-green-100 text-green-700' : 'border-red-200 bg-red-100 text-red-700' }}">{{ ucfirst($menu->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-menu-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $menu->id }}" onclick="updateDiningSelectCount('menus')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $menu->name }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $menu->category ?: 'Menu / Meal' }}</td><td class="px-6 py-4 text-sm text-gray-700">₱{{ number_format((float) $menu->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower($menu->status) === 'available' ? 'border-green-200 bg-green-100 text-green-700' : 'border-red-200 bg-red-100 text-red-700' }}">{{ ucfirst($menu->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
                             @empty
-                                <tr><td colspan="6" class="px-6 py-6 !text-center text-sm text-gray-500">No menu items found.</td></tr>
+                                <tr><td colspan="7" class="px-6 py-6 !text-center text-sm text-gray-500">No menu items found.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -337,15 +334,15 @@
 
         <div data-dining-subpanel="schedule" class="hidden p-5 lg:p-6">
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Dining Schedule</h3><button type="button" data-dining-add="schedule" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Schedule</button></div>
+                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Dining Schedule</h3><div class="flex items-center gap-3"><span id="diningSchedulesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkDiningDelete('schedules')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected schedules"><i class="fas fa-trash"></i></button><button type="button" data-dining-add="schedule" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Schedule</button></div></div>
                 <div class="dining-table-scroll">
                     <table class="min-w-full text-left">
-                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Period</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Max Guests</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="dining-schedule-select-all h-4 w-4 rounded border-gray-300 text-orange-600" onclick="toggleAllDiningCheckboxes('schedules', this)"></th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Period</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Max Guests</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                         <tbody class="divide-y divide-gray-200">
                             @forelse($diningSchedules as $schedule)
-                                <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $schedule->period }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ \Illuminate\Support\Carbon::parse($schedule->available_from)->format('g:i A') }} - {{ \Illuminate\Support\Carbon::parse($schedule->available_to)->format('g:i A') }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $schedule->max_guests ?: '—' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium">{{ ucfirst($schedule->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-schedule-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $schedule->id }}" onclick="updateDiningSelectCount('schedules')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $schedule->period }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ \Illuminate\Support\Carbon::parse($schedule->available_from)->format('g:i A') }} - {{ \Illuminate\Support\Carbon::parse($schedule->available_to)->format('g:i A') }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $schedule->max_guests ?: '—' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium">{{ ucfirst($schedule->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
                             @empty
-                                <tr><td colspan="5" class="px-6 py-6 !text-center text-sm text-gray-500">No dining schedules found.</td></tr>
+                                <tr><td colspan="6" class="px-6 py-6 !text-center text-sm text-gray-500">No dining schedules found.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -360,6 +357,13 @@
     @method('DELETE')
     <input type="hidden" name="category" id="bulkInventoryCategory">
     <input type="hidden" name="inventory_ids" id="bulkInventoryIds">
+</form>
+
+<form id="bulkDiningDeleteForm" method="POST" action="{{ route('admin.dining.bulkDestroy') }}">
+    @csrf
+    @method('DELETE')
+    <input type="hidden" name="type" id="bulkDiningType">
+    <input type="hidden" name="dining_ids" id="bulkDiningIds">
 </form>
 
 <div id="editInventoryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
@@ -834,6 +838,9 @@
         if (label) {
             label.textContent = count + (count === 1 ? ' selected' : ' selected');
         }
+        const selectAll = document.getElementById('selectAllRoomsHeader');
+        const deleteButton = document.querySelector('[data-panel="rooms"] button[onclick="confirmBulkDelete()"]');
+        if (deleteButton) deleteButton.style.display = selectAll && selectAll.checked ? 'inline-flex' : 'none';
     }
 
     function toggleAllRoomCheckboxes(source) {
@@ -895,6 +902,10 @@
         const count = document.querySelectorAll('.inventory-checkbox-' + category + ':checked').length;
         const label = document.getElementById(category + 'SelectedCount');
         if (label) label.textContent = count + ' selected';
+        const panelName = category === 'event_place' ? 'event-place' : category;
+        const deleteButton = document.querySelector('[data-panel="' + panelName + '"] button[onclick^="confirmBulkInventoryDelete"]');
+        const selectAll = document.querySelector('.inventory-select-all[data-category="' + category + '"]');
+        if (deleteButton) deleteButton.style.display = selectAll && selectAll.checked ? 'inline-flex' : 'none';
     }
 
     function confirmBulkInventoryDelete(category) {
@@ -904,6 +915,54 @@
         document.getElementById('bulkInventoryCategory').value = category;
         document.getElementById('bulkInventoryIds').value = selectedIds.join(',');
         document.getElementById('bulkInventoryDeleteForm').submit();
+    }
+
+    function diningCheckboxSelector(type) {
+        return type === 'tables' ? '.dining-table-checkbox' : type === 'menus' ? '.dining-menu-checkbox' : '.dining-schedule-checkbox';
+    }
+
+    function diningPanelName(type) {
+        return type === 'tables' ? 'tables' : type === 'menus' ? 'menu' : 'schedule';
+    }
+
+    function diningSelectAllClass(type) {
+        return type === 'tables' ? 'dining-table-select-all' : type === 'menus' ? 'dining-menu-select-all' : 'dining-schedule-select-all';
+    }
+
+    function updateDiningSelectCount(type) {
+        const selector = diningCheckboxSelector(type);
+        const count = document.querySelectorAll(selector + ':checked').length;
+        const label = document.getElementById('dining' + type.charAt(0).toUpperCase() + type.slice(1) + 'SelectedCount');
+        if (label) label.textContent = count + ' selected';
+
+        const panelName = diningPanelName(type);
+        const selectAll = document.querySelector('.' + diningSelectAllClass(type));
+        if (selectAll) {
+            selectAll.checked = count > 0 && count === document.querySelectorAll(selector).length;
+            const deleteButton = document.querySelector('[data-dining-subpanel="' + panelName + '"] button[onclick^="confirmBulkDiningDelete"]');
+            if (deleteButton) deleteButton.style.display = selectAll.checked ? 'inline-flex' : 'none';
+        }
+    }
+
+    function toggleAllDiningCheckboxes(type, source) {
+        document.querySelectorAll(diningCheckboxSelector(type)).forEach(function (checkbox) {
+            checkbox.checked = source.checked;
+        });
+        updateDiningSelectCount(type);
+    }
+
+    function confirmBulkDiningDelete(type) {
+        const selectedIds = Array.from(document.querySelectorAll(diningCheckboxSelector(type) + ':checked')).map(function (checkbox) {
+            return checkbox.value;
+        });
+        if (!selectedIds.length) {
+            alert('Please select at least one item to delete.');
+            return;
+        }
+        if (!confirm('Are you sure you want to delete the selected ' + selectedIds.length + ' item(s)?')) return;
+        document.getElementById('bulkDiningType').value = type;
+        document.getElementById('bulkDiningIds').value = selectedIds.join(',');
+        document.getElementById('bulkDiningDeleteForm').submit();
     }
 
     function editInventory(id, item) {
@@ -1113,8 +1172,7 @@
                 const shouldShow =
                     (targetName === 'rooms' && button.id === 'add-room-button') ||
                     (targetName === 'amenities' && button.id === 'add-amenities-button') ||
-                    (targetName === 'event-place' && button.id === 'add-event-place-button') ||
-                    (targetName === 'dining' && button.id === 'add-dining-button');
+                    (targetName === 'event-place' && button.id === 'add-event-place-button');
                 button.classList.toggle('hidden', !shouldShow);
             });
             if (targetName === 'dining') {
@@ -1150,6 +1208,10 @@
                     return;
                 }
 
+                if (button.getAttribute('onclick')?.startsWith('confirmBulkDiningDelete')) {
+                    return;
+                }
+
                 if (button.querySelector('.fa-trash')) {
                     deleteDiningRow(button);
                 }
@@ -1160,7 +1222,6 @@
 
         document.getElementById('add-amenities-button').addEventListener('click', openAmenityModal);
         document.getElementById('add-event-place-button').addEventListener('click', openEventPlaceModal);
-        document.getElementById('add-dining-button').addEventListener('click', openDiningModal);
 
         updateSelectedCount();
         activateTab(@json($activeTab));
