@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\HousekeepingTask;
 use App\Models\Room;
+use App\Models\Reservation;
+use App\Models\Staff;
 use App\Models\MaintenanceReport;
 
 class HousekeepingController extends Controller
@@ -32,9 +35,68 @@ class HousekeepingController extends Controller
 
     public function assignedRooms()
     {
+        $tasks = HousekeepingTask::with(['room', 'assignedStaff', 'reservation'])
+            ->whereIn('status', ['pending', 'in_progress'])
+            ->orderBy('scheduled_date')
+            ->orderBy('scheduled_time')
+            ->get();
         $rooms = Room::orderBy('room_number')->get();
+        $reservations = Reservation::whereIn('status', ['pending', 'confirmed', 'checked-in'])
+            ->with('room')->latest()->get();
+        $staff = Staff::where('role', 'housekeeping')->where('is_active', true)
+            ->orderBy('name')->get();
 
-        return view('housekeeping.assigned-rooms', compact('rooms'));
+        return view('housekeeping.assigned-rooms', compact('tasks', 'rooms', 'reservations', 'staff'));
+    }
+
+    public function storeTask(Request $request)
+    {
+        $validated = $request->validate([
+            'room_id' => ['required', 'exists:rooms,id'],
+            'reservation_id' => ['nullable', 'exists:reservations,id'],
+            'assigned_staff_id' => ['nullable', 'exists:staff_users,id'],
+            'task' => ['required', 'string', 'max:255'],
+            'priority' => ['required', 'in:low,medium,high,urgent'],
+            'scheduled_date' => ['required', 'date'],
+            'scheduled_time' => ['nullable', 'date_format:H:i'],
+            'estimated_duration' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        if (!empty($validated['assigned_staff_id'])) {
+            abort_unless(Staff::whereKey($validated['assigned_staff_id'])
+                ->where('role', 'housekeeping')->exists(), 422, 'Invalid housekeeping staff.');
+        }
+
+        HousekeepingTask::create($validated);
+
+        return redirect()->route('housekeeping.assigned-rooms')->with('success', 'Cleaning task assigned.');
+    }
+
+    public function startTask(HousekeepingTask $housekeepingTask)
+    {
+        abort_unless($housekeepingTask->status === 'pending', 422, 'Only pending tasks can be started.');
+        $housekeepingTask->update(['status' => 'in_progress', 'started_at' => now()]);
+        $housekeepingTask->room()->update(['cleaning_status' => 'in_progress']);
+
+        return back()->with('success', 'Cleaning started.');
+    }
+
+    public function completeTask(HousekeepingTask $housekeepingTask)
+    {
+        abort_unless($housekeepingTask->status === 'in_progress', 422, 'Only active tasks can be completed.');
+        $housekeepingTask->update(['status' => 'completed', 'finished_at' => now()]);
+        $housekeepingTask->room()->update(['cleaning_status' => 'clean']);
+
+        return back()->with('success', 'Cleaning completed.');
+    }
+
+    public function destroyTask(HousekeepingTask $housekeepingTask)
+    {
+        abort_unless($housekeepingTask->status === 'pending', 422, 'Only pending tasks can be deleted.');
+        $housekeepingTask->delete();
+
+        return back()->with('success', 'Pending task deleted.');
     }
 
 
@@ -111,7 +173,10 @@ class HousekeepingController extends Controller
 
     public function cleaningHistory()
     {
-        return view('housekeeping.cleaning-history');
+        $tasks = HousekeepingTask::with(['room', 'assignedStaff', 'reservation'])
+            ->where('status', 'completed')->latest('finished_at')->get();
+
+        return view('housekeeping.cleaning-history', compact('tasks'));
     }
 
     public function updateStatus(Request $request, $id)
