@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class MaintenanceReport extends Model
 {
+    protected $table = 'maintenance_reports';
+
     protected $fillable = [
         'room_number',
         'room_type',
