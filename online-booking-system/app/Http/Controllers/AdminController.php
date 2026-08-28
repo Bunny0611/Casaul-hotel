@@ -12,6 +12,7 @@ use Illuminate\Validation\Rule;
 use App\Models\Room;
 use App\Models\Reservation;
 use App\Models\Message;
+use App\Models\MaintenanceReport;
 use App\Models\Staff;
 use App\Models\InventoryItem;
 use App\Models\Amenity;
@@ -803,10 +804,46 @@ class AdminController extends Controller
         return redirect()->route('employee.guest-requests')->with('success', 'Guest request resolved.');
     }
 
+    public function updateMaintenanceReportStatus(Request $request, MaintenanceReport $maintenanceReport)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:In Progress,Completed'],
+        ]);
+
+        $maintenanceReport->update(['status' => $validated['status']]);
+
+        return redirect()->back()->with('success', 'Maintenance report status updated successfully.');
+    }
+
     public function reports(Request $request)
     {
         $from = $request->query('from');
         $to = $request->query('to');
+
+        $maintenanceReportsQuery = MaintenanceReport::query()->latest('date_reported');
+        if ($from) {
+            $maintenanceReportsQuery->whereDate('date_reported', '>=', $from);
+        }
+        if ($to) {
+            $maintenanceReportsQuery->whereDate('date_reported', '<=', $to);
+        }
+
+        $maintenanceReports = $maintenanceReportsQuery->get();
+        $maintenanceStatusLabels = ['Pending', 'Repairing', 'In Progress', 'Completed'];
+        $maintenanceStatusData = collect($maintenanceStatusLabels)
+            ->map(fn($status) => $maintenanceReports->where('status', $status)->count())
+            ->all();
+        $maintenancePriorityLabels = ['Low', 'Medium', 'High', 'Urgent'];
+        $maintenancePriorityData = collect($maintenancePriorityLabels)
+            ->map(fn($priority) => $maintenanceReports->where('priority', $priority)->count())
+            ->all();
+        $maintenanceCategoryData = $maintenanceReports->groupBy('category')
+            ->map(fn($group) => $group->count());
+        $maintenanceCategoryLabels = $maintenanceCategoryData->keys()->values()->all();
+        $maintenanceCategoryCounts = $maintenanceCategoryData->values()->map(fn($count) => (int) $count)->all();
+        $maintenancePending = $maintenanceReports->where('status', 'Pending')->count();
+        $maintenanceRepairing = $maintenanceReports->whereIn('status', ['Repairing', 'In Progress'])->count();
+        $maintenanceCompleted = $maintenanceReports->where('status', 'Completed')->count();
 
         $reservationsQuery = Reservation::with('room')->latest();
         if ($from) {
@@ -817,6 +854,15 @@ class AdminController extends Controller
         }
 
         $reservations = $reservationsQuery->get();
+        $maintenanceReportsQuery = MaintenanceReport::query()->latest('date_reported');
+        if ($from) {
+            $maintenanceReportsQuery->whereDate('date_reported', '>=', $from);
+        }
+        if ($to) {
+            $maintenanceReportsQuery->whereDate('date_reported', '<=', $to);
+        }
+
+        $maintenanceReports = $maintenanceReportsQuery->get();
         $completedReservations = $reservations->where('status', 'completed');
         $confirmedReservations = $reservations->where('status', 'confirmed');
         $pendingReservations = $reservations->where('status', 'pending');
@@ -1064,7 +1110,17 @@ class AdminController extends Controller
             'newGuests',
             'returningGuests',
             'averageStayDuration',
-            'recentGuestActivity'
+            'recentGuestActivity',
+            'maintenanceReports',
+            'maintenanceStatusLabels',
+            'maintenanceStatusData',
+            'maintenancePriorityLabels',
+            'maintenancePriorityData',
+            'maintenanceCategoryLabels',
+            'maintenanceCategoryCounts',
+            'maintenancePending',
+            'maintenanceRepairing',
+            'maintenanceCompleted'
         ));
     }
 
@@ -1193,6 +1249,27 @@ class AdminController extends Controller
         $html .= '<tr class="header"><th>Month</th><th>Revenue</th></tr>';
         foreach ($monthlyLabels as $index => $monthLabel) {
             $html .= '<tr><td>' . e($monthLabel) . '</td><td class="amount">₱' . number_format((float) ($monthlyRevenueValues[$index] ?? 0), 2) . '</td></tr>';
+        }
+
+        $html .= '<tr><td colspan="2">&nbsp;</td></tr>';
+
+        $html .= '<tr><td colspan="8" class="section">Maintenance Reports</td></tr>';
+        $html .= '<tr class="header"><th>Room</th><th>Issue</th><th>Category</th><th>Priority</th><th>Reported By</th><th>Date &amp; Time</th><th>Status</th><th>Description</th></tr>';
+        foreach ($maintenanceReports as $report) {
+            $html .= '<tr>';
+            $html .= '<td>' . e($report->room_number) . '</td>';
+            $html .= '<td>' . e($report->problem ?: $report->category) . '</td>';
+            $html .= '<td>' . e($report->category) . '</td>';
+            $html .= '<td>' . e($report->priority) . '</td>';
+            $html .= '<td>' . e($report->reported_by) . '</td>';
+            $html .= '<td>' . e(optional($report->date_reported)->format('d/m/Y h:i A')) . '</td>';
+            $html .= '<td>' . e($report->status) . '</td>';
+            $html .= '<td>' . e($report->description) . '</td>';
+            $html .= '</tr>';
+        }
+
+        if ($maintenanceReports->isEmpty()) {
+            $html .= '<tr><td colspan="8">No maintenance reports found.</td></tr>';
         }
 
         $html .= '<tr><td colspan="2">&nbsp;</td></tr>';
