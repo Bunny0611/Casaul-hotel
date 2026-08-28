@@ -928,7 +928,9 @@
     <input type="hidden" name="submission_token" value="{{ \Illuminate\Support\Str::uuid() }}">
     <input type="hidden" name="room_id" id="reservationRoomId">
     <input type="hidden" name="check_in" id="reservationCheckIn">
+    <input type="hidden" name="check_in_time" id="reservationCheckInTime">
     <input type="hidden" name="check_out" id="reservationCheckOut">
+    <input type="hidden" name="check_out_time" id="reservationCheckOutTime">
     <input type="hidden" name="guest_name" id="reservationGuestName" value="{{ $guest?->name ?? 'Guest' }}">
     <input type="hidden" name="guest_email" id="reservationGuestEmail" value="{{ $guest?->email ?? 'guest@example.com' }}">
     <input type="hidden" name="guest_phone" id="reservationGuestPhone" value="{{ $guest?->contact_no ?? '0000000000' }}">
@@ -971,7 +973,9 @@
         const reservationForm = document.getElementById('reservationForm');
         const reservationRoomId = document.getElementById('reservationRoomId');
         const reservationCheckIn = document.getElementById('reservationCheckIn');
+        const reservationCheckInTime = document.getElementById('reservationCheckInTime');
         const reservationCheckOut = document.getElementById('reservationCheckOut');
+        const reservationCheckOutTime = document.getElementById('reservationCheckOutTime');
         const reservationGuestName = document.getElementById('reservationGuestName');
         const reservationGuestEmail = document.getElementById('reservationGuestEmail');
         const reservationGuestPhone = document.getElementById('reservationGuestPhone');
@@ -1227,6 +1231,8 @@
             reservationTotalAmount.value = total;
             reservationCheckIn.value = checkIn.value;
             reservationCheckOut.value = checkOut.value;
+            reservationCheckInTime.value = arrivalTime.value || '';
+            reservationCheckOutTime.value = '';
             reservationDiningId.value = selectedDining ? selectedDining.id : '';
             reservationDiningArea.value = selectedDining ? selectedDining.table : '';
             reservationDiningSchedule.value = selectedDining ? selectedDining.schedule : '';
@@ -1635,9 +1641,8 @@
             reservationGuestEmail.value = detailsGuestEmail.value || 'guest@example.com';
             reservationGuestPhone.value = detailsGuestPhone.value || '0000000000';
             reservationSpecialRequests.value = detailsSpecialRequest.value;
-            reservationForm.appendChild(Object.assign(document.createElement('input'), {
-                type: 'hidden', name: 'check_in_time', value: arrivalTime.value
-            }));
+            reservationCheckInTime.value = selectedEvent?.startTime || selectedAmenities[0]?.time || arrivalTime.value || '';
+            reservationCheckOutTime.value = selectedEvent?.endTime || '';
             const paymentMethodInput = document.createElement('input');
             paymentMethodInput.type = 'hidden';
             paymentMethodInput.name = 'payment_method';

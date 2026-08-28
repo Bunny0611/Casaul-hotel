@@ -5,10 +5,12 @@
 
 @php
     $reservations = $reservations ?? collect([]);
-    $roomReservations = $reservations->where('category', 'rooms');
-    $amenityReservations = $reservations->where('category', 'amenities');
-    $eventPlaceReservations = $reservations->where('category', 'event_place');
-    $diningReservations = $reservations->where('category', 'dining');
+    $formatDate = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('F j, Y') : 'N/A';
+    $formatTime = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('g:i A') : 'Time not set';
+    $roomReservations = $reservations->filter(fn ($reservation) => $reservation->room_id || $reservation->category === 'rooms');
+    $amenityReservations = $reservations->filter(fn ($reservation) => $reservation->amenity_id || $reservation->category === 'amenities');
+    $eventPlaceReservations = $reservations->filter(fn ($reservation) => $reservation->event_place_id || $reservation->category === 'event_place');
+    $diningReservations = $reservations->filter(fn ($reservation) => $reservation->dining_id || $reservation->category === 'dining');
 
     $stats = [
         'rooms' => [
@@ -110,8 +112,8 @@
                                 <td class="px-6 py-4 text-sm text-gray-900">
                                     {{ $reservation->room ? $reservation->room->room_number : 'N/A' }}
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}<br><span class="text-xs text-gray-500">{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}</span></td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_out instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_out->format('M d, Y') : $reservation->check_out }}<br><span class="text-xs text-gray-500">{{ $reservation->check_out_time ? \Illuminate\Support\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'Time not set' }}</span></td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatDate($reservation->check_in) }}<br><span class="text-xs text-gray-500">{{ $formatTime($reservation->check_in_time) }}</span></td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatDate($reservation->check_out) }}<br><span class="text-xs text-gray-500">{{ $formatTime($reservation->check_out_time) }}</span></td>
                                 <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
                                 <td class="px-6 py-4">
                                     <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
@@ -120,7 +122,7 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="relative flex items-center gap-2 text-sm">
-                                        <button type="button" onclick="showEmployeeReservationDetails(this)" data-guest="{{ $reservation->guest_name }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-check-in="{{ $reservation->check_in }}" data-check-out="{{ $reservation->check_out }}" data-amount="₱{{ number_format($reservation->total_amount, 2) }}" data-status="{{ ucfirst($reservation->status) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
+                                        <button type="button" onclick="showEmployeeReservationDetails(this)" data-guest="{{ $reservation->guest_name }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-check-in="{{ $formatDate($reservation->check_in) }}" data-check-out="{{ $formatDate($reservation->check_out) }}" data-amount="₱{{ number_format($reservation->total_amount, 2) }}" data-status="{{ ucfirst($reservation->status) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
                                         <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation"><i class="fas fa-pen"></i></button>
                                         <button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions"><i class="fas fa-ellipsis-v"></i></button>
                                         <div class="employee-reservation-menu absolute right-0 top-10 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
@@ -161,12 +163,12 @@
                         </div>
                         <div class="mt-3 space-y-1 text-sm text-gray-600">
                             <p><span class="font-medium text-gray-700">Room:</span> {{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</p>
-                            <p><span class="font-medium text-gray-700">Check-in:</span> {{ $reservation->check_in instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }} at {{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}</p>
-                            <p><span class="font-medium text-gray-700">Check-out:</span> {{ $reservation->check_out instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_out->format('M d, Y') : $reservation->check_out }} at {{ $reservation->check_out_time ? \Illuminate\Support\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'Time not set' }}</p>
+                            <p><span class="font-medium text-gray-700">Check-in:</span> {{ $formatDate($reservation->check_in) }} at {{ $formatTime($reservation->check_in_time) }}</p>
+                            <p><span class="font-medium text-gray-700">Check-out:</span> {{ $formatDate($reservation->check_out) }} at {{ $formatTime($reservation->check_out_time) }}</p>
                             <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount, 2) }}</p>
                         </div>
                         <div class="mt-4 flex items-center gap-2">
-                            <button type="button" onclick="showEmployeeReservationDetails(this)" data-guest="{{ $reservation->guest_name }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-check-in="{{ $reservation->check_in }}" data-check-out="{{ $reservation->check_out }}" data-amount="₱{{ number_format($reservation->total_amount, 2) }}" data-status="{{ ucfirst($reservation->status) }}" class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
+                            <button type="button" onclick="showEmployeeReservationDetails(this)" data-guest="{{ $reservation->guest_name }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-check-in="{{ $formatDate($reservation->check_in) }}" data-check-out="{{ $formatDate($reservation->check_out) }}" data-amount="₱{{ number_format($reservation->total_amount, 2) }}" data-status="{{ ucfirst($reservation->status) }}" class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
                             <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"><i class="fas fa-pen mr-1"></i>Edit</button>
                             <div class="relative"><button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"><i class="fas fa-ellipsis-v"></i></button><div class="employee-reservation-menu absolute bottom-10 right-0 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">@if($reservation->status === 'pending')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full px-3 py-2 text-left text-sm">Confirm Reservation</button>@endif @if($reservation->status === 'confirmed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'checked-in')" class="block w-full px-3 py-2 text-left text-sm">Mark as Checked-in</button>@endif @if($reservation->status === 'checked-in')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full px-3 py-2 text-left text-sm">Mark as Checked-out</button>@endif <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full px-3 py-2 text-left text-sm">Cancel Reservation</button><form action="{{ route('employee.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');">@csrf @method('DELETE')<button type="submit" class="block w-full px-3 py-2 text-left text-sm text-red-600">Delete Reservation</button></form></div></div>
                         </div>
@@ -215,7 +217,7 @@
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amenity</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Time</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Quantity/Guests</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Quantity</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
@@ -228,9 +230,9 @@
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->amenity_name ?? $reservation->amenity ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->date ?? $reservation->check_in ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->time ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->amenity?->name ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatDate($reservation->check_in) }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->dining_schedule ?: $formatTime($reservation->check_in_time) }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->quantity ?? $reservation->guests ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount ?? 0, 2) }}</td>
                                 <td class="px-6 py-4">
@@ -278,9 +280,9 @@
                             </span>
                         </div>
                         <div class="mt-3 space-y-1 text-sm text-gray-600">
-                            <p><span class="font-medium text-gray-700">Amenity:</span> {{ $reservation->amenity_name ?? $reservation->amenity ?? 'N/A' }}</p>
-                            <p><span class="font-medium text-gray-700">Date:</span> {{ $reservation->date ?? $reservation->check_in ?? 'N/A' }}</p>
-                            <p><span class="font-medium text-gray-700">Time:</span> {{ $reservation->time ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Amenity:</span> {{ $reservation->amenity?->name ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Date:</span> {{ $formatDate($reservation->check_in) }}</p>
+                            <p><span class="font-medium text-gray-700">Time:</span> {{ $reservation->dining_schedule ?: $formatTime($reservation->check_in_time) }}</p>
                             <p><span class="font-medium text-gray-700">Guests:</span> {{ $reservation->quantity ?? $reservation->guests ?? 'N/A' }}</p>
                             <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
                         </div>
@@ -348,11 +350,11 @@
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_place ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->eventPlace?->name ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_type ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_date ?? $reservation->check_in ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->start_time ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->end_time ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatDate($reservation->check_in) }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatTime($reservation->check_in_time) }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatTime($reservation->check_out_time) }}</td>
                                 <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount ?? 0, 2) }}</td>
                                 <td class="px-6 py-4">
                                     <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
@@ -399,11 +401,11 @@
                             </span>
                         </div>
                         <div class="mt-3 space-y-1 text-sm text-gray-600">
-                            <p><span class="font-medium text-gray-700">Place:</span> {{ $reservation->event_place ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Place:</span> {{ $reservation->eventPlace?->name ?? 'N/A' }}</p>
                             <p><span class="font-medium text-gray-700">Type:</span> {{ $reservation->event_type ?? 'N/A' }}</p>
-                            <p><span class="font-medium text-gray-700">Date:</span> {{ $reservation->event_date ?? $reservation->check_in ?? 'N/A' }}</p>
-                            <p><span class="font-medium text-gray-700">Start:</span> {{ $reservation->start_time ?? 'N/A' }}</p>
-                            <p><span class="font-medium text-gray-700">End:</span> {{ $reservation->end_time ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Date:</span> {{ $formatDate($reservation->check_in) }}</p>
+                            <p><span class="font-medium text-gray-700">Start:</span> {{ $formatTime($reservation->check_in_time) }}</p>
+                            <p><span class="font-medium text-gray-700">End:</span> {{ $formatTime($reservation->check_out_time) }}</p>
                             <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
                         </div>
                         <div class="mt-4 flex items-center gap-2">
@@ -470,9 +472,9 @@
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->dining_area ?? $reservation->table_name ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->date ?? $reservation->check_in ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->time ?? 'N/A' }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->number_of_guests ?? $reservation->guests ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatDate($reservation->check_in) }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->dining_schedule ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->quantity ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount ?? 0, 2) }}</td>
                                 <td class="px-6 py-4">
                                     <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
@@ -520,9 +522,9 @@
                         </div>
                         <div class="mt-3 space-y-1 text-sm text-gray-600">
                             <p><span class="font-medium text-gray-700">Table:</span> {{ $reservation->dining_area ?? $reservation->table_name ?? 'N/A' }}</p>
-                            <p><span class="font-medium text-gray-700">Date:</span> {{ $reservation->date ?? $reservation->check_in ?? 'N/A' }}</p>
-                            <p><span class="font-medium text-gray-700">Time:</span> {{ $reservation->time ?? 'N/A' }}</p>
-                            <p><span class="font-medium text-gray-700">Guests:</span> {{ $reservation->number_of_guests ?? $reservation->guests ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Date:</span> {{ $formatDate($reservation->check_in) }}</p>
+                            <p><span class="font-medium text-gray-700">Time:</span> {{ $reservation->dining_schedule ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Guests:</span> {{ $reservation->quantity ?? 'N/A' }}</p>
                             <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
                         </div>
                         <div class="mt-4 flex items-center gap-2">

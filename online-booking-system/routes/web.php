@@ -52,7 +52,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::redirect('/', '/employee/dashboard')->name('index');
     Route::get('/dashboard', [AdminController::class, 'employeeDashboard'])->name('dashboard');
     Route::get('/reservation', function () {
-        $reservations = Reservation::with('room')->latest()->get();
+        $reservations = Reservation::with(['room', 'amenity', 'eventPlace', 'diningMenu'])->latest()->get();
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::whereIn('category', ['amenities', 'event_place', 'dining'])
             ->whereIn('status', ['available', 'limited', 'Available', 'Limited'])

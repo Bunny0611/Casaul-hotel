@@ -97,7 +97,9 @@ class HomeController extends Controller
         $validated = $request->validate([
             'room_id' => 'required|exists:rooms,id',
             'check_in' => 'required|date|after_or_equal:today',
+            'check_in_time' => 'nullable|date_format:H:i',
             'check_out' => 'required|date|after:check_in',
+            'check_out_time' => 'nullable|date_format:H:i',
             'guest_name' => 'required|string|max:255',
             'guest_email' => 'required|email|max:255',
             'guest_phone' => 'required|string|max:20',

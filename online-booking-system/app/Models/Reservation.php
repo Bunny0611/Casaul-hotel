@@ -41,6 +41,21 @@ class Reservation extends Model
         return $this->belongsTo(Room::class);
     }
 
+    public function amenity()
+    {
+        return $this->belongsTo(Amenity::class);
+    }
+
+    public function eventPlace()
+    {
+        return $this->belongsTo(EventPlace::class);
+    }
+
+    public function diningMenu()
+    {
+        return $this->belongsTo(DiningMenu::class, 'dining_id');
+    }
+
     public function payments()
     {
         return $this->hasMany(Payment::class);
