@@ -854,15 +854,6 @@ class AdminController extends Controller
         }
 
         $reservations = $reservationsQuery->get();
-        $maintenanceReportsQuery = MaintenanceReport::query()->latest('date_reported');
-        if ($from) {
-            $maintenanceReportsQuery->whereDate('date_reported', '>=', $from);
-        }
-        if ($to) {
-            $maintenanceReportsQuery->whereDate('date_reported', '<=', $to);
-        }
-
-        $maintenanceReports = $maintenanceReportsQuery->get();
         $completedReservations = $reservations->where('status', 'completed');
         $confirmedReservations = $reservations->where('status', 'confirmed');
         $pendingReservations = $reservations->where('status', 'pending');
