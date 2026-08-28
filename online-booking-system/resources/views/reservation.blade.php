@@ -164,17 +164,56 @@
     .details-mode .payment-method-option { padding:8px 5px; text-align:center; font-size:9px; }
     .details-mode .confirmation-actions { margin-top:14px; }
     .details-mode .confirmation-actions button { padding:9px 14px !important; font-size:10px; }
-    .details-form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:12px 0; }
-    .details-form-section { padding:10px; border:1px solid #e6eaf0; border-radius:5px; background:#fff; }
-    .details-form-section h4 { margin:0 0 8px; color:#273047; font-size:10px; text-transform:uppercase; }
+    .details-form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; width:100%; margin:12px 0; }
+    .details-form-section { min-width:0; padding:12px; border:1px solid #e1e6ef; border-radius:7px; background:#fff; box-shadow:0 2px 5px rgba(24,36,64,.025); }
+    .details-form-section h4 { display:flex; align-items:center; gap:5px; margin:0 0 9px; color:#273047; font-size:10px; text-transform:uppercase; letter-spacing:.01em; }
     .details-form-section label { display:block; margin:6px 0 3px; color:#384359; font-size:9px; font-weight:700; }
     .details-form-section input, .details-form-section select, .details-form-section textarea { width:100%; box-sizing:border-box; border:1px solid #dfe4ec; border-radius:5px; padding:7px; color:#5d687d; font-size:9px; }
     .details-form-section textarea { min-height:48px; resize:vertical; }
     .details-form-section input[type="checkbox"] { width:auto; margin-right:5px; accent-color:#d20b26; }
     .details-form-section > small { display:block; margin-top:6px; color:#788398; font-size:9px; }
+    .details-form-section input[readonly] { background:#f8fafc; color:#526078; }
+    .details-services-summary { min-height:0; }
+    .details-services-summary small { line-height:1.35; overflow-wrap:anywhere; }
+    .details-summary-title { display:block; margin:0 0 14px; color:#172033; font-size:20px; font-weight:800; }
+    .details-summary-room { display:flex; flex-direction:column; gap:0; }
+    .details-summary-room-name { margin:0 0 10px; color:#172033; font-size:18px; font-weight:800; }
+    .details-summary-row { display:flex; align-items:center; gap:10px; min-width:0; padding:10px 0; border-top:1px solid #edf0f4; }
+    .details-summary-row i { width:20px; flex:0 0 20px; color:#2874df; text-align:center; font-size:16px; }
+    .details-summary-row span { min-width:0; overflow-wrap:anywhere; }
+    .details-summary-label { color:#68738a; font-size:13px; }
+    .details-summary-value { margin-left:auto; color:#172033; font-size:13px; font-weight:700; text-align:right; }
+    .details-service-item { display:grid; grid-template-columns:38px minmax(0,1fr); gap:12px; padding:10px 0; border-top:1px solid #edf0f4; }
+    .details-service-icon { display:grid; place-items:center; width:38px; height:38px; border-radius:10px; background:#f0f3ff; color:#2874df; font-size:18px; }
+    .details-service-item.event-service .details-service-icon { background:#f7effb; color:#7b3ca5; }
+    .details-service-item.dining-service .details-service-icon { background:#fff4e8; color:#f28c18; }
+    .details-service-label { margin:0 0 3px; color:#2874df; font-size:12px; font-weight:800; text-transform:uppercase; }
+    .details-service-item.event-service .details-service-label { color:#7b3ca5; }
+    .details-service-item.dining-service .details-service-label { color:#f28c18; }
+    .details-service-value { display:block; color:#172033; font-size:14px; font-weight:700; line-height:1.4; overflow-wrap:anywhere; }
+    .details-service-meta { display:block; margin-top:4px; color:#566176; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+    .details-guest-info { grid-column:1 / -1; width:100%; box-sizing:border-box; }
+    .details-secondary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:10px 0 12px; }
+    .details-secondary-grid .details-form-section { min-width:0; }
+    .details-guest-info .guest-info-fields { gap:12px 16px; }
+    .guest-info-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    .guest-request-field { grid-column:1 / -1; }
+    .guest-info-fields .guest-request-field small { margin-top:4px; }
     .details-addons { display:flex; flex-direction:column; gap:6px; }
     .details-addons label { margin:0; }
-    @media (max-width:700px){ .details-mode .confirmation-grid,.details-form-grid{ grid-template-columns:1fr !important; } .details-mode .payment-method-options{ grid-template-columns:1fr 1fr; } }
+    @media (max-width:700px){ .details-mode .confirmation-grid,.details-form-grid,.details-secondary-grid{ grid-template-columns:1fr !important; } .details-mode .payment-method-options{ grid-template-columns:1fr 1fr; } }
+
+    @media (min-width:701px){
+        .details-mode .confirmation-card { padding:20px !important; }
+        .details-mode .confirmation-header h3 { font-size:17px !important; }
+        .details-mode .confirmation-text { margin-bottom:16px !important; }
+        .details-mode .details-form-grid { align-items:start; gap:9px; margin:9px 0; }
+        .details-mode .details-form-section { min-height:0; }
+        .details-mode .details-form-grid:first-of-type { display:block; margin-bottom:10px; }
+        .details-mode .details-secondary-grid { grid-template-columns:1fr 1fr; gap:9px; }
+            .details-mode .details-request-grid { grid-template-columns:1fr !important; }
+            .details-mode .details-request-grid .details-form-section { grid-column:1 / -1; width:100%; box-sizing:border-box; }
+    }
 
     .details-mode .confirmation-header h3 { font-size:16px !important; }
     .details-mode .confirmation-text { font-size:11px !important; }
@@ -232,11 +271,53 @@
     .payment-field input, .payment-field select { width:100%; box-sizing:border-box; min-height:34px; border:1px solid #dfe4ec; border-radius:6px; padding:7px 10px; color:#4b5563; background:#fff; font-size:10px; }
     .payment-field input[type="file"] { padding:6px; }
     .payment-field.full-width { grid-column:1 / -1; }
-    @media (max-width:700px){ .payment-fields { grid-template-columns:1fr; } .payment-field.full-width { grid-column:auto; } }
+    @media (max-width:700px){ .payment-fields, .guest-info-fields { grid-template-columns:1fr; } .payment-field.full-width, .guest-request-field { grid-column:auto; } }
     .details-mode.confirm-step .reservation-progress .progress-step:nth-of-type(2) .progress-number { background:#e3e7f0; color:#71809a; }
     .details-mode.confirm-step .reservation-progress .progress-step:nth-of-type(3) .progress-number { background:#d20b26; color:#fff; }
     .confirm-step .details-form-grid,
     .confirm-step .payment-method-section { display:none; }
+    .details-mode.confirm-step .confirmation-grid { display:grid !important; }
+    .details-mode.confirm-step .details-form-grid,
+    .details-mode.confirm-step .payment-method-section { display:block; }
+    .details-mode.confirm-step .details-guest-info { margin-top:10px; }
+    .details-mode.confirm-step .details-secondary-grid { display:grid; }
+    .details-mode.confirm-step .details-request-grid { display:grid; }
+    .details-mode.confirm-step .payment-method-section { margin-top:12px; }
+    .details-mode.confirm-step .payment-method-option { pointer-events:none; }
+    .details-mode.confirm-step .details-form-grid,
+    .details-mode.confirm-step .details-secondary-grid,
+    .details-mode.confirm-step .payment-method-section { display:none !important; }
+    .confirmation-review { display:none; }
+    .details-mode.confirm-step .confirmation-review { display:block; }
+    .review-section { padding:16px 0; border-bottom:1px solid #e5e9f0; }
+    .review-section:last-of-type { border-bottom:0; }
+    .review-section h4 { display:flex; align-items:center; gap:8px; margin:0 0 12px; color:#172033; font-size:14px; text-transform:uppercase; }
+    .review-section h4 i { color:#d20b26; }
+    .review-information-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .review-field { min-width:0; padding:11px 12px; border:1px solid #e1e6ef; border-radius:7px; background:#f8fafc; }
+    .review-field-label { display:block; margin-bottom:4px; color:#788398; font-size:10px; font-weight:700; text-transform:uppercase; }
+    .review-field-value { display:block; color:#172033; font-size:13px; font-weight:700; overflow-wrap:anywhere; }
+    .review-room-name { margin:0 0 10px; color:#172033; font-size:18px; }
+    .review-row { display:flex; justify-content:space-between; gap:16px; padding:8px 0; border-top:1px solid #edf0f4; color:#566176; font-size:12px; }
+    .review-row strong { color:#172033; text-align:right; }
+    .review-service { display:grid; grid-template-columns:34px minmax(0,1fr); gap:10px; padding:11px 0; border-top:1px solid #edf0f4; }
+    .review-service-icon { display:grid; place-items:center; width:34px; height:34px; border-radius:8px; background:#f0f3ff; color:#2874df; }
+    .review-service.event-review .review-service-icon { background:#f7effb; color:#7b3ca5; }
+    .review-service.dining-review .review-service-icon { background:#fff4e8; color:#f28c18; }
+    .review-service h5 { margin:0 0 3px; color:#2874df; font-size:10px; text-transform:uppercase; }
+    .review-service.event-review h5 { color:#7b3ca5; }
+    .review-service.dining-review h5 { color:#f28c18; }
+    .review-service strong, .review-service span { display:block; overflow-wrap:anywhere; }
+    .review-service strong { color:#172033; font-size:13px; }
+    .review-service span { margin-top:3px; color:#566176; font-size:11px; line-height:1.45; }
+    .review-payment-row { display:flex; justify-content:space-between; gap:14px; padding:7px 0; color:#566176; font-size:12px; }
+    .review-payment-row strong { color:#172033; text-align:right; }
+    .review-payment-total { margin-top:7px; padding-top:11px; border-top:1px solid #dfe4ec; font-size:14px; font-weight:800; }
+    .review-payment-total strong { color:#d20b26; font-size:17px; }
+    .review-policy { color:#566176; font-size:12px; line-height:1.5; }
+    .review-policy strong { display:block; margin-top:7px; color:#172033; }
+    .details-mode.confirm-step .payment-method-panel { display:none; }
+    .details-mode.confirm-step .payment-method-panel:not([hidden]) { display:block; }
     .payment-method-section { padding:14px 12px; border:1px solid #f0d6da; border-radius:8px; background:#fff; }
     .payment-method-section > h4 { color:#d20b26; font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
     .payment-method-section > p { margin:-7px 0 12px; color:#788398; font-size:10px; }
@@ -383,12 +464,30 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($amenities as $amenity)
-                        <article class="reservation-card" data-category="amenities" data-price="{{ $amenity->price }}" data-title="{{ $amenity->name }}">
+                        <article class="reservation-card" data-category="amenities" data-price="{{ $amenity->price }}" data-title="{{ $amenity->name }}" data-amenity-id="{{ $amenity->id }}" data-capacity="{{ $amenity->capacity ?? '' }}" data-scheduling="{{ $amenity->scheduling_requirement ?? 'No Additional Schedule' }}">
                             <img src="{{ $amenity->image ? asset('storage/' . $amenity->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $amenity->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $amenity->name }}</h4>
                                 <p>{{ $amenity->description ?: 'Premium guest add-on for your stay.' }}</p>
-                                <p class="text-muted">{{ $amenity->type ?: 'Available for your reservation' }}</p>
+                                <p class="text-muted">₱{{ number_format($amenity->price, 0) }} / {{ strtolower(str_replace('Per ', '', $amenity->pricing_basis ?? 'Stay')) }}</p>
+                                @if(($amenity->capacity ?? null) || ($amenity->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
+                                    <div class="amenity-options">
+                                        @if($amenity->capacity)
+                                            <label class="field-label" for="amenityQuantity-{{ $amenity->id }}">Quantity</label>
+                                            <select id="amenityQuantity-{{ $amenity->id }}" class="field-input amenity-quantity" max="{{ $amenity->capacity }}">
+                                                @for($quantity = 1; $quantity <= $amenity->capacity; $quantity++)<option value="{{ $quantity }}">{{ $quantity }}</option>@endfor
+                                            </select>
+                                        @endif
+                                        @if(($amenity->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
+                                            <label class="field-label" for="amenityDate-{{ $amenity->id }}">Date</label>
+                                            <input id="amenityDate-{{ $amenity->id }}" class="field-input amenity-date" type="date">
+                                        @endif
+                                        @if(($amenity->scheduling_requirement ?? '') === 'Date & Time Required')
+                                            <label class="field-label" for="amenityTime-{{ $amenity->id }}">Time</label>
+                                            <input id="amenityTime-{{ $amenity->id }}" class="field-input amenity-time" type="time">
+                                        @endif
+                                    </div>
+                                @endif
                                 <div class="reservation-card-footer">
                                     <span class="price">₱{{ number_format($amenity->price, 0) }}</span>
                                     <button type="button" class="select-option-btn" data-title="{{ $amenity->name }}" data-price="{{ $amenity->price }}">Add to Reservation</button>
@@ -406,12 +505,24 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
-                        <article class="reservation-card" data-category="event_place" data-price="{{ $event->price }}" data-title="{{ $event->name }}">
+                        <article class="reservation-card" data-category="event_place" data-price="{{ $event->price }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}">
                             <img src="{{ $event->image ? asset('storage/' . $event->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $event->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $event->name }}</h4>
                                 <p>{{ $event->description ?: 'Flexible event venue for your occasion.' }}</p>
-                                <p class="text-muted">{{ $event->type ?: 'Event venue package' }}</p>
+                                <p class="text-muted">{{ $event->event_type }} · ₱{{ number_format($event->price, 0) }} / {{ strtolower(str_replace('Per ', '', $event->pricing_basis ?? 'Event')) }} · Maximum {{ $event->capacity }} guests</p>
+                                <div class="event-options">
+                                    <label class="field-label" for="eventDate-{{ $event->id }}">Event Date</label>
+                                    <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date">
+                                    <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
+                                    <input id="eventStart-{{ $event->id }}" class="field-input event-start-time" type="time">
+                                    <label class="field-label" for="eventEnd-{{ $event->id }}">End Time</label>
+                                    <input id="eventEnd-{{ $event->id }}" class="field-input event-end-time" type="time">
+                                    <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests</label>
+                                    <select id="eventGuests-{{ $event->id }}" class="field-input event-guests">
+                                        @for($guests = 1; $guests <= $event->capacity; $guests++)<option value="{{ $guests }}">{{ $guests }}</option>@endfor
+                                    </select>
+                                </div>
                                 <div class="reservation-card-footer">
                                     <span class="price">₱{{ number_format($event->price, 0) }}</span>
                                     <button type="button" class="select-option-btn" data-title="{{ $event->name }}" data-price="{{ $event->price }}">Add to Reservation</button>
@@ -561,80 +672,95 @@
                 <button type="button" class="confirmation-close" id="confirmationCloseBtn" style="border:none; background:transparent; color:#334155; font-size:1.5rem; cursor:pointer; line-height:1;">×</button>
             </div>
             <p class="confirmation-text" style="margin:0 0 24px; color:#4b5563; font-size:0.98rem; line-height:1.6;">Review all reservation details before submitting.</p>
-            <div class="confirmation-grid" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:20px;">
-                <div class="confirmation-item" style="display:flex; flex-direction:column; gap:8px;">
-                    <span class="confirmation-label" style="color:#6b7280; font-size:0.8rem; font-weight:700; letter-spacing:0.02em;">Reservation ID</span>
-                    <div id="confirmReservationId" style="border-radius:18px; border:1px solid #e5e7eb; background:#f8fafc; padding:16px 18px; color:#111827; font-weight:700;">RES-0000</div>
-                </div>
-                <div class="confirmation-item" style="display:flex; flex-direction:column; gap:8px;">
-                    <span class="confirmation-label" style="color:#6b7280; font-size:0.8rem; font-weight:700; letter-spacing:0.02em;">Status</span>
-                    <div id="confirmStatus" style="border-radius:18px; border:1px solid #e5e7eb; background:#f8fafc; padding:16px 18px; color:#111827; font-weight:700;">Reserved</div>
-                </div>
-                <div class="confirmation-item" style="display:flex; flex-direction:column; gap:8px;">
-                    <span class="confirmation-label" style="color:#6b7280; font-size:0.8rem; font-weight:700; letter-spacing:0.02em;">Room</span>
-                    <div id="confirmRoom" style="border-radius:18px; border:1px solid #e5e7eb; background:#f8fafc; padding:16px 18px; color:#111827; font-weight:700;">None</div>
-                </div>
-                <div class="confirmation-item" style="display:flex; flex-direction:column; gap:8px;">
-                    <span class="confirmation-label" style="color:#6b7280; font-size:0.8rem; font-weight:700; letter-spacing:0.02em;">Guests</span>
-                    <div id="confirmGuests" style="border-radius:18px; border:1px solid #e5e7eb; background:#f8fafc; padding:16px 18px; color:#111827; font-weight:700;">0 Guests</div>
-                </div>
-                <div class="confirmation-item" style="display:flex; flex-direction:column; gap:8px;">
-                    <span class="confirmation-label" style="color:#6b7280; font-size:0.8rem; font-weight:700; letter-spacing:0.02em;">Arriving On</span>
-                    <div id="confirmArrivingOn" style="border-radius:18px; border:1px solid #e5e7eb; background:#f8fafc; padding:16px 18px; color:#111827; font-weight:700;">—</div>
-                </div>
-                <div class="confirmation-item" style="display:flex; flex-direction:column; gap:8px;">
-                    <span class="confirmation-label" style="color:#6b7280; font-size:0.8rem; font-weight:700; letter-spacing:0.02em;">Check-out</span>
-                    <div id="confirmCheckOut" style="border-radius:18px; border:1px solid #e5e7eb; background:#f8fafc; padding:16px 18px; color:#111827; font-weight:700;">—</div>
-                </div>
-                <div class="confirmation-item" style="display:flex; flex-direction:column; gap:8px;">
-                    <span class="confirmation-label" style="color:#6b7280; font-size:0.8rem; font-weight:700; letter-spacing:0.02em;">Amenities</span>
-                    <div id="confirmAmenities" style="border-radius:18px; border:1px solid #e5e7eb; background:#f8fafc; padding:16px 18px; color:#111827; font-weight:700;">0 selected</div>
-                </div>
-                <div class="confirmation-item" style="display:flex; flex-direction:column; gap:8px;">
-                    <span class="confirmation-label" style="color:#6b7280; font-size:0.8rem; font-weight:700; letter-spacing:0.02em;">Event / Dining</span>
-                    <div id="confirmEventDining" style="border-radius:18px; border:1px solid #e5e7eb; background:#f8fafc; padding:16px 18px; color:#111827; font-weight:700;">None</div>
-                </div>
+            <div class="confirmation-review">
+                <section class="review-section">
+                    <h4><i class="fas fa-receipt"></i> Reservation Information</h4>
+                    <div class="review-information-grid">
+                        <div class="review-field"><span class="review-field-label">Reservation Number</span><strong class="review-field-value" id="confirmReservationId">RES-0000</strong></div>
+                        <div class="review-field"><span class="review-field-label">Status</span><strong class="review-field-value" id="confirmStatus">Reserved</strong></div>
+                    </div>
+                </section>
+                <section class="review-section">
+                    <h4><i class="fas fa-bed"></i> Room Summary</h4>
+                    <h5 class="review-room-name" id="confirmRoom">None</h5>
+                    <div class="review-row"><span>Check-in</span><strong id="confirmArrivingOn">—</strong></div>
+                    <div class="review-row"><span>Arrival time</span><strong id="confirmArrivalTime">—</strong></div>
+                    <div class="review-row"><span>Check-out</span><strong id="confirmCheckOut">—</strong></div>
+                    <div class="review-row"><span>Guests</span><strong id="confirmGuests">2 Guests</strong></div>
+                </section>
+                <section class="review-section">
+                    <h4><i class="fas fa-list-check"></i> Selected Services</h4>
+                    <div class="review-service amenity-review"><div class="review-service-icon"><i class="fas fa-concierge-bell"></i></div><div><h5>Amenity</h5><strong id="confirmAmenitiesTitle">None</strong><span id="confirmAmenities">No amenities selected</span></div></div>
+                    <div class="review-service event-review"><div class="review-service-icon"><i class="fas fa-ring"></i></div><div><h5>Event</h5><strong id="confirmEventTitle">None</strong><span id="confirmEventDining">No event selected</span></div></div>
+                    <div class="review-service dining-review"><div class="review-service-icon"><i class="fas fa-utensils"></i></div><div><h5>Dining</h5><strong id="confirmDiningTitle">None</strong><span id="confirmDiningDetails">No dining selected</span></div></div>
+                </section>
+                <section class="review-section">
+                    <h4><i class="fas fa-user"></i> Guest Information</h4>
+                    <div class="review-information-grid">
+                        <div class="review-field"><span class="review-field-label">Guest Name</span><strong class="review-field-value" id="confirmGuestName">—</strong></div>
+                        <div class="review-field"><span class="review-field-label">Email</span><strong class="review-field-value" id="confirmGuestEmail">—</strong></div>
+                        <div class="review-field"><span class="review-field-label">Phone</span><strong class="review-field-value" id="confirmGuestPhone">—</strong></div>
+                        <div class="review-field"><span class="review-field-label">Special Request</span><strong class="review-field-value" id="confirmSpecialRequest">None</strong></div>
+                    </div>
+                </section>
+                <section class="review-section">
+                    <h4><i class="fas fa-credit-card"></i> Payment Summary</h4>
+                    <div class="review-payment-row"><span>Room</span><strong id="confirmRoomCharge">₱0</strong></div>
+                    <div class="review-payment-row"><span>Amenities</span><strong id="confirmAmenitiesCharge">₱0</strong></div>
+                    <div class="review-payment-row"><span>Event</span><strong id="confirmEventCharge">₱0</strong></div>
+                    <div class="review-payment-row"><span>Dining</span><strong id="confirmDiningCharge">₱0</strong></div>
+                    <div class="review-payment-row"><span>Extra person</span><strong id="confirmExtraGuestCharge">₱0</strong></div>
+                    <div class="review-payment-row review-payment-total"><span>Total Amount</span><strong id="confirmTotalAmount">₱0</strong></div>
+                    <div class="review-payment-row"><span>Payment method</span><strong id="confirmPaymentMethod">Cash / Pay at Hotel</strong></div>
+                </section>
+                <section class="review-section review-policy">
+                    <h4><i class="fas fa-shield-alt"></i> Cancellation Policy / Terms &amp; Conditions</h4>
+                    Free cancellation until 24 hours before check-in.
+                    <strong>By confirming, I agree to the Terms &amp; Conditions.</strong>
+                </section>
             </div>
 
             <div class="details-form-grid">
-                <section class="details-form-section">
-                    <h4><i class="fas fa-bed"></i> Room Summary</h4>
-                    <strong id="detailsRoomName">None selected</strong>
-                    <small id="detailsRoomDates">Choose your dates</small>
-                    <small id="detailsRoomGuests">2 Guests</small>
-                </section>
-                <section class="details-form-section">
+                <section class="details-form-section details-guest-info">
                     <h4><i class="fas fa-user"></i> Guest Information</h4>
-                    <label for="detailsGuestName">Guest Name</label>
-                    <input id="detailsGuestName" type="text" value="{{ $guest?->name ?? '' }}" readonly>
-                    <label for="detailsGuestEmail">Email</label>
-                    <input id="detailsGuestEmail" type="email" value="{{ $guest?->email ?? '' }}" readonly>
-                    <label for="detailsGuestPhone">Mobile Number</label>
-                    <input id="detailsGuestPhone" type="tel" value="{{ $guest?->contact_no ?? '' }}" readonly>
-                </section>
-                <section class="details-form-section">
-                    <h4><i class="fas fa-clock"></i> Estimated Arrival</h4>
-                    <select id="detailsArrival">
-                        <option value="15:00">3:00 PM</option>
-                        <option value="12:00">12:00 PM</option>
-                        <option value="18:00">6:00 PM</option>
-                    </select>
+                    <div class="guest-info-fields">
+                        <div><label for="detailsGuestName">Guest Name</label><input id="detailsGuestName" type="text" value="{{ $guest?->name ?? '' }}" readonly></div>
+                        <div><label for="detailsGuestEmail">Email Address</label><input id="detailsGuestEmail" type="email" value="{{ $guest?->email ?? '' }}" readonly></div>
+                        <div><label for="detailsGuestPhone">Mobile Number</label><input id="detailsGuestPhone" type="tel" value="{{ $guest?->contact_no ?? '' }}" readonly></div>
+                        <div class="guest-request-field"><label for="detailsSpecialRequest">Special Request (Optional)</label><textarea id="detailsSpecialRequest" placeholder="Enter any special request..."></textarea><small>Ex. Early check-in, extra bed, etc.</small></div>
+                    </div>
                 </section>
             </div>
-            <div class="details-form-grid">
-                <section class="details-form-section">
-                    <h4><i class="fas fa-comment-dots"></i> Special Request</h4>
-                    <textarea id="detailsSpecialRequest" placeholder="Enter any special request..."></textarea>
+            <div class="details-secondary-grid">
+                <section class="details-form-section details-summary-room">
+                    <h4 class="details-summary-title"><i class="fas fa-bed"></i> Room Summary</h4>
+                    <strong class="details-summary-room-name" id="detailsRoomName">None selected</strong>
+                    <div class="details-summary-row"><i class="fas fa-calendar-check"></i><span class="details-summary-label">Check-in</span><span class="details-summary-value" id="detailsCheckIn">—</span></div>
+                    <div class="details-summary-row"><i class="fas fa-clock"></i><span class="details-summary-label">Arrival time</span><span class="details-summary-value" id="detailsArrivalTime">—</span></div>
+                    <div class="details-summary-row"><i class="fas fa-calendar-check"></i><span class="details-summary-label">Check-out</span><span class="details-summary-value" id="detailsCheckOut">—</span></div>
+                    <div class="details-summary-row"><i class="fas fa-users"></i><span class="details-summary-label">Guests</span><span class="details-summary-value" id="detailsRoomGuests">2 Guests</span></div>
                 </section>
+                <section class="details-form-section details-services-summary">
+                    <h4 class="details-summary-title"><i class="fas fa-list-check"></i> Selected Services</h4>
+                    <div class="details-service-item amenity-service">
+                        <div class="details-service-icon"><i class="fas fa-square-parking"></i></div>
+                        <div><p class="details-service-label">Amenity</p><strong class="details-service-value" id="detailsAmenitiesTitle">None</strong><span class="details-service-meta" id="detailsAmenitiesSummary"></span></div>
+                    </div>
+                    <div class="details-service-item event-service">
+                        <div class="details-service-icon"><i class="fas fa-ring"></i></div>
+                        <div><p class="details-service-label">Event</p><strong class="details-service-value" id="detailsEventTitle">None</strong><span class="details-service-meta" id="detailsEventSummary"></span></div>
+                    </div>
+                    <div class="details-service-item dining-service">
+                        <div class="details-service-icon"><i class="fas fa-utensils"></i></div>
+                        <div><p class="details-service-label">Dining</p><strong class="details-service-value" id="detailsDiningTitle">None</strong><span class="details-service-meta" id="detailsDiningSummary"></span></div>
+                    </div>
+                </section>
+            </div>
+            <div class="details-form-grid details-request-grid">
                 <section class="details-form-section">
                     <h4><i class="fas fa-shield-alt"></i> Cancellation Policy</h4>
                     <p style="margin:0;color:#788398;font-size:9px;line-height:1.4;">Free cancellation until 24 hours before check-in.</p>
                     <label><input id="detailsTerms" type="checkbox"> I agree to the Terms & Conditions</label>
-                </section>
-                <section class="details-form-section">
-                    <h4><i class="fas fa-receipt"></i> Price Summary</h4>
-                    <p style="display:flex;justify-content:space-between;margin:4px 0;font-size:9px;">Room <strong id="detailsRoomPrice">₱0</strong></p>
-                    <p style="display:flex;justify-content:space-between;margin:7px 0 0;padding-top:6px;border-top:1px solid #e6eaf0;font-size:10px;">TOTAL <strong id="detailsTotal">₱0</strong></p>
                 </section>
             </div>
 
@@ -721,6 +847,10 @@
     <input type="hidden" name="dining_area" id="reservationDiningArea">
     <input type="hidden" name="dining_schedule" id="reservationDiningSchedule">
     <input type="hidden" name="quantity" id="reservationDiningQuantity">
+    <input type="hidden" name="amenity_id" id="reservationAmenityId">
+    <input type="hidden" name="event_place_id" id="reservationEventPlaceId">
+    <input type="hidden" name="event_type" id="reservationEventType">
+    <input type="hidden" name="number_of_guests" id="reservationEventGuests">
 </form>
 
 <script>
@@ -759,6 +889,10 @@
         const reservationDiningArea = document.getElementById('reservationDiningArea');
         const reservationDiningSchedule = document.getElementById('reservationDiningSchedule');
         const reservationDiningQuantity = document.getElementById('reservationDiningQuantity');
+        const reservationAmenityId = document.getElementById('reservationAmenityId');
+        const reservationEventPlaceId = document.getElementById('reservationEventPlaceId');
+        const reservationEventType = document.getElementById('reservationEventType');
+        const reservationEventGuests = document.getElementById('reservationEventGuests');
         const diningSchedule = document.getElementById('diningSchedule');
         const diningTable = document.getElementById('diningTable');
         const paymentMethodChoices = document.querySelectorAll('.payment-method-option');
@@ -771,22 +905,41 @@
         const confirmRoom = document.getElementById('confirmRoom');
         const confirmGuests = document.getElementById('confirmGuests');
         const confirmArrivingOn = document.getElementById('confirmArrivingOn');
+        const confirmArrivalTime = document.getElementById('confirmArrivalTime');
         const confirmCheckOut = document.getElementById('confirmCheckOut');
         const confirmStatus = document.getElementById('confirmStatus');
         const confirmPaymentMethod = document.getElementById('confirmPaymentMethod');
+        const confirmAmenitiesTitle = document.getElementById('confirmAmenitiesTitle');
         const confirmAmenities = document.getElementById('confirmAmenities');
+        const confirmEventTitle = document.getElementById('confirmEventTitle');
         const confirmEventDining = document.getElementById('confirmEventDining');
+        const confirmDiningTitle = document.getElementById('confirmDiningTitle');
+        const confirmDiningDetails = document.getElementById('confirmDiningDetails');
+        const confirmGuestName = document.getElementById('confirmGuestName');
+        const confirmGuestEmail = document.getElementById('confirmGuestEmail');
+        const confirmGuestPhone = document.getElementById('confirmGuestPhone');
+        const confirmSpecialRequest = document.getElementById('confirmSpecialRequest');
+        const confirmRoomCharge = document.getElementById('confirmRoomCharge');
+        const confirmAmenitiesCharge = document.getElementById('confirmAmenitiesCharge');
+        const confirmEventCharge = document.getElementById('confirmEventCharge');
+        const confirmDiningCharge = document.getElementById('confirmDiningCharge');
+        const confirmExtraGuestCharge = document.getElementById('confirmExtraGuestCharge');
         const confirmTotalAmount = document.getElementById('confirmTotalAmount');
         const detailsRoomName = document.getElementById('detailsRoomName');
-        const detailsRoomDates = document.getElementById('detailsRoomDates');
+        const detailsCheckIn = document.getElementById('detailsCheckIn');
+        const detailsArrivalTime = document.getElementById('detailsArrivalTime');
+        const detailsCheckOut = document.getElementById('detailsCheckOut');
         const detailsRoomGuests = document.getElementById('detailsRoomGuests');
-        const detailsRoomPrice = document.getElementById('detailsRoomPrice');
-        const detailsTotal = document.getElementById('detailsTotal');
+        const detailsAmenitiesTitle = document.getElementById('detailsAmenitiesTitle');
+        const detailsAmenitiesSummary = document.getElementById('detailsAmenitiesSummary');
+        const detailsEventTitle = document.getElementById('detailsEventTitle');
+        const detailsEventSummary = document.getElementById('detailsEventSummary');
+        const detailsDiningTitle = document.getElementById('detailsDiningTitle');
+        const detailsDiningSummary = document.getElementById('detailsDiningSummary');
         const detailsGuestName = document.getElementById('detailsGuestName');
         const detailsGuestEmail = document.getElementById('detailsGuestEmail');
         const detailsGuestPhone = document.getElementById('detailsGuestPhone');
         const detailsSpecialRequest = document.getElementById('detailsSpecialRequest');
-        const detailsArrival = document.getElementById('detailsArrival');
         const arrivalTime = document.getElementById('arrivalTime');
         const detailsTerms = document.getElementById('detailsTerms');
         const paymentPanels = document.querySelectorAll('[data-payment-panel]');
@@ -803,6 +956,32 @@
 
         const items = document.querySelectorAll('.select-option-btn');
 
+        const formatDisplayDate = (dateValue) => {
+            if (!dateValue) {
+                return '—';
+            }
+
+            const [year, month, day] = dateValue.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
+            return date.toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+            });
+        };
+
+        const formatDisplayTime = (timeValue) => {
+            if (!timeValue) {
+                return '—';
+            }
+
+            const [hours, minutes] = timeValue.split(':').map(Number);
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+        };
+
         tabs.forEach(tab => {
             tab.addEventListener('click', function () {
                 tabs.forEach(btn => btn.classList.remove('active'));
@@ -814,38 +993,65 @@
 
         const updateSummary = () => {
             summaryRoom.textContent = selectedRoom ? selectedRoom : 'None';
-            summaryRoomDetails.textContent = selectedRoom ? `${checkIn.value || 'Date'} – ${checkOut.value || 'Date'}${selectedExtraGuests > 0 ? ` • ${selectedExtraGuests} Extra Person(s)` : ''}` : 'Choose a room and dates';
+            summaryRoomDetails.textContent = selectedRoom ? `${formatDisplayDate(checkIn.value)} – ${formatDisplayDate(checkOut.value)}${selectedExtraGuests > 0 ? ` • ${selectedExtraGuests} Extra Person(s)` : ''}` : 'Choose a room and dates';
             summaryRoomPrice.textContent = `₱${roomPrice.toLocaleString()}`;
             summaryItems.textContent = selectedAmenities.length > 0 ? `${selectedAmenities.length} selected` : '0 selected';
             summaryAdditionalGuests.textContent = selectedExtraGuests > 0 ? `${selectedExtraGuests} added` : 'None';
             summaryEvent.textContent = selectedEvent ? selectedEvent.title : 'None';
             summaryDining.textContent = selectedDining ? `${selectedDining.title}${selectedDining.schedule ? ` / ${selectedDining.schedule}` : ''}${selectedDining.table ? ` / ${selectedDining.table}` : ''}` : 'None';
-            summaryAmenitiesPrice.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + item.price, 0).toLocaleString()}`;
+            summaryAmenitiesPrice.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}`;
             summaryAdditionalGuestsPrice.textContent = `₱${(selectedExtraGuests * selectedExtraGuestPrice).toLocaleString()}`;
             summaryEventPrice.textContent = `₱${(selectedEvent ? selectedEvent.price : 0).toLocaleString()}`;
             summaryDiningPrice.textContent = `₱${(selectedDining ? selectedDining.price : 0).toLocaleString()}`;
 
             const total = calculateTotal();
             detailsRoomName.textContent = selectedRoom || 'None selected';
-            detailsRoomDates.textContent = `${checkIn.value || 'Check-in'} to ${checkOut.value || 'Check-out'}`;
+            detailsCheckIn.textContent = formatDisplayDate(checkIn.value);
+            detailsArrivalTime.textContent = formatDisplayTime(arrivalTime.value);
+            detailsCheckOut.textContent = formatDisplayDate(checkOut.value);
             detailsRoomGuests.textContent = `${selectedExtraGuests + 2} Guests`;
-            detailsRoomPrice.textContent = `₱${roomPrice.toLocaleString()}`;
-            detailsTotal.textContent = `₱${total.toLocaleString()}`;
+            detailsAmenitiesTitle.textContent = selectedAmenities.length ? selectedAmenities.map(item => item.title).join(', ') : 'None';
+            detailsAmenitiesSummary.textContent = selectedAmenities.length
+                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
+                : '';
+            detailsEventTitle.textContent = selectedEvent ? selectedEvent.title : 'None';
+            detailsEventSummary.textContent = selectedEvent
+                ? `${selectedEvent.guests} guests${selectedEvent.date ? ` • ${formatDisplayDate(selectedEvent.date)}` : ''}${selectedEvent.startTime ? ` • ${formatDisplayTime(selectedEvent.startTime)} - ${formatDisplayTime(selectedEvent.endTime)}` : ''}`
+                : '';
+            detailsDiningTitle.textContent = selectedDining ? `${selectedDining.title}${selectedDining.schedule ? ` • ${selectedDining.schedule}` : ''}` : 'None';
+            detailsDiningSummary.textContent = selectedDining
+                ? `${selectedDining.table ? `Table ${selectedDining.table}` : ''}${selectedDining.date ? ` • ${formatDisplayDate(selectedDining.date)}` : ''}`
+                : '';
 
             confirmReservationId.textContent = selectedRoom ? `RES-${Math.floor(Math.random() * 9000) + 1000}` : 'RES-0000';
             confirmRoom.textContent = selectedRoom ? selectedRoom : 'None';
-            confirmArrivingOn.textContent = checkIn.value || '—';
-            confirmCheckOut.textContent = checkOut.value || '—';
-            confirmGuests.textContent = selectedExtraGuests > 0 ? `${selectedExtraGuests} Extra Person(s)` : 'None';
+            confirmArrivingOn.textContent = formatDisplayDate(checkIn.value);
+            confirmArrivalTime.textContent = formatDisplayTime(arrivalTime.value);
+            confirmCheckOut.textContent = formatDisplayDate(checkOut.value);
+            confirmGuests.textContent = `${selectedExtraGuests + 2} Guests`;
             confirmStatus.textContent = 'Reserved';
             confirmPaymentMethod.textContent = selectedPaymentMethod;
-            confirmAmenities.textContent = selectedAmenities.length > 0 ? `${selectedAmenities.length} selected` : '0 selected';
-            confirmEventDining.textContent = (() => {
-                const parts = [];
-                if (selectedEvent) parts.push(selectedEvent.title);
-                if (selectedDining) parts.push(selectedDining.title);
-                return parts.length ? parts.join(' / ') : 'None';
-            })();
+            confirmAmenitiesTitle.textContent = selectedAmenities.length ? selectedAmenities.map(item => item.title).join(', ') : 'None';
+            confirmAmenities.textContent = selectedAmenities.length
+                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
+                : 'No amenities selected';
+            confirmEventTitle.textContent = selectedEvent?.title || 'None';
+            confirmEventDining.textContent = selectedEvent
+                ? `${selectedEvent.type || 'Event'} • ${selectedEvent.guests} guests${selectedEvent.date ? ` • ${formatDisplayDate(selectedEvent.date)}` : ''}${selectedEvent.startTime ? ` • ${formatDisplayTime(selectedEvent.startTime)} - ${formatDisplayTime(selectedEvent.endTime)}` : ''}`
+                : 'No event selected';
+            confirmDiningTitle.textContent = selectedDining ? `${selectedDining.title} • ${selectedDining.schedule || 'Dining'}` : 'None';
+            confirmDiningDetails.textContent = selectedDining
+                ? `${selectedDining.table ? `Table ${selectedDining.table}` : 'Table not selected'}${selectedDining.date ? ` • ${formatDisplayDate(selectedDining.date)}` : ''}${selectedDining.schedule ? ` • ${selectedDining.schedule} time` : ''}`
+                : 'No dining selected';
+            confirmGuestName.textContent = detailsGuestName.value || 'Guest';
+            confirmGuestEmail.textContent = detailsGuestEmail.value || 'guest@example.com';
+            confirmGuestPhone.textContent = detailsGuestPhone.value || '0000000000';
+            confirmSpecialRequest.textContent = detailsSpecialRequest.value || 'None';
+            confirmRoomCharge.textContent = `₱${roomPrice.toLocaleString()}`;
+            confirmAmenitiesCharge.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}`;
+            confirmEventCharge.textContent = `₱${(selectedEvent ? selectedEvent.price : 0).toLocaleString()}`;
+            confirmDiningCharge.textContent = `₱${(selectedDining ? selectedDining.price : 0).toLocaleString()}`;
+            confirmExtraGuestCharge.textContent = `₱${(selectedExtraGuests * selectedExtraGuestPrice).toLocaleString()}`;
             confirmTotalAmount.textContent = `₱${calculateTotal().toLocaleString()}`;
             const paymentTotal = `₱${calculateTotal().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             methodPaymentAmounts.forEach(input => input.value = paymentTotal);
@@ -858,6 +1064,10 @@
             reservationDiningArea.value = selectedDining ? selectedDining.table : '';
             reservationDiningSchedule.value = selectedDining ? selectedDining.schedule : '';
             reservationDiningQuantity.value = selectedDining ? '1' : '';
+            reservationAmenityId.value = selectedAmenities[0]?.id || '';
+            reservationEventPlaceId.value = selectedEvent?.id || '';
+            reservationEventType.value = selectedEvent?.type || '';
+            reservationEventGuests.value = selectedEvent?.guests || '';
             reservationTotalAmount.value = total;
             reservationCheckIn.value = checkIn.value;
             reservationCheckOut.value = checkOut.value;
@@ -865,11 +1075,6 @@
 
         checkIn.addEventListener('change', updateSummary);
         checkOut.addEventListener('change', updateSummary);
-        arrivalTime.addEventListener('change', function () {
-            if (Array.from(detailsArrival.options).some(option => option.value === this.value)) {
-                detailsArrival.value = this.value;
-            }
-        });
         paymentMethodChoices.forEach(choice => choice.addEventListener('click', function () {
             selectedPaymentMethod = this.dataset.paymentMethod;
             paymentMethodChoices.forEach(button => button.classList.toggle('selected', button === this));
@@ -880,7 +1085,7 @@
         }));
 
         const calculateTotal = () => {
-            const amenitiesTotal = selectedAmenities.reduce((sum, item) => sum + item.price, 0);
+            const amenitiesTotal = selectedAmenities.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const eventTotal = selectedEvent ? selectedEvent.price : 0;
             const diningTotal = selectedDining ? selectedDining.price : 0;
             const extraGuestsTotal = selectedExtraGuests * selectedExtraGuestPrice;
@@ -896,6 +1101,39 @@
         diningTable.addEventListener('change', function () {
             if (selectedDining) {
                 selectedDining.table = this.value;
+                updateSummary();
+            }
+        });
+
+        document.querySelectorAll('.amenity-quantity, .amenity-date, .amenity-time').forEach(input => {
+            input.addEventListener('change', function () {
+                const card = this.closest('.reservation-card');
+                const amenity = selectedAmenities.find(item => item.id === card.dataset.amenityId);
+                if (amenity) {
+                    amenity.quantity = Number(card.querySelector('.amenity-quantity')?.value || 1);
+                    amenity.date = card.querySelector('.amenity-date')?.value || '';
+                    amenity.time = card.querySelector('.amenity-time')?.value || '';
+                    updateSummary();
+                }
+            });
+        });
+
+        document.querySelectorAll('.event-date, .event-start-time, .event-end-time, .event-guests').forEach(input => {
+            input.addEventListener('change', function () {
+                const card = this.closest('.reservation-card');
+                if (selectedEvent?.id === card.dataset.eventId) {
+                    selectedEvent.guests = Number(card.querySelector('.event-guests')?.value || 1);
+                    selectedEvent.date = card.querySelector('.event-date')?.value || '';
+                    selectedEvent.startTime = card.querySelector('.event-start-time')?.value || '';
+                    selectedEvent.endTime = card.querySelector('.event-end-time')?.value || '';
+                    updateSummary();
+                }
+            });
+        });
+
+        document.getElementById('diningDate').addEventListener('change', function () {
+            if (selectedDining) {
+                selectedDining.date = this.value;
                 updateSummary();
             }
         });
@@ -934,9 +1172,17 @@
                     this.textContent = 'Selected';
                     this.disabled = true;
                 } else if (category === 'amenities') {
-                    const itemIndex = selectedAmenities.findIndex(item => item.id === dataId);
+                    const itemIndex = selectedAmenities.findIndex(item => item.id === card.dataset.amenityId);
                     if (itemIndex === -1) {
-                        selectedAmenities.push({ id: dataId, title, price });
+                        const quantity = Number(card.querySelector('.amenity-quantity')?.value || 1);
+                        selectedAmenities.push({
+                            id: card.dataset.amenityId,
+                            title,
+                            price,
+                            quantity,
+                            date: card.querySelector('.amenity-date')?.value || '',
+                            time: card.querySelector('.amenity-time')?.value || '',
+                        });
                         this.textContent = 'Added';
                         this.disabled = true;
                     }
@@ -948,7 +1194,16 @@
                             previousEventBtn.disabled = false;
                         }
                     }
-                    selectedEvent = { title, price };
+                    selectedEvent = {
+                        id: card.dataset.eventId,
+                        type: card.dataset.eventType,
+                        title,
+                        price,
+                        guests: Number(card.querySelector('.event-guests')?.value || 1),
+                        date: card.querySelector('.event-date')?.value || '',
+                        startTime: card.querySelector('.event-start-time')?.value || '',
+                        endTime: card.querySelector('.event-end-time')?.value || '',
+                    };
                     this.textContent = 'Selected';
                     this.disabled = true;
                 } else if (category === 'dining') {
@@ -965,6 +1220,7 @@
                         price,
                         schedule: diningSchedule.value || card.dataset.schedule || '',
                         table: diningTable.value || '',
+                        date: document.getElementById('diningDate')?.value || '',
                     };
                     this.textContent = 'Selected';
                     this.disabled = true;
@@ -1066,7 +1322,7 @@
             reservationGuestPhone.value = detailsGuestPhone.value || '0000000000';
             reservationSpecialRequests.value = detailsSpecialRequest.value;
             reservationForm.appendChild(Object.assign(document.createElement('input'), {
-                type: 'hidden', name: 'check_in_time', value: arrivalTime.value || detailsArrival.value
+                type: 'hidden', name: 'check_in_time', value: arrivalTime.value
             }));
             const paymentMethodInput = document.createElement('input');
             paymentMethodInput.type = 'hidden';
@@ -1088,7 +1344,6 @@
             checkIn.value = '';
             checkOut.value = '';
             arrivalTime.value = '15:00';
-            detailsArrival.value = '15:00';
             selectedExtraGuests = 0;
             selectedExtraGuestPrice = 650;
             document.querySelectorAll('.room-extra-guests').forEach(select => select.value = '0');

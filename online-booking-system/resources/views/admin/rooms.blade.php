@@ -397,10 +397,11 @@
             <input type="hidden" name="category" id="editInventoryCategory">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Name</label><input id="editInventoryName" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Type</label><input id="editInventoryType" name="type" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label><select id="editInventoryType" name="event_type" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Birthday</option><option>Wedding</option></select></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label><input id="editInventoryPrice" name="price" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Location / Category</label><input id="editInventoryLocation" name="location" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label><select id="editInventoryPricingBasis" name="pricing_basis" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option><option>Per Event</option></select></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Capacity / Maximum Guests</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Scheduling Requirement</label><select id="editInventoryScheduling" name="scheduling_requirement" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>No Additional Schedule</option><option>Date Required</option><option>Date &amp; Time Required</option></select></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label><input id="editInventoryQuantity" name="quantity" type="number" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Available From</label><input id="editInventoryFrom" name="available_from" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Available To</label><input id="editInventoryTo" name="available_to" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
@@ -451,11 +452,24 @@
                     <input type="number" name="price" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
-                    <select name="status" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="available">Available</option>
-                        <option value="limited">Limited</option>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label>
+                    <select name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option>
                     </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Capacity / Quantity</label>
+                    <input type="number" name="capacity" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Scheduling Requirement</label>
+                    <select name="scheduling_requirement" required class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <option>No Additional Schedule</option><option>Date Required</option><option>Date &amp; Time Required</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
+                    <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"><option value="available">Available</option><option value="unavailable">Unavailable</option></select>
                 </div>
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
@@ -473,8 +487,8 @@
         </button>
 
         <div class="mb-6">
-            <h3 class="text-2xl font-bold text-gray-800">Add Event Place</h3>
-            <p class="mt-1 text-sm text-gray-500">Create a new event package or venue option.</p>
+            <h3 class="text-2xl font-bold text-gray-800">Add Event &amp; Catering Service</h3>
+            <p class="mt-1 text-sm text-gray-500">Create a new event or catering package for guests.</p>
         </div>
         @if($errors->any() && old('category') === 'event_place')
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
@@ -483,10 +497,13 @@
         <form id="addEventPlaceForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <input type="hidden" name="category" value="event_place">
-            <input type="hidden" name="status" value="available">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Event Name</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label>
+                    <select name="event_type" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Birthday</option><option>Wedding</option></select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Package Name</label>
                     <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="md:col-span-2">
@@ -502,13 +519,21 @@
                     <input type="number" name="price" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label>
+                    <select name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option selected>Per Event</option><option>Per Person</option><option>Per Hour</option></select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Maximum Guests</label>
                     <input type="number" name="capacity" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
+                    <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option value="available">Available</option><option value="unavailable">Unavailable</option></select>
                 </div>
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeEventPlaceModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
-                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Event Place</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Event &amp; Catering Service</button>
             </div>
         </form>
     </div>
@@ -987,10 +1012,12 @@
         category = category || item.category || 'dining';
         document.getElementById('editInventoryCategory').value = category;
         document.getElementById('editInventoryName').value = item.name || '';
-        document.getElementById('editInventoryType').value = item.type || '';
+        document.getElementById('editInventoryType').value = item.event_type || item.type || 'Birthday';
         document.getElementById('editInventoryPrice').value = item.price || 0;
         document.getElementById('editInventoryLocation').value = item.location || '';
         document.getElementById('editInventoryCapacity').value = item.capacity || '';
+        document.getElementById('editInventoryPricingBasis').value = item.pricing_basis || 'Per Stay';
+        document.getElementById('editInventoryScheduling').value = item.scheduling_requirement || 'No Additional Schedule';
         document.getElementById('editInventoryQuantity').value = item.quantity || '';
         document.getElementById('editInventoryFrom').value = item.available_from ? item.available_from.substring(0, 5) : '';
         document.getElementById('editInventoryTo').value = item.available_to ? item.available_to.substring(0, 5) : '';

@@ -12,6 +12,7 @@ use App\Models\DiningSchedule;
 use App\Models\DiningTable;
 use App\Models\Message;
 use App\Models\Reservation;
+use App\Models\GuestRequest;
 use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
@@ -106,8 +107,27 @@ class HomeController extends Controller
             'dining_area' => 'nullable|string|max:100',
             'dining_schedule' => 'nullable|string|max:100',
             'quantity' => 'nullable|integer|min:1',
+            'amenity_id' => 'nullable|exists:amenities,id',
+            'event_place_id' => 'nullable|exists:event_places,id',
+            'event_type' => 'nullable|string|max:100',
+            'number_of_guests' => 'nullable|integer|min:1',
             'submission_token' => 'nullable|string|max:100',
         ]);
+
+        if ($guest = Auth::guard('guest')->user()) {
+            $validated['guest_name'] = $guest->name;
+            $validated['guest_email'] = $guest->email;
+            $validated['guest_phone'] = $guest->contact_no;
+        }
+
+        if (!empty($validated['amenity_id']) && !empty($validated['quantity'])) {
+            $amenity = Amenity::find($validated['amenity_id']);
+            abort_if($amenity?->capacity && $validated['quantity'] > $amenity->capacity, 422, 'The selected amenity quantity exceeds its capacity.');
+        }
+        if (!empty($validated['event_place_id']) && !empty($validated['number_of_guests'])) {
+            $eventPlace = EventPlace::find($validated['event_place_id']);
+            abort_if($eventPlace?->capacity && $validated['number_of_guests'] > $eventPlace->capacity, 422, 'The selected guest count exceeds the package capacity.');
+        }
 
         $submissionToken = $validated['submission_token'] ?? null;
         if ($submissionToken && $request->session()->has('reservation_submission_' . $submissionToken)) {
@@ -148,7 +168,69 @@ class HomeController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('profile-records', compact('reservations'));
+        $activeReservation = $this->activeReservationFor($guest);
+        $guestRequests = GuestRequest::with('room')
+            ->where('guest_id', $guest->id)
+            ->latest('submitted_at')
+            ->get();
+
+        return view('profile-records', compact('reservations', 'activeReservation', 'guestRequests'));
+    }
+
+    public function storeGuestRequest(Request $request)
+    {
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
+
+        $housekeepingTypes = [
+            'Extra Towels', 'Extra Pillows', 'Extra Blanket', 'Toiletries',
+            'Room Cleaning', 'Change Bedsheets', 'Other Housekeeping Request',
+        ];
+        $requestTypes = array_merge($housekeepingTypes, [
+            'Broken Aircon', 'Broken TV', 'Broken Light', 'Plumbing/Water Problem',
+            'Late Checkout', 'Early Check-in', 'Dining/Food Request',
+            'Transportation Request', 'Other Request',
+        ]);
+
+        $validated = $request->validate([
+            'request_type' => ['required', 'string', 'in:'.implode(',', $requestTypes)],
+            'description' => ['required', 'string', 'max:5000'],
+            'priority' => ['required', 'in:Normal,Urgent'],
+            'preferred_time' => ['nullable', 'date_format:H:i'],
+        ]);
+
+        $reservation = $this->activeReservationFor($guest);
+        if (!$reservation) {
+            return back()->withErrors(['request_type' => 'You need an active reservation to submit a guest request.'])->withInput();
+        }
+
+        $guestRequest = GuestRequest::create([
+            'guest_id' => $guest->id,
+            'reservation_id' => $reservation->id,
+            'room_id' => $reservation->room_id,
+            'request_type' => $validated['request_type'],
+            'description' => $validated['description'],
+            'department' => in_array($validated['request_type'], $housekeepingTypes, true) ? 'Housekeeping' : 'Employee',
+            'priority' => $validated['priority'],
+            'preferred_time' => $validated['preferred_time'] ?? null,
+            'status' => 'New',
+            'submitted_at' => now(),
+        ]);
+
+        return redirect()->route('guest.records')
+            ->with('request_success', 'Your request has been submitted successfully.')
+            ->with('request_id', $guestRequest->id);
+    }
+
+    protected function activeReservationFor($guest): ?Reservation
+    {
+        return Reservation::with('room')
+            ->where('guest_email', $guest->email)
+            ->whereIn('status', ['confirmed', 'checked-in'])
+            ->whereDate('check_in', '<=', today())
+            ->whereDate('check_out', '>=', today())
+            ->latest('check_in')
+            ->first();
     }
 
     public function roomDetail($slug)

@@ -41,6 +41,7 @@ Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('
 Route::middleware(['auth:guest', 'role:guest'])->group(function () {
     Route::get('/guest/profile', [HomeController::class, 'profile'])->name('guest.profile');
     Route::get('/guest/records', [HomeController::class, 'records'])->name('guest.records');
+    Route::post('/guest/requests', [HomeController::class, 'storeGuestRequest'])->name('guest.requests.store');
 });
 
 // --- Admin Logout ---

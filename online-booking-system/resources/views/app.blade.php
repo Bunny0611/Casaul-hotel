@@ -40,11 +40,13 @@
 
         <li><a href="{{ route('accommodation') }}">ACCOMMODATION</a></li>
 
-        <li><a href="{{ route('offers') }}">OFFERS</a></li>
-
         <li><a href="{{ route('dining') }}">DINING</a></li>
 
         <li><a href="{{ route('aboutus') }}">ABOUT US</a></li>
+
+        @auth('guest')
+            <li><a href="{{ route('guest.records') }}#guest-request-form">GUEST REQUEST</a></li>
+        @endauth
 
     </ul>
 
@@ -68,8 +70,6 @@
                     <span class="profile-trigger-avatar">
                         <i class="fas fa-user-circle"></i>
                     </span>
-                    <span class="profile-trigger-name">{{ auth('guest')->user()->name }}</span>
-                    <i class="fas fa-chevron-down profile-trigger-caret"></i>
                 </button>
                 <div class="profile-menu" id="profile-menu" role="menu" aria-labelledby="profile-trigger">
                     <div class="profile-menu-header">

@@ -54,6 +54,135 @@
             </table>
         </div>
     @endif
+
+    <section class="guest-request-section" id="guest-request-form">
+        <div class="guest-request-heading">
+            <p class="eyebrow">During Your Stay</p>
+            <h2>Request Assistance</h2>
+            <p>Let us know what you need and our team will take care of it.</p>
+        </div>
+
+        @if(session('request_success'))
+            <div class="reservation-alert reservation-alert--success" role="status">
+                {{ session('request_success') }} Request ID: REQ-{{ str_pad(session('request_id'), 4, '0', STR_PAD_LEFT) }}.
+            </div>
+        @endif
+
+        @if(!$activeReservation)
+            <div class="records-empty guest-request-unavailable">
+                <i class="fas fa-calendar-check"></i>
+                <h3>No active reservation</h3>
+                <p>Request assistance is available while you have a confirmed or checked-in stay.</p>
+            </div>
+        @else
+            <form method="POST" action="{{ route('guest.requests.store') }}" class="guest-request-form">
+                @csrf
+                <div class="guest-request-summary">
+                    <div><span>Guest Name</span><strong>{{ auth('guest')->user()->name }}</strong></div>
+                    <div><span>Room Number</span><strong>{{ $activeReservation->room->room_number ?? 'Assigned room' }}</strong></div>
+                    <div><span>Reservation ID</span><strong>RES-{{ str_pad($activeReservation->id, 4, '0', STR_PAD_LEFT) }}</strong></div>
+                </div>
+                @if($errors->any())
+                    <div class="reservation-alert" role="alert">{{ $errors->first() }}</div>
+                @endif
+                <div class="guest-request-fields">
+                    <label>Request Type
+                        <select name="request_type" required>
+                            <option value="" disabled {{ old('request_type') ? '' : 'selected' }}>Select what you need</option>
+                            <optgroup label="Housekeeping">
+                                @foreach(['Extra Towels', 'Extra Pillows', 'Extra Blanket', 'Toiletries', 'Room Cleaning', 'Change Bedsheets', 'Other Housekeeping Request'] as $type)
+                                    <option value="{{ $type }}" {{ old('request_type') === $type ? 'selected' : '' }}>{{ $type }}</option>
+                                @endforeach
+                            </optgroup>
+                            <optgroup label="General Assistance">
+                                @foreach(['Broken Aircon', 'Broken TV', 'Broken Light', 'Plumbing/Water Problem', 'Late Checkout', 'Early Check-in', 'Dining/Food Request', 'Transportation Request', 'Other Request'] as $type)
+                                    <option value="{{ $type }}" {{ old('request_type') === $type ? 'selected' : '' }}>{{ $type }}</option>
+                                @endforeach
+                            </optgroup>
+                        </select>
+                    </label>
+                    <label>Priority
+                        <select name="priority" required>
+                            <option value="Normal" {{ old('priority', 'Normal') === 'Normal' ? 'selected' : '' }}>Normal</option>
+                            <option value="Urgent" {{ old('priority') === 'Urgent' ? 'selected' : '' }}>Urgent</option>
+                        </select>
+                    </label>
+                    <label>Preferred Time <span>(optional)</span>
+                        <input type="time" name="preferred_time" value="{{ old('preferred_time') }}">
+                    </label>
+                    <label class="guest-request-description">Description
+                        <textarea name="description" rows="4" required placeholder="Please describe what you need or the problem you are experiencing.">{{ old('description') }}</textarea>
+                    </label>
+                </div>
+                <button type="submit" class="btn guest-request-submit"><i class="fas fa-paper-plane"></i> Submit Request</button>
+            </form>
+        @endif
+    </section>
+
+    <section class="my-requests-section">
+        <div class="guest-request-heading"><p class="eyebrow">Stay Support</p><h2>My Requests</h2></div>
+        @if($guestRequests->isEmpty())
+            <div class="records-empty"><i class="fas fa-inbox"></i><h3>No requests yet</h3><p>Your submitted requests will appear here.</p></div>
+        @else
+            <div class="records-table-wrap">
+                <table class="records-table guest-requests-table">
+                    <thead><tr><th>Request ID</th><th>Request Type</th><th>Room</th><th>Date Submitted</th><th>Department</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody>
+                        @foreach($guestRequests as $guestRequest)
+                            @php($requestStatusClass = \Illuminate\Support\Str::slug($guestRequest->status))
+                            <tr>
+                                <td>REQ-{{ str_pad($guestRequest->id, 4, '0', STR_PAD_LEFT) }}</td>
+                                <td>{{ $guestRequest->request_type }}</td>
+                                <td>{{ $guestRequest->room->room_number ?? '—' }}</td>
+                                <td>{{ $guestRequest->submitted_at?->format('M d, Y g:i A') }}</td>
+                                <td>{{ $guestRequest->department }}</td>
+                                <td>{{ $guestRequest->priority }}</td>
+                                <td><span class="guest-request-status status-{{ $requestStatusClass }}">{{ $guestRequest->status }}</span></td>
+                                <td><button type="button" class="view-request guest-request-view" data-request-id="REQ-{{ str_pad($guestRequest->id, 4, '0', STR_PAD_LEFT) }}" data-request-type="{{ $guestRequest->request_type }}" data-description="{{ $guestRequest->description }}" data-room="{{ $guestRequest->room->room_number ?? '—' }}" data-submitted="{{ $guestRequest->submitted_at?->format('M d, Y g:i A') }}" data-priority="{{ $guestRequest->priority }}" data-status="{{ $guestRequest->status }}">View</button></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </section>
 </div>
+
+<div class="request-modal" id="guest-request-modal" role="dialog" aria-modal="true" aria-labelledby="guest-request-modal-title" aria-hidden="true">
+    <div class="request-modal-card">
+        <div class="request-modal-head"><h2 id="guest-request-modal-title">Request Details</h2><button type="button" class="request-modal-close" aria-label="Close"><i class="fas fa-times"></i></button></div>
+        <dl class="guest-request-details">
+            <div><dt>Request ID</dt><dd id="guest-request-id"></dd></div>
+            <div><dt>Request Type</dt><dd id="guest-request-type"></dd></div>
+            <div><dt>Description</dt><dd id="guest-request-description"></dd></div>
+            <div><dt>Room Number</dt><dd id="guest-request-room"></dd></div>
+            <div><dt>Date &amp; Time Submitted</dt><dd id="guest-request-submitted"></dd></div>
+            <div><dt>Priority</dt><dd id="guest-request-priority"></dd></div>
+            <div><dt>Status</dt><dd id="guest-request-status"></dd></div>
+        </dl>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.guest-request-view').forEach(function (button) {
+        button.addEventListener('click', function () {
+            document.getElementById('guest-request-id').textContent = button.dataset.requestId;
+            document.getElementById('guest-request-type').textContent = button.dataset.requestType;
+            document.getElementById('guest-request-description').textContent = button.dataset.description;
+            document.getElementById('guest-request-room').textContent = button.dataset.room;
+            document.getElementById('guest-request-submitted').textContent = button.dataset.submitted;
+            document.getElementById('guest-request-priority').textContent = button.dataset.priority;
+            document.getElementById('guest-request-status').textContent = button.dataset.status;
+            document.getElementById('guest-request-modal').classList.add('open');
+            document.getElementById('guest-request-modal').setAttribute('aria-hidden', 'false');
+        });
+    });
+    function closeGuestRequestModal() {
+        document.getElementById('guest-request-modal').classList.remove('open');
+        document.getElementById('guest-request-modal').setAttribute('aria-hidden', 'true');
+    }
+    document.querySelector('.request-modal-close')?.addEventListener('click', closeGuestRequestModal);
+    document.getElementById('guest-request-modal')?.addEventListener('click', function (event) { if (event.target === this) closeGuestRequestModal(); });
+</script>
 
 @endsection
