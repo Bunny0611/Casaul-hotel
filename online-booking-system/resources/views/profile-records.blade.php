@@ -118,7 +118,8 @@
                         <input type="time" name="preferred_time" value="{{ old('preferred_time') }}">
                     </label>
                     <label class="guest-request-description">Description
-                        <textarea name="description" rows="4" required placeholder="Please describe what you need or the problem you are experiencing.">{{ old('description') }}</textarea>
+                        <textarea id="request-description" name="description" rows="4" required placeholder="Please describe what you need or the problem you are experiencing.">{{ old('description') }}</textarea>
+                        <span id="other-request-hint" class="other-request-hint" hidden><i class="fas fa-info-circle"></i> Please describe the specific request you need in the box above.</span>
                     </label>
                 </div>
                 <button type="submit" class="btn guest-request-submit"><i class="fas fa-paper-plane"></i> Submit Request</button>
@@ -201,6 +202,8 @@
         const optionsPanel = requestTypePicker.querySelector('.request-type-options');
         const options = [...requestTypePicker.querySelectorAll('.request-type-option')];
         const emptyMessage = requestTypePicker.querySelector('.request-type-empty');
+        const descriptionInput = document.getElementById('request-description');
+        const otherRequestHint = document.getElementById('other-request-hint');
 
         function setRequestTypeOpen(isOpen) {
             optionsPanel.hidden = !isOpen;
@@ -226,6 +229,11 @@
             valueInput.value = option.dataset.value;
             searchInput.value = option.dataset.value;
             options.forEach(function (item) { item.setAttribute('aria-selected', String(item === option)); });
+            const isOtherRequest = option.dataset.value.startsWith('Other');
+            otherRequestHint.hidden = !isOtherRequest;
+            descriptionInput.placeholder = isOtherRequest
+                ? 'Please describe exactly what assistance you need.'
+                : 'Please describe what you need or the problem you are experiencing.';
             setRequestTypeOpen(false);
         }
 
@@ -233,7 +241,10 @@
         if (oldRequestType) {
             searchInput.value = oldRequestType;
             const oldOption = options.find(function (option) { return option.dataset.value === oldRequestType; });
-            if (oldOption) oldOption.setAttribute('aria-selected', 'true');
+            if (oldOption) {
+                oldOption.setAttribute('aria-selected', 'true');
+                selectRequestType(oldOption);
+            }
         }
         searchInput.addEventListener('focus', function () { setRequestTypeOpen(true); filterRequestTypes(); });
         searchInput.addEventListener('input', function () { valueInput.value = ''; setRequestTypeOpen(true); filterRequestTypes(); });

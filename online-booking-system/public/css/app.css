@@ -778,6 +778,10 @@ nav a:hover{
     color: var(--brand);
 }
 
+.request-type-option[hidden] {
+    display: none;
+}
+
 .request-type-empty {
     color: var(--muted);
     font-size: .85rem;
@@ -786,6 +790,12 @@ nav a:hover{
 
 .guest-request-fields textarea {
     resize: vertical;
+}
+
+.other-request-hint {
+    color: var(--brand);
+    font-size: .78rem;
+    font-weight: 600;
 }
 
 .guest-request-description {

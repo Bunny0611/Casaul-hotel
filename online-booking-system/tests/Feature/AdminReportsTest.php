@@ -89,4 +89,39 @@ class AdminReportsTest extends TestCase
             'status' => 'Completed',
         ]);
     }
+
+    public function test_housekeeping_submitted_report_is_visible_to_admin(): void
+    {
+        $admin = Staff::factory()->create(['role' => 'admin']);
+        $housekeeping = Staff::factory()->create(['role' => 'housekeeping']);
+        $room = Room::create([
+            'room_number' => '401',
+            'room_type' => 'Deluxe',
+            'price' => 1800.00,
+            'floor' => '4th',
+            'capacity' => 2,
+            'description' => 'Deluxe room',
+            'status' => 'available',
+        ]);
+
+        $this->actingAs($housekeeping)->post(route('housekeeping.maintenance-report.store'), [
+            'room_number' => $room->room_number,
+            'category' => 'Electrical',
+            'priority' => 'High',
+            'description' => 'The bedside lamp is not working.',
+        ])->assertRedirect(route('housekeeping.maintenance-report'));
+
+        $this->assertDatabaseHas('maintenance_reports', [
+            'room_number' => $room->room_number,
+            'reported_by' => $housekeeping->name,
+            'category' => 'Electrical',
+            'priority' => 'High',
+            'description' => 'The bedside lamp is not working.',
+            'status' => 'Pending',
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.reports'))
+            ->assertOk()
+            ->assertSee('The bedside lamp is not working.');
+    }
 }
