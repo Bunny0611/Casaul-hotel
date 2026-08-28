@@ -141,6 +141,40 @@
     .summary-note { color:#8993a6; font-size:9px; line-height:1.45; }
     .summary-actions { display:flex; flex-direction:column; gap:8px; }
     #confirmReservationBtn { border:0; border-radius:7px; padding:10px; background:linear-gradient(90deg,#d70a25,#ffab08); color:#fff; font-size:10px; font-weight:800; }
+    .summary-receipt-btn { border:1px solid #ff9aa7; border-radius:7px; padding:9px; background:#fff; color:#d20b26; font-size:10px; font-weight:700; cursor:pointer; }
+    .receipt-modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.6); z-index:10000; }
+    .receipt-modal.open { display:flex; }
+    .receipt-card { width:min(720px,100%); max-height:calc(100vh - 40px); overflow-y:auto; padding:28px; border-radius:4px; background:#fff; box-shadow:0 25px 60px rgba(15,23,42,.2); }
+    .receipt-header { position:relative; display:block; padding-bottom:14px; border-bottom:4px solid #c7d8e8; }
+    .receipt-brand { margin:0; color:#07549a; font-size:32px; font-weight:400; text-align:center; }
+    .receipt-contact { display:flex; justify-content:center; flex-wrap:wrap; gap:18px; margin:12px 0 4px; color:#727b85; font-size:12px; }
+    .receipt-contact span { white-space:nowrap; }
+    .receipt-contact i { margin-right:5px; color:#727b85; }
+    .receipt-subcontact { margin:0; color:#727b85; font-size:12px; text-align:center; }
+    .receipt-subcontact i { margin-right:5px; }
+    .receipt-heading-row { margin:24px 0 16px; text-align:center; }
+    .receipt-title-row { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin:0 0 18px; }
+    .receipt-paid-by h4, .receipt-booking h4 { margin:0 0 8px; color:#07549a; font-size:14px; }
+    .receipt-paid-by p, .receipt-booking p { margin:3px 0; color:#4b5563; font-size:13px; }
+    .receipt-heading { margin:0; color:#07549a; font-size:32px; letter-spacing:.04em; }
+    .receipt-booking { min-width:220px; }
+    .receipt-booking-details { margin:0 0 18px; }
+    .receipt-booking p { display:flex; justify-content:space-between; gap:18px; }
+    .receipt-booking strong { color:#4b5563; font-weight:600; }
+    .receipt-close { position:absolute; top:-8px; right:-8px; border:0; background:transparent; color:#64748b; font-size:22px; cursor:pointer; }
+    .receipt-content { color:#566176; font-size:12px; line-height:1.5; }
+    .receipt-table { width:100%; border:1px solid #7fa9d0; border-radius:4px; border-spacing:0; overflow:hidden; }
+    .receipt-table th { padding:9px 8px; color:#fff; background:#07549a; font-size:11px; text-align:left; }
+    .receipt-table td { padding:9px 8px; border-top:1px solid #d9e5ef; color:#4b5563; font-size:12px; }
+    .receipt-table th:not(:first-child), .receipt-table td:not(:first-child) { text-align:right; }
+    .receipt-table .receipt-total-row td { border-top:2px solid #7fa9d0; color:#07549a; font-weight:800; }
+    .receipt-notes { margin-top:18px; }
+    .receipt-notes h4 { margin:0 0 6px; color:#07549a; font-size:14px; }
+    .receipt-notes p { margin:0; color:#4b5563; font-size:12px; }
+    .receipt-actions { display:flex; justify-content:flex-end; gap:8px; padding-top:14px; border-top:1px solid #e5e7eb; }
+    .receipt-actions button { border:0; border-radius:7px; padding:10px 16px; color:#fff; background:#d20b26; font-size:11px; font-weight:700; cursor:pointer; }
+    .receipt-actions .receipt-print-btn { background:#253570; }
+    @media (max-width:700px) { .receipt-card { padding:18px; } .receipt-brand,.receipt-heading { font-size:25px; } .receipt-title-row { align-items:flex-start; flex-direction:column; } .receipt-booking { min-width:0; width:100%; } .receipt-actions button { flex:1; } }
     .summary-clear { border:1px solid #ff9aa7; border-radius:7px; padding:9px; background:#fff; color:#d20b26; font-size:10px; font-weight:700; }
 
     @media (max-width: 980px){ .reservation-hero,.reservation-shell{ max-width:calc(100% - 30px); } .reservation-hero{ grid-template-columns:1fr 300px; } }
@@ -314,6 +348,13 @@
     .review-payment-row strong { color:#172033; text-align:right; }
     .review-payment-total { margin-top:7px; padding-top:11px; border-top:1px solid #dfe4ec; font-size:14px; font-weight:800; }
     .review-payment-total strong { color:#d20b26; font-size:17px; }
+    .confirm-payment-details-card { margin-top:10px; padding:10px 12px; border:1px solid #e1e6ef; border-radius:8px; background:#fff; }
+    .confirm-payment-detail-row { display:grid; grid-template-columns:20px 125px 12px minmax(0,1fr); align-items:center; gap:6px; min-height:34px; border-bottom:1px solid #edf0f4; color:#172033; font-size:11px; }
+    .confirm-payment-detail-row:last-child { border-bottom:0; }
+    .confirm-payment-detail-row i { color:#7b61d1; text-align:center; }
+    .confirm-payment-detail-label { color:#4b5563; }
+    .confirm-payment-detail-value { min-width:0; overflow-wrap:anywhere; font-weight:700; }
+    .confirm-payment-proof { display:none; max-width:150px; max-height:90px; margin:10px 0 2px 26px; border:1px solid #e1e6ef; border-radius:5px; object-fit:contain; }
     .review-policy { color:#566176; font-size:12px; line-height:1.5; }
     .review-policy strong { display:block; margin-top:7px; color:#172033; }
     .details-mode.confirm-step .payment-method-panel { display:none; }
@@ -659,6 +700,7 @@
                 <p class="summary-note">Your reservation details will be submitted as a request. A staff member will contact you to confirm availability.</p>
                 <div class="summary-actions">
                     <button type="button" id="confirmReservationBtn">Continue to Details <i class="fas fa-arrow-right"></i></button>
+                    <button type="button" id="seeReceiptBtn" class="summary-receipt-btn" hidden>See Receipt <i class="fas fa-receipt"></i></button>
                     <button type="button" id="clearReservationBtn" class="summary-clear">Clear All</button>
                 </div>
             </div>
@@ -712,6 +754,10 @@
                     <div class="review-payment-row"><span>Extra person</span><strong id="confirmExtraGuestCharge">₱0</strong></div>
                     <div class="review-payment-row review-payment-total"><span>Total Amount</span><strong id="confirmTotalAmount">₱0</strong></div>
                     <div class="review-payment-row"><span>Payment method</span><strong id="confirmPaymentMethod">Cash / Pay at Hotel</strong></div>
+                    <div class="confirm-payment-details-card" id="confirmPaymentDetailsRow" hidden>
+                        <div id="confirmPaymentDetails"></div>
+                        <img class="confirm-payment-proof" id="confirmPaymentProof" alt="Uploaded payment proof preview">
+                    </div>
                 </section>
                 <section class="review-section review-policy">
                     <h4><i class="fas fa-shield-alt"></i> Cancellation Policy / Terms &amp; Conditions</h4>
@@ -830,6 +876,51 @@
             </div>
         </div>
     </div>
+
+    <div class="receipt-modal" id="receiptModal" aria-hidden="true">
+        <div class="receipt-card" role="dialog" aria-modal="true" aria-labelledby="receiptTitle">
+            <div class="receipt-header">
+                <h3 class="receipt-brand">Casaul Hotel</h3>
+                <div class="receipt-contact">
+                    <span><i class="fas fa-map-marker-alt"></i> Casaul Hotel</span>
+                    <span><i class="fas fa-phone"></i> +63 912 345 6789</span>
+                    <span><i class="fas fa-envelope"></i> reservations@casaulhotel.com</span>
+                </div>
+                <p class="receipt-subcontact"><i class="fas fa-globe"></i> www.casaulhotel.com</p>
+                <button type="button" class="receipt-close" id="receiptCloseBtn" aria-label="Close receipt">&times;</button>
+            </div>
+            <div class="receipt-heading-row">
+                <h3 class="receipt-heading">RECEIPT</h3>
+            </div>
+            <div class="receipt-title-row">
+                <div class="receipt-paid-by">
+                    <h4>Paid By</h4>
+                    <p id="receiptGuestName">Guest</p>
+                    <p id="receiptGuestEmail">guest@example.com</p>
+                </div>
+                <div class="receipt-booking">
+                    <p><span>Receipt #</span><strong id="receiptNumber">RES-0000</strong></p>
+                    <p><span>Receipt Date</span><strong id="receiptDate"></strong></p>
+                </div>
+            </div>
+            <div class="receipt-booking receipt-booking-details">
+                <h4>Booking Details</h4>
+                <p><span>Check-in</span><strong id="receiptCheckIn">—</strong></p>
+                <p><span>Check-out</span><strong id="receiptCheckOut">—</strong></p>
+                <p><span>Guests</span><strong id="receiptGuests">2 Guests</strong></p>
+                <p><span>Room</span><strong id="receiptRoom">None</strong></p>
+            </div>
+            <div class="receipt-content" id="receiptContent"></div>
+            <div class="receipt-notes">
+                <h4>Notes</h4>
+                <p>Thank you for choosing Casaul Hotel. We look forward to your next visit.</p>
+            </div>
+            <div class="receipt-actions">
+                <button type="button" id="receiptDownloadBtn"><i class="fas fa-download"></i> Download</button>
+                <button type="button" class="receipt-print-btn" id="receiptPrintBtn"><i class="fas fa-print"></i> Print</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <form id="reservationForm" action="{{ route('reservation.store') }}" method="POST" style="display:none;">
@@ -875,6 +966,7 @@
         const summaryTotal = document.getElementById('summaryTotal');
         const summaryEditButtons = document.querySelectorAll('.summary-edit-btn');
         const confirmBtn = document.getElementById('confirmReservationBtn');
+        const seeReceiptBtn = document.getElementById('seeReceiptBtn');
         const clearBtn = document.getElementById('clearReservationBtn');
         const reservationForm = document.getElementById('reservationForm');
         const reservationRoomId = document.getElementById('reservationRoomId');
@@ -897,6 +989,19 @@
         const diningTable = document.getElementById('diningTable');
         const paymentMethodChoices = document.querySelectorAll('.payment-method-option');
         const confirmationModal = document.getElementById('confirmationModal');
+        const receiptModal = document.getElementById('receiptModal');
+        const receiptContent = document.getElementById('receiptContent');
+        const receiptGuestName = document.getElementById('receiptGuestName');
+        const receiptGuestEmail = document.getElementById('receiptGuestEmail');
+        const receiptNumber = document.getElementById('receiptNumber');
+        const receiptDate = document.getElementById('receiptDate');
+        const receiptCheckIn = document.getElementById('receiptCheckIn');
+        const receiptCheckOut = document.getElementById('receiptCheckOut');
+        const receiptGuests = document.getElementById('receiptGuests');
+        const receiptRoom = document.getElementById('receiptRoom');
+        const receiptCloseBtn = document.getElementById('receiptCloseBtn');
+        const receiptDownloadBtn = document.getElementById('receiptDownloadBtn');
+        const receiptPrintBtn = document.getElementById('receiptPrintBtn');
         const confirmationOriginalParent = confirmationModal.parentElement;
         const confirmationCloseBtn = document.getElementById('confirmationCloseBtn');
         const modalConfirmBtn = document.getElementById('modalConfirmBtn');
@@ -925,6 +1030,9 @@
         const confirmDiningCharge = document.getElementById('confirmDiningCharge');
         const confirmExtraGuestCharge = document.getElementById('confirmExtraGuestCharge');
         const confirmTotalAmount = document.getElementById('confirmTotalAmount');
+        const confirmPaymentDetailsRow = document.getElementById('confirmPaymentDetailsRow');
+        const confirmPaymentDetails = document.getElementById('confirmPaymentDetails');
+        const confirmPaymentProof = document.getElementById('confirmPaymentProof');
         const detailsRoomName = document.getElementById('detailsRoomName');
         const detailsCheckIn = document.getElementById('detailsCheckIn');
         const detailsArrivalTime = document.getElementById('detailsArrivalTime');
@@ -953,6 +1061,7 @@
         let selectedExtraGuests = 0;
         let selectedExtraGuestPrice = 650;
         let selectedPaymentMethod = 'Cash / Pay at Hotel';
+        let confirmPaymentProofUrl = null;
 
         const items = document.querySelectorAll('.select-option-btn');
 
@@ -980,6 +1089,47 @@
             const period = hours >= 12 ? 'PM' : 'AM';
             const displayHours = hours % 12 || 12;
             return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+        };
+
+        const escapeHtml = value => String(value).replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
+
+        const getPaymentDetails = () => {
+            const value = id => document.getElementById(id)?.value?.trim() || '';
+            const fileName = id => document.getElementById(id)?.files?.[0]?.name || '';
+
+            if (selectedPaymentMethod === 'GCash') {
+                return `Account: ${value('gcashAccountName') || '—'} • Number: ${value('gcashNumber') || '—'} • Reference: ${value('gcashReferenceNumber') || '—'}${fileName('gcashPaymentProof') ? ` • Proof: ${fileName('gcashPaymentProof')}` : ''}`;
+            }
+            if (selectedPaymentMethod === 'Maya') {
+                return `Account: ${value('mayaAccountName') || '—'} • Number: ${value('mayaNumber') || '—'} • Reference: ${value('mayaReferenceNumber') || '—'}${fileName('mayaPaymentProof') ? ` • Proof: ${fileName('mayaPaymentProof')}` : ''}`;
+            }
+            if (selectedPaymentMethod === 'Credit / Debit Card') {
+                const cardNumber = value('cardNumber').replace(/\D/g, '');
+                return `Cardholder: ${value('cardholderName') || '—'} • Card: ${cardNumber ? `•••• ${cardNumber.slice(-4)}` : '—'} • Expiration: ${value('cardExpiration') || '—'}`;
+            }
+            if (selectedPaymentMethod === 'Bank Transfer') {
+                return `Account: ${value('bankAccountName') || '—'} • Bank: ${value('bankName') || '—'} • Reference: ${value('bankReferenceNumber') || '—'} • Date: ${value('transferDate') || '—'}${fileName('bankPaymentProof') ? ` • Proof: ${fileName('bankPaymentProof')}` : ''}`;
+            }
+            return 'Pay at hotel';
+        };
+
+        const getPaymentDetailRows = () => {
+            const value = id => document.getElementById(id)?.value?.trim() || '';
+            const file = id => document.getElementById(id)?.files?.[0] || null;
+            if (selectedPaymentMethod === 'GCash') {
+                return [['fa-user', 'Account Name', value('gcashAccountName') || '—'], ['fa-phone', 'Account Number', value('gcashNumber') || '—'], ['fa-receipt', 'Reference Number', value('gcashReferenceNumber') || '—'], ['fa-shield-alt', 'Proof of Payment', file('gcashPaymentProof')?.name || 'Not uploaded']];
+            }
+            if (selectedPaymentMethod === 'Maya') {
+                return [['fa-user', 'Account Name', value('mayaAccountName') || '—'], ['fa-phone', 'Account Number', value('mayaNumber') || '—'], ['fa-receipt', 'Reference Number', value('mayaReferenceNumber') || '—'], ['fa-shield-alt', 'Proof of Payment', file('mayaPaymentProof')?.name || 'Not uploaded']];
+            }
+            if (selectedPaymentMethod === 'Credit / Debit Card') {
+                const cardNumber = value('cardNumber').replace(/\D/g, '');
+                return [['fa-user', 'Cardholder Name', value('cardholderName') || '—'], ['fa-credit-card', 'Card Number', cardNumber ? `•••• ${cardNumber.slice(-4)}` : '—'], ['fa-calendar', 'Expiration Date', value('cardExpiration') || '—']];
+            }
+            if (selectedPaymentMethod === 'Bank Transfer') {
+                return [['fa-user', 'Account Name', value('bankAccountName') || '—'], ['fa-university', 'Bank', value('bankName') || '—'], ['fa-receipt', 'Reference Number', value('bankReferenceNumber') || '—'], ['fa-calendar', 'Transfer Date', value('transferDate') || '—'], ['fa-shield-alt', 'Proof of Payment', file('bankPaymentProof')?.name || 'Not uploaded']];
+            }
+            return [];
         };
 
         tabs.forEach(tab => {
@@ -1031,6 +1181,23 @@
             confirmGuests.textContent = `${selectedExtraGuests + 2} Guests`;
             confirmStatus.textContent = 'Reserved';
             confirmPaymentMethod.textContent = selectedPaymentMethod;
+            const paymentDetailRows = getPaymentDetailRows();
+            confirmPaymentDetails.innerHTML = paymentDetailRows.map(([icon, label, value]) => `<div class="confirm-payment-detail-row"><i class="fas ${icon}"></i><span class="confirm-payment-detail-label">${escapeHtml(label)}</span><span>:</span><strong class="confirm-payment-detail-value">${escapeHtml(value)}</strong></div>`).join('');
+            confirmPaymentDetailsRow.hidden = selectedPaymentMethod === 'Cash / Pay at Hotel';
+            const proofInputId = selectedPaymentMethod === 'GCash' ? 'gcashPaymentProof' : selectedPaymentMethod === 'Maya' ? 'mayaPaymentProof' : selectedPaymentMethod === 'Bank Transfer' ? 'bankPaymentProof' : '';
+            const proofFile = proofInputId ? document.getElementById(proofInputId)?.files?.[0] : null;
+            if (confirmPaymentProofUrl) {
+                URL.revokeObjectURL(confirmPaymentProofUrl);
+                confirmPaymentProofUrl = null;
+            }
+            if (proofFile && proofFile.type.startsWith('image/')) {
+                confirmPaymentProofUrl = URL.createObjectURL(proofFile);
+                confirmPaymentProof.src = confirmPaymentProofUrl;
+                confirmPaymentProof.style.display = 'block';
+            } else {
+                confirmPaymentProof.removeAttribute('src');
+                confirmPaymentProof.style.display = 'none';
+            }
             confirmAmenitiesTitle.textContent = selectedAmenities.length ? selectedAmenities.map(item => item.title).join(', ') : 'None';
             confirmAmenities.textContent = selectedAmenities.length
                 ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
@@ -1083,6 +1250,10 @@
             });
             updateSummary();
         }));
+        document.querySelectorAll('.payment-method-section input, .payment-method-section select').forEach(field => {
+            field.addEventListener('input', updateSummary);
+            field.addEventListener('change', updateSummary);
+        });
 
         const calculateTotal = () => {
             const amenitiesTotal = selectedAmenities.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -1253,6 +1424,7 @@
         const openConfirmationModal = () => {
             reservationLeft.appendChild(confirmationModal);
             reservationPage.classList.add('details-mode');
+            confirmBtn.innerHTML = 'Continue to Confirm <i class="fas fa-arrow-right"></i>';
             confirmationModal.classList.add('open');
             confirmationModal.style.display = 'flex';
             confirmationModal.setAttribute('aria-hidden', 'false');
@@ -1262,12 +1434,26 @@
             confirmationOriginalParent.appendChild(confirmationModal);
             reservationPage.classList.remove('details-mode');
             reservationPage.classList.remove('confirm-step');
+            confirmBtn.innerHTML = 'Continue to Details <i class="fas fa-arrow-right"></i>';
+            confirmBtn.hidden = false;
+            seeReceiptBtn.hidden = true;
             confirmationModal.classList.remove('open');
             confirmationModal.style.display = 'none';
             confirmationModal.setAttribute('aria-hidden', 'true');
         };
 
         confirmBtn.addEventListener('click', function () {
+            if (reservationPage.classList.contains('details-mode')) {
+                if (!reservationPage.classList.contains('confirm-step')) {
+                    reservationPage.classList.add('confirm-step');
+                    modalConfirmBtn.textContent = 'Submit Reservation';
+                    modalCancelBtn.textContent = 'Back to Details';
+                    confirmBtn.hidden = true;
+                    seeReceiptBtn.hidden = false;
+                }
+                return;
+            }
+
             if (!selectedRoom) {
                 alert('Please select a room before confirming your reservation.');
                 return;
@@ -1285,6 +1471,8 @@
                 reservationPage.classList.remove('confirm-step');
                 modalConfirmBtn.textContent = 'Confirm Reservation';
                 modalCancelBtn.textContent = 'Back to Select';
+                confirmBtn.hidden = false;
+                seeReceiptBtn.hidden = true;
                 return;
             }
 
@@ -1296,6 +1484,130 @@
             }
         });
 
+        seeReceiptBtn.addEventListener('click', function () {
+            const receiptItems = [
+                ['1', 'Room - ' + confirmRoom.textContent, confirmRoomCharge.textContent, confirmRoomCharge.textContent],
+                ['1', 'Amenities - ' + confirmAmenitiesTitle.textContent, confirmAmenitiesCharge.textContent, confirmAmenitiesCharge.textContent],
+                ['1', 'Event - ' + confirmEventTitle.textContent, confirmEventCharge.textContent, confirmEventCharge.textContent],
+                ['1', 'Dining - ' + confirmDiningTitle.textContent, confirmDiningCharge.textContent, confirmDiningCharge.textContent],
+                [String(selectedExtraGuests), 'Extra person', `₱${selectedExtraGuests * selectedExtraGuestPrice}`, confirmExtraGuestCharge.textContent],
+            ];
+            receiptGuestName.textContent = detailsGuestName.value || 'Guest';
+            receiptGuestEmail.textContent = detailsGuestEmail.value || 'guest@example.com';
+            receiptNumber.textContent = confirmReservationId.textContent;
+            receiptDate.textContent = new Date().toLocaleDateString('en-US');
+            receiptCheckIn.textContent = confirmArrivingOn.textContent;
+            receiptCheckOut.textContent = confirmCheckOut.textContent;
+            receiptGuests.textContent = confirmGuests.textContent;
+            receiptRoom.textContent = confirmRoom.textContent;
+            receiptContent.innerHTML = `<table class="receipt-table"><thead><tr><th>Quantity</th><th>Description</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>${receiptItems.map(([quantity, description, unitPrice, amount]) => `<tr><td>${escapeHtml(quantity)}</td><td>${escapeHtml(description)}</td><td>${escapeHtml(unitPrice)}</td><td>${escapeHtml(amount)}</td></tr>`).join('')}<tr class="receipt-total-row"><td colspan="3">Total</td><td>${escapeHtml(confirmTotalAmount.textContent)}</td></tr></tbody></table>`;
+            receiptModal.classList.add('open');
+            receiptModal.setAttribute('aria-hidden', 'false');
+        });
+
+        const closeReceiptModal = () => {
+            receiptModal.classList.remove('open');
+            receiptModal.setAttribute('aria-hidden', 'true');
+        };
+
+        receiptCloseBtn.addEventListener('click', closeReceiptModal);
+        receiptModal.addEventListener('click', function (event) {
+            if (event.target === receiptModal) {
+                closeReceiptModal();
+            }
+        });
+
+        const loadReceiptPdfTools = () => Promise.all([
+            new Promise((resolve, reject) => {
+                if (window.html2canvas) {
+                    resolve();
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            }),
+            new Promise((resolve, reject) => {
+                if (window.jspdf?.jsPDF) {
+                    resolve();
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            }),
+        ]);
+
+        const downloadReceiptAsPdf = async () => {
+            const downloadButtonLabel = receiptDownloadBtn.innerHTML;
+            receiptDownloadBtn.disabled = true;
+            receiptDownloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+            try {
+                await loadReceiptPdfTools();
+                const receiptCard = receiptModal.querySelector('.receipt-card');
+                const printableReceipt = receiptCard.cloneNode(true);
+                printableReceipt.querySelector('.receipt-close')?.remove();
+                printableReceipt.querySelector('.receipt-actions')?.remove();
+                printableReceipt.style.position = 'absolute';
+                printableReceipt.style.left = '-10000px';
+                printableReceipt.style.top = '0';
+                printableReceipt.style.width = `${receiptCard.offsetWidth}px`;
+                printableReceipt.style.maxHeight = 'none';
+                printableReceipt.style.height = 'auto';
+                printableReceipt.style.overflow = 'visible';
+                document.body.appendChild(printableReceipt);
+                const canvas = await window.html2canvas(printableReceipt, { scale: 2, backgroundColor: '#ffffff' });
+                printableReceipt.remove();
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 10;
+                const imageWidth = pageWidth - (margin * 2);
+                const imageHeight = (canvas.height * imageWidth) / canvas.width;
+                const imageData = canvas.toDataURL('image/jpeg', 0.95);
+                let remainingHeight = imageHeight;
+                let offset = 0;
+                pdf.addImage(imageData, 'JPEG', margin, margin, imageWidth, imageHeight);
+                remainingHeight -= pageHeight - (margin * 2);
+                while (remainingHeight > 0) {
+                    offset += pageHeight - (margin * 2);
+                    pdf.addPage();
+                    pdf.addImage(imageData, 'JPEG', margin, margin - offset, imageWidth, imageHeight);
+                    remainingHeight -= pageHeight - (margin * 2);
+                }
+                pdf.save(`${confirmReservationId.textContent || 'reservation'}-receipt.pdf`);
+            } catch (error) {
+                alert('The receipt PDF could not be downloaded. Please try again.');
+            } finally {
+                receiptDownloadBtn.disabled = false;
+                receiptDownloadBtn.innerHTML = downloadButtonLabel;
+            }
+        };
+
+        const openReceiptPrintWindow = () => {
+            const printWindow = window.open('', '_blank', 'width=600,height=700');
+            if (!printWindow) {
+                return;
+            }
+            const printableReceipt = receiptModal.querySelector('.receipt-card').cloneNode(true);
+            printableReceipt.querySelector('.receipt-close')?.remove();
+            printableReceipt.querySelector('.receipt-actions')?.remove();
+            printWindow.document.write(`<html><head><title>${confirmReservationId.textContent} Receipt</title><style>
+                *{box-sizing:border-box}body{margin:0;padding:24px;background:#fff;font-family:Arial,sans-serif;color:#172033}.receipt-card{width:100%;padding:28px;background:#fff}.receipt-header{position:relative;display:block;padding-bottom:14px;border-bottom:4px solid #c7d8e8}.receipt-brand{margin:0;color:#07549a;font-size:32px;font-weight:400;text-align:center}.receipt-contact{display:flex;justify-content:center;gap:18px;margin:12px 0 4px;color:#727b85;font-size:12px}.receipt-subcontact{text-align:center;margin:0;color:#727b85;font-size:12px}.receipt-heading-row{margin:24px 0 16px;text-align:center}.receipt-heading{margin:0;color:#07549a;font-size:32px;letter-spacing:.04em}.receipt-title-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin:0 0 18px}.receipt-paid-by h4,.receipt-booking h4,.receipt-notes h4{margin:0 0 8px;color:#07549a;font-size:14px}.receipt-paid-by p,.receipt-booking p,.receipt-notes p{margin:3px 0;color:#4b5563;font-size:13px}.receipt-booking{min-width:220px}.receipt-booking p{display:flex;justify-content:space-between;gap:18px}.receipt-booking strong{color:#4b5563;font-weight:600}.receipt-content{color:#566176;font-size:12px}.receipt-table{width:100%;border:1px solid #7fa9d0;border-spacing:0}.receipt-table th{padding:9px 8px;color:#fff;background:#07549a;font-size:11px;text-align:left}.receipt-table td{padding:9px 8px;border-top:1px solid #d9e5ef;color:#4b5563;font-size:12px}.receipt-table th:not(:first-child),.receipt-table td:not(:first-child){text-align:right}.receipt-table .receipt-total-row td{border-top:2px solid #7fa9d0;color:#07549a;font-weight:800}.receipt-notes{margin-top:18px}@media print{body{padding:0}.receipt-card{padding:0}}
+                </style></head><body>${printableReceipt.outerHTML}</body></html>`);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        };
+
+        receiptDownloadBtn.addEventListener('click', downloadReceiptAsPdf);
+        receiptPrintBtn.addEventListener('click', openReceiptPrintWindow);
+
         modalConfirmBtn.addEventListener('click', function () {
             if (modalConfirmBtn.disabled) {
                 return;
@@ -1305,6 +1617,8 @@
                 reservationPage.classList.add('confirm-step');
                 modalConfirmBtn.textContent = 'Submit Reservation';
                 modalCancelBtn.textContent = 'Back to Details';
+                confirmBtn.hidden = true;
+                seeReceiptBtn.hidden = false;
                 return;
             }
 
