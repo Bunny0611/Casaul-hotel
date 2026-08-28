@@ -324,6 +324,12 @@
         font-size: 11px;
         font-weight: 700;
         white-space: nowrap;
+        cursor: pointer;
+    }
+
+    .filter-badge.active {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
     }
 
     .badge-all {
@@ -743,6 +749,112 @@
         box-shadow: 0 0 0 4px rgba(245, 158, 11, .09);
     }
 
+    #reportModal .modal-box {
+        max-width: 720px;
+        border: 1px solid #e5e7eb;
+        border-top: 4px solid #f97316;
+    }
+
+    #reportModal .modal-header {
+        padding: 24px 26px 20px;
+        background: #fffaf5;
+    }
+
+    #reportModal .modal-title {
+        font-size: 21px;
+        letter-spacing: -.2px;
+    }
+
+    #reportModal .modal-subtitle {
+        font-size: 12px;
+        color: #7c8493;
+    }
+
+    #reportModal .modal-body {
+        padding: 24px 26px 12px;
+    }
+
+    #reportModal .modal-section {
+        margin-bottom: 22px;
+        padding: 18px;
+        border: 1px solid #edf0f3;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    #reportModal .modal-section-title {
+        margin-bottom: 16px;
+        color: #273142;
+        font-size: 11px;
+        letter-spacing: 1px;
+    }
+
+    #reportModal .modal-section-title i {
+        display: inline-flex;
+        width: 27px;
+        height: 27px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: #fff1e8;
+        color: #ea580c;
+    }
+
+    #reportModal .form-grid {
+        gap: 16px;
+    }
+
+    #reportModal .form-label {
+        margin-bottom: 7px;
+        color: #374151;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    #reportModal .form-control {
+        height: 44px;
+        border-color: #dfe3e8;
+        border-radius: 9px;
+        background: #fbfcfd;
+        font-size: 12px;
+    }
+
+    #reportModal textarea.form-control {
+        min-height: 116px;
+        line-height: 1.55;
+    }
+
+    #reportModal .form-control[readonly] {
+        background: #f3f4f6;
+        color: #6b7280;
+        cursor: default;
+    }
+
+    #reportModal input[type="file"].form-control {
+        height: auto;
+        padding: 12px;
+        border: 1px dashed #cfd6df;
+        background: #fafbfc;
+        cursor: pointer;
+    }
+
+    #reportModal input[type="file"]::file-selector-button {
+        margin-right: 10px;
+        padding: 7px 11px;
+        border: 0;
+        border-radius: 7px;
+        background: #fff1e8;
+        color: #c2410c;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #reportModal .modal-footer {
+        padding: 16px 26px 22px;
+        background: #fafbfc;
+    }
+
     .detail-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -1056,7 +1168,7 @@
 
                     <div>
                         <p class="stat-label">Total Reports</p>
-                        <p class="stat-number">0</p>
+                        <p class="stat-number">{{ $reportCounts['total'] }}</p>
 
                         <p class="stat-note">
                             <i class="fas fa-file-alt"></i>
@@ -1079,7 +1191,7 @@
 
                     <div>
                         <p class="stat-label">Pending Issues</p>
-                        <p class="stat-number">0</p>
+                        <p class="stat-number">{{ $reportCounts['pending'] }}</p>
 
                         <p class="stat-note">
                             <i class="fas fa-clock"></i>
@@ -1102,7 +1214,7 @@
 
                     <div>
                         <p class="stat-label">Under Repair</p>
-                        <p class="stat-number">0</p>
+                        <p class="stat-number">{{ $reportCounts['repairing'] }}</p>
 
                         <p class="stat-note">
                             <i class="fas fa-wrench"></i>
@@ -1125,7 +1237,7 @@
 
                     <div>
                         <p class="stat-label">Completed</p>
-                        <p class="stat-number">0</p>
+                        <p class="stat-number">{{ $reportCounts['completed'] }}</p>
 
                         <p class="stat-note">
                             <i class="fas fa-check-circle"></i>
@@ -1159,20 +1271,20 @@
 
                 <div class="filter-badges">
 
-                    <span class="filter-badge badge-all">
-                        All (0)
+                    <span class="filter-badge badge-all active" data-status-filter="all" role="button" tabindex="0">
+                        All ({{ $reportCounts['total'] }})
                     </span>
 
-                    <span class="filter-badge badge-pending">
-                        Pending (0)
+                    <span class="filter-badge badge-pending" data-status-filter="pending" role="button" tabindex="0">
+                        Pending ({{ $reportCounts['pending'] }})
                     </span>
 
-                    <span class="filter-badge badge-repairing">
-                        Repairing (0)
+                    <span class="filter-badge badge-repairing" data-status-filter="repairing" role="button" tabindex="0">
+                        Repairing ({{ $reportCounts['repairing'] }})
                     </span>
 
-                    <span class="filter-badge badge-completed">
-                        Completed (0)
+                    <span class="filter-badge badge-completed" data-status-filter="completed" role="button" tabindex="0">
+                        Completed ({{ $reportCounts['completed'] }})
                     </span>
 
                 </div>
@@ -1185,85 +1297,33 @@
 
                     <thead>
                         <tr>
-                            <th>Room</th>
-                            <th>Reported By</th>
-                            <th>Category / Priority</th>
-                            <th>Problem</th>
+                            <th>Room Number</th>
+                            <th>Issue / Problem</th>
+                            <th>Description</th>
                             <th>Date Reported</th>
-                            <th>Technician</th>
+                            <th>Priority</th>
                             <th>Status</th>
-                            <th>Action</th>
+                            <th>Submitted By</th>
                         </tr>
                     </thead>
 
                     <tbody>
 
                         @foreach ($reports as $report)
-                            <tr>
+                            <tr data-report-status="{{ strtolower($report->status) }}">
                                 <td>
                                     <div class="room-number">{{ $report->room_number }}</div>
-                                    <div class="room-type">{{ $report->room_type }}</div>
-                                </td>
-                                <td><span class="person-name">{{ $report->reported_by }}</span></td>
-                                <td>
-                                    <div class="category-priority">
-                                        <span class="category-badge">{{ $report->category }}</span>
-                                        <span class="priority-badge priority-{{ strtolower($report->priority) }}">{{ $report->priority }}</span>
-                                    </div>
                                 </td>
                                 <td>
                                     <div class="issue-title">{{ $report->problem }}</div>
+                                </td>
+                                <td>
                                     <div class="issue-description">{{ $report->description }}</div>
                                 </td>
-                                <td><span class="date-text">{{ $report->date_reported->format('M d, Y') }}</span></td>
-                                <td><span class="technician-text">{{ $report->technician }}</span></td>
+                                <td><span class="date-text">{{ $report->date_reported->format('M d, Y h:i A') }}</span></td>
+                                <td><span class="priority-badge priority-{{ strtolower($report->priority) }}">{{ $report->priority }}</span></td>
                                 <td><span class="status-badge status-{{ strtolower(str_replace(' ', '-', $report->status)) }}">{{ $report->status }}</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button
-                                            type="button"
-                                            class="table-action view-button"
-                                            onclick="openDetailModal(
-                                                {{ Js::from($report->room_number) }},
-                                                {{ Js::from($report->room_type) }},
-                                                {{ Js::from($report->reported_by) }},
-                                                {{ Js::from($report->category) }},
-                                                {{ Js::from($report->problem) }},
-                                                {{ Js::from($report->description) }},
-                                                {{ Js::from($report->priority) }},
-                                                {{ Js::from($report->date_reported->format('M d, Y')) }},
-                                                {{ Js::from($report->expected_date?->format('M d, Y') ?? '-') }},
-                                                {{ Js::from($report->technician) }},
-                                                {{ Js::from($report->status) }},
-                                                {{ $report->id }}
-                                            )"
-                                        >
-                                            <i class="fas fa-eye"></i>
-                                            View
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="table-action edit-button"
-                                            onclick="openEditModal(
-                                                {{ Js::from($report->room_number) }},
-                                                {{ Js::from($report->room_type) }},
-                                                {{ Js::from($report->reported_by) }},
-                                                {{ Js::from($report->category) }},
-                                                {{ Js::from($report->problem) }},
-                                                {{ Js::from($report->description) }},
-                                                {{ Js::from($report->priority) }},
-                                                {{ Js::from($report->date_reported->format('Y-m-d')) }},
-                                                {{ Js::from($report->expected_date?->format('Y-m-d') ?? '') }},
-                                                {{ Js::from($report->technician) }},
-                                                {{ Js::from($report->status) }},
-                                                {{ $report->id }}
-                                            )"
-                                        >
-                                            <i class="fas fa-pen"></i>
-                                            Edit
-                                        </button>
-                                    </div>
-                                </td>
+                                <td><span class="person-name">{{ $report->reported_by }}</span></td>
                             </tr>
                         @endforeach
 
@@ -1781,7 +1841,7 @@
         </div>
 
 
-                <form id="maintenanceReportForm" class="modal-body" method="POST" action="{{ route('housekeeping.maintenance-report.store') }}">
+                <form id="maintenanceReportForm" class="modal-body" method="POST" action="{{ route('housekeeping.maintenance-report.store') }}" enctype="multipart/form-data">
                     @csrf
 
             <div class="modal-section">
@@ -1799,26 +1859,13 @@
                             Room Number
                         </label>
 
-                        <input
-                            name="room_number"
-                            type="text"
-                            class="form-control"
-                            placeholder="Room Number"
-                            required
-                        >
-
-                    </div>
-
-                    <div class="form-group">
-
-                        <label class="form-label">
-                            Room Type
-                        </label>
-
-                        <select name="room_type" class="form-control" required>
-                            <option>Deluxe Room</option>
-                            <option>Suite Room</option>
-                            <option>Standard Room</option>
+                        <select name="room_number" class="form-control" required>
+                            <option value="">Select room</option>
+                            @foreach ($rooms as $room)
+                                <option value="{{ $room->room_number }}" @selected(old('room_number') == $room->room_number)>
+                                    Room {{ $room->room_number }}
+                                </option>
+                            @endforeach
                         </select>
 
                     </div>
@@ -1826,15 +1873,14 @@
                     <div class="form-group full">
 
                         <label class="form-label">
-                            Reported By
+                            Date &amp; Time Reported
                         </label>
 
                         <input
-                            name="reported_by"
                             type="text"
                             class="form-control"
-                            placeholder="Housekeeper Name"
-                            required
+                            value="{{ now()->format('M d, Y h:i A') }}"
+                            readonly
                         >
 
                     </div>
@@ -1856,16 +1902,16 @@
                     <div class="form-group">
 
                         <label class="form-label">
-                            Maintenance Category
+                            Issue Category
                         </label>
 
                         <select name="category" class="form-control" required>
-                            <option>Air Conditioning</option>
                             <option>Electrical</option>
                             <option>Plumbing</option>
                             <option>Furniture</option>
-                            <option>Appliance</option>
-                            <option>Others</option>
+                            <option>Air Conditioning</option>
+                            <option>Bathroom</option>
+                            <option>Other</option>
                         </select>
 
                     </div>
@@ -1873,7 +1919,7 @@
                     <div class="form-group">
 
                         <label class="form-label">
-                            Priority Level
+                            Priority
                         </label>
 
                         <select name="priority" class="form-control" required>
@@ -1888,89 +1934,29 @@
                     <div class="form-group full">
 
                         <label class="form-label">
-                            Problem
-                        </label>
-
-                        <input
-                            name="problem"
-                            type="text"
-                            class="form-control"
-                            placeholder="Example: Air conditioner"
-                            required
-                        >
-
-                    </div>
-
-                    <div class="form-group full">
-
-                        <label class="form-label">
                             Problem Description
                         </label>
 
                         <textarea
                             name="description"
                             class="form-control"
-                            placeholder="Example: Air conditioner is not cooling properly."
+                            placeholder="Describe the maintenance issue"
                             required
                         ></textarea>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="modal-section">
-
-                <h3 class="modal-section-title">
-                    <i class="fas fa-calendar-alt"></i>
-                    Repair Schedule
-                </h3>
-
-                <div class="form-grid">
-
-                    <div class="form-group">
-
-                        <label class="form-label">
-                            Date Reported
-                        </label>
-
-                        <input
-                            name="date_reported"
-                            type="date"
-                            class="form-control"
-                            required
-                        >
-
-                    </div>
-
-                    <div class="form-group">
-
-                        <label class="form-label">
-                            Expected Repair Date
-                        </label>
-
-                        <input
-                            name="expected_date"
-                            type="date"
-                            class="form-control"
-                        >
 
                     </div>
 
                     <div class="form-group full">
 
                         <label class="form-label">
-                            Assigned Technician
+                            Photo / Evidence <span style="font-weight: 400; color: #9ca3af;">(Optional)</span>
                         </label>
 
                         <input
-                            name="technician"
-                            type="text"
+                            name="photo"
+                            type="file"
                             class="form-control"
-                            placeholder="Technician Name"
-                            required
+                            accept="image/jpeg,image/png,image/gif,image/webp"
                         >
 
                     </div>
@@ -1983,22 +1969,12 @@
             <div class="modal-section">
 
                 <h3 class="modal-section-title">
-                    <i class="fas fa-tasks"></i>
-                    Status
+                    <i class="fas fa-user"></i>
+                    Reported By
                 </h3>
 
                 <div class="form-group">
-
-                    <label class="form-label">
-                        Current Status
-                    </label>
-
-                    <select name="status" class="form-control" required>
-                        <option>Pending</option>
-                        <option>In Progress</option>
-                        <option>Completed</option>
-                    </select>
-
+                    <input type="text" class="form-control" value="{{ auth()->user()->name }}" readonly>
                 </div>
 
             </div>
@@ -2285,6 +2261,8 @@
                             name="reported_by"
                             type="text"
                             class="form-control"
+                            value="{{ auth('web')->user()->name }}"
+                            readonly
                         >
 
                     </div>
@@ -2671,43 +2649,37 @@
         });
 
 
-    document
-        .getElementById("reportSearch")
-        .addEventListener("input", function () {
+    let activeStatusFilter = "all";
 
-            const searchValue = this.value.toLowerCase().trim();
+    function applyReportFilters() {
+        const searchValue = document
+            .getElementById("reportSearch")
+            .value
+            .toLowerCase()
+            .trim();
 
-            const rows = document.querySelectorAll(
-                ".maintenance-table tbody tr"
-            );
+        document.querySelectorAll(".maintenance-table tbody tr").forEach(function (row) {
+            const matchesSearch = row.textContent.toLowerCase().includes(searchValue);
+            const rowStatus = row.dataset.reportStatus;
+            const matchesStatus = activeStatusFilter === "all" ||
+                (activeStatusFilter === "repairing" && ["repairing", "in progress"].includes(rowStatus)) ||
+                rowStatus === activeStatusFilter;
 
-            rows.forEach(function (row) {
-
-                const text = row.textContent.toLowerCase();
-
-                row.style.display =
-                    text.includes(searchValue)
-                        ? ""
-                        : "none";
-
-            });
-
-
-            const mobileRecords =
-                document.querySelectorAll(".mobile-record");
-
-            mobileRecords.forEach(function (record) {
-
-                const text = record.textContent.toLowerCase();
-
-                record.style.display =
-                    text.includes(searchValue)
-                        ? ""
-                        : "none";
-
-            });
-
+            row.style.display = matchesSearch && matchesStatus ? "" : "none";
         });
+    }
+
+    document.getElementById("reportSearch").addEventListener("input", applyReportFilters);
+
+    document.querySelectorAll("[data-status-filter]").forEach(function (badge) {
+        badge.addEventListener("click", function () {
+            activeStatusFilter = this.dataset.statusFilter;
+            document.querySelectorAll("[data-status-filter]").forEach(function (item) {
+                item.classList.toggle("active", item === badge);
+            });
+            applyReportFilters();
+        });
+    });
 
 </script>
 

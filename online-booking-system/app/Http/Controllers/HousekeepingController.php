@@ -21,6 +21,12 @@ class HousekeepingController extends Controller
         $dirtyRooms = $rooms->where('cleaning_status', 'dirty')->count();
         $inProgress = $rooms->where('cleaning_status', 'in_progress')->count();
         $occupiedRooms = $rooms->where('status', 'occupied')->count();
+        $pendingTasks = HousekeepingTask::with(['room', 'assignedStaff'])
+            ->whereIn('status', ['pending', 'in_progress'])->get();
+        $priorityTasks = $pendingTasks->sortBy(function (HousekeepingTask $task) {
+            return ['urgent' => 1, 'high' => 2, 'medium' => 3, 'low' => 4][$task->priority] ?? 5;
+        })->take(4);
+        $cleaningPercentage = $totalRooms > 0 ? (int) round(($cleanRooms / $totalRooms) * 100) : 0;
 
         return view('housekeeping.dashboard', compact(
             'rooms',
@@ -28,7 +34,10 @@ class HousekeepingController extends Controller
             'cleanRooms',
             'dirtyRooms',
             'inProgress',
-            'occupiedRooms'
+            'occupiedRooms',
+            'pendingTasks',
+            'priorityTasks',
+            'cleaningPercentage'
         ));
     }
 
@@ -115,25 +124,38 @@ class HousekeepingController extends Controller
     public function maintenanceReport()
     {
         $reports = MaintenanceReport::latest('date_reported')->get();
+        $rooms = Room::orderBy('room_number')->get();
+        $reportCounts = [
+            'total' => $reports->count(),
+            'pending' => $reports->where('status', 'Pending')->count(),
+            'repairing' => $reports->whereIn('status', ['Repairing', 'In Progress'])->count(),
+            'completed' => $reports->where('status', 'Completed')->count(),
+        ];
 
-        return view('housekeeping.maintenance-report', compact('reports'));
+        return view('housekeeping.maintenance-report', compact('reports', 'rooms', 'reportCounts'));
     }
 
     public function storeMaintenanceReport(Request $request)
     {
         $validated = $request->validate([
-            'room_number' => ['required', 'string', 'max:255'],
-            'room_type' => ['required', 'string', 'max:255'],
-            'reported_by' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'string', 'max:255'],
-            'priority' => ['required', 'string', 'max:50'],
-            'problem' => ['required', 'string', 'max:255'],
+            'room_number' => ['required', 'exists:rooms,room_number'],
+            'category' => ['required', 'in:Electrical,Plumbing,Furniture,Air Conditioning,Bathroom,Other'],
+            'priority' => ['required', 'in:Low,Medium,High,Urgent'],
             'description' => ['required', 'string'],
-            'date_reported' => ['required', 'date'],
-            'expected_date' => ['nullable', 'date', 'after_or_equal:date_reported'],
-            'technician' => ['required', 'string', 'max:255'],
-            'status' => ['required', 'string', 'max:50'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
         ]);
+
+        $room = Room::where('room_number', $validated['room_number'])->firstOrFail();
+        $validated['room_type'] = $room->room_type;
+        $validated['problem'] = $validated['category'];
+        $validated['reported_by'] = $request->user('web')->name;
+        $validated['date_reported'] = now();
+        $validated['technician'] = 'Unassigned';
+        $validated['status'] = 'Pending';
+        $validated['photo_path'] = $request->hasFile('photo')
+            ? $request->file('photo')->store('maintenance-reports', 'public')
+            : null;
+        unset($validated['photo']);
 
         MaintenanceReport::create($validated);
 
@@ -156,6 +178,8 @@ class HousekeepingController extends Controller
             'technician' => ['required', 'string', 'max:255'],
             'status' => ['required', 'string', 'max:50'],
         ]);
+
+        $validated['reported_by'] = $request->user('web')->name;
 
         $maintenanceReport->update($validated);
 

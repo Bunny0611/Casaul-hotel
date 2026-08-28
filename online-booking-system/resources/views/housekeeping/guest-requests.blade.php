@@ -4,9 +4,9 @@
 
 @php
     $stats = [
-        'pending' => 2,
-        'resolved' => 1,
-        'total' => 3,
+        'pending' => 0,
+        'resolved' => 0,
+        'total' => 0,
     ];
 @endphp
 
@@ -947,35 +947,22 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td><span class="request-id">REQ-3011</span><span class="new-badge">New</span></td>
-                                <td><span class="guest-name">Juan Dela Cruz</span><span class="room-detail">Deluxe Room - 101<br>2 Adults</span></td>
-                                <td><span class="room-name"><i class="far fa-calendar-alt"></i> Aug 25 - Aug 28, 2026</span><span class="date-detail">3 Nights</span></td>
-                                <td><span class="addon-badge">6 Items</span></td>
-                                <td><span class="status-badge">Pending</span></td>
-                                <td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3011')"><i class="far fa-eye"></i> View</button></td>
-                            </tr>
-                            <tr>
-                                <td><span class="request-id">REQ-3010</span><span class="new-badge">New</span></td>
-                                <td><span class="guest-name">Maria Santos</span><span class="room-detail">Standard Room - 205<br>2 Adults</span></td>
-                                <td><span class="room-name"><i class="far fa-calendar-alt"></i> Aug 24 - Aug 26, 2026</span><span class="date-detail">2 Nights</span></td>
-                                <td><span class="addon-badge">4 Items</span></td>
-                                <td><span class="status-badge in-progress">In Progress</span></td>
-                                <td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3010')"><i class="far fa-eye"></i> View</button></td>
-                            </tr>
-                            <tr>
-                                <td><span class="request-id">REQ-3009</span><span class="new-badge">New</span></td>
-                                <td><span class="guest-name">Ana Reyes</span><span class="room-detail">Suite Room - 301<br>3 Adults</span></td>
-                                <td><span class="room-name"><i class="far fa-calendar-alt"></i> Aug 23 - Aug 27, 2026</span><span class="date-detail">4 Nights</span></td>
-                                <td><span class="addon-badge">5 Items</span></td>
-                                <td><span class="status-badge completed">Completed</span></td>
-                                <td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3009')"><i class="far fa-eye"></i> View</button></td>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <div class="empty-state-content">
+                                            <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                                            <h4>No guest requests</h4>
+                                            <p>There are no add-on requests to display.</p>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
                 <div class="request-table-footer">
-                    <span>Showing 1 to 3 of 3 requests</span>
-                    <div class="pagination"><button type="button" disabled aria-label="Previous page"><i class="fas fa-chevron-left"></i></button><button type="button" class="current" aria-current="page">1</button><button type="button" disabled aria-label="Next page"><i class="fas fa-chevron-right"></i></button></div>
+                    <span>Showing 0 to 0 of 0 requests</span>
+                    <div class="pagination"><button type="button" disabled aria-label="Previous page"><i class="fas fa-chevron-left"></i></button><button type="button" disabled aria-label="Current page">0</button><button type="button" disabled aria-label="Next page"><i class="fas fa-chevron-right"></i></button></div>
                 </div>
             </div>
 
@@ -1010,14 +997,22 @@
         <div id="detailsGrid" class="details-grid">
             <div class="details-main">
                 <div id="allRequestsCard" class="details-card">
-                    <h3><i class="fas fa-list"></i> All Requests <small style="color:#718096;font-size:10px;font-weight:400;text-transform:none;">3 total requests</small></h3>
+                    <h3><i class="fas fa-list"></i> All Requests <small style="color:#718096;font-size:10px;font-weight:400;text-transform:none;">0 total requests</small></h3>
                     <div class="request-table-wrap">
                         <table class="all-requests-table">
                             <thead><tr><th>Request ID</th><th>Guest Name</th><th>Room Number</th><th>Request Type</th><th>Description / Preview</th><th>Preferred Time</th><th>Priority</th><th>Submitted Date / Time</th><th>Status</th><th>Action</th></tr></thead>
                             <tbody>
-                                <tr><td>REQ-3011<br><small>RES-3011</small></td><td><strong>Juan Dela Cruz</strong></td><td>101</td><td>Add-On Request</td><td>Extra towels and pillows requested</td><td>Before 3:00 PM</td><td><span class="priority-high">High</span></td><td>Aug 24, 2026<br><small>10:45 AM</small></td><td><span class="all-request-status">Pending</span></td><td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3011')"><i class="far fa-eye"></i> View</button></td></tr>
-                                <tr><td>REQ-3010<br><small>RES-3010</small></td><td><strong>Maria Santos</strong></td><td>205</td><td>Amenities</td><td>Toiletries and bottled water requested</td><td>Anytime</td><td><span class="priority-medium">Medium</span></td><td>Aug 24, 2026<br><small>9:20 AM</small></td><td><span class="all-request-status progress">In Progress</span></td><td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3010')"><i class="far fa-eye"></i> View</button></td></tr>
-                                <tr><td>REQ-3009<br><small>RES-3009</small></td><td><strong>Ana Reyes</strong></td><td>301</td><td>Room Service</td><td>Breakfast and water bottles requested</td><td>8:00 AM</td><td><span class="priority-low">Low</span></td><td>Aug 23, 2026<br><small>4:15 PM</small></td><td><span class="all-request-status completed">Completed</span></td><td><button type="button" class="view-request" onclick="openGuestRequest('REQ-3009')"><i class="far fa-eye"></i> View</button></td></tr>
+                                <tr>
+                                    <td colspan="10">
+                                        <div class="empty-state">
+                                            <div class="empty-state-content">
+                                                <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                                                <h4>No guest requests</h4>
+                                                <p>There are no requests to display.</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -1042,12 +1037,17 @@
                         <table class="addon-table">
                             <thead><tr><th>Add-On Item</th><th>Quantity</th><th>Guest Note</th><th>Status</th></tr></thead>
                             <tbody>
-                                <tr><td>Extra Pillows<br><small>Additional pillows for comfort</small></td><td>2</td><td>-</td><td><span class="addon-status">Pending <i class="fas fa-chevron-down"></i></span></td></tr>
-                                <tr><td>Extra Towels<br><small>Bath towel set</small></td><td>3</td><td>Deliver to room<br>before 3:00 PM</td><td><span class="addon-status">Pending <i class="fas fa-chevron-down"></i></span></td></tr>
-                                <tr><td>Toiletries Set<br><small>Shampoo, soap, etc.</small></td><td>1</td><td>-</td><td><span class="addon-status">Pending <i class="fas fa-chevron-down"></i></span></td></tr>
-                                <tr><td>Water Bottles<br><small>Complimentary water</small></td><td>2</td><td>-</td><td><span class="addon-status delivered">Delivered <i class="fas fa-chevron-down"></i></span></td></tr>
-                                <tr><td>Slippers<br><small>Room slippers</small></td><td>2</td><td>-</td><td><span class="addon-status">Pending <i class="fas fa-chevron-down"></i></span></td></tr>
-                                <tr><td>Breakfast<br><small>In-room breakfast</small></td><td>2</td><td>Vegetarian meal</td><td><span class="addon-status">Pending <i class="fas fa-chevron-down"></i></span></td></tr>
+                                <tr>
+                                    <td colspan="4">
+                                        <div class="empty-state">
+                                            <div class="empty-state-content">
+                                                <div class="empty-icon"><i class="fas fa-box-open"></i></div>
+                                                <h4>No requested add-ons</h4>
+                                                <p>There are no add-on items to display.</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -1063,10 +1063,10 @@
 
             <aside id="summaryCard" class="details-card summary-card">
                 <h3><i class="fas fa-clipboard-list"></i> Requests Summary</h3>
-                <div class="summary-total"><i class="far fa-clipboard"></i><div><span>All Requests</span><strong>3</strong><span>15 Total Add-Ons</span></div></div>
-                <div class="summary-row"><span><i class="fas fa-circle" style="color:#f59e0b;font-size:7px"></i> Pending</span><b>1</b></div>
-                <div class="summary-row"><span><i class="fas fa-circle" style="color:#3b82f6;font-size:7px"></i> In Progress</span><b>1</b></div>
-                <div class="summary-row"><span><i class="fas fa-circle" style="color:#10b981;font-size:7px"></i> Completed</span><b>1</b></div>
+                <div class="summary-total"><i class="far fa-clipboard"></i><div><span>All Requests</span><strong>0</strong><span>0 Total Add-Ons</span></div></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#f59e0b;font-size:7px"></i> Pending</span><b>0</b></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#3b82f6;font-size:7px"></i> In Progress</span><b>0</b></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#10b981;font-size:7px"></i> Completed</span><b>0</b></div>
                 <div class="summary-info"><label>Requested On</label><strong>Aug 24, 2026 &middot; 10:45 AM</strong></div>
                 <div class="summary-info"><label>Requested By</label><strong id="summaryGuestName">Juan Dela Cruz<br><small>(Guest)</small></strong></div>
                 <div class="summary-info"><label>Related Booking</label><strong id="summaryBooking">Deluxe Room - 101<br>Aug 25 - Aug 28, 2026</strong></div>

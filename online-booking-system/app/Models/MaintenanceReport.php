@@ -18,10 +18,11 @@ class MaintenanceReport extends Model
         'expected_date',
         'technician',
         'status',
+        'photo_path',
     ];
 
     protected $casts = [
-        'date_reported' => 'date',
+        'date_reported' => 'datetime',
         'expected_date' => 'date',
     ];
 }
