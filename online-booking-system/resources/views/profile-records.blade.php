@@ -86,20 +86,27 @@
                     <div class="reservation-alert" role="alert">{{ $errors->first() }}</div>
                 @endif
                 <div class="guest-request-fields">
-                    <label>Request Type
-                        <select name="request_type" required>
-                            <option value="" disabled {{ old('request_type') ? '' : 'selected' }}>Select what you need</option>
-                            <optgroup label="Housekeeping">
-                                @foreach(['Extra Towels', 'Extra Pillows', 'Extra Blanket', 'Toiletries', 'Room Cleaning', 'Change Bedsheets', 'Other Housekeeping Request'] as $type)
-                                    <option value="{{ $type }}" {{ old('request_type') === $type ? 'selected' : '' }}>{{ $type }}</option>
-                                @endforeach
-                            </optgroup>
-                            <optgroup label="General Assistance">
-                                @foreach(['Broken Aircon', 'Broken TV', 'Broken Light', 'Plumbing/Water Problem', 'Late Checkout', 'Early Check-in', 'Dining/Food Request', 'Transportation Request', 'Other Request'] as $type)
-                                    <option value="{{ $type }}" {{ old('request_type') === $type ? 'selected' : '' }}>{{ $type }}</option>
-                                @endforeach
-                            </optgroup>
-                        </select>
+                    <label for="request-type-search">Request Type
+                        <div class="request-type-picker" data-request-type-picker>
+                            <input id="request-type-value" type="hidden" name="request_type" value="{{ old('request_type') }}" required>
+                            <input id="request-type-search" class="request-type-search" type="search" placeholder="Select what you need" autocomplete="off" aria-label="Search request types" aria-controls="request-type-options" aria-expanded="false" role="combobox">
+                            <button type="button" class="request-type-toggle" aria-label="Show request types" aria-controls="request-type-options" aria-expanded="false"><i class="fas fa-chevron-down"></i></button>
+                            <div class="request-type-options" id="request-type-options" role="listbox" hidden>
+                                <div class="request-type-group" data-request-type-group>
+                                    <span class="request-type-group-label">Housekeeping</span>
+                                    @foreach(['Extra Towels', 'Extra Pillows', 'Extra Blanket', 'Toiletries', 'Room Cleaning', 'Change Bedsheets', 'Other Housekeeping Request'] as $type)
+                                        <button type="button" role="option" class="request-type-option" data-value="{{ $type }}">{{ $type }}</button>
+                                    @endforeach
+                                </div>
+                                <div class="request-type-group" data-request-type-group>
+                                    <span class="request-type-group-label">General Assistance</span>
+                                    @foreach(['Broken Aircon', 'Broken TV', 'Broken Light', 'Plumbing/Water Problem', 'Late Checkout', 'Early Check-in', 'Dining/Food Request', 'Transportation Request', 'Other Request'] as $type)
+                                        <button type="button" role="option" class="request-type-option" data-value="{{ $type }}">{{ $type }}</button>
+                                    @endforeach
+                                </div>
+                                <p class="request-type-empty" hidden>No request types found.</p>
+                            </div>
+                        </div>
                     </label>
                     <label>Priority
                         <select name="priority" required>
@@ -111,7 +118,8 @@
                         <input type="time" name="preferred_time" value="{{ old('preferred_time') }}">
                     </label>
                     <label class="guest-request-description">Description
-                        <textarea name="description" rows="4" required placeholder="Please describe what you need or the problem you are experiencing.">{{ old('description') }}</textarea>
+                        <textarea id="request-description" name="description" rows="4" required placeholder="Please describe what you need or the problem you are experiencing.">{{ old('description') }}</textarea>
+                        <span id="other-request-hint" class="other-request-hint" hidden><i class="fas fa-info-circle"></i> Please describe the specific request you need in the box above.</span>
                     </label>
                 </div>
                 <button type="submit" class="btn guest-request-submit"><i class="fas fa-paper-plane"></i> Submit Request</button>
@@ -183,6 +191,69 @@
     }
     document.querySelector('.request-modal-close')?.addEventListener('click', closeGuestRequestModal);
     document.getElementById('guest-request-modal')?.addEventListener('click', function (event) { if (event.target === this) closeGuestRequestModal(); });
+</script>
+
+<script>
+    const requestTypePicker = document.querySelector('[data-request-type-picker]');
+    if (requestTypePicker) {
+        const searchInput = requestTypePicker.querySelector('.request-type-search');
+        const valueInput = requestTypePicker.querySelector('#request-type-value');
+        const toggleButton = requestTypePicker.querySelector('.request-type-toggle');
+        const optionsPanel = requestTypePicker.querySelector('.request-type-options');
+        const options = [...requestTypePicker.querySelectorAll('.request-type-option')];
+        const emptyMessage = requestTypePicker.querySelector('.request-type-empty');
+        const descriptionInput = document.getElementById('request-description');
+        const otherRequestHint = document.getElementById('other-request-hint');
+
+        function setRequestTypeOpen(isOpen) {
+            optionsPanel.hidden = !isOpen;
+            searchInput.setAttribute('aria-expanded', String(isOpen));
+            toggleButton.setAttribute('aria-expanded', String(isOpen));
+        }
+
+        function filterRequestTypes() {
+            const query = searchInput.value.trim().toLowerCase();
+            let visibleCount = 0;
+            options.forEach(function (option) {
+                const isVisible = option.textContent.toLowerCase().includes(query);
+                option.hidden = !isVisible;
+                visibleCount += isVisible ? 1 : 0;
+            });
+            requestTypePicker.querySelectorAll('[data-request-type-group]').forEach(function (group) {
+                group.hidden = !group.querySelector('.request-type-option:not([hidden])');
+            });
+            emptyMessage.hidden = visibleCount > 0;
+        }
+
+        function selectRequestType(option) {
+            valueInput.value = option.dataset.value;
+            searchInput.value = option.dataset.value;
+            options.forEach(function (item) { item.setAttribute('aria-selected', String(item === option)); });
+            const isOtherRequest = option.dataset.value.startsWith('Other');
+            otherRequestHint.hidden = !isOtherRequest;
+            descriptionInput.placeholder = isOtherRequest
+                ? 'Please describe exactly what assistance you need.'
+                : 'Please describe what you need or the problem you are experiencing.';
+            setRequestTypeOpen(false);
+        }
+
+        const oldRequestType = valueInput.value;
+        if (oldRequestType) {
+            searchInput.value = oldRequestType;
+            const oldOption = options.find(function (option) { return option.dataset.value === oldRequestType; });
+            if (oldOption) {
+                oldOption.setAttribute('aria-selected', 'true');
+                selectRequestType(oldOption);
+            }
+        }
+        searchInput.addEventListener('focus', function () { setRequestTypeOpen(true); filterRequestTypes(); });
+        searchInput.addEventListener('input', function () { valueInput.value = ''; setRequestTypeOpen(true); filterRequestTypes(); });
+        toggleButton.addEventListener('click', function () { setRequestTypeOpen(optionsPanel.hidden); searchInput.focus(); filterRequestTypes(); });
+        options.forEach(function (option) { option.addEventListener('click', function () { selectRequestType(option); }); });
+        document.addEventListener('click', function (event) {
+            if (!requestTypePicker.contains(event.target)) setRequestTypeOpen(false);
+        });
+    }
 </script>
 
 @endsection
