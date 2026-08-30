@@ -177,6 +177,13 @@
     @media (max-width:700px) { .receipt-card { padding:18px; } .receipt-brand,.receipt-heading { font-size:25px; } .receipt-title-row { align-items:flex-start; flex-direction:column; } .receipt-booking { min-width:0; width:100%; } .receipt-actions button { flex:1; } }
     .summary-clear { border:1px solid #ff9aa7; border-radius:7px; padding:9px; background:#fff; color:#d20b26; font-size:10px; font-weight:700; }
 
+    .dining-qty { display:inline-flex; align-items:center; gap:4px; margin:0; color:#000; }
+    .qty-btn { width:20px; min-width:20px; height:20px; display:flex; align-items:center; justify-content:center; border:none !important; border-radius:0; background:transparent !important; color:#000 !important; font-size:18px; font-weight:400; cursor:pointer; line-height:1; padding:0; font-family:inherit; box-shadow:none !important; text-shadow:none !important; -webkit-appearance:none; appearance:none; }
+    .dining-quantity { width:22px; min-width:22px; height:20px; padding:0; text-align:center; font-size:12px; font-weight:500; border:none !important; border-radius:0; background:transparent !important; color:#000 !important; font-family:inherit; box-shadow:none !important; text-shadow:none !important; -moz-appearance:textfield; appearance:textfield; -webkit-appearance:none; }
+    .dining-quantity::-webkit-outer-spin-button, .dining-quantity::-webkit-inner-spin-button { -webkit-appearance:none; appearance:none; margin:0; }
+    .dining-card-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .dining-card-footer .price { display:inline-block; margin:0; color:#111827; }
+
     @media (max-width: 980px){ .reservation-hero,.reservation-shell{ max-width:calc(100% - 30px); } .reservation-hero{ grid-template-columns:1fr 300px; } }
     @media (max-width: 700px){ .reservation-hero{ display:block; } .reservation-hero::after{ display:block; height:120px; min-height:0; margin-top:18px; border-radius:0 0 0 35px; } .reservation-shell{ display:block; } .reservation-summary{ margin-top:14px; } .reservation-tabs{ overflow-x:auto; } .tab-btn{ min-width:120px; } .reservation-progress{ padding:12px; gap:7px; } .progress-copy span{ display:none; } .panel-row,.reservation-card-grid{ grid-template-columns:1fr; } .summary-card{ position:static; } }
 
@@ -614,8 +621,13 @@
                                 @if($meal->diningSchedule)
                                     <p class="text-muted">{{ $meal->diningSchedule->period }}: {{ \Carbon\Carbon::parse($meal->diningSchedule->available_from)->format('g:i A') }} - {{ \Carbon\Carbon::parse($meal->diningSchedule->available_to)->format('g:i A') }}</p>
                                 @endif
-                                <div class="reservation-card-footer">
+                                <div class="reservation-card-footer dining-card-footer">
                                     <span class="price">₱{{ number_format($meal->price, 0) }}</span>
+                                    <div class="dining-qty">
+                                        <button type="button" class="qty-btn qty-decrease" data-dining-id="{{ $meal->id }}" aria-label="Decrease quantity">−</button>
+                                        <input type="number" min="1" value="1" class="dining-quantity" data-dining-id="{{ $meal->id }}">
+                                        <button type="button" class="qty-btn qty-increase" data-dining-id="{{ $meal->id }}" aria-label="Increase quantity">+</button>
+                                    </div>
                                     <button type="button" class="select-option-btn" data-title="{{ $meal->name }}" data-price="{{ $meal->price }}">Add to Reservation</button>
                                 </div>
                             </div>
@@ -1060,14 +1072,17 @@
         let selectedRoom = null;
         let roomPrice = 0;
         let selectedAmenities = [];
-        let selectedEvent = null;
-        let selectedDining = null;
+        let selectedEvent = [];
+        let selectedDining = [];
         let selectedExtraGuests = 0;
         let selectedExtraGuestPrice = 650;
         let selectedPaymentMethod = 'Cash / Pay at Hotel';
         let confirmPaymentProofUrl = null;
 
         const items = document.querySelectorAll('.select-option-btn');
+        const sumItemTotal = (itemsList) => itemsList.reduce((sum, item) => sum + (Number(item.price || 0) * (Number(item.quantity || 1))), 0);
+        const getSelectedEventCount = () => selectedEvent.length;
+        const getSelectedDiningCount = () => selectedDining.length;
 
         const formatDisplayDate = (dateValue) => {
             if (!dateValue) {
@@ -1146,17 +1161,24 @@
         });
 
         const updateSummary = () => {
+            const selectedEventTitles = selectedEvent.map(item => item.title).join(', ');
+            const selectedDiningTitles = selectedDining.map(item => item.title).join(', ');
+            const selectedDiningSchedule = selectedDining.map(item => item.schedule).filter(Boolean).join(', ');
+            const selectedDiningTable = selectedDining.map(item => item.table).filter(Boolean).join(', ');
+            const selectedEventGuests = selectedEvent.reduce((sum, item) => sum + (Number(item.guests || 0)), 0);
+            const selectedDiningQuantity = selectedDining.reduce((sum, item) => sum + (Number(item.quantity || 1)), 0);
+
             summaryRoom.textContent = selectedRoom ? selectedRoom : 'None';
             summaryRoomDetails.textContent = selectedRoom ? `${formatDisplayDate(checkIn.value)} – ${formatDisplayDate(checkOut.value)}${selectedExtraGuests > 0 ? ` • ${selectedExtraGuests} Extra Person(s)` : ''}` : 'Choose a room and dates';
             summaryRoomPrice.textContent = `₱${roomPrice.toLocaleString()}`;
             summaryItems.textContent = selectedAmenities.length > 0 ? `${selectedAmenities.length} selected` : '0 selected';
             summaryAdditionalGuests.textContent = selectedExtraGuests > 0 ? `${selectedExtraGuests} added` : 'None';
-            summaryEvent.textContent = selectedEvent ? selectedEvent.title : 'None';
-            summaryDining.textContent = selectedDining ? `${selectedDining.title}${selectedDining.schedule ? ` / ${selectedDining.schedule}` : ''}${selectedDining.table ? ` / ${selectedDining.table}` : ''}` : 'None';
-            summaryAmenitiesPrice.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}`;
+            summaryEvent.textContent = selectedEvent.length ? `${selectedEvent.length} selected${selectedEventTitles ? ` • ${selectedEventTitles}` : ''}` : 'None';
+            summaryDining.textContent = selectedDining.length ? `${selectedDining.length} selected${selectedDiningTitles ? ` • ${selectedDiningTitles}` : ''}${selectedDiningSchedule ? ` / ${selectedDiningSchedule}` : ''}${selectedDiningTable ? ` / ${selectedDiningTable}` : ''}` : 'None';
+            summaryAmenitiesPrice.textContent = `₱${sumItemTotal(selectedAmenities).toLocaleString()}`;
             summaryAdditionalGuestsPrice.textContent = `₱${(selectedExtraGuests * selectedExtraGuestPrice).toLocaleString()}`;
-            summaryEventPrice.textContent = `₱${(selectedEvent ? selectedEvent.price : 0).toLocaleString()}`;
-            summaryDiningPrice.textContent = `₱${(selectedDining ? selectedDining.price : 0).toLocaleString()}`;
+            summaryEventPrice.textContent = `₱${selectedEvent.reduce((sum, item) => sum + (Number(item.price || 0)), 0).toLocaleString()}`;
+            summaryDiningPrice.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
 
             const total = calculateTotal();
             detailsRoomName.textContent = selectedRoom || 'None selected';
@@ -1168,13 +1190,13 @@
             detailsAmenitiesSummary.textContent = selectedAmenities.length
                 ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
                 : '';
-            detailsEventTitle.textContent = selectedEvent ? selectedEvent.title : 'None';
-            detailsEventSummary.textContent = selectedEvent
-                ? `${selectedEvent.guests} guests${selectedEvent.date ? ` • ${formatDisplayDate(selectedEvent.date)}` : ''}${selectedEvent.startTime ? ` • ${formatDisplayTime(selectedEvent.startTime)} - ${formatDisplayTime(selectedEvent.endTime)}` : ''}`
+            detailsEventTitle.textContent = selectedEvent.length ? selectedEvent.map(item => item.title).join(', ') : 'None';
+            detailsEventSummary.textContent = selectedEvent.length
+                ? selectedEvent.map(item => `${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}`).join(', ')
                 : '';
-            detailsDiningTitle.textContent = selectedDining ? `${selectedDining.title}${selectedDining.schedule ? ` • ${selectedDining.schedule}` : ''}` : 'None';
-            detailsDiningSummary.textContent = selectedDining
-                ? `${selectedDining.table ? `Table ${selectedDining.table}` : ''}${selectedDining.date ? ` • ${formatDisplayDate(selectedDining.date)}` : ''}`
+            detailsDiningTitle.textContent = selectedDining.length ? selectedDining.map(item => `${item.title}${item.schedule ? ` • ${item.schedule}` : ''}`).join(', ') : 'None';
+            detailsDiningSummary.textContent = selectedDining.length
+                ? selectedDining.map(item => `${item.table ? `Table ${item.table}` : ''}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}`).filter(Boolean).join(', ') || 'No table selected'
                 : '';
 
             confirmReservationId.textContent = selectedRoom ? `RES-${Math.floor(Math.random() * 9000) + 1000}` : 'RES-0000';
@@ -1206,22 +1228,22 @@
             confirmAmenities.textContent = selectedAmenities.length
                 ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
                 : 'No amenities selected';
-            confirmEventTitle.textContent = selectedEvent?.title || 'None';
-            confirmEventDining.textContent = selectedEvent
-                ? `${selectedEvent.type || 'Event'} • ${selectedEvent.guests} guests${selectedEvent.date ? ` • ${formatDisplayDate(selectedEvent.date)}` : ''}${selectedEvent.startTime ? ` • ${formatDisplayTime(selectedEvent.startTime)} - ${formatDisplayTime(selectedEvent.endTime)}` : ''}`
+            confirmEventTitle.textContent = selectedEvent.length ? selectedEvent.map(item => item.title).join(', ') : 'None';
+            confirmEventDining.textContent = selectedEvent.length
+                ? selectedEvent.map(item => `${item.type || 'Event'} • ${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}`).join(', ')
                 : 'No event selected';
-            confirmDiningTitle.textContent = selectedDining ? `${selectedDining.title} • ${selectedDining.schedule || 'Dining'}` : 'None';
-            confirmDiningDetails.textContent = selectedDining
-                ? `${selectedDining.table ? `Table ${selectedDining.table}` : 'Table not selected'}${selectedDining.date ? ` • ${formatDisplayDate(selectedDining.date)}` : ''}${selectedDining.schedule ? ` • ${selectedDining.schedule} time` : ''}`
+            confirmDiningTitle.textContent = selectedDining.length ? selectedDining.map(item => `${item.title}${item.schedule ? ` • ${item.schedule}` : ''}`).join(', ') : 'None';
+            confirmDiningDetails.textContent = selectedDining.length
+                ? selectedDining.map(item => `${item.table ? `Table ${item.table}` : 'Table not selected'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.schedule ? ` • ${item.schedule} time` : ''}`).join(', ')
                 : 'No dining selected';
             confirmGuestName.textContent = detailsGuestName.value || 'Guest';
             confirmGuestEmail.textContent = detailsGuestEmail.value || 'guest@example.com';
             confirmGuestPhone.textContent = detailsGuestPhone.value || '0000000000';
             confirmSpecialRequest.textContent = detailsSpecialRequest.value || 'None';
             confirmRoomCharge.textContent = `₱${roomPrice.toLocaleString()}`;
-            confirmAmenitiesCharge.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + (item.price * item.quantity), 0).toLocaleString()}`;
-            confirmEventCharge.textContent = `₱${(selectedEvent ? selectedEvent.price : 0).toLocaleString()}`;
-            confirmDiningCharge.textContent = `₱${(selectedDining ? selectedDining.price : 0).toLocaleString()}`;
+            confirmAmenitiesCharge.textContent = `₱${sumItemTotal(selectedAmenities).toLocaleString()}`;
+            confirmEventCharge.textContent = `₱${selectedEvent.reduce((sum, item) => sum + (Number(item.price || 0)), 0).toLocaleString()}`;
+            confirmDiningCharge.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
             confirmExtraGuestCharge.textContent = `₱${(selectedExtraGuests * selectedExtraGuestPrice).toLocaleString()}`;
             confirmTotalAmount.textContent = `₱${calculateTotal().toLocaleString()}`;
             const paymentTotal = `₱${calculateTotal().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -1233,14 +1255,14 @@
             reservationCheckOut.value = checkOut.value;
             reservationCheckInTime.value = arrivalTime.value || '';
             reservationCheckOutTime.value = '';
-            reservationDiningId.value = selectedDining ? selectedDining.id : '';
-            reservationDiningArea.value = selectedDining ? selectedDining.table : '';
-            reservationDiningSchedule.value = selectedDining ? selectedDining.schedule : '';
-            reservationDiningQuantity.value = selectedDining ? '1' : '';
-            reservationAmenityId.value = selectedAmenities[0]?.id || '';
-            reservationEventPlaceId.value = selectedEvent?.id || '';
-            reservationEventType.value = selectedEvent?.type || '';
-            reservationEventGuests.value = selectedEvent?.guests || '';
+            reservationDiningId.value = selectedDining.map(item => item.id).filter(Boolean).join(',');
+            reservationDiningArea.value = selectedDining.map(item => item.table).filter(Boolean).join(',');
+            reservationDiningSchedule.value = selectedDining.map(item => item.schedule).filter(Boolean).join(',');
+            reservationDiningQuantity.value = selectedDiningQuantity || '';
+            reservationAmenityId.value = selectedAmenities.map(item => item.id).filter(Boolean).join(',');
+            reservationEventPlaceId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
+            reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
+            reservationEventGuests.value = selectedEventGuests || '';
             reservationTotalAmount.value = total;
             reservationCheckIn.value = checkIn.value;
             reservationCheckOut.value = checkOut.value;
@@ -1262,24 +1284,58 @@
         });
 
         const calculateTotal = () => {
-            const amenitiesTotal = selectedAmenities.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const eventTotal = selectedEvent ? selectedEvent.price : 0;
-            const diningTotal = selectedDining ? selectedDining.price : 0;
+            const amenitiesTotal = sumItemTotal(selectedAmenities);
+            const eventTotal = selectedEvent.reduce((sum, item) => sum + (Number(item.price || 0)), 0);
+            const diningTotal = selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0);
             const extraGuestsTotal = selectedExtraGuests * selectedExtraGuestPrice;
             return roomPrice + amenitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
         };
 
-        diningSchedule.addEventListener('change', function () {
-            if (selectedDining) {
-                selectedDining.schedule = this.value;
+        const syncDiningQuantity = (card, nextValue) => {
+            const input = card.querySelector('.dining-quantity');
+            if (!input) {
+                return;
+            }
+            const validValue = Math.max(1, Number(nextValue) || 1);
+            input.value = validValue;
+            const selectedDiningItem = selectedDining.find(item => item.id === card.dataset.diningId);
+            if (selectedDiningItem) {
+                selectedDiningItem.quantity = validValue;
                 updateSummary();
             }
+        };
+
+        document.querySelectorAll('.qty-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const card = this.closest('.reservation-card');
+                const input = card?.querySelector('.dining-quantity');
+                if (!input) {
+                    return;
+                }
+                const currentValue = Number(input.value) || 1;
+                const delta = this.classList.contains('qty-increase') ? 1 : -1;
+                syncDiningQuantity(card, currentValue + delta);
+            });
+        });
+
+        document.querySelectorAll('.dining-quantity').forEach(input => {
+            input.addEventListener('change', function () {
+                const card = this.closest('.reservation-card');
+                syncDiningQuantity(card, this.value);
+            });
+        });
+
+        diningSchedule.addEventListener('change', function () {
+            selectedDining.forEach(item => {
+                item.schedule = this.value;
+            });
+            updateSummary();
         });
         diningTable.addEventListener('change', function () {
-            if (selectedDining) {
-                selectedDining.table = this.value;
-                updateSummary();
-            }
+            selectedDining.forEach(item => {
+                item.table = this.value;
+            });
+            updateSummary();
         });
 
         document.querySelectorAll('.amenity-quantity, .amenity-date, .amenity-time').forEach(input => {
@@ -1298,21 +1354,22 @@
         document.querySelectorAll('.event-date, .event-start-time, .event-end-time, .event-guests').forEach(input => {
             input.addEventListener('change', function () {
                 const card = this.closest('.reservation-card');
-                if (selectedEvent?.id === card.dataset.eventId) {
-                    selectedEvent.guests = Number(card.querySelector('.event-guests')?.value || 1);
-                    selectedEvent.date = card.querySelector('.event-date')?.value || '';
-                    selectedEvent.startTime = card.querySelector('.event-start-time')?.value || '';
-                    selectedEvent.endTime = card.querySelector('.event-end-time')?.value || '';
+                const eventItem = selectedEvent.find(item => item.id === card.dataset.eventId);
+                if (eventItem) {
+                    eventItem.guests = Number(card.querySelector('.event-guests')?.value || 1);
+                    eventItem.date = card.querySelector('.event-date')?.value || '';
+                    eventItem.startTime = card.querySelector('.event-start-time')?.value || '';
+                    eventItem.endTime = card.querySelector('.event-end-time')?.value || '';
                     updateSummary();
                 }
             });
         });
 
         document.getElementById('diningDate').addEventListener('change', function () {
-            if (selectedDining) {
-                selectedDining.date = this.value;
-                updateSummary();
-            }
+            selectedDining.forEach(item => {
+                item.date = this.value;
+            });
+            updateSummary();
         });
 
         document.querySelectorAll('.room-extra-guests').forEach(select => {
@@ -1332,7 +1389,6 @@
                 const price = Number(this.dataset.price);
                 const card = this.closest('.reservation-card');
                 const category = card.dataset.category;
-                const dataId = `${category}:${title}`;
 
                 if (category === 'room') {
                     selectedRoom = title;
@@ -1362,45 +1418,52 @@
                         });
                         this.textContent = 'Added';
                         this.disabled = true;
+                    } else {
+                        selectedAmenities.splice(itemIndex, 1);
+                        this.textContent = 'Add to Reservation';
+                        this.disabled = false;
                     }
                 } else if (category === 'event_place') {
-                    if (selectedEvent) {
-                        const previousEventBtn = Array.from(items).find(btn => btn.closest('.reservation-card').dataset.category === 'event_place' && btn.textContent === 'Selected');
-                        if (previousEventBtn) {
-                            previousEventBtn.textContent = 'Add to Reservation';
-                            previousEventBtn.disabled = false;
-                        }
+                    const eventIndex = selectedEvent.findIndex(item => item.id === card.dataset.eventId);
+                    if (eventIndex === -1) {
+                        selectedEvent.push({
+                            id: card.dataset.eventId,
+                            type: card.dataset.eventType,
+                            title,
+                            price,
+                            guests: Number(card.querySelector('.event-guests')?.value || 1),
+                            date: card.querySelector('.event-date')?.value || '',
+                            startTime: card.querySelector('.event-start-time')?.value || '',
+                            endTime: card.querySelector('.event-end-time')?.value || '',
+                        });
+                        this.textContent = 'Added';
+                        this.disabled = true;
+                    } else {
+                        selectedEvent.splice(eventIndex, 1);
+                        this.textContent = 'Add to Reservation';
+                        this.disabled = false;
                     }
-                    selectedEvent = {
-                        id: card.dataset.eventId,
-                        type: card.dataset.eventType,
-                        title,
-                        price,
-                        guests: Number(card.querySelector('.event-guests')?.value || 1),
-                        date: card.querySelector('.event-date')?.value || '',
-                        startTime: card.querySelector('.event-start-time')?.value || '',
-                        endTime: card.querySelector('.event-end-time')?.value || '',
-                    };
-                    this.textContent = 'Selected';
-                    this.disabled = true;
                 } else if (category === 'dining') {
-                    if (selectedDining) {
-                        const previousDiningBtn = Array.from(items).find(btn => btn.closest('.reservation-card').dataset.category === 'dining' && btn.textContent === 'Selected');
-                        if (previousDiningBtn) {
-                            previousDiningBtn.textContent = 'Add to Reservation';
-                            previousDiningBtn.disabled = false;
-                        }
+                    const diningIndex = selectedDining.findIndex(item => item.id === card.dataset.diningId);
+                    const quantity = Number(card.querySelector('.dining-quantity')?.value || 1);
+                    if (diningIndex === -1) {
+                        selectedDining.push({
+                            id: card.dataset.diningId,
+                            title,
+                            price,
+                            schedule: diningSchedule.value || card.dataset.schedule || '',
+                            table: diningTable.value || '',
+                            date: document.getElementById('diningDate')?.value || '',
+                            quantity,
+                        });
+                        this.textContent = 'Added';
+                        this.disabled = true;
+                    } else {
+                        selectedDining[diningIndex].quantity = quantity;
+                        selectedDining.splice(diningIndex, 1);
+                        this.textContent = 'Add to Reservation';
+                        this.disabled = false;
                     }
-                    selectedDining = {
-                        id: card.dataset.diningId,
-                        title,
-                        price,
-                        schedule: diningSchedule.value || card.dataset.schedule || '',
-                        table: diningTable.value || '',
-                        date: document.getElementById('diningDate')?.value || '',
-                    };
-                    this.textContent = 'Selected';
-                    this.disabled = true;
                 }
 
                 updateSummary();
@@ -1641,8 +1704,10 @@
             reservationGuestEmail.value = detailsGuestEmail.value || 'guest@example.com';
             reservationGuestPhone.value = detailsGuestPhone.value || '0000000000';
             reservationSpecialRequests.value = detailsSpecialRequest.value;
-            reservationCheckInTime.value = selectedEvent?.startTime || selectedAmenities[0]?.time || arrivalTime.value || '';
-            reservationCheckOutTime.value = selectedEvent?.endTime || '';
+            const firstEventSelection = selectedEvent[0] || null;
+            const firstAmenitySelection = selectedAmenities[0] || null;
+            reservationCheckInTime.value = firstEventSelection?.startTime || firstAmenitySelection?.time || arrivalTime.value || '';
+            reservationCheckOutTime.value = firstEventSelection?.endTime || reservationCheckInTime.value || '';
             const paymentMethodInput = document.createElement('input');
             paymentMethodInput.type = 'hidden';
             paymentMethodInput.name = 'payment_method';
@@ -1654,8 +1719,8 @@
         clearBtn.addEventListener('click', function () {
             selectedRoom = null;
             selectedAmenities = [];
-            selectedEvent = null;
-            selectedDining = null;
+            selectedEvent = [];
+            selectedDining = [];
             diningSchedule.value = '';
             diningTable.value = '';
             selectedPaymentMethod = 'Cash / Pay at Hotel';

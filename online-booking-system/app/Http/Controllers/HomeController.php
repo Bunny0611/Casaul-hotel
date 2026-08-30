@@ -92,8 +92,36 @@ class HomeController extends Controller
         return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningSchedules', 'diningTables'));
     }
 
+    private function normalizeIdList($value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_array($value)) {
+            $ids = $value;
+        } else {
+            $ids = explode(',', (string) $value);
+        }
+
+        $normalized = collect($ids)
+            ->map(fn ($id) => trim((string) $id))
+            ->filter(fn ($id) => $id !== '' && $id !== 'null')
+            ->unique()
+            ->values()
+            ->all();
+
+        return $normalized ? implode(',', $normalized) : null;
+    }
+
     public function storeReservation(Request $request)
     {
+        $request->merge([
+            'amenity_id' => $this->normalizeIdList($request->input('amenity_id')),
+            'event_place_id' => $this->normalizeIdList($request->input('event_place_id')),
+            'dining_id' => $this->normalizeIdList($request->input('dining_id')),
+        ]);
+
         $validated = $request->validate([
             'room_id' => 'required|exists:rooms,id',
             'check_in' => 'required|date|after_or_equal:today',
@@ -105,30 +133,65 @@ class HomeController extends Controller
             'guest_phone' => 'required|string|max:20',
             'total_amount' => 'required|numeric|min:0',
             'special_requests' => 'nullable|string',
-            'dining_id' => 'nullable|exists:dining_menus,id',
+            'dining_id' => 'nullable|string',
             'dining_area' => 'nullable|string|max:100',
             'dining_schedule' => 'nullable|string|max:100',
             'quantity' => 'nullable|integer|min:1',
-            'amenity_id' => 'nullable|exists:amenities,id',
-            'event_place_id' => 'nullable|exists:event_places,id',
+            'amenity_id' => 'nullable|string',
+            'event_place_id' => 'nullable|string',
             'event_type' => 'nullable|string|max:100',
             'number_of_guests' => 'nullable|integer|min:1',
             'submission_token' => 'nullable|string|max:100',
         ]);
 
+        if (!empty($validated['amenity_id'])) {
+            $amenityIds = collect(explode(',', $validated['amenity_id']))
+                ->map(fn ($id) => trim((string) $id))
+                ->filter(fn ($id) => $id !== '')
+                ->all();
+
+            $invalidAmenityIds = collect($amenityIds)->filter(fn ($id) => !Amenity::whereKey($id)->exists())->values()->all();
+            abort_if(!empty($invalidAmenityIds), 422, 'One or more selected amenities are invalid.');
+
+            $validated['amenity_id'] = implode(',', $amenityIds);
+            $selectedAmenityQuantity = (int) ($validated['quantity'] ?? 1);
+            foreach ($amenityIds as $amenityId) {
+                $amenity = Amenity::find($amenityId);
+                abort_if($amenity?->capacity && $selectedAmenityQuantity > $amenity->capacity, 422, 'The selected amenity quantity exceeds its capacity.');
+            }
+        }
+
+        if (!empty($validated['event_place_id'])) {
+            $eventPlaceIds = collect(explode(',', $validated['event_place_id']))
+                ->map(fn ($id) => trim((string) $id))
+                ->filter(fn ($id) => $id !== '')
+                ->all();
+
+            $invalidEventIds = collect($eventPlaceIds)->filter(fn ($id) => !EventPlace::whereKey($id)->exists())->values()->all();
+            abort_if(!empty($invalidEventIds), 422, 'One or more selected event packages are invalid.');
+
+            $validated['event_place_id'] = implode(',', $eventPlaceIds);
+            foreach ($eventPlaceIds as $eventPlaceId) {
+                $eventPlace = EventPlace::find($eventPlaceId);
+                abort_if($eventPlace?->capacity && !empty($validated['number_of_guests']) && $validated['number_of_guests'] > $eventPlace->capacity, 422, 'The selected guest count exceeds the package capacity.');
+            }
+        }
+
+        if (!empty($validated['dining_id'])) {
+            $diningIds = collect(explode(',', $validated['dining_id']))
+                ->map(fn ($id) => trim((string) $id))
+                ->filter(fn ($id) => $id !== '')
+                ->all();
+
+            $invalidDiningIds = collect($diningIds)->filter(fn ($id) => !DiningMenu::whereKey($id)->exists())->values()->all();
+            abort_if(!empty($invalidDiningIds), 422, 'One or more selected dining items are invalid.');
+            $validated['dining_id'] = implode(',', $diningIds);
+        }
+
         if ($guest = Auth::guard('guest')->user()) {
             $validated['guest_name'] = $guest->name;
             $validated['guest_email'] = $guest->email;
             $validated['guest_phone'] = $guest->contact_no;
-        }
-
-        if (!empty($validated['amenity_id']) && !empty($validated['quantity'])) {
-            $amenity = Amenity::find($validated['amenity_id']);
-            abort_if($amenity?->capacity && $validated['quantity'] > $amenity->capacity, 422, 'The selected amenity quantity exceeds its capacity.');
-        }
-        if (!empty($validated['event_place_id']) && !empty($validated['number_of_guests'])) {
-            $eventPlace = EventPlace::find($validated['event_place_id']);
-            abort_if($eventPlace?->capacity && $validated['number_of_guests'] > $eventPlace->capacity, 422, 'The selected guest count exceeds the package capacity.');
         }
 
         $submissionToken = $validated['submission_token'] ?? null;
@@ -141,6 +204,10 @@ class HomeController extends Controller
         }
 
         unset($validated['submission_token']);
+
+        if (empty($validated['check_out_time']) && !empty($validated['check_in_time'])) {
+            $validated['check_out_time'] = $validated['check_in_time'];
+        }
 
         Reservation::create(array_merge($validated, ['status' => 'pending']));
 
