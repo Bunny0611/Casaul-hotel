@@ -214,6 +214,45 @@ class HousekeepingController extends Controller
         return view('housekeeping.guest-request-details', compact('request', 'requestData'));
     }
 
+    public function updateGuestRequest(Request $request, $id)
+    {
+        $guestRequest = GuestRequest::findOrFail($id);
+        
+        $validated = $request->validate([
+            'notes' => 'nullable|string',
+            'status' => 'nullable|string|in:New,In Progress,Delivered,Completed',
+        ]);
+
+        if (isset($validated['notes'])) {
+            $guestRequest->employee_notes = $validated['notes'];
+        }
+
+        if (isset($validated['status'])) {
+            $guestRequest->status = $validated['status'];
+        }
+
+        $guestRequest->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Guest request updated successfully',
+            'data' => $guestRequest,
+        ]);
+    }
+
+    public function markGuestRequestDelivered(Request $request, $id)
+    {
+        $guestRequest = GuestRequest::findOrFail($id);
+        $guestRequest->status = 'Delivered';
+        $guestRequest->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Guest request marked as delivered',
+            'data' => $guestRequest,
+        ]);
+    }
+
     public function maintenanceReport()
     {
         $reports = MaintenanceReport::latest('date_reported')->get();

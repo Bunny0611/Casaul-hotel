@@ -263,7 +263,7 @@
 
     .request-content-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+        grid-template-columns: 1fr;
         gap: 20px;
     }
 
@@ -369,9 +369,16 @@
 
     .new-badge { margin-top: 5px; color: #2563eb; background: #dbeafe; }
     .addon-badge { color: #dc2626; background: #fee2e2; }
-    .status-badge { color: #475569; background: transparent; padding-left: 0; }
+    .status-badge { display: inline-block; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; }
     .status-badge::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #f59e0b; }
+    .status-badge { color: #92400e; background: #fef3c7; }
+    .status-badge.new { color: #2563eb; background: #dbeafe; }
+    .status-badge.new::before { background: #2563eb; }
+    .status-badge.in-progress { color: #1d4ed8; background: #eff6ff; }
     .status-badge.in-progress::before { background: #2563eb; }
+    .status-badge.delivered { color: #047857; background: #ecfdf5; }
+    .status-badge.delivered::before { background: #10b981; }
+    .status-badge.completed { color: #047857; background: #ecfdf5; }
     .status-badge.completed::before { background: #10b981; }
 
     .guest-name, .room-name { display: block; color: #273449; font-weight: 600; }
@@ -427,6 +434,7 @@
     .all-requests-table td:nth-child(5), .all-requests-table td:nth-child(6), .all-requests-table td:nth-child(8) { overflow-wrap: anywhere; }
     .all-request-status { display: inline-block; min-width: 76px; padding: 5px 8px; border-radius: 6px; color: #92400e; background: #fff7ed; font-size: 10px; font-weight: 600; }
     .all-request-status.progress { color: #1d4ed8; background: #eff6ff; }
+    .all-request-status.delivered { color: #047857; background: #ecfdf5; }
     .all-request-status.completed { color: #047857; background: #ecfdf5; }
     .priority-high, .priority-medium, .priority-low { display: inline-block; padding: 4px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; }
     .priority-high { color: #b91c1c; background: #fee2e2; }
@@ -862,7 +870,7 @@
                     <h2>Guest Requests</h2>
 
                     <p class="request-hero-description">
-                        A clear view of guest messages and service needs for the day.
+                        A clear view of guest requests and service needs for the day.
                     </p>
                 </div>
 
@@ -882,7 +890,7 @@
                 <div class="stat-top">
 
                     <div>
-                        <p class="stat-label">Pending Messages</p>
+                        <p class="stat-label">Pending Requests</p>
 
                         <h2 class="stat-number">
                             {{ $stats['pending'] }}
@@ -906,7 +914,7 @@
                 <div class="stat-top">
 
                     <div>
-                        <p class="stat-label">Resolved Messages</p>
+                        <p class="stat-label">Resolved Requests</p>
 
                         <h2 class="stat-number">
                             {{ $stats['resolved'] }}
@@ -930,7 +938,7 @@
                 <div class="stat-top">
 
                     <div>
-                        <p class="stat-label">Total Messages</p>
+                        <p class="stat-label">Total Requests</p>
 
                         <h2 class="stat-number">
                             {{ $stats['total'] }}
@@ -1388,7 +1396,7 @@ function openGuestRequest(requestId) {
         document.getElementById('summaryRequestedOn').textContent = request.submittedShort || '—';
         document.getElementById('summaryGuestName').innerHTML = request.guest + '<br><small>(Guest)</small>';
         document.getElementById('summaryBooking').innerHTML = request.room + '<br>' + request.checkIn + ' - ' + request.checkOut;
-        document.getElementById('housekeepingNotes').value = localStorage.getItem('housekeeping-request-notes-' + request.requestId) || '';
+        document.getElementById('housekeepingNotes').value = '';
         const summaryRow = document.querySelector('.details-card.summary-card');
         if (summaryRow) {
             const before = summaryRow.querySelector('.summary-total strong');
@@ -1414,23 +1422,76 @@ renderAllRequestsTable();
 let currentGuestRequestId = null;
 
 function saveRequestProgress() {
-    if (!currentGuestRequestId) return;
-    localStorage.setItem(
-        'housekeeping-request-notes-' + currentGuestRequestId,
-        document.getElementById('housekeepingNotes').value
-    );
-    alert('Housekeeping progress saved.');
+    if (!currentGuestRequestId) {
+        alert('Please select a request first.');
+        return;
+    }
+
+    const notes = document.getElementById('housekeepingNotes').value;
+    const requestId = String(currentGuestRequestId).replace(/^REQ-/, '').trim();
+
+    fetch(`/housekeeping/guest-requests/${requestId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+        },
+        body: JSON.stringify({
+            notes: notes,
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Housekeeping progress saved successfully.');
+            localStorage.setItem('housekeeping-request-notes-' + currentGuestRequestId, notes);
+        } else {
+            alert('Error saving progress: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving progress: ' + error.message);
+    });
 }
 
 function markAllDelivered() {
-    if (!currentGuestRequestId) return;
-    document.querySelectorAll('.addon-status').forEach((element) => {
-        element.classList.add('delivered');
-        element.innerHTML = 'Delivered <i class="fas fa-chevron-down"></i>';
+    if (!currentGuestRequestId) {
+        alert('Please select a request first.');
+        return;
+    }
+
+    const requestId = String(currentGuestRequestId).replace(/^REQ-/, '').trim();
+
+    fetch(`/housekeeping/guest-requests/${requestId}/mark-delivered`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+        },
+        body: JSON.stringify({}),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelectorAll('.addon-status').forEach((element) => {
+                element.classList.add('delivered');
+                element.textContent = 'Delivered';
+            });
+            document.getElementById('detailsPageStatus').innerHTML = '<i class="fas fa-check-circle"></i> Status: Delivered';
+            localStorage.setItem('housekeeping-request-status-' + currentGuestRequestId, 'Delivered');
+            alert('All requested add-ons marked as delivered.');
+            
+            // Reload the page to refresh the data
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            alert('Error marking as delivered: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error marking as delivered: ' + error.message);
     });
-    document.getElementById('detailsPageStatus').innerHTML = '<i class="fas fa-check-circle"></i> Status: Completed';
-    localStorage.setItem('housekeeping-request-status-' + currentGuestRequestId, 'Completed');
-    alert('All requested add-ons marked as delivered.');
 }
 
 function restoreRequestList() {
