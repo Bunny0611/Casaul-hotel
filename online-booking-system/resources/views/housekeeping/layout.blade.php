@@ -241,6 +241,15 @@
                 </a>
 
                 <a
+                    href="{{ route('housekeeping.messages') }}"
+                    class="nav-item px-5 py-3.5
+                    {{ request()->routeIs('housekeeping.messages') ? 'active' : '' }}"
+                >
+                    <i class="fas fa-comment-dots w-6"></i>
+                    <span>Messages</span>
+                </a>
+
+                <a
                     href="{{ route('housekeeping.maintenance-report') }}"
                     class="nav-item px-5 py-3.5
                     {{ request()->routeIs('housekeeping.maintenance-report') ? 'active' : '' }}"

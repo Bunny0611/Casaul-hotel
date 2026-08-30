@@ -9,6 +9,7 @@ use App\Models\Room;
 use App\Models\Reservation;
 use App\Models\Staff;
 use App\Models\MaintenanceReport;
+use App\Models\Message;
 
 class HousekeepingController extends Controller
 {
@@ -176,6 +177,43 @@ class HousekeepingController extends Controller
         return view('housekeeping.guest-requests', compact('requests', 'groupedRequests', 'stats'));
     }
 
+    public function guestRequestDetails($id)
+    {
+        $request = GuestRequest::with(['guest', 'room', 'reservation'])
+            ->where('department', 'Housekeeping')
+            ->findOrFail($id);
+
+        $requestData = [
+            'id' => $request->id,
+            'requestId' => 'REQ-' . str_pad($request->id, 4, '0', STR_PAD_LEFT),
+            'reservation' => $request->reservation ? 'RES-' . str_pad($request->reservation->id, 4, '0', STR_PAD_LEFT) : 'N/A',
+            'guest' => $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest',
+            'room' => $request->room ? ($request->room->room_type ? $request->room->room_type . ' - ' . $request->room->room_number : $request->room->room_number) : 'Room info unavailable',
+            'checkIn' => $request->reservation?->check_in ? $request->reservation->check_in->format('M d, Y') : '—',
+            'checkOut' => $request->reservation?->check_out ? $request->reservation->check_out->format('M d, Y') : '—',
+            'nights' => $request->reservation ? (($request->reservation->nights ?? '1') . ' Nights') : '—',
+            'status' => $request->status,
+            'requestType' => $request->request_type,
+            'description' => $request->description,
+            'preferredTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : 'Not specified',
+            'priority' => $request->priority,
+            'submitted' => $request->submitted_at ? $request->submitted_at->format('M d, Y \a\t g:i A') : '—',
+            'submittedShort' => $request->submitted_at ? $request->submitted_at->format('M d, Y') : '—',
+            'quantity' => (int) ($request->quantity ?? 1),
+            'guestNote' => $request->description ?: 'No note provided',
+            'specialRequest' => $request->description ?: 'No special request.',
+            'estimatedArrivalTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : '—',
+            'items' => [[
+                'request_type' => $request->request_type,
+                'quantity' => (int) ($request->quantity ?? 1),
+                'status' => $request->status,
+                'guest_note' => $request->description ?: 'No note provided',
+            ]],
+        ];
+
+        return view('housekeeping.guest-request-details', compact('request', 'requestData'));
+    }
+
     public function maintenanceReport()
     {
         $reports = MaintenanceReport::latest('date_reported')->get();
@@ -256,6 +294,21 @@ class HousekeepingController extends Controller
             ->where('status', 'completed')->latest('finished_at')->get();
 
         return view('housekeeping.cleaning-history', compact('tasks'));
+    }
+
+    public function messages()
+    {
+        $messages = Message::latest()->get();
+        
+        $stats = [
+            'unread' => $messages->where('is_replied', false)->count(),
+            'replied' => $messages->where('is_replied', true)->count(),
+            'total' => $messages->count(),
+        ];
+        
+        $dateFilter = 'today';
+
+        return view('housekeeping.messages', compact('messages', 'stats', 'dateFilter'));
     }
 
     public function updateStatus(Request $request, $id)

@@ -1022,15 +1022,7 @@
                 </div>
             </div>
 
-            <div class="request-side-stack">
-                <div class="request-panel">
-                    <div class="panel-header">
-                        <div class="panel-title"><div class="panel-title-icon"><i class="fas fa-comment-dots"></i></div><h3>Guest Message Box</h3></div>
-                        <span class="panel-date"><i class="far fa-calendar-alt"></i> Today</span>
-                    </div>
-                    <div class="panel-body"><div class="empty-state"><div class="empty-state-content"><div class="empty-icon"><i class="fas fa-comments"></i></div><h4>No new messages</h4><p>You're all caught up!</p></div></div></div>
-                </div>
-            </div>
+
         </section>
 
     </div>
@@ -1126,7 +1118,7 @@
 
                 <div class="details-lower specific-request-content">
                     <div class="details-card"><h3><i class="far fa-comment"></i> Special Request</h3><div id="specialRequestText" class="details-note">No request selected.</div></div>
-                    <div class="details-card"><h3><i class="far fa-clock"></i> Estimated Arrival Time</h3><div class="details-note"><strong id="estimatedArrivalTimeText">—</strong> <i class="fas fa-chevron-down" style="float:right"></i></div></div>
+                    <div class="details-card"><h3><i class="far fa-clock"></i> Estimated Arrival Time</h3><div class="details-note"><strong id="estimatedArrivalTimeText">—</strong> </div></div>
                 </div>
                 <div class="details-card specific-request-content"><h3><i class="far fa-edit"></i> Housekeeping Notes</h3><textarea id="housekeepingNotes" class="details-note" placeholder="Enter notes about request fulfillment, delivery time, or any issues..."></textarea></div>
                 <div class="details-actions specific-request-content"><button type="button" class="details-action" onclick="saveRequestProgress()">Save Progress</button><button type="button" class="details-action primary" onclick="markAllDelivered()">Mark All as Delivered</button></div>
@@ -1267,6 +1259,7 @@
 
 <script>
 const requestData = @json($requestData ?? []);
+const guestRequestDetailRoute = "{{ route('housekeeping.guest-requests.show', ['id' => '__ID__']) }}";
 
 function renderAllRequestsTable() {
     const tbody = document.getElementById('allRequestsTableBody');

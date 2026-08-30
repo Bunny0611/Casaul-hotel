@@ -47,6 +47,32 @@ class EmployeeGuestRequestsTest extends TestCase
             ->assertDontSee('Late Checkout');
     }
 
+    public function test_housekeeping_request_details_page_shows_selected_request(): void
+    {
+        $housekeepingStaff = Staff::factory()->create(['role' => 'housekeeping']);
+        $guest = Guest::factory()->create();
+
+        $request = GuestRequest::create([
+            'guest_id' => $guest->id,
+            'reservation_id' => null,
+            'room_id' => null,
+            'request_type' => 'Extra Towels',
+            'description' => 'Need extra towels for the room.',
+            'department' => 'Housekeeping',
+            'priority' => 'Normal',
+            'preferred_time' => '15:00',
+            'status' => 'Completed',
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($housekeepingStaff)
+            ->get(route('housekeeping.guest-requests.show', $request))
+            ->assertOk()
+            ->assertSee('Housekeeping Add-On Request')
+            ->assertSee('Extra Towels')
+            ->assertSee('Need extra towels for the room.');
+    }
+
     public function test_guest_can_submit_multiple_housekeeping_requests_with_quantity(): void
     {
         $guest = Guest::factory()->create();
