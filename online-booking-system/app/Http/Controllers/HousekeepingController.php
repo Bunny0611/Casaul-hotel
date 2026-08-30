@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\GuestRequest;
 use App\Models\HousekeepingTask;
 use App\Models\Room;
 use App\Models\Reservation;
@@ -118,7 +119,61 @@ class HousekeepingController extends Controller
 
     public function guestRequests()
     {
-        return view('housekeeping.guest-requests');
+        $requests = GuestRequest::with(['guest', 'room', 'reservation'])
+            ->where('department', 'Housekeeping')
+            ->latest('submitted_at')
+            ->get();
+
+        $groupedRequests = $requests->groupBy(function ($request) {
+            $signature = [
+                $request->guest_id ?? 'guest',
+                $request->reservation_id ?? 'reservation',
+                $request->room_id ?? 'room',
+                trim((string) ($request->description ?? '')),
+                trim((string) ($request->preferred_time ?? '')),
+                trim((string) ($request->priority ?? '')),
+                trim((string) ($request->status ?? '')),
+                $request->submitted_at ? $request->submitted_at->toDateTimeString() : now()->toDateTimeString(),
+            ];
+
+            return md5(implode('|', $signature));
+        })->map(function ($group) {
+            $first = $group->first();
+
+            return (object) [
+                'id' => $first->id,
+                'guest_id' => $first->guest_id,
+                'reservation_id' => $first->reservation_id,
+                'room_id' => $first->room_id,
+                'guest' => $first->guest,
+                'room' => $first->room,
+                'reservation' => $first->reservation,
+                'request_type' => $group->pluck('request_type')->unique()->implode(', '),
+                'description' => $first->description,
+                'department' => $first->department,
+                'priority' => $first->priority,
+                'preferred_time' => $first->preferred_time,
+                'status' => $first->status,
+                'quantity' => $group->sum(fn ($item) => (int) ($item->quantity ?? 1)),
+                'submitted_at' => $first->submitted_at,
+                'items' => $group->map(fn ($item) => [
+                    'request_type' => $item->request_type,
+                    'quantity' => (int) ($item->quantity ?? 1),
+                    'status' => $item->status,
+                    'guest_note' => $item->description ?: 'No note provided',
+                ])->values()->all(),
+            ];
+        })->values();
+
+        $requests = $groupedRequests;
+
+        $stats = [
+            'pending' => $groupedRequests->whereIn('status', ['New', 'In Progress'])->count(),
+            'resolved' => $groupedRequests->where('status', 'Completed')->count(),
+            'total' => $groupedRequests->count(),
+        ];
+
+        return view('housekeeping.guest-requests', compact('requests', 'groupedRequests', 'stats'));
     }
 
     public function maintenanceReport()

@@ -3,11 +3,44 @@
 @section('content')
 
 @php
-    $stats = [
+    $pendingStatuses = ['New', 'In Progress'];
+    $stats = $stats ?? [
         'pending' => 0,
         'resolved' => 0,
         'total' => 0,
     ];
+
+    $requestData = ($groupedRequests ?? ($requests ?? collect()))->map(function ($request) {
+        $items = is_array($request->items ?? null) ? $request->items : [[
+            'request_type' => $request->request_type,
+            'quantity' => (int) ($request->quantity ?? 1),
+            'status' => $request->status,
+            'guest_note' => $request->description ?: 'No note provided',
+        ]];
+
+        return [
+            'id' => $request->id,
+            'requestId' => 'REQ-' . str_pad($request->id, 4, '0', STR_PAD_LEFT),
+            'reservation' => $request->reservation ? 'RES-' . str_pad($request->reservation->id, 4, '0', STR_PAD_LEFT) : 'N/A',
+            'guest' => $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest',
+            'room' => $request->room ? ($request->room->room_type ? $request->room->room_type . ' - ' . $request->room->room_number : $request->room->room_number) : 'Room info unavailable',
+            'checkIn' => $request->reservation?->check_in ? $request->reservation->check_in->format('M d, Y') : '—',
+            'checkOut' => $request->reservation?->check_out ? $request->reservation->check_out->format('M d, Y') : '—',
+            'nights' => $request->reservation ? (($request->reservation->nights ?? '1') . ' Nights') : '—',
+            'status' => $request->status,
+            'requestType' => $request->request_type,
+            'description' => $request->description,
+            'preferredTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : 'Not specified',
+            'priority' => $request->priority,
+            'submitted' => $request->submitted_at ? $request->submitted_at->format('M d, Y \a\t g:i A') : '—',
+            'submittedShort' => $request->submitted_at ? $request->submitted_at->format('M d, Y') : '—',
+            'quantity' => (int) ($request->quantity ?? 1),
+            'guestNote' => $request->description ?: 'No note provided',
+            'specialRequest' => $request->description ?: 'No special request.',
+            'estimatedArrivalTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : '—',
+            'items' => $items,
+        ];
+    })->values()->all();
 @endphp
 
 <style>
@@ -946,23 +979,46 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="6">
-                                    <div class="empty-state">
-                                        <div class="empty-state-content">
-                                            <div class="empty-icon"><i class="fas fa-inbox"></i></div>
-                                            <h4>No guest requests</h4>
-                                            <p>There are no add-on requests to display.</p>
+                            @forelse($groupedRequests ?? ($requests ?? collect()) as $request)
+                                <tr>
+                                    <td><strong>REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</strong></td>
+                                    <td>
+                                        <div><strong>{{ $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest' }}</strong></div>
+                                        <small>{{ $request->room?->room_number ?? 'Room info unavailable' }}</small>
+                                    </td>
+                                    <td>{{ $request->submitted_at ? $request->submitted_at->format('M d, Y') : '—' }}</td>
+                                    <td>{{ $request->request_type }}</td>
+                                    <td>
+                                        @php
+                                            $statusClass = strtolower(str_replace(' ', '-', $request->status));
+                                        @endphp
+                                        <span class="status-badge {{ $statusClass }}">{{ $request->status }}</span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="view-request-btn" onclick="openGuestRequest('REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}')">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="empty-state">
+                                            <div class="empty-state-content">
+                                                <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                                                <h4>No guest requests</h4>
+                                                <p>There are no housekeeping requests to display.</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </td>
-                            </tr>
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
                 <div class="request-table-footer">
-                    <span>Showing 0 to 0 of 0 requests</span>
-                    <div class="pagination"><button type="button" disabled aria-label="Previous page"><i class="fas fa-chevron-left"></i></button><button type="button" disabled aria-label="Current page">0</button><button type="button" disabled aria-label="Next page"><i class="fas fa-chevron-right"></i></button></div>
+                    <span>Showing {{ $requests->count() ? 1 : 0 }} to {{ $requests->count() }} of {{ $requests->count() }} requests</span>
+                    <div class="pagination"><button type="button" disabled aria-label="Previous page"><i class="fas fa-chevron-left"></i></button><button type="button" disabled aria-label="Current page">{{ $requests->count() ?: 0 }}</button><button type="button" disabled aria-label="Next page"><i class="fas fa-chevron-right"></i></button></div>
                 </div>
             </div>
 
@@ -997,22 +1053,37 @@
         <div id="detailsGrid" class="details-grid">
             <div class="details-main">
                 <div id="allRequestsCard" class="details-card">
-                    <h3><i class="fas fa-list"></i> All Requests <small style="color:#718096;font-size:10px;font-weight:400;text-transform:none;">0 total requests</small></h3>
+                    <h3><i class="fas fa-list"></i> All Requests <small style="color:#718096;font-size:10px;font-weight:400;text-transform:none;">{{ $requests->count() }} total requests</small></h3>
                     <div class="request-table-wrap">
                         <table class="all-requests-table">
                             <thead><tr><th>Request ID</th><th>Guest Name</th><th>Room Number</th><th>Request Type</th><th>Description / Preview</th><th>Preferred Time</th><th>Priority</th><th>Submitted Date / Time</th><th>Status</th><th>Action</th></tr></thead>
                             <tbody>
-                                <tr>
-                                    <td colspan="10">
-                                        <div class="empty-state">
-                                            <div class="empty-state-content">
-                                                <div class="empty-icon"><i class="fas fa-inbox"></i></div>
-                                                <h4>No guest requests</h4>
-                                                <p>There are no requests to display.</p>
+                                @forelse($groupedRequests ?? ($requests ?? collect()) as $request)
+                                    <tr>
+                                        <td>REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</td>
+                                        <td>{{ $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest' }}</td>
+                                        <td>{{ $request->room?->room_number ?? '—' }}</td>
+                                        <td>{{ $request->request_type }}</td>
+                                        <td>{{ Str::limit($request->description, 55) }}</td>
+                                        <td>{{ $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : 'Not specified' }}</td>
+                                        <td>{{ $request->priority }}</td>
+                                        <td>{{ $request->submitted_at ? $request->submitted_at->format('M d, Y \a\t g:i A') : '—' }}</td>
+                                        <td><span class="status-badge {{ strtolower(str_replace(' ', '-', $request->status)) }}">{{ $request->status }}</span></td>
+                                        <td><button type="button" class="view-request-btn" onclick="openGuestRequest({{ $request->id }})">View</button></td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="10">
+                                            <div class="empty-state">
+                                                <div class="empty-state-content">
+                                                    <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                                                    <h4>No guest requests</h4>
+                                                    <p>There are no requests to display.</p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                </tr>
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -1020,14 +1091,14 @@
                 <div class="details-card specific-request-content">
                     <h3><i class="far fa-calendar-alt"></i> Reservation Information</h3>
                     <div class="reservation-grid">
-                        <div><span class="detail-label">Reservation ID</span><span id="detailReservationId" class="detail-value">RES-3011</span></div>
-                        <div><span class="detail-label">Guest Name</span><span id="detailGuestName" class="detail-value">Juan Dela Cruz</span></div>
-                        <div><span class="detail-label">Room</span><span id="detailRoom" class="detail-value">Deluxe Room - 101</span></div>
+                        <div><span class="detail-label">Reservation ID</span><span id="detailReservationId" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Guest Name</span><span id="detailGuestName" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Room</span><span id="detailRoom" class="detail-value">—</span></div>
                     </div>
                     <div class="reservation-grid">
-                        <div><span class="detail-label">Check-in</span><span id="detailCheckIn" class="detail-value">Aug 25, 2026</span></div>
-                        <div><span class="detail-label">Check-out</span><span id="detailCheckOut" class="detail-value">Aug 28, 2026</span></div>
-                        <div><span class="detail-label">Nights / Guests</span><span id="detailNights" class="detail-value">3 Nights &nbsp;&nbsp; 2 Adults</span></div>
+                        <div><span class="detail-label">Check-in</span><span id="detailCheckIn" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Check-out</span><span id="detailCheckOut" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Nights / Guests</span><span id="detailNights" class="detail-value">—</span></div>
                     </div>
                 </div>
 
@@ -1036,7 +1107,7 @@
                     <div class="request-table-wrap">
                         <table class="addon-table">
                             <thead><tr><th>Add-On Item</th><th>Quantity</th><th>Guest Note</th><th>Status</th></tr></thead>
-                            <tbody>
+                            <tbody id="requestedAddOnsTableBody">
                                 <tr>
                                     <td colspan="4">
                                         <div class="empty-state">
@@ -1054,8 +1125,8 @@
                 </div>
 
                 <div class="details-lower specific-request-content">
-                    <div class="details-card"><h3><i class="far fa-comment"></i> Special Request</h3><div class="details-note">Please deliver the extra towels before 3:00 PM.<br>Thank you!</div></div>
-                    <div class="details-card"><h3><i class="far fa-clock"></i> Estimated Arrival Time</h3><div class="details-note"><strong>3:00 PM</strong> <i class="fas fa-chevron-down" style="float:right"></i></div></div>
+                    <div class="details-card"><h3><i class="far fa-comment"></i> Special Request</h3><div id="specialRequestText" class="details-note">No request selected.</div></div>
+                    <div class="details-card"><h3><i class="far fa-clock"></i> Estimated Arrival Time</h3><div class="details-note"><strong id="estimatedArrivalTimeText">—</strong> <i class="fas fa-chevron-down" style="float:right"></i></div></div>
                 </div>
                 <div class="details-card specific-request-content"><h3><i class="far fa-edit"></i> Housekeeping Notes</h3><textarea id="housekeepingNotes" class="details-note" placeholder="Enter notes about request fulfillment, delivery time, or any issues..."></textarea></div>
                 <div class="details-actions specific-request-content"><button type="button" class="details-action" onclick="saveRequestProgress()">Save Progress</button><button type="button" class="details-action primary" onclick="markAllDelivered()">Mark All as Delivered</button></div>
@@ -1063,13 +1134,13 @@
 
             <aside id="summaryCard" class="details-card summary-card">
                 <h3><i class="fas fa-clipboard-list"></i> Requests Summary</h3>
-                <div class="summary-total"><i class="far fa-clipboard"></i><div><span>All Requests</span><strong>0</strong><span>0 Total Add-Ons</span></div></div>
-                <div class="summary-row"><span><i class="fas fa-circle" style="color:#f59e0b;font-size:7px"></i> Pending</span><b>0</b></div>
-                <div class="summary-row"><span><i class="fas fa-circle" style="color:#3b82f6;font-size:7px"></i> In Progress</span><b>0</b></div>
-                <div class="summary-row"><span><i class="fas fa-circle" style="color:#10b981;font-size:7px"></i> Completed</span><b>0</b></div>
-                <div class="summary-info"><label>Requested On</label><strong>Aug 24, 2026 &middot; 10:45 AM</strong></div>
-                <div class="summary-info"><label>Requested By</label><strong id="summaryGuestName">Juan Dela Cruz<br><small>(Guest)</small></strong></div>
-                <div class="summary-info"><label>Related Booking</label><strong id="summaryBooking">Deluxe Room - 101<br>Aug 25 - Aug 28, 2026</strong></div>
+                <div class="summary-total"><i class="far fa-clipboard"></i><div><span>All Requests</span><strong>{{ $stats['total'] }}</strong><span>{{ $stats['total'] }} Total Requests</span></div></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#f59e0b;font-size:7px"></i> Pending</span><b>{{ $stats['pending'] }}</b></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#3b82f6;font-size:7px"></i> In Progress</span><b>{{ $requests->where('status', 'In Progress')->count() }}</b></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#10b981;font-size:7px"></i> Completed</span><b>{{ $stats['resolved'] }}</b></div>
+                <div class="summary-info"><label>Requested On</label><strong id="summaryRequestedOn">—</strong></div>
+                <div class="summary-info"><label>Requested By</label><strong id="summaryGuestName">Guest<br><small>(Guest)</small></strong></div>
+                <div class="summary-info"><label>Related Booking</label><strong id="summaryBooking">—</strong></div>
                 <button type="button" class="details-action" style="width:100%;margin-top:15px" onclick="openRequestDetails()">View Reservation Details <i class="fas fa-arrow-right"></i></button>
             </aside>
         </div>
@@ -1195,6 +1266,44 @@
 
 
 <script>
+const requestData = @json($requestData ?? []);
+
+function renderAllRequestsTable() {
+    const tbody = document.getElementById('allRequestsTableBody');
+    if (!tbody) return;
+
+    if (!requestData.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10">
+                    <div class="empty-state">
+                        <div class="empty-state-content">
+                            <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                            <h4>No guest requests</h4>
+                            <p>There are no requests to display.</p>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = requestData.map((request) => `
+        <tr>
+            <td>${request.requestId}</td>
+            <td>${request.guest}</td>
+            <td>${request.room}</td>
+            <td>${request.requestType}</td>
+            <td>${request.description ? request.description.slice(0, 55) : 'No description'}</td>
+            <td>${request.preferredTime}</td>
+            <td>${request.priority}</td>
+            <td>${request.submitted}</td>
+            <td><span class="status-badge ${String(request.status).toLowerCase().replace(/\s+/g, '-')}">${request.status}</span></td>
+            <td><button type="button" class="view-request-btn" onclick="openGuestRequest(${request.id})">View</button></td>
+        </tr>
+    `).join('');
+}
 
 function openRequestDetails() {
     const overview = document.querySelector('.guest-request-page:not(.request-details-page)');
@@ -1232,15 +1341,11 @@ function openGuestRequest(requestId) {
     const title = document.getElementById('detailsPageTitle');
     const description = document.getElementById('detailsPageDescription');
     const status = document.getElementById('detailsPageStatus');
-    const requests = {
-        'REQ-3011': { reservation: 'RES-3011', guest: 'Juan Dela Cruz', room: 'Deluxe Room - 101', checkIn: 'Aug 25, 2026', checkOut: 'Aug 28, 2026', nights: '3 Nights &nbsp;&nbsp; 2 Adults', status: 'Pending' },
-        'REQ-3010': { reservation: 'RES-3010', guest: 'Maria Santos', room: 'Standard Room - 205', checkIn: 'Aug 24, 2026', checkOut: 'Aug 26, 2026', nights: '2 Nights &nbsp;&nbsp; 2 Adults', status: 'In Progress' },
-        'REQ-3009': { reservation: 'RES-3009', guest: 'Ana Reyes', room: 'Suite Room - 301', checkIn: 'Aug 23, 2026', checkOut: 'Aug 27, 2026', nights: '4 Nights &nbsp;&nbsp; 3 Adults', status: 'Completed' }
-    };
-    const request = requests[requestId];
+    const normalizedId = String(requestId).replace(/^REQ-/, '').trim();
+    const request = requestData.find((item) => String(item.id) === normalizedId || item.requestId === String(requestId));
 
     if (overview && details && request) {
-        currentGuestRequestId = requestId;
+        currentGuestRequestId = request.requestId;
         overview.style.display = 'none';
         details.classList.add('show');
         detailsGrid.classList.remove('all-requests-mode');
@@ -1249,16 +1354,53 @@ function openGuestRequest(requestId) {
         specificContent.forEach((element) => element.classList.add('is-visible'));
         title.textContent = 'Housekeeping Add-On Request';
         description.textContent = 'View and manage this guest\'s requested add-ons and amenities.';
-        status.innerHTML = '<i class="far fa-clock"></i> Status: ' + (localStorage.getItem('housekeeping-request-status-' + requestId) || request.status);
+        status.innerHTML = '<i class="far fa-clock"></i> Status: ' + (localStorage.getItem('housekeeping-request-status-' + request.requestId) || request.status);
+
         document.getElementById('detailReservationId').textContent = request.reservation;
         document.getElementById('detailGuestName').textContent = request.guest;
         document.getElementById('detailRoom').textContent = request.room;
         document.getElementById('detailCheckIn').textContent = request.checkIn;
         document.getElementById('detailCheckOut').textContent = request.checkOut;
         document.getElementById('detailNights').innerHTML = request.nights;
+
+        const addOnBody = document.getElementById('requestedAddOnsTableBody');
+        if (addOnBody) {
+            const items = Array.isArray(request.items) && request.items.length ? request.items : [{
+                request_type: request.requestType,
+                quantity: request.quantity ?? 1,
+                guest_note: request.guestNote || 'No note provided',
+                status: request.status,
+            }];
+
+            addOnBody.innerHTML = items.map((item) => `
+                <tr>
+                    <td>${item.request_type || request.requestType}</td>
+                    <td>${item.quantity ?? request.quantity ?? 1}</td>
+                    <td>${item.guest_note || request.guestNote || 'No note provided'}</td>
+                    <td><span class="status-badge ${String(item.status || request.status).toLowerCase().replace(/\s+/g, '-')}">${item.status || request.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        const specialRequestText = document.getElementById('specialRequestText');
+        if (specialRequestText) {
+            specialRequestText.textContent = request.specialRequest || 'No special request.';
+        }
+
+        const arrivalText = document.getElementById('estimatedArrivalTimeText');
+        if (arrivalText) {
+            arrivalText.textContent = request.estimatedArrivalTime || '—';
+        }
+
+        document.getElementById('summaryRequestedOn').textContent = request.submittedShort || '—';
         document.getElementById('summaryGuestName').innerHTML = request.guest + '<br><small>(Guest)</small>';
         document.getElementById('summaryBooking').innerHTML = request.room + '<br>' + request.checkIn + ' - ' + request.checkOut;
-        document.getElementById('housekeepingNotes').value = localStorage.getItem('housekeeping-request-notes-' + requestId) || '';
+        document.getElementById('housekeepingNotes').value = localStorage.getItem('housekeeping-request-notes-' + request.requestId) || '';
+        const summaryRow = document.querySelector('.details-card.summary-card');
+        if (summaryRow) {
+            const before = summaryRow.querySelector('.summary-total strong');
+            if (before) before.textContent = requestData.length;
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
@@ -1273,6 +1415,8 @@ function closeRequestDetails() {
         details.setAttribute('aria-hidden', 'true');
     }
 }
+
+renderAllRequestsTable();
 
 let currentGuestRequestId = null;
 
@@ -1294,6 +1438,26 @@ function markAllDelivered() {
     document.getElementById('detailsPageStatus').innerHTML = '<i class="fas fa-check-circle"></i> Status: Completed';
     localStorage.setItem('housekeeping-request-status-' + currentGuestRequestId, 'Completed');
     alert('All requested add-ons marked as delivered.');
+}
+
+function restoreRequestList() {
+    const tbody = document.querySelector('.all-requests-table tbody');
+    if (!tbody || !requestData.length) return;
+
+    tbody.innerHTML = requestData.map((request) => `
+        <tr>
+            <td>${request.requestId}</td>
+            <td>${request.guest}</td>
+            <td>${request.room}</td>
+            <td>${request.requestType}</td>
+            <td>${request.description ? request.description.slice(0, 55) : 'No description'}</td>
+            <td>${request.preferredTime}</td>
+            <td>${request.priority}</td>
+            <td>${request.submitted}</td>
+            <td><span class="status-badge ${request.status.toLowerCase().replace(/\s+/g, '-')}">${request.status}</span></td>
+            <td><button type="button" class="view-request-btn" onclick="openGuestRequest(${request.id})">View</button></td>
+        </tr>
+    `).join('');
 }
 
 function sendGuestMessage(event) {
