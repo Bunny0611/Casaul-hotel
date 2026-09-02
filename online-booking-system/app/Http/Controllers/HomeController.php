@@ -185,15 +185,27 @@ class HomeController extends Controller
     {
         $diningSelections = $this->normalizeDiningSelections($request);
 
-        if (!empty($diningSelections) || !empty($request->input('dining_id')) || !empty($request->input('dining_area')) || !empty($request->input('dining_schedule'))) {
-            $request->merge(['category' => 'dining']);
-        }
-
         $request->merge([
             'amenity_id' => $this->normalizeIdList($request->input('amenity_id')),
             'event_place_id' => $this->normalizeIdList($request->input('event_place_id')),
             'dining_id' => empty($diningSelections) ? $this->normalizeIdList($request->input('dining_id')) : null,
         ]);
+
+        // Determine reservation category based on what's selected (priority order matters)
+        $eventPlaceId = $request->input('event_place_id');
+        $amenityId = $request->input('amenity_id');
+        $hasDining = !empty($diningSelections) || !empty($request->input('dining_id')) || !empty($request->input('dining_area')) || !empty($request->input('dining_schedule'));
+
+        if (!empty($eventPlaceId)) {
+            $request->merge(['category' => 'event_place']);
+        } elseif (!empty($amenityId)) {
+            $request->merge(['category' => 'amenity']);
+        } elseif ($hasDining) {
+            $request->merge(['category' => 'dining']);
+        } else {
+            // Default to room if no amenities, events, or dining selected
+            $request->merge(['category' => 'room']);
+        }
 
         $validated = $request->validate([
             'room_id' => 'required|exists:rooms,id',

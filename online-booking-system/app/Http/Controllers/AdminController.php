@@ -515,11 +515,27 @@ class AdminController extends Controller
     {
         $allReservations = Reservation::with('room', 'amenity', 'eventPlace', 'diningMenu')->latest()->get();
         
-        // Separate reservations by category
-        $roomReservations = $allReservations->where('category', 'room')->values();
-        $amenityReservations = $allReservations->where('category', 'amenity')->values();
-        $eventPlaceReservations = $allReservations->where('category', 'event_place')->values();
-        $diningReservations = $allReservations->where('category', 'dining')->values();
+        // Separate reservations by category with fallback checks (like employee view)
+        // This handles both old data (using room_id, amenity_id fields) and new data (using category field)
+        $roomReservations = $allReservations->filter(function ($reservation) {
+            return $reservation->room_id || $reservation->category === 'room' || $reservation->category === 'rooms';
+        })->values();
+        
+        $amenityReservations = $allReservations->filter(function ($reservation) {
+            return $reservation->amenity_id || $reservation->category === 'amenity' || $reservation->category === 'amenities';
+        })->values();
+        
+        $eventPlaceReservations = $allReservations->filter(function ($reservation) {
+            return $reservation->event_place_id || $reservation->category === 'event_place';
+        })->values();
+        
+        $diningReservations = $allReservations->filter(function ($reservation) {
+            return $reservation->category === 'dining'
+                || !empty($reservation->dining_id)
+                || !empty($reservation->dining_area)
+                || !empty($reservation->dining_schedule)
+                || $reservation->diningItems()->exists();
+        })->values();
         
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
@@ -527,12 +543,13 @@ class AdminController extends Controller
         $eventPlaces = EventPlace::orderBy('name')->get();
         $diningMenus = DiningMenu::orderBy('name')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
+        $diningTables = DiningTable::orderBy('table_no')->get();
 
         // For backward compatibility, keep the old variable name
         $reservations = $roomReservations;
 
         return request()->routeIs('employee.reservation')
-            ? view('employee.reservation', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'))
+            ? view('employee.reservation', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules', 'diningTables'))
             : view('admin.reservations', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'));
     }
 
