@@ -51,6 +51,20 @@ class DatabaseSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        // Create default guest user for local SQLite testing
+        User::updateOrCreate([
+            'email' => 'ruzzelarmuela@gmail.com',
+        ], [
+            'name' => 'Ruzzel Armuela',
+            'first_name' => 'Ruzzel',
+            'last_name' => 'Armuela',
+            'middle_initial' => '',
+            'contact_no' => '09171234567',
+            'password' => bcrypt('123456'),
+            'role' => 'guest',
+            'is_active' => true,
+        ]);
+
         // Run room seeder
         $this->call(RoomSeeder::class);
     }

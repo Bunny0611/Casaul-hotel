@@ -122,13 +122,30 @@ document.addEventListener('DOMContentLoaded', function () {
             profileTrigger.setAttribute('aria-expanded', 'false');
         };
 
-        profileTrigger.addEventListener('click', () => {
-            const isOpen = profileMenu.classList.toggle('open');
-            profileTrigger.classList.toggle('open', isOpen);
-            profileTrigger.setAttribute('aria-expanded', String(isOpen));
+        const openProfileMenu = (event) => {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            if (!profileMenu.classList.contains('open')) {
+                profileMenu.classList.add('open');
+                profileTrigger.classList.add('open');
+                profileTrigger.setAttribute('aria-expanded', 'true');
+            }
+        };
+
+        profileTrigger.addEventListener('click', openProfileMenu);
+        profileTrigger.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
         });
 
-        document.addEventListener('click', (event) => {
+        profileMenu.addEventListener('pointerdown', (event) => {
+            event.stopPropagation();
+        });
+
+        document.addEventListener('pointerdown', (event) => {
             if (!profileDropdown.contains(event.target)) {
                 closeProfileMenu();
             }
