@@ -513,7 +513,14 @@ class AdminController extends Controller
 
     public function reservations()
     {
-        $reservations = Reservation::with('room')->latest()->get();
+        $allReservations = Reservation::with('room', 'amenity', 'eventPlace', 'diningMenu')->latest()->get();
+        
+        // Separate reservations by category
+        $roomReservations = $allReservations->where('category', 'room')->values();
+        $amenityReservations = $allReservations->where('category', 'amenity')->values();
+        $eventPlaceReservations = $allReservations->where('category', 'event_place')->values();
+        $diningReservations = $allReservations->where('category', 'dining')->values();
+        
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
         $amenities = Amenity::orderBy('name')->get();
@@ -521,9 +528,12 @@ class AdminController extends Controller
         $diningMenus = DiningMenu::orderBy('name')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
 
+        // For backward compatibility, keep the old variable name
+        $reservations = $roomReservations;
+
         return request()->routeIs('employee.reservation')
-            ? view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'))
-            : view('admin.reservations', compact('reservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'));
+            ? view('employee.reservation', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'))
+            : view('admin.reservations', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'));
     }
 
     protected function normalizeDiningSelections(Request $request): array

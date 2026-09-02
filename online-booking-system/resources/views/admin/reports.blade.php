@@ -369,6 +369,13 @@
         }
     });
 
+    const AUTO_REFRESH_MS = 15000;
+    setInterval(function () {
+        if (!document.hidden) {
+            window.location.reload();
+        }
+    }, AUTO_REFRESH_MS);
+
     const maintenanceStatusCtx = document.getElementById('maintenanceStatusChart')?.getContext('2d');
     const maintenancePriorityCtx = document.getElementById('maintenancePriorityChart')?.getContext('2d');
     const maintenanceCategoryCtx = document.getElementById('maintenanceCategoryChart')?.getContext('2d');
