@@ -316,6 +316,14 @@ class HomeController extends Controller
             $validated['check_out_time'] = $validated['check_in_time'];
         }
 
+        $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
+        $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
+        $validated['event_start_time'] = $validated['event_start_time'] ?? null;
+        $validated['event_end_time'] = $validated['event_end_time'] ?? null;
+        $validated['amenity_start_time'] = $validated['amenity_start_time'] ?? null;
+        $validated['amenity_end_time'] = $validated['amenity_end_time'] ?? null;
+        $validated['dining_time'] = $validated['dining_time'] ?? null;
+
         $reservation = Reservation::create(array_merge($validated, ['status' => 'pending']));
 
         if (!empty($diningSelections)) {

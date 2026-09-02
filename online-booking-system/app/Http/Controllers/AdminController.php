@@ -706,8 +706,24 @@ class AdminController extends Controller
                 ->addHours((int) $validated['duration_hours']);
             $validated['check_out'] = $endTime->toDateString();
             $validated['check_out_time'] = $endTime->format('H:i');
+            $validated['amenity_start_time'] = $validated['check_in_time'] ?? null;
+            $validated['amenity_end_time'] = $endTime->format('H:i');
             $validated['total_amount'] = (float) $amenity->price * (int) $validated['duration_hours'];
             unset($validated['duration_hours']);
+        }
+
+        if (($validated['category'] ?? null) === 'event_place') {
+            $validated['event_start_time'] = $validated['check_in_time'] ?? null;
+            $validated['event_end_time'] = $validated['check_out_time'] ?? null;
+        }
+
+        if (($validated['category'] ?? null) === 'dining') {
+            $validated['dining_time'] = $validated['dining_schedule'] ?? $validated['check_in_time'] ?? null;
+        }
+
+        if (($validated['category'] ?? null) === 'rooms') {
+            $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
+            $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
         }
 
         $reservation = Reservation::create($validated);

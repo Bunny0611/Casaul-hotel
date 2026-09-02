@@ -1810,8 +1810,21 @@
             reservationSpecialRequests.value = detailsSpecialRequest.value;
             const firstEventSelection = selectedEvent[0] || null;
             const firstAmenitySelection = selectedAmenities[0] || null;
-            reservationCheckInTime.value = firstEventSelection?.startTime || firstAmenitySelection?.time || arrivalTime.value || '';
-            reservationCheckOutTime.value = firstEventSelection?.endTime || reservationCheckInTime.value || '';
+            const hasRoomSelection = Boolean(selectedRoom);
+
+            if (hasRoomSelection) {
+                reservationCheckInTime.value = arrivalTime.value || '';
+                reservationCheckOutTime.value = '';
+            } else if (firstEventSelection) {
+                reservationCheckInTime.value = firstEventSelection.startTime || '';
+                reservationCheckOutTime.value = firstEventSelection.endTime || '';
+            } else if (firstAmenitySelection) {
+                reservationCheckInTime.value = firstAmenitySelection.time || '';
+                reservationCheckOutTime.value = '';
+            } else {
+                reservationCheckInTime.value = arrivalTime.value || '';
+                reservationCheckOutTime.value = '';
+            }
 
             const existingPaymentMethodInput = reservationForm.querySelector('input[name="payment_method"]');
             const existingPaymentDetailsInput = reservationForm.querySelector('input[name="payment_details"]');
