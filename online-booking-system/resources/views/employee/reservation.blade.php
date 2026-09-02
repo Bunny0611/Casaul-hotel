@@ -314,7 +314,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2 text-sm">
+                                    <div class="relative flex items-center gap-2 text-sm">
                                         @php($reservationDetails = [
                                             'id' => $reservation->id,
                                             'category' => 'amenities',
@@ -335,15 +335,15 @@
                                             'total_amount' => $reservation->total_amount ?? 0,
                                         ])
                                         <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
-                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Cancel">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Complete">
-                                            <i class="fas fa-check-double"></i>
-                                        </button>
+                                        <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation"><i class="fas fa-pen"></i></button>
+                                        <button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions"><i class="fas fa-ellipsis-v"></i></button>
+                                        <div class="employee-reservation-menu absolute right-0 top-10 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+                                            @if($reservation->status === 'pending')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Confirm Reservation</button>@endif
+                                            @if($reservation->status === 'confirmed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Mark as Completed</button>@endif
+                                            @if($reservation->status !== 'cancelled' && $reservation->status !== 'completed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Cancel Reservation</button>@endif
+                                            @if($reservation->status === 'completed')<button type="button" onclick="window.print()" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Print Receipt</button>@endif
+                                            <form action="{{ route('employee.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');">@csrf @method('DELETE')<button type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50">Delete Reservation</button></form>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -400,9 +400,8 @@
                                 'total_amount' => $reservation->total_amount ?? 0,
                             ])
                             <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
-                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
-                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
-                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
+                            <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"><i class="fas fa-pen mr-1"></i>Edit</button>
+                            <div class="relative"><button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"><i class="fas fa-ellipsis-v"></i></button><div class="employee-reservation-menu absolute bottom-10 right-0 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">@if($reservation->status === 'pending')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full px-3 py-2 text-left text-sm">Confirm Reservation</button>@endif @if($reservation->status === 'confirmed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full px-3 py-2 text-left text-sm">Mark as Completed</button>@endif @if($reservation->status !== 'cancelled' && $reservation->status !== 'completed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full px-3 py-2 text-left text-sm">Cancel Reservation</button>@endif @if($reservation->status === 'completed')<button type="button" onclick="window.print()" class="block w-full px-3 py-2 text-left text-sm">Print Receipt</button>@endif <form action="{{ route('employee.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');">@csrf @method('DELETE')<button type="submit" class="block w-full px-3 py-2 text-left text-sm text-red-600">Delete Reservation</button></form></div></div>
                         </div>
                     </div>
                 @empty
@@ -475,7 +474,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2 text-sm">
+                                    <div class="relative flex items-center gap-2 text-sm">
                                         @php($reservationDetails = [
                                             'id' => $reservation->id,
                                             'category' => 'event_place',
@@ -498,15 +497,15 @@
                                             'total_amount' => $reservation->total_amount ?? 0,
                                         ])
                                         <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
-                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Cancel">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Complete">
-                                            <i class="fas fa-check-double"></i>
-                                        </button>
+                                        <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation"><i class="fas fa-pen"></i></button>
+                                        <button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions"><i class="fas fa-ellipsis-v"></i></button>
+                                        <div class="employee-reservation-menu absolute right-0 top-10 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+                                            @if($reservation->status === 'pending')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Confirm Reservation</button>@endif
+                                            @if($reservation->status === 'confirmed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Mark as Completed</button>@endif
+                                            @if($reservation->status !== 'cancelled' && $reservation->status !== 'completed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Cancel Reservation</button>@endif
+                                            @if($reservation->status === 'completed')<button type="button" onclick="window.print()" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Print Receipt</button>@endif
+                                            <form action="{{ route('employee.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');">@csrf @method('DELETE')<button type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50">Delete Reservation</button></form>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -566,9 +565,8 @@
                                 'total_amount' => $reservation->total_amount ?? 0,
                             ])
                             <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
-                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
-                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
-                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
+                            <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"><i class="fas fa-pen mr-1"></i>Edit</button>
+                            <div class="relative"><button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"><i class="fas fa-ellipsis-v"></i></button><div class="employee-reservation-menu absolute bottom-10 right-0 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">@if($reservation->status === 'pending')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full px-3 py-2 text-left text-sm">Confirm Reservation</button>@endif @if($reservation->status === 'confirmed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full px-3 py-2 text-left text-sm">Mark as Completed</button>@endif @if($reservation->status !== 'cancelled' && $reservation->status !== 'completed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full px-3 py-2 text-left text-sm">Cancel Reservation</button>@endif @if($reservation->status === 'completed')<button type="button" onclick="window.print()" class="block w-full px-3 py-2 text-left text-sm">Print Receipt</button>@endif <form action="{{ route('employee.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');">@csrf @method('DELETE')<button type="submit" class="block w-full px-3 py-2 text-left text-sm text-red-600">Delete Reservation</button></form></div></div>
                         </div>
                     </div>
                 @empty
@@ -647,7 +645,7 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2 text-sm">
+                                    <div class="relative flex items-center gap-2 text-sm">
                                         @php($reservationDetails = [
                                             'id' => $reservation->id,
                                             'category' => 'dining',
@@ -668,15 +666,15 @@
                                             'total_amount' => $reservation->total_amount ?? 0,
                                         ])
                                         <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
-                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg p-2 text-red-600 transition hover:bg-red-50 hover:text-red-800" title="Cancel">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                        <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800" title="Complete">
-                                            <i class="fas fa-check-double"></i>
-                                        </button>
+                                        <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation"><i class="fas fa-pen"></i></button>
+                                        <button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions"><i class="fas fa-ellipsis-v"></i></button>
+                                        <div class="employee-reservation-menu absolute right-0 top-10 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
+                                            @if($reservation->status === 'pending')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Confirm Reservation</button>@endif
+                                            @if($reservation->status === 'confirmed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Mark as Completed</button>@endif
+                                            @if($reservation->status !== 'cancelled' && $reservation->status !== 'completed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Cancel Reservation</button>@endif
+                                            @if($reservation->status === 'completed')<button type="button" onclick="window.print()" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Print Receipt</button>@endif
+                                            <form action="{{ route('employee.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');">@csrf @method('DELETE')<button type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50">Delete Reservation</button></form>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -742,9 +740,8 @@
                                 'total_amount' => $reservation->total_amount ?? 0,
                             ])
                             <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
-                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
-                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
-                            <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
+                            <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"><i class="fas fa-pen mr-1"></i>Edit</button>
+                            <div class="relative"><button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"><i class="fas fa-ellipsis-v"></i></button><div class="employee-reservation-menu absolute bottom-10 right-0 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">@if($reservation->status === 'pending')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full px-3 py-2 text-left text-sm">Confirm Reservation</button>@endif @if($reservation->status === 'confirmed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full px-3 py-2 text-left text-sm">Mark as Completed</button>@endif @if($reservation->status !== 'cancelled' && $reservation->status !== 'completed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full px-3 py-2 text-left text-sm">Cancel Reservation</button>@endif @if($reservation->status === 'completed')<button type="button" onclick="window.print()" class="block w-full px-3 py-2 text-left text-sm">Print Receipt</button>@endif <form action="{{ route('employee.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');">@csrf @method('DELETE')<button type="submit" class="block w-full px-3 py-2 text-left text-sm text-red-600">Delete Reservation</button></form></div></div>
                         </div>
                     </div>
                 @empty
@@ -1426,6 +1423,7 @@
         const form = document.getElementById('addReservationForm');
         const fields = form.elements;
         const timeValue = value => value ? String(value).slice(0, 5) : '';
+        const category = reservation.category || 'rooms';
 
         fields.guest_name.value = reservation.guest_name || '';
         fields.guest_email.value = reservation.guest_email || '';
@@ -1434,24 +1432,47 @@
         fields.event_place_id.value = reservation.event_place_id || '';
         fields.event_type.value = reservation.event_type || '';
         fields.number_of_guests.value = reservation.number_of_guests || '';
-        document.getElementById('eventDate').value = reservation.check_in || '';
-        document.querySelector('[data-event-date-end]').value = reservation.check_out || reservation.check_in || '';
         fields.dining_area.value = reservation.dining_area || '';
         fields.dining_id.value = reservation.dining_id || '';
         fields.quantity.value = reservation.quantity || '';
-        document.getElementById('diningDate').value = reservation.check_in || '';
-        document.getElementById('diningTime').value = timeValue(reservation.check_in_time);
-        document.querySelector('[data-dining-date-end]').value = reservation.check_out || reservation.check_in || '';
-        document.querySelector('[data-dining-time-end]').value = timeValue(reservation.check_out_time || reservation.check_in_time);
-        fields.check_in.value = reservation.check_in || '';
-        fields.check_in_time.value = timeValue(reservation.check_in_time);
-        fields.check_out.value = reservation.check_out || '';
-        fields.check_out_time.value = timeValue(reservation.check_out_time);
+
+        if (category === 'event_place') {
+            document.getElementById('eventDate').value = reservation.check_in || '';
+            document.querySelector('[data-event-date-end]').value = reservation.check_out || reservation.check_in || '';
+            fields.check_in.value = reservation.check_in || '';
+            fields.check_in_time.value = timeValue(reservation.check_in_time);
+            fields.check_out.value = reservation.check_out || '';
+            fields.check_out_time.value = timeValue(reservation.check_out_time);
+        } else if (category === 'dining') {
+            document.getElementById('diningDate').value = reservation.check_in || '';
+            document.getElementById('diningTime').value = timeValue(reservation.check_in_time);
+            document.querySelector('[data-dining-date-end]').value = reservation.check_out || reservation.check_in || '';
+            document.querySelector('[data-dining-time-end]').value = timeValue(reservation.check_out_time || reservation.check_in_time);
+            fields.check_in.value = reservation.check_in || '';
+            fields.check_in_time.value = timeValue(reservation.check_in_time);
+            fields.check_out.value = reservation.check_out || '';
+            fields.check_out_time.value = timeValue(reservation.check_out_time);
+        } else if (category === 'amenities') {
+            document.getElementById('amenityDate').value = reservation.check_in || '';
+            document.getElementById('amenityStartTime').value = timeValue(reservation.check_in_time);
+            document.getElementById('amenityEndTime').value = timeValue(reservation.check_out_time);
+            document.getElementById('amenityEndDate').value = reservation.check_out || reservation.check_in || '';
+            fields.check_in.value = reservation.check_in || '';
+            fields.check_in_time.value = timeValue(reservation.check_in_time);
+            fields.check_out.value = reservation.check_out || '';
+            fields.check_out_time.value = timeValue(reservation.check_out_time);
+        } else {
+            fields.check_in.value = reservation.check_in || '';
+            fields.check_in_time.value = timeValue(reservation.check_in_time);
+            fields.check_out.value = reservation.check_out || '';
+            fields.check_out_time.value = timeValue(reservation.check_out_time);
+        }
+
         fields.total_amount.value = reservation.total_amount || 0;
         fields.amount_paid.value = reservation.amount_paid ?? 0;
         fields.special_requests.value = reservation.special_requests || '';
-        document.getElementById('reservationCategory').value = reservation.category || 'rooms';
-        document.querySelector(`[data-reservation-tab="${reservation.category || 'rooms'}"]`)?.click();
+        document.getElementById('reservationCategory').value = category;
+        document.querySelector(`[data-reservation-tab="${category}"]`)?.click();
         document.getElementById('reservationFormMethod').disabled = false;
         form.action = "{{ route('employee.reservations.update', ['id' => '__ID__']) }}".replace('__ID__', reservation.id);
         document.getElementById('reservationModalTitle').textContent = 'Edit Reservation';
