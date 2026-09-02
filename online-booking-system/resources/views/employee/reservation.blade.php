@@ -7,10 +7,30 @@
     $reservations = $reservations ?? collect([]);
     $formatDate = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('F j, Y') : 'N/A';
     $formatTime = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('g:i A') : 'Time not set';
+    $uniqueCsvValue = function ($value) {
+        if (is_null($value) || $value === '') {
+            return 'N/A';
+        }
+
+        $parts = collect(explode(',', (string) $value))
+            ->map(fn ($item) => trim((string) $item))
+            ->filter(fn ($item) => $item !== '' && $item !== 'null')
+            ->unique()
+            ->values()
+            ->all();
+
+        return !empty($parts) ? implode(', ', $parts) : 'N/A';
+    };
     $roomReservations = $reservations->filter(fn ($reservation) => $reservation->room_id || $reservation->category === 'rooms');
     $amenityReservations = $reservations->filter(fn ($reservation) => $reservation->amenity_id || $reservation->category === 'amenities');
     $eventPlaceReservations = $reservations->filter(fn ($reservation) => $reservation->event_place_id || $reservation->category === 'event_place');
-    $diningReservations = $reservations->filter(fn ($reservation) => $reservation->dining_id || $reservation->category === 'dining');
+    $diningReservations = $reservations->filter(function ($reservation) {
+        return $reservation->category === 'dining'
+            || !empty($reservation->dining_id)
+            || !empty($reservation->dining_area)
+            || !empty($reservation->dining_schedule)
+            || $reservation->diningItems()->exists();
+    });
 
     $stats = [
         'rooms' => [
@@ -122,7 +142,34 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="relative flex items-center gap-2 text-sm">
-                                        <button type="button" onclick="showEmployeeReservationDetails(this)" data-guest="{{ $reservation->guest_name }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-check-in="{{ $formatDate($reservation->check_in) }}" data-check-out="{{ $formatDate($reservation->check_out) }}" data-amount="₱{{ number_format($reservation->total_amount, 2) }}" data-status="{{ ucfirst($reservation->status) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
+                                        @php($latestPayment = $reservation->payments->last())
+                                        @php($paymentMethod = $reservation->payment_method ?: ($latestPayment?->payment_method ?? 'N/A'))
+                                        @php($paymentDetails = $reservation->payment_details ?: ($latestPayment?->reference_number ? 'Reference: ' . $latestPayment->reference_number . ($latestPayment->notes ? ' • ' . $latestPayment->notes : '') : ($latestPayment?->notes ?: 'No additional payment details')))
+                                        @php($reservationDetails = [
+                                            'id' => $reservation->id,
+                                            'category' => 'rooms',
+                                            'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
+                                            'status' => ucfirst($reservation->status),
+                                            'guest_name' => $reservation->guest_name,
+                                            'guest_email' => $reservation->guest_email,
+                                            'guest_phone' => $reservation->guest_phone,
+                                            'special_requests' => $reservation->special_requests ?: 'No special requests',
+                                            'room_number' => $reservation->room?->room_number ?? 'N/A',
+                                            'room_type' => $reservation->room?->room_type ?? 'N/A',
+                                            'room_check_in' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                                            'room_check_in_time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
+                                            'room_check_out' => $reservation->check_out?->format('Y-m-d') ?? 'N/A',
+                                            'room_check_out_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
+                                            'room_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
+                                            'room_rate' => $reservation->room?->price ?? 'N/A',
+                                            'selected_services' => [],
+                                            'amount_paid' => $reservation->amount_paid ?? $latestPayment?->amount ?? 0,
+                                            'payment_method' => $paymentMethod,
+                                            'payment_details' => $paymentDetails,
+                                            'payment_proof' => $latestPayment?->payment_proof ?? (preg_match('/https?:\/\/\S+|\/storage\/\S+|data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9\/+=]+/', (string) $paymentDetails) ? preg_replace('/.*?(https?:\/\/\S+|\/storage\/\S+|data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9\/+=]+).*/i', '$1', (string) $paymentDetails) : null),
+                                            'total_amount' => $reservation->total_amount ?? 0,
+                                        ])
+                                        <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
                                         <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation"><i class="fas fa-pen"></i></button>
                                         <button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions"><i class="fas fa-ellipsis-v"></i></button>
                                         <div class="employee-reservation-menu absolute right-0 top-10 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
@@ -168,7 +215,33 @@
                             <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount, 2) }}</p>
                         </div>
                         <div class="mt-4 flex items-center gap-2">
-                            <button type="button" onclick="showEmployeeReservationDetails(this)" data-guest="{{ $reservation->guest_name }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-check-in="{{ $formatDate($reservation->check_in) }}" data-check-out="{{ $formatDate($reservation->check_out) }}" data-amount="₱{{ number_format($reservation->total_amount, 2) }}" data-status="{{ ucfirst($reservation->status) }}" class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
+                            @php($latestPayment = $reservation->payments->last())
+                            @php($paymentMethod = $reservation->payment_method ?: ($latestPayment?->payment_method ?? 'N/A'))
+                            @php($paymentDetails = $latestPayment?->reference_number ? 'Reference: ' . $latestPayment->reference_number . ($latestPayment->notes ? ' • ' . $latestPayment->notes : '') : ($latestPayment?->notes ?: 'No additional payment details'))
+                            @php($reservationDetails = [
+                                'id' => $reservation->id,
+                                'category' => 'rooms',
+                                'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
+                                'status' => ucfirst($reservation->status),
+                                'guest_name' => $reservation->guest_name,
+                                'guest_email' => $reservation->guest_email,
+                                'guest_phone' => $reservation->guest_phone,
+                                'special_requests' => $reservation->special_requests ?: 'No special requests',
+                                'room_number' => $reservation->room?->room_number ?? 'N/A',
+                                'room_type' => $reservation->room?->room_type ?? 'N/A',
+                                'room_check_in' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                                'room_check_in_time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
+                                'room_check_out' => $reservation->check_out?->format('Y-m-d') ?? 'N/A',
+                                'room_check_out_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
+                                'room_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
+                                'room_rate' => $reservation->room?->price ?? 'N/A',
+                                'selected_services' => [],
+                                'amount_paid' => $reservation->amount_paid ?? 0,
+                                'payment_method' => $paymentMethod,
+                                'payment_details' => $paymentDetails,
+                                'total_amount' => $reservation->total_amount ?? 0,
+                            ])
+                            <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
                             <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"><i class="fas fa-pen mr-1"></i>Edit</button>
                             <div class="relative"><button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"><i class="fas fa-ellipsis-v"></i></button><div class="employee-reservation-menu absolute bottom-10 right-0 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">@if($reservation->status === 'pending')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full px-3 py-2 text-left text-sm">Confirm Reservation</button>@endif @if($reservation->status === 'confirmed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'checked-in')" class="block w-full px-3 py-2 text-left text-sm">Mark as Checked-in</button>@endif @if($reservation->status === 'checked-in')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full px-3 py-2 text-left text-sm">Mark as Checked-out</button>@endif <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full px-3 py-2 text-left text-sm">Cancel Reservation</button><form action="{{ route('employee.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');">@csrf @method('DELETE')<button type="submit" class="block w-full px-3 py-2 text-left text-sm text-red-600">Delete Reservation</button></form></div></div>
                         </div>
@@ -242,6 +315,26 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-2 text-sm">
+                                        @php($reservationDetails = [
+                                            'id' => $reservation->id,
+                                            'category' => 'amenities',
+                                            'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
+                                            'status' => ucfirst($reservation->status),
+                                            'guest_name' => $reservation->guest_name,
+                                            'guest_email' => $reservation->guest_email,
+                                            'guest_phone' => $reservation->guest_phone,
+                                            'special_requests' => $reservation->special_requests ?: 'No special requests',
+                                            'amenity_name' => $reservation->amenity?->name ?? 'N/A',
+                                            'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                                            'time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
+                                            'quantity' => $reservation->quantity ?? $reservation->guests ?? 'N/A',
+                                            'selected_services' => $reservation->amenity ? ['Amenity: ' . $reservation->amenity->name] : [],
+                                            'amount_paid' => $reservation->amount_paid ?? 0,
+                                            'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
+                                            'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
+                                            'total_amount' => $reservation->total_amount ?? 0,
+                                        ])
+                                        <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
                                         <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
                                             <i class="fas fa-check"></i>
                                         </button>
@@ -287,6 +380,26 @@
                             <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
                         </div>
                         <div class="mt-4 flex items-center gap-2">
+                            @php($reservationDetails = [
+                                'id' => $reservation->id,
+                                'category' => 'amenities',
+                                'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
+                                'status' => ucfirst($reservation->status),
+                                'guest_name' => $reservation->guest_name,
+                                'guest_email' => $reservation->guest_email,
+                                'guest_phone' => $reservation->guest_phone,
+                                'special_requests' => $reservation->special_requests ?: 'No special requests',
+                                'amenity_name' => $reservation->amenity?->name ?? 'N/A',
+                                'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                                'time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
+                                'quantity' => $reservation->quantity ?? $reservation->guests ?? 'N/A',
+                                'selected_services' => $reservation->amenity ? ['Amenity: ' . $reservation->amenity->name] : [],
+                                'amount_paid' => $reservation->amount_paid ?? 0,
+                                'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
+                                'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
+                                'total_amount' => $reservation->total_amount ?? 0,
+                            ])
+                            <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
                             <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
                             <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
                             <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
@@ -363,6 +476,28 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-2 text-sm">
+                                        @php($reservationDetails = [
+                                            'id' => $reservation->id,
+                                            'category' => 'event_place',
+                                            'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
+                                            'status' => ucfirst($reservation->status),
+                                            'guest_name' => $reservation->guest_name,
+                                            'guest_email' => $reservation->guest_email,
+                                            'guest_phone' => $reservation->guest_phone,
+                                            'special_requests' => $reservation->special_requests ?: 'No special requests',
+                                            'event_place' => $reservation->eventPlace?->name ?? 'N/A',
+                                            'event_type' => $reservation->event_type ?? 'N/A',
+                                            'event_date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                                            'event_start_time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
+                                            'event_end_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
+                                            'event_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
+                                            'selected_services' => $reservation->eventPlace ? ['Event Place: ' . $reservation->eventPlace->name . ($reservation->event_type ? ' — ' . $reservation->event_type : '')] : [],
+                                            'amount_paid' => $reservation->amount_paid ?? 0,
+                                            'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
+                                            'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
+                                            'total_amount' => $reservation->total_amount ?? 0,
+                                        ])
+                                        <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
                                         <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
                                             <i class="fas fa-check"></i>
                                         </button>
@@ -409,6 +544,28 @@
                             <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
                         </div>
                         <div class="mt-4 flex items-center gap-2">
+                            @php($reservationDetails = [
+                                'id' => $reservation->id,
+                                'category' => 'event_place',
+                                'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
+                                'status' => ucfirst($reservation->status),
+                                'guest_name' => $reservation->guest_name,
+                                'guest_email' => $reservation->guest_email,
+                                'guest_phone' => $reservation->guest_phone,
+                                'special_requests' => $reservation->special_requests ?: 'No special requests',
+                                'event_place' => $reservation->eventPlace?->name ?? 'N/A',
+                                'event_type' => $reservation->event_type ?? 'N/A',
+                                'event_date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                                'event_start_time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
+                                'event_end_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
+                                'event_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
+                                'selected_services' => $reservation->eventPlace ? ['Event Place: ' . $reservation->eventPlace->name . ($reservation->event_type ? ' — ' . $reservation->event_type : '')] : [],
+                                'amount_paid' => $reservation->amount_paid ?? 0,
+                                'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
+                                'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
+                                'total_amount' => $reservation->total_amount ?? 0,
+                            ])
+                            <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
                             <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
                             <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
                             <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
@@ -466,14 +623,22 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($diningReservations as $reservation)
+                            @php($reservationDiningItems = $reservation->diningItems()->with('diningMenu')->get())
+                            @php($reservationMealNames = $reservationDiningItems->map(fn ($item) => $item->diningMenu?->name ?? 'Meal Item')->filter()->unique()->values()->all())
+                            @php($reservationMealText = !empty($reservationMealNames) ? implode(', ', $reservationMealNames) : ($reservation->diningMenu ? $reservation->diningMenu->name : 'N/A'))
+                            @php($reservationMealDetails = $reservationDiningItems->map(function ($item) {
+                                $mealName = $item->diningMenu?->name ?? 'Meal Item';
+                                $qty = $item->quantity ?? 1;
+                                return $mealName . ' (x' . $qty . ')';
+                            })->values()->all())
                             <tr class="transition-colors hover:bg-gray-50">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->dining_area ?? $reservation->table_name ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $uniqueCsvValue($reservation->dining_area ?? $reservation->table_name ?? 'N/A') }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $formatDate($reservation->check_in) }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->dining_schedule ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $uniqueCsvValue($reservation->dining_schedule ?? 'N/A') }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->quantity ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount ?? 0, 2) }}</td>
                                 <td class="px-6 py-4">
@@ -483,6 +648,26 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-2 text-sm">
+                                        @php($reservationDetails = [
+                                            'id' => $reservation->id,
+                                            'category' => 'dining',
+                                            'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
+                                            'status' => ucfirst($reservation->status),
+                                            'guest_name' => $reservation->guest_name,
+                                            'guest_email' => $reservation->guest_email,
+                                            'guest_phone' => $reservation->guest_phone,
+                                            'special_requests' => $reservation->special_requests ?: 'No special requests',
+                                            'dining_area' => $uniqueCsvValue($reservation->dining_area ?? $reservation->table_name ?? 'N/A'),
+                                            'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                                            'time' => $uniqueCsvValue($reservation->dining_schedule ?: ($reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A')),
+                                            'number_of_guests' => $reservation->quantity ?? $reservation->number_of_guests ?? 'N/A',
+                                            'selected_services' => $reservationMealDetails ?: ($reservation->dining_area ? ['Dining Area: ' . $reservation->dining_area] : []),
+                                            'amount_paid' => $reservation->amount_paid ?? 0,
+                                            'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
+                                            'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
+                                            'total_amount' => $reservation->total_amount ?? 0,
+                                        ])
+                                        <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
                                         <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg p-2 text-green-600 transition hover:bg-green-50 hover:text-green-800" title="Confirm">
                                             <i class="fas fa-check"></i>
                                         </button>
@@ -520,14 +705,43 @@
                                 {{ ucfirst($reservation->status) }}
                             </span>
                         </div>
+                        @php($reservationDiningItems = $reservation->diningItems()->with('diningMenu')->get())
+                        @php($reservationMealNames = $reservationDiningItems->map(fn ($item) => $item->diningMenu?->name ?? 'Meal Item')->filter()->unique()->values()->all())
+                        @php($reservationMealText = !empty($reservationMealNames) ? implode(', ', $reservationMealNames) : ($reservation->diningMenu ? $reservation->diningMenu->name : 'N/A'))
+                        @php($reservationMealDetails = $reservationDiningItems->map(function ($item) {
+                            $mealName = $item->diningMenu?->name ?? 'Meal Item';
+                            $qty = $item->quantity ?? 1;
+                            return $mealName . ' (x' . $qty . ')';
+                        })->values()->all())
                         <div class="mt-3 space-y-1 text-sm text-gray-600">
-                            <p><span class="font-medium text-gray-700">Table:</span> {{ $reservation->dining_area ?? $reservation->table_name ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Table:</span> {{ $uniqueCsvValue($reservation->dining_area ?? $reservation->table_name ?? 'N/A') }}</p>
                             <p><span class="font-medium text-gray-700">Date:</span> {{ $formatDate($reservation->check_in) }}</p>
-                            <p><span class="font-medium text-gray-700">Time:</span> {{ $reservation->dining_schedule ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Time:</span> {{ $uniqueCsvValue($reservation->dining_schedule ?? 'N/A') }}</p>
+                            <p><span class="font-medium text-gray-700">Meals:</span> {{ $reservationMealText }}</p>
                             <p><span class="font-medium text-gray-700">Guests:</span> {{ $reservation->quantity ?? 'N/A' }}</p>
                             <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
                         </div>
                         <div class="mt-4 flex items-center gap-2">
+                            @php($reservationDetails = [
+                                'id' => $reservation->id,
+                                'category' => 'dining',
+                                'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
+                                'status' => ucfirst($reservation->status),
+                                'guest_name' => $reservation->guest_name,
+                                'guest_email' => $reservation->guest_email,
+                                'guest_phone' => $reservation->guest_phone,
+                                'special_requests' => $reservation->special_requests ?: 'No special requests',
+                                'dining_area' => $uniqueCsvValue($reservation->dining_area ?? $reservation->table_name ?? 'N/A'),
+                                'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                                'time' => $uniqueCsvValue($reservation->dining_schedule ?: ($reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A')),
+                                'number_of_guests' => $reservation->quantity ?? $reservation->number_of_guests ?? 'N/A',
+                                'selected_services' => $reservationMealDetails ?: ($reservation->dining_area ? ['Dining Area: ' . $reservation->dining_area] : []),
+                                'amount_paid' => $reservation->amount_paid ?? 0,
+                                'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
+                                'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
+                                'total_amount' => $reservation->total_amount ?? 0,
+                            ])
+                            <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
                             <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-700">Confirm</button>
                             <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">Cancel</button>
                             <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">Complete</button>
@@ -652,39 +866,59 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="hidden" data-reservation-fields="dining">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Dining Date</label>
-                    <input type="date" id="diningDate" name="check_in" value="{{ old('check_in') }}" data-dining-date data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <div class="hidden md:col-span-2" data-reservation-fields="dining">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Dining Date</label>
+                            <input type="date" id="diningDate" name="check_in" value="{{ old('check_in') }}" data-dining-date data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Menu</label>
+                            <div class="rounded-lg border border-gray-300 bg-white p-2">
+                                <div class="mb-2 flex items-center gap-2">
+                                    <input id="diningMenuSearch" type="text" placeholder="Search menu..." class="w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <button type="button" id="diningSelectAllBtn" class="rounded border border-orange-200 bg-orange-50 px-2 py-1 text-xs font-medium text-orange-600 hover:bg-orange-100">Select All</button>
+                                </div>
+                                <div id="diningMenuSelect" class="max-h-72 space-y-2 overflow-y-auto rounded-lg bg-gray-50 p-2">
+                                    <label class="flex w-full cursor-pointer items-center justify-between gap-2 rounded border border-gray-200 bg-white p-2 shadow-sm transition hover:border-orange-300 hover:bg-orange-50">
+                                        <span class="flex items-center gap-2">
+                                            <input type="checkbox" value="upon_arriving" data-price="0" data-name="Upon Arriving" class="dining-menu-checkbox h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
+                                            <span class="text-sm font-medium text-gray-700">Upon Arriving</span>
+                                        </span>
+                                        <span class="text-xs text-gray-500">₱0.00</span>
+                                    </label>
+                                    @foreach(($diningMenus ?? collect()) as $item)
+                                        <label class="dining-menu-item flex w-full cursor-pointer items-center justify-between gap-2 rounded border border-gray-200 bg-white p-2 shadow-sm transition hover:border-orange-300 hover:bg-orange-50" data-menu-name="{{ strtolower($item->name) }}">
+                                            <span class="flex items-center gap-2">
+                                                <input type="checkbox" value="{{ $item->id }}" data-price="{{ (float) $item->price }}" data-name="{{ $item->name }}" class="dining-menu-checkbox h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
+                                                <span class="text-sm font-medium text-gray-700">{{ $item->name }}</span>
+                                            </span>
+                                            <span class="text-xs text-gray-500">₱{{ number_format((float) $item->price, 2) }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <input type="hidden" name="dining_id" id="diningSelectedMenuIds" value="">
+                            <input type="hidden" name="quantity" id="diningSelectedMenuQuantity" value="">
+                            <div id="selectedDiningMenuItems" class="mt-3 space-y-2"></div>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Dining Schedule</label>
+                            <select name="dining_schedule" data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="">Select a dining schedule</option>
+                                @foreach(($diningSchedules ?? collect())->where('status', 'Active') as $schedule)
+                                    <option value="{{ $schedule->period }}" {{ old('dining_schedule') === $schedule->period ? 'selected' : '' }}>{{ $schedule->period }} ({{ date('g:i A', strtotime($schedule->available_from)) }} - {{ date('g:i A', strtotime($schedule->available_to)) }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Total Amount</label>
+                            <input id="reservationTotalAmount" type="number" name="total_amount" value="{{ old('total_amount') }}" min="0" step="0.01" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            @error('total_amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
                 </div>
                 <div class="hidden" data-reservation-fields="dining">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Dining Time</label>
-                    <input type="time" id="diningTime" name="check_in_time" data-dining-time data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                </div>
-                <div class="hidden" data-reservation-fields="dining">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Number of Guests</label>
-                    <input type="number" name="number_of_guests" data-reservation-input="dining" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                </div>
-                <div class="hidden" data-reservation-fields="dining">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Menu</label>
-                    <select name="dining_id" data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="">Select a menu</option>
-                        @foreach(($diningMenus ?? collect()) as $item)
-                            <option value="{{ $item->id }}">{{ $item->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="hidden" data-reservation-fields="dining">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Dining Schedule</label>
-                    <select name="dining_schedule" data-reservation-input="dining" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="">Select a dining schedule</option>
-                        @foreach(($diningSchedules ?? collect())->where('status', 'Active') as $schedule)
-                            <option value="{{ $schedule->period }}" {{ old('dining_schedule') === $schedule->period ? 'selected' : '' }}>{{ $schedule->period }} ({{ date('g:i A', strtotime($schedule->available_from)) }} - {{ date('g:i A', strtotime($schedule->available_to)) }})</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="hidden" data-reservation-fields="dining">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label>
-                    <input type="number" name="quantity" data-reservation-input="dining" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <input type="hidden" name="check_out" value="{{ old('check_out', old('check_in')) }}" data-dining-date-end>
                     <input type="hidden" name="check_out_time" value="{{ old('check_out_time', old('check_in_time')) }}" data-dining-time-end>
                 </div>
@@ -729,11 +963,6 @@
                     </div>
                     <input type="hidden" id="amenityEndDate" name="check_out">
                 </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Total Amount</label>
-                    <input id="reservationTotalAmount" type="number" name="total_amount" value="{{ old('total_amount') }}" min="0" step="0.01" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    @error('total_amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                </div>
             </div>
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700">Special Requests</label>
@@ -748,9 +977,12 @@
 </div>
 
 <div id="employeeReservationDetailsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-        <div class="mb-5 flex items-center justify-between"><h3 class="text-xl font-bold text-gray-800">Reservation Details</h3><button type="button" onclick="closeEmployeeReservationDetails()" class="text-gray-500 hover:text-gray-800" aria-label="Close details"><i class="fas fa-times text-xl"></i></button></div>
-        <div class="grid gap-3 text-sm sm:grid-cols-2"><div><span class="text-gray-500">Guest</span><p id="employeeDetailsGuest" class="font-semibold text-gray-900"></p></div><div><span class="text-gray-500">Room</span><p id="employeeDetailsRoom" class="font-semibold text-gray-900"></p></div><div><span class="text-gray-500">Check-in</span><p id="employeeDetailsCheckIn" class="font-semibold text-gray-900"></p></div><div><span class="text-gray-500">Check-out</span><p id="employeeDetailsCheckOut" class="font-semibold text-gray-900"></p></div><div><span class="text-gray-500">Amount</span><p id="employeeDetailsAmount" class="font-semibold text-gray-900"></p></div><div><span class="text-gray-500">Status</span><p id="employeeDetailsStatus" class="font-semibold text-gray-900"></p></div></div>
+    <div class="max-h-[85vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-gray-200 p-6">
+            <h3 class="text-xl font-bold text-gray-800">Reservation Details</h3>
+            <button type="button" onclick="closeEmployeeReservationDetails()" class="text-gray-500 hover:text-gray-800" aria-label="Close details"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div id="employeeDetailsBody" class="max-h-[70vh] space-y-5 overflow-y-auto p-6"></div>
     </div>
 </div>
 
@@ -812,13 +1044,114 @@
                 });
             });
 
-            document.getElementById('reservationTotalAmount').readOnly = tabKey === 'amenities';
+            const totalInput = document.getElementById('reservationTotalAmount');
+
+            if (totalInput) {
+                const isDiningTab = tabKey === 'dining';
+                totalInput.disabled = !isDiningTab;
+                totalInput.required = isDiningTab;
+                totalInput.readOnly = ['amenities', 'dining'].includes(tabKey);
+            }
+
             updateAmenityReservationTotal();
+            updateDiningReservationTotal();
             document.getElementById('addReservationButtonText').textContent = `Add ${reservationType} Reservation`;
             document.getElementById('reservationModalTitle').textContent = `Add ${reservationType} Reservation`;
             document.getElementById('reservationCategory').value = tabKey;
         }
 
+        function updateDiningReservationTotal() {
+            const diningCheckboxes = document.querySelectorAll('.dining-menu-checkbox');
+            const totalInput = document.getElementById('reservationTotalAmount');
+
+            if (!diningCheckboxes.length || !totalInput) {
+                return;
+            }
+
+            const selectedOptions = [...diningCheckboxes].filter((checkbox) => checkbox.checked);
+            const total = selectedOptions.reduce((sum, option) => {
+                const qtyInput = document.querySelector(`[data-dining-menu-id="${option.value}"]`);
+                const quantity = Number(qtyInput?.value || 1);
+                const price = Number(option.dataset.price || 0);
+                return sum + (price * quantity);
+            }, 0);
+
+            totalInput.value = selectedOptions.length ? total.toFixed(2) : '';
+
+            const selectedIds = selectedOptions
+                .filter(option => option.value !== 'upon_arriving')
+                .map(option => option.value);
+            const selectedQuantity = selectedOptions.reduce((sum, option) => {
+                const qtyInput = document.querySelector(`[data-dining-menu-id="${option.value}"]`);
+                return sum + Number(qtyInput?.value || 1);
+            }, 0);
+
+            document.getElementById('diningSelectedMenuIds').value = selectedIds.join(',');
+            document.getElementById('diningSelectedMenuQuantity').value = selectedQuantity || '';
+        }
+
+        function renderSelectedDiningMenuItems() {
+            const diningCheckboxes = document.querySelectorAll('.dining-menu-checkbox');
+            const container = document.getElementById('selectedDiningMenuItems');
+
+            if (!diningCheckboxes.length || !container) {
+                return;
+            }
+
+            const selectedOptions = [...diningCheckboxes].filter((checkbox) => checkbox.checked);
+            if (!selectedOptions.length) {
+                container.innerHTML = '<p class="text-sm text-gray-500">No menu selected.</p>';
+                updateDiningReservationTotal();
+                return;
+            }
+
+            container.innerHTML = selectedOptions.map((option) => {
+                const value = option.value;
+                const name = option.dataset.name || option.value;
+                const price = Number(option.dataset.price || 0);
+                const quantity = Number(document.querySelector(`[data-dining-menu-id="${value}"]`)?.value || 1);
+
+                return `
+                    <div class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
+                        <span class="flex-1 text-sm font-medium text-gray-700">${name}</span>
+                        <span class="text-xs text-gray-500">₱${price.toFixed(2)}</span>
+                        <input type="number" min="1" value="${quantity}" data-dining-menu-id="${value}" class="w-20 rounded border border-gray-300 px-2 py-1 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                `;
+            }).join('');
+
+            container.querySelectorAll('[data-dining-menu-id]').forEach((input) => {
+                input.addEventListener('input', updateDiningReservationTotal);
+            });
+
+            updateDiningReservationTotal();
+        }
+
+        const diningMenuSearch = document.getElementById('diningMenuSearch');
+        const diningSelectAllBtn = document.getElementById('diningSelectAllBtn');
+
+        if (diningMenuSearch) {
+            diningMenuSearch.addEventListener('input', function () {
+                const query = this.value.trim().toLowerCase();
+                document.querySelectorAll('.dining-menu-item').forEach((item) => {
+                    const name = (item.dataset.menuName || '').toLowerCase();
+                    item.style.display = name.includes(query) ? '' : 'none';
+                });
+            });
+        }
+
+        if (diningSelectAllBtn) {
+            diningSelectAllBtn.addEventListener('click', function () {
+                const checkboxes = document.querySelectorAll('.dining-menu-checkbox');
+                const shouldCheck = ![...checkboxes].every((checkbox) => checkbox.checked);
+
+                checkboxes.forEach((checkbox) => {
+                    checkbox.checked = shouldCheck;
+                });
+
+                renderSelectedDiningMenuItems();
+            });
+        }
 
         function updateAmenityReservationTotal() {
             const amenitySelect = document.querySelector('[data-reservation-input="amenities"]');
@@ -852,6 +1185,9 @@
         });
 
         document.querySelector('[data-reservation-input="amenities"]')?.addEventListener('change', updateAmenityReservationTotal);
+        document.querySelectorAll('.dining-menu-checkbox').forEach((checkbox) => {
+            checkbox.addEventListener('change', renderSelectedDiningMenuItems);
+        });
         document.getElementById('amenityDate')?.addEventListener('input', updateAmenityReservationTotal);
         document.getElementById('amenityStartTime')?.addEventListener('input', updateAmenityReservationTotal);
         document.getElementById('amenityDurationHours')?.addEventListener('input', updateAmenityReservationTotal);
@@ -885,13 +1221,152 @@
         menu.classList.toggle('hidden');
     }
 
+    function formatMoney(value) {
+        const amount = Number(value || 0);
+        if (!Number.isFinite(amount)) {
+            return '₱0.00';
+        }
+        return `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function formatDateValue(value) {
+        if (!value || value === 'N/A') return 'N/A';
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) return value;
+        return parsed.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function renderDetailsCard(title, entries) {
+        const entriesHtml = entries.map((entry) => {
+            const value = entry.value ?? 'N/A';
+            return `
+                <div class="rounded-xl border border-gray-200 bg-white p-3">
+                    <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">${escapeHtml(entry.label)}</div>
+                    <div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(value)}</div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <h4 class="mb-3 text-base font-semibold text-gray-800">${escapeHtml(title)}</h4>
+                <div class="grid gap-3 sm:grid-cols-2">${entriesHtml}</div>
+            </div>
+        `;
+    }
+
     function showEmployeeReservationDetails(button) {
-        document.getElementById('employeeDetailsGuest').textContent = button.dataset.guest || 'N/A';
-        document.getElementById('employeeDetailsRoom').textContent = button.dataset.room || 'N/A';
-        document.getElementById('employeeDetailsCheckIn').textContent = button.dataset.checkIn || 'N/A';
-        document.getElementById('employeeDetailsCheckOut').textContent = button.dataset.checkOut || 'N/A';
-        document.getElementById('employeeDetailsAmount').textContent = button.dataset.amount || 'N/A';
-        document.getElementById('employeeDetailsStatus').textContent = button.dataset.status || 'N/A';
+        const reservation = JSON.parse(button.dataset.reservation || '{}');
+        const category = reservation.category || 'rooms';
+        const status = reservation.status || 'N/A';
+        const services = Array.isArray(reservation.selected_services) && reservation.selected_services.length
+            ? reservation.selected_services
+            : ['No additional services selected'];
+        const detailsSections = [
+            renderDetailsCard('Reservation Information', [
+                { label: 'Reservation ID', value: reservation.id ? `RES-${reservation.id}` : 'N/A' },
+                { label: 'Reservation Date', value: reservation.reservation_date || 'N/A' },
+                { label: 'Status', value: status },
+            ]),
+            renderDetailsCard('Guest Information', [
+                { label: 'Full Name', value: reservation.guest_name || 'N/A' },
+                { label: 'Email', value: reservation.guest_email || 'N/A' },
+                { label: 'Mobile Number', value: reservation.guest_phone || 'N/A' },
+                { label: 'Special Request', value: reservation.special_requests || 'No special requests' },
+            ])
+        ];
+
+        const roomEntries = [
+            { label: 'Room Number', value: reservation.room_number || reservation.room || 'N/A' },
+            { label: 'Room Type', value: reservation.room_type || 'N/A' },
+            { label: 'Check-in Date', value: formatDateValue(reservation.room_check_in || reservation.check_in || reservation.date) },
+            { label: 'Check-in Time', value: reservation.room_check_in_time || reservation.check_in_time || 'N/A' },
+            { label: 'Check-out Date', value: formatDateValue(reservation.room_check_out || reservation.check_out || reservation.date) },
+            { label: 'Check-out Time', value: reservation.room_check_out_time || reservation.check_out_time || 'N/A' },
+            { label: 'Number of Guests', value: reservation.room_number_of_guests || reservation.number_of_guests || 'N/A' },
+            { label: 'Room Rate', value: reservation.room_rate && reservation.room_rate !== 'N/A' ? formatMoney(reservation.room_rate) : 'N/A' },
+        ];
+
+        const amenityEntries = [
+            { label: 'Amenity', value: reservation.amenity_name || 'N/A' },
+            { label: 'Date', value: formatDateValue(reservation.date || reservation.check_in) },
+            { label: 'Time', value: reservation.time || reservation.check_in_time || 'N/A' },
+            { label: 'Quantity', value: reservation.quantity || 'N/A' },
+        ];
+
+        const eventEntries = [
+            { label: 'Event Place', value: reservation.event_place || 'N/A' },
+            { label: 'Event Type', value: reservation.event_type || 'N/A' },
+            { label: 'Event Date', value: formatDateValue(reservation.event_date || reservation.check_in || reservation.date) },
+            { label: 'Start Time', value: reservation.event_start_time || reservation.start_time || reservation.check_in_time || 'N/A' },
+            { label: 'End Time', value: reservation.event_end_time || reservation.end_time || reservation.check_out_time || 'N/A' },
+            { label: 'Number of Guests', value: reservation.event_number_of_guests || reservation.number_of_guests || 'N/A' },
+        ];
+
+        const diningEntries = [
+            { label: 'Dining Area/Table', value: reservation.dining_area || 'N/A' },
+            { label: 'Date', value: formatDateValue(reservation.date || reservation.check_in) },
+            { label: 'Time', value: reservation.time || reservation.dining_schedule || 'N/A' },
+            { label: 'Number of Guests', value: reservation.number_of_guests || reservation.quantity || 'N/A' },
+        ];
+
+        if (category === 'rooms') {
+            detailsSections.push(renderDetailsCard('Room Information', roomEntries));
+        } else if (category === 'amenities') {
+            detailsSections.push(renderDetailsCard('Amenity Information', amenityEntries));
+        } else if (category === 'event_place') {
+            detailsSections.push(renderDetailsCard('Event Information', eventEntries));
+        } else if (category === 'dining') {
+            detailsSections.push(renderDetailsCard('Dining Information', diningEntries));
+        }
+
+        const serviceList = services.map((name) => `<li class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">${escapeHtml(name)}</li>`).join('');
+        detailsSections.push(`
+            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <h4 class="mb-3 text-base font-semibold text-gray-800">Menu / Meals</h4>
+                <ul class="space-y-2">${serviceList}</ul>
+            </div>
+        `);
+
+        const paymentEntries = [
+            { label: 'Payment Method', value: reservation.payment_method || 'N/A' },
+            { label: 'Payment Details', value: reservation.payment_details || 'No payment details recorded' },
+            { label: 'Amount Paid', value: Number(reservation.amount_paid || 0) > 0 ? formatMoney(reservation.amount_paid) : 'N/A' },
+            { label: 'Total Amount', value: reservation.total_amount ? formatMoney(reservation.total_amount) : 'N/A' },
+            { label: 'Status', value: status },
+        ];
+
+        const paymentProofUrl = reservation.payment_proof || (() => {
+            if (typeof reservation.payment_details !== 'string') {
+                return null;
+            }
+
+            const match = reservation.payment_details.match(/https?:\/\/\S+|\/storage\/\S+|data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/i);
+            return match ? match[0] : null;
+        })();
+
+        detailsSections.push(renderDetailsCard('Payment Information', paymentEntries));
+
+        if (paymentProofUrl) {
+            detailsSections.push(`
+                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <h4 class="mb-3 text-base font-semibold text-gray-800">Payment Proof</h4>
+                    <img src="${escapeHtml(paymentProofUrl)}" alt="Payment proof" class="max-h-72 w-full rounded-xl border border-gray-200 bg-white object-contain p-2" />
+                </div>
+            `);
+        }
+
+        document.getElementById('employeeDetailsBody').innerHTML = detailsSections.join('');
+
         const modal = document.getElementById('employeeReservationDetailsModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -973,6 +1448,7 @@
         fields.check_out.value = reservation.check_out || '';
         fields.check_out_time.value = timeValue(reservation.check_out_time);
         fields.total_amount.value = reservation.total_amount || 0;
+        fields.amount_paid.value = reservation.amount_paid ?? 0;
         fields.special_requests.value = reservation.special_requests || '';
         document.getElementById('reservationCategory').value = reservation.category || 'rooms';
         document.querySelector(`[data-reservation-tab="${reservation.category || 'rooms'}"]`)?.click();

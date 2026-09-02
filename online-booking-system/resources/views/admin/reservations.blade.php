@@ -208,6 +208,19 @@
                 <input name="guest_email" id="adminEditGuestEmail" type="email" class="rounded-lg border border-gray-300 px-3 py-2" placeholder="Guest email" required>
                 <input name="guest_phone" id="adminEditGuestPhone" class="rounded-lg border border-gray-300 px-3 py-2" placeholder="Guest phone" required>
                 <select name="room_id" id="adminEditRoom" class="rounded-lg border border-gray-300 px-3 py-2" required>@foreach($rooms as $room)<option value="{{ $room->id }}">{{ $room->room_number }} - {{ $room->room_type }}</option>@endforeach</select>
+                <select name="dining_id" id="adminEditDiningMenu" class="rounded-lg border border-gray-300 px-3 py-2">
+                    <option value="">Select a menu</option>
+                    <option value="upon_arriving" data-price="0">Upon Arriving</option>
+                    @foreach(($diningMenus ?? collect()) as $menu)
+                        <option value="{{ $menu->id }}" data-price="{{ (float) $menu->price }}">{{ $menu->name }} - ₱{{ number_format((float) $menu->price, 2) }}</option>
+                    @endforeach
+                </select>
+                <select name="dining_schedule" id="adminEditDiningSchedule" class="rounded-lg border border-gray-300 px-3 py-2">
+                    <option value="">Select a dining schedule</option>
+                    @foreach(($diningSchedules ?? collect())->where('status', 'Active') as $schedule)
+                        <option value="{{ $schedule->period }}">{{ $schedule->period }} ({{ date('g:i A', strtotime($schedule->available_from)) }} - {{ date('g:i A', strtotime($schedule->available_to)) }})</option>
+                    @endforeach
+                </select>
                 <input name="check_in" id="adminEditCheckIn" type="date" class="rounded-lg border border-gray-300 px-3 py-2" required><input name="check_in_time" id="adminEditCheckInTime" type="time" class="rounded-lg border border-gray-300 px-3 py-2">
                 <input name="check_out" id="adminEditCheckOut" type="date" class="rounded-lg border border-gray-300 px-3 py-2" required><input name="check_out_time" id="adminEditCheckOutTime" type="time" class="rounded-lg border border-gray-300 px-3 py-2">
                 <select name="status" id="adminEditStatus" class="rounded-lg border border-gray-300 px-3 py-2" required><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="checked-in">Checked-in</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select>
@@ -249,6 +262,19 @@
         menu.classList.toggle('hidden');
     }
 
+    function updateAdminDiningTotal() {
+        const diningSelect = document.getElementById('adminEditDiningMenu');
+        const totalInput = document.getElementById('adminEditAmount');
+
+        if (!diningSelect || !totalInput) {
+            return;
+        }
+
+        const selectedOption = diningSelect.options[diningSelect.selectedIndex];
+        const price = Number(selectedOption?.dataset.price || 0);
+        totalInput.value = selectedOption && selectedOption.value ? price.toFixed(2) : '';
+    }
+
     function openAdminEditReservation(reservation) {
         const form = document.getElementById('adminEditReservationForm');
         form.action = "{{ route('admin.reservations.update', ['id' => '__ID__']) }}".replace('__ID__', reservation.id);
@@ -256,6 +282,8 @@
         document.getElementById('adminEditGuestEmail').value = reservation.guest_email || '';
         document.getElementById('adminEditGuestPhone').value = reservation.guest_phone || '';
         document.getElementById('adminEditRoom').value = reservation.room_id || '';
+        document.getElementById('adminEditDiningMenu').value = reservation.dining_id || '';
+        document.getElementById('adminEditDiningSchedule').value = reservation.dining_schedule || '';
         document.getElementById('adminEditCheckIn').value = reservation.check_in || '';
         document.getElementById('adminEditCheckInTime').value = reservation.check_in_time ? String(reservation.check_in_time).slice(0, 5) : '';
         document.getElementById('adminEditCheckOut').value = reservation.check_out || '';
@@ -263,6 +291,7 @@
         document.getElementById('adminEditStatus').value = reservation.status || 'pending';
         document.getElementById('adminEditAmount').value = reservation.total_amount || 0;
         document.getElementById('adminEditRequests').value = reservation.special_requests || '';
+        updateAdminDiningTotal();
         const modal = document.getElementById('adminEditReservationModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -301,6 +330,9 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
+        const diningSelect = document.getElementById('adminEditDiningMenu');
+        diningSelect?.addEventListener('change', updateAdminDiningTotal);
+
         const searchInput = document.getElementById('reservationSearch');
         const statusFilter = document.getElementById('reservationStatusFilter');
         const reservationItems = document.querySelectorAll('.reservation-item');

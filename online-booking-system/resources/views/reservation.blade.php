@@ -845,7 +845,7 @@
                         <div class="payment-field"><label for="gcashAccountName">GCash Account Name</label><input id="gcashAccountName" type="text" placeholder="Enter account name"></div>
                         <div class="payment-field"><label for="gcashNumber">GCash Number</label><input id="gcashNumber" type="tel" placeholder="09XX XXX XXXX"></div>
                         <div class="payment-field"><label for="gcashReferenceNumber">Reference Number</label><input id="gcashReferenceNumber" type="text" placeholder="Enter reference number"></div>
-                        <div class="payment-field"><label for="gcashPaymentAmount">Payment Amount</label><input id="gcashPaymentAmount" type="text" value="₱0.00" readonly></div>
+                        <div class="payment-field"><label for="gcashPaymentAmount">Payment Amount</label><input id="gcashPaymentAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
                         <div class="payment-field full-width"><label for="gcashPaymentProof">Upload Payment Proof</label><input id="gcashPaymentProof" type="file" accept="image/*,.pdf"></div>
                     </div>
                 </div>
@@ -855,7 +855,7 @@
                         <div class="payment-field"><label for="mayaAccountName">Maya Account Name</label><input id="mayaAccountName" type="text" placeholder="Enter account name"></div>
                         <div class="payment-field"><label for="mayaNumber">Maya Number</label><input id="mayaNumber" type="tel" placeholder="09XX XXX XXXX"></div>
                         <div class="payment-field"><label for="mayaReferenceNumber">Reference Number</label><input id="mayaReferenceNumber" type="text" placeholder="Enter reference number"></div>
-                        <div class="payment-field"><label for="mayaPaymentAmount">Payment Amount</label><input id="mayaPaymentAmount" type="text" value="₱0.00" readonly></div>
+                        <div class="payment-field"><label for="mayaPaymentAmount">Payment Amount</label><input id="mayaPaymentAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
                         <div class="payment-field full-width"><label for="mayaPaymentProof">Upload Payment Proof</label><input id="mayaPaymentProof" type="file" accept="image/*,.pdf"></div>
                     </div>
                 </div>
@@ -866,7 +866,7 @@
                         <div class="payment-field full-width"><label for="cardNumber">Card Number</label><input id="cardNumber" type="text" inputmode="numeric" placeholder="**** **** **** ****"></div>
                         <div class="payment-field"><label for="cardExpiration">Expiration Date</label><input id="cardExpiration" type="text" placeholder="MM / YY"></div>
                         <div class="payment-field"><label for="cardCvv">CVV</label><input id="cardCvv" type="password" inputmode="numeric" placeholder="***"></div>
-                        <div class="payment-field full-width"><label for="cardPaymentAmount">Payment Amount</label><input id="cardPaymentAmount" type="text" value="₱0.00" readonly></div>
+                        <div class="payment-field full-width"><label for="cardPaymentAmount">Payment Amount</label><input id="cardPaymentAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
                     </div>
                 </div>
                 <div class="payment-method-panel" data-payment-panel="Bank Transfer" hidden>
@@ -876,7 +876,7 @@
                         <div class="payment-field"><label for="bankName">Bank</label><select id="bankName"><option value="">Select Bank</option><option>BDO</option><option>BPI</option><option>Metrobank</option><option>Other</option></select></div>
                         <div class="payment-field"><label for="bankReferenceNumber">Reference Number</label><input id="bankReferenceNumber" type="text" placeholder="Enter reference number"></div>
                         <div class="payment-field"><label for="transferDate">Transfer Date</label><input id="transferDate" type="date"></div>
-                        <div class="payment-field"><label for="transferAmount">Amount Transferred</label><input id="transferAmount" type="text" value="₱0.00" readonly></div>
+                        <div class="payment-field"><label for="transferAmount">Amount Transferred</label><input id="transferAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
                         <div class="payment-field"><label for="bankPaymentProof">Upload Payment Proof</label><input id="bankPaymentProof" type="file" accept="image/*,.pdf"></div>
                     </div>
                 </div>
@@ -947,8 +947,10 @@
     <input type="hidden" name="guest_email" id="reservationGuestEmail" value="{{ $guest?->email ?? 'guest@example.com' }}">
     <input type="hidden" name="guest_phone" id="reservationGuestPhone" value="{{ $guest?->contact_no ?? '0000000000' }}">
     <input type="hidden" name="total_amount" id="reservationTotalAmount">
+    <input type="hidden" name="amount_paid" id="reservationAmountPaid" value="0">
     <input type="hidden" name="special_requests" id="reservationSpecialRequests" value="">
     <input type="hidden" name="dining_id" id="reservationDiningId">
+    <input type="hidden" name="dining_items" id="reservationDiningItems">
     <input type="hidden" name="dining_area" id="reservationDiningArea">
     <input type="hidden" name="dining_schedule" id="reservationDiningSchedule">
     <input type="hidden" name="quantity" id="reservationDiningQuantity">
@@ -994,6 +996,7 @@
         const reservationTotalAmount = document.getElementById('reservationTotalAmount');
         const reservationSpecialRequests = document.getElementById('reservationSpecialRequests');
         const reservationDiningId = document.getElementById('reservationDiningId');
+        const reservationDiningItems = document.getElementById('reservationDiningItems');
         const reservationDiningArea = document.getElementById('reservationDiningArea');
         const reservationDiningSchedule = document.getElementById('reservationDiningSchedule');
         const reservationDiningQuantity = document.getElementById('reservationDiningQuantity');
@@ -1111,23 +1114,55 @@
         };
 
         const escapeHtml = value => String(value).replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
+        const formatCurrencyValue = (value) => {
+            const numericValue = Number(value) || 0;
+            return `₱${numericValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        };
+        const formatCurrencyInput = (input) => {
+            if (!input) {
+                return;
+            }
+
+            const rawNumber = String(input.value || '').replace(/[^\d.-]/g, '');
+            if (!rawNumber || rawNumber === '-' || rawNumber === '.') {
+                input.value = '';
+                return;
+            }
+
+            const numericValue = Number(rawNumber);
+            if (!Number.isFinite(numericValue)) {
+                input.value = '';
+                return;
+            }
+
+            input.value = `₱${numericValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        };
+        const getPaymentAmountValue = (inputId) => {
+            const input = document.getElementById(inputId);
+            if (!input) {
+                return 0;
+            }
+            const cleanValue = Number(String(input.value).replace(/[^\d.-]/g, ''));
+            return Number.isFinite(cleanValue) ? cleanValue : 0;
+        };
 
         const getPaymentDetails = () => {
             const value = id => document.getElementById(id)?.value?.trim() || '';
             const fileName = id => document.getElementById(id)?.files?.[0]?.name || '';
+            const amountValue = (inputId) => formatCurrencyValue(getPaymentAmountValue(inputId));
 
             if (selectedPaymentMethod === 'GCash') {
-                return `Account: ${value('gcashAccountName') || '—'} • Number: ${value('gcashNumber') || '—'} • Reference: ${value('gcashReferenceNumber') || '—'}${fileName('gcashPaymentProof') ? ` • Proof: ${fileName('gcashPaymentProof')}` : ''}`;
+                return `Account: ${value('gcashAccountName') || '—'} • Number: ${value('gcashNumber') || '—'} • Amount: ${amountValue('gcashPaymentAmount')} • Reference: ${value('gcashReferenceNumber') || '—'}${fileName('gcashPaymentProof') ? ` • Proof: ${fileName('gcashPaymentProof')}` : ''}`;
             }
             if (selectedPaymentMethod === 'Maya') {
-                return `Account: ${value('mayaAccountName') || '—'} • Number: ${value('mayaNumber') || '—'} • Reference: ${value('mayaReferenceNumber') || '—'}${fileName('mayaPaymentProof') ? ` • Proof: ${fileName('mayaPaymentProof')}` : ''}`;
+                return `Account: ${value('mayaAccountName') || '—'} • Number: ${value('mayaNumber') || '—'} • Amount: ${amountValue('mayaPaymentAmount')} • Reference: ${value('mayaReferenceNumber') || '—'}${fileName('mayaPaymentProof') ? ` • Proof: ${fileName('mayaPaymentProof')}` : ''}`;
             }
             if (selectedPaymentMethod === 'Credit / Debit Card') {
                 const cardNumber = value('cardNumber').replace(/\D/g, '');
-                return `Cardholder: ${value('cardholderName') || '—'} • Card: ${cardNumber ? `•••• ${cardNumber.slice(-4)}` : '—'} • Expiration: ${value('cardExpiration') || '—'}`;
+                return `Cardholder: ${value('cardholderName') || '—'} • Card: ${cardNumber ? `•••• ${cardNumber.slice(-4)}` : '—'} • Amount: ${amountValue('cardPaymentAmount')} • Expiration: ${value('cardExpiration') || '—'}`;
             }
             if (selectedPaymentMethod === 'Bank Transfer') {
-                return `Account: ${value('bankAccountName') || '—'} • Bank: ${value('bankName') || '—'} • Reference: ${value('bankReferenceNumber') || '—'} • Date: ${value('transferDate') || '—'}${fileName('bankPaymentProof') ? ` • Proof: ${fileName('bankPaymentProof')}` : ''}`;
+                return `Account: ${value('bankAccountName') || '—'} • Bank: ${value('bankName') || '—'} • Amount: ${amountValue('transferAmount')} • Reference: ${value('bankReferenceNumber') || '—'} • Date: ${value('transferDate') || '—'}${fileName('bankPaymentProof') ? ` • Proof: ${fileName('bankPaymentProof')}` : ''}`;
             }
             return 'Pay at hotel';
         };
@@ -1136,17 +1171,17 @@
             const value = id => document.getElementById(id)?.value?.trim() || '';
             const file = id => document.getElementById(id)?.files?.[0] || null;
             if (selectedPaymentMethod === 'GCash') {
-                return [['fa-user', 'Account Name', value('gcashAccountName') || '—'], ['fa-phone', 'Account Number', value('gcashNumber') || '—'], ['fa-receipt', 'Reference Number', value('gcashReferenceNumber') || '—'], ['fa-shield-alt', 'Proof of Payment', file('gcashPaymentProof')?.name || 'Not uploaded']];
+                return [['fa-user', 'Account Name', value('gcashAccountName') || '—'], ['fa-money-bill-wave', 'Amount', formatCurrencyValue(getPaymentAmountValue('gcashPaymentAmount'))], ['fa-phone', 'Account Number', value('gcashNumber') || '—'], ['fa-receipt', 'Reference Number', value('gcashReferenceNumber') || '—'], ['fa-shield-alt', 'Proof of Payment', file('gcashPaymentProof')?.name || 'Not uploaded']];
             }
             if (selectedPaymentMethod === 'Maya') {
-                return [['fa-user', 'Account Name', value('mayaAccountName') || '—'], ['fa-phone', 'Account Number', value('mayaNumber') || '—'], ['fa-receipt', 'Reference Number', value('mayaReferenceNumber') || '—'], ['fa-shield-alt', 'Proof of Payment', file('mayaPaymentProof')?.name || 'Not uploaded']];
+                return [['fa-user', 'Account Name', value('mayaAccountName') || '—'], ['fa-money-bill-wave', 'Amount', formatCurrencyValue(getPaymentAmountValue('mayaPaymentAmount'))], ['fa-phone', 'Account Number', value('mayaNumber') || '—'], ['fa-receipt', 'Reference Number', value('mayaReferenceNumber') || '—'], ['fa-shield-alt', 'Proof of Payment', file('mayaPaymentProof')?.name || 'Not uploaded']];
             }
             if (selectedPaymentMethod === 'Credit / Debit Card') {
                 const cardNumber = value('cardNumber').replace(/\D/g, '');
-                return [['fa-user', 'Cardholder Name', value('cardholderName') || '—'], ['fa-credit-card', 'Card Number', cardNumber ? `•••• ${cardNumber.slice(-4)}` : '—'], ['fa-calendar', 'Expiration Date', value('cardExpiration') || '—']];
+                return [['fa-user', 'Cardholder Name', value('cardholderName') || '—'], ['fa-credit-card', 'Card Number', cardNumber ? `•••• ${cardNumber.slice(-4)}` : '—'], ['fa-money-bill-wave', 'Amount', formatCurrencyValue(getPaymentAmountValue('cardPaymentAmount'))], ['fa-calendar', 'Expiration Date', value('cardExpiration') || '—']];
             }
             if (selectedPaymentMethod === 'Bank Transfer') {
-                return [['fa-user', 'Account Name', value('bankAccountName') || '—'], ['fa-university', 'Bank', value('bankName') || '—'], ['fa-receipt', 'Reference Number', value('bankReferenceNumber') || '—'], ['fa-calendar', 'Transfer Date', value('transferDate') || '—'], ['fa-shield-alt', 'Proof of Payment', file('bankPaymentProof')?.name || 'Not uploaded']];
+                return [['fa-user', 'Account Name', value('bankAccountName') || '—'], ['fa-university', 'Bank', value('bankName') || '—'], ['fa-money-bill-wave', 'Amount', formatCurrencyValue(getPaymentAmountValue('transferAmount'))], ['fa-receipt', 'Reference Number', value('bankReferenceNumber') || '—'], ['fa-calendar', 'Transfer Date', value('transferDate') || '—'], ['fa-shield-alt', 'Proof of Payment', file('bankPaymentProof')?.name || 'Not uploaded']];
             }
             return [];
         };
@@ -1162,9 +1197,10 @@
 
         const updateSummary = () => {
             const selectedEventTitles = selectedEvent.map(item => item.title).join(', ');
-            const selectedDiningTitles = selectedDining.map(item => item.title).join(', ');
-            const selectedDiningSchedule = selectedDining.map(item => item.schedule).filter(Boolean).join(', ');
-            const selectedDiningTable = selectedDining.map(item => item.table).filter(Boolean).join(', ');
+            const selectedDiningTitles = selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ');
+            const selectedDiningSchedule = [...new Set(selectedDining.map(item => item.schedule).filter(Boolean))].join(', ');
+            const selectedDiningTable = [...new Set(selectedDining.map(item => item.table).filter(Boolean))].join(', ');
+            const selectedDiningDate = [...new Set(selectedDining.map(item => item.date).filter(Boolean).map(date => formatDisplayDate(date)))].join(', ');
             const selectedEventGuests = selectedEvent.reduce((sum, item) => sum + (Number(item.guests || 0)), 0);
             const selectedDiningQuantity = selectedDining.reduce((sum, item) => sum + (Number(item.quantity || 1)), 0);
 
@@ -1181,11 +1217,12 @@
             summaryDiningPrice.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
 
             const total = calculateTotal();
-            detailsRoomName.textContent = selectedRoom || 'None selected';
-            detailsCheckIn.textContent = formatDisplayDate(checkIn.value);
-            detailsArrivalTime.textContent = formatDisplayTime(arrivalTime.value);
-            detailsCheckOut.textContent = formatDisplayDate(checkOut.value);
-            detailsRoomGuests.textContent = `${selectedExtraGuests + 2} Guests`;
+            const hasRoomSelection = Boolean(selectedRoom);
+            detailsRoomName.textContent = hasRoomSelection ? selectedRoom : 'None selected';
+            detailsCheckIn.textContent = hasRoomSelection ? formatDisplayDate(checkIn.value) : '—';
+            detailsArrivalTime.textContent = hasRoomSelection ? formatDisplayTime(arrivalTime.value) : '—';
+            detailsCheckOut.textContent = hasRoomSelection ? formatDisplayDate(checkOut.value) : '—';
+            detailsRoomGuests.textContent = hasRoomSelection ? `${selectedExtraGuests + 2} Guests` : '—';
             detailsAmenitiesTitle.textContent = selectedAmenities.length ? selectedAmenities.map(item => item.title).join(', ') : 'None';
             detailsAmenitiesSummary.textContent = selectedAmenities.length
                 ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
@@ -1194,17 +1231,19 @@
             detailsEventSummary.textContent = selectedEvent.length
                 ? selectedEvent.map(item => `${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}`).join(', ')
                 : '';
-            detailsDiningTitle.textContent = selectedDining.length ? selectedDining.map(item => `${item.title}${item.schedule ? ` • ${item.schedule}` : ''}`).join(', ') : 'None';
+            detailsDiningTitle.textContent = selectedDining.length
+                ? selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ')
+                : 'None';
             detailsDiningSummary.textContent = selectedDining.length
-                ? selectedDining.map(item => `${item.table ? `Table ${item.table}` : ''}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}`).filter(Boolean).join(', ') || 'No table selected'
+                ? [selectedDiningTable ? `Table ${selectedDiningTable}` : null, selectedDiningSchedule || null, selectedDiningDate || null].filter(Boolean).join(' • ') || 'No table selected'
                 : '';
 
             confirmReservationId.textContent = selectedRoom ? `RES-${Math.floor(Math.random() * 9000) + 1000}` : 'RES-0000';
             confirmRoom.textContent = selectedRoom ? selectedRoom : 'None';
-            confirmArrivingOn.textContent = formatDisplayDate(checkIn.value);
-            confirmArrivalTime.textContent = formatDisplayTime(arrivalTime.value);
-            confirmCheckOut.textContent = formatDisplayDate(checkOut.value);
-            confirmGuests.textContent = `${selectedExtraGuests + 2} Guests`;
+            confirmArrivingOn.textContent = selectedRoom ? formatDisplayDate(checkIn.value) : '—';
+            confirmArrivalTime.textContent = selectedRoom ? formatDisplayTime(arrivalTime.value) : '—';
+            confirmCheckOut.textContent = selectedRoom ? formatDisplayDate(checkOut.value) : '—';
+            confirmGuests.textContent = selectedRoom ? `${selectedExtraGuests + 2} Guests` : '—';
             confirmStatus.textContent = 'Reserved';
             confirmPaymentMethod.textContent = selectedPaymentMethod;
             const paymentDetailRows = getPaymentDetailRows();
@@ -1232,9 +1271,11 @@
             confirmEventDining.textContent = selectedEvent.length
                 ? selectedEvent.map(item => `${item.type || 'Event'} • ${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}`).join(', ')
                 : 'No event selected';
-            confirmDiningTitle.textContent = selectedDining.length ? selectedDining.map(item => `${item.title}${item.schedule ? ` • ${item.schedule}` : ''}`).join(', ') : 'None';
+            confirmDiningTitle.textContent = selectedDining.length
+                ? selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ')
+                : 'None';
             confirmDiningDetails.textContent = selectedDining.length
-                ? selectedDining.map(item => `${item.table ? `Table ${item.table}` : 'Table not selected'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.schedule ? ` • ${item.schedule} time` : ''}`).join(', ')
+                ? [selectedDiningTable ? `Table ${selectedDiningTable}` : 'Table not selected', selectedDiningSchedule || null, selectedDiningDate || null].filter(Boolean).join(' • ') || 'No dining selected'
                 : 'No dining selected';
             confirmGuestName.textContent = detailsGuestName.value || 'Guest';
             confirmGuestEmail.textContent = detailsGuestEmail.value || 'guest@example.com';
@@ -1246,8 +1287,12 @@
             confirmDiningCharge.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
             confirmExtraGuestCharge.textContent = `₱${(selectedExtraGuests * selectedExtraGuestPrice).toLocaleString()}`;
             confirmTotalAmount.textContent = `₱${calculateTotal().toLocaleString()}`;
-            const paymentTotal = `₱${calculateTotal().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            methodPaymentAmounts.forEach(input => input.value = paymentTotal);
+            methodPaymentAmounts.forEach(input => {
+                input.placeholder = 'Enter amount';
+                if (input.dataset.userEdited !== 'true') {
+                    input.value = '';
+                }
+            });
 
             summaryTotal.textContent = `₱${total.toLocaleString()}`;
             reservationTotalAmount.value = total;
@@ -1256,6 +1301,13 @@
             reservationCheckInTime.value = arrivalTime.value || '';
             reservationCheckOutTime.value = '';
             reservationDiningId.value = selectedDining.map(item => item.id).filter(Boolean).join(',');
+            reservationDiningItems.value = JSON.stringify(selectedDining.map(item => ({
+                dining_id: item.id,
+                quantity: Number(item.quantity || 1),
+                dining_area: item.table || null,
+                dining_schedule: item.schedule || null,
+                dining_date: item.date || null,
+            })));
             reservationDiningArea.value = selectedDining.map(item => item.table).filter(Boolean).join(',');
             reservationDiningSchedule.value = selectedDining.map(item => item.schedule).filter(Boolean).join(',');
             reservationDiningQuantity.value = selectedDiningQuantity || '';
@@ -1279,8 +1331,28 @@
             updateSummary();
         }));
         document.querySelectorAll('.payment-method-section input, .payment-method-section select').forEach(field => {
-            field.addEventListener('input', updateSummary);
-            field.addEventListener('change', updateSummary);
+            field.addEventListener('input', function () {
+                if (field.matches('#gcashPaymentAmount, #mayaPaymentAmount, #cardPaymentAmount, #transferAmount')) {
+                    field.dataset.userEdited = 'true';
+                    const rawValue = String(field.value || '').replace(/[^\d.-]/g, '');
+                    field.value = rawValue;
+                }
+                updateSummary();
+            });
+            field.addEventListener('blur', function () {
+                if (field.matches('#gcashPaymentAmount, #mayaPaymentAmount, #cardPaymentAmount, #transferAmount')) {
+                    field.dataset.userEdited = 'true';
+                    formatCurrencyInput(field);
+                }
+                updateSummary();
+            });
+            field.addEventListener('change', function () {
+                if (field.matches('#gcashPaymentAmount, #mayaPaymentAmount, #cardPaymentAmount, #transferAmount')) {
+                    field.dataset.userEdited = 'true';
+                    formatCurrencyInput(field);
+                }
+                updateSummary();
+            });
         });
 
         const calculateTotal = () => {
@@ -1391,20 +1463,52 @@
                 const category = card.dataset.category;
 
                 if (category === 'room') {
-                    selectedRoom = title;
-                    roomPrice = price;
-                    selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice || 650);
-                    selectedExtraGuests = Number(card.querySelector('.room-extra-guests')?.value || 0);
-                    reservationRoomId.value = card.dataset.roomId || '';
-                    items.forEach(btn => {
-                        if (btn.closest('.reservation-card').dataset.category === 'room') {
-                            btn.textContent = 'Add to Reservation';
-                            btn.disabled = false;
-                        }
-                    });
-                    this.textContent = 'Selected';
-                    this.disabled = true;
+                    const isSameRoomSelected = selectedRoom === title && roomPrice === price;
+
+                    if (isSameRoomSelected) {
+                        selectedRoom = null;
+                        roomPrice = 0;
+                        selectedAmenities = [];
+                        reservationRoomId.value = '';
+                        selectedExtraGuests = 0;
+                        selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice || 650);
+                        document.querySelectorAll('.room-extra-guests').forEach(select => select.value = '0');
+                        items.forEach(btn => {
+                            if (btn.closest('.reservation-card').dataset.category === 'room') {
+                                btn.textContent = 'Add to Reservation';
+                            }
+                            if (btn.closest('.reservation-card').dataset.category === 'amenities') {
+                                btn.textContent = 'Add to Reservation';
+                                btn.disabled = false;
+                            }
+                        });
+                    } else {
+                        selectedRoom = title;
+                        roomPrice = price;
+                        selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice || 650);
+                        selectedExtraGuests = Number(card.querySelector('.room-extra-guests')?.value || 0);
+                        reservationRoomId.value = card.dataset.roomId || '';
+                        items.forEach(btn => {
+                            if (btn.closest('.reservation-card').dataset.category === 'room') {
+                                btn.textContent = 'Add to Reservation';
+                            }
+                            if (btn.closest('.reservation-card').dataset.category === 'amenities') {
+                                btn.disabled = false;
+                                if (selectedAmenities.some(item => item.id === btn.closest('.reservation-card').dataset.amenityId)) {
+                                    btn.textContent = 'Selected';
+                                } else {
+                                    btn.textContent = 'Add to Reservation';
+                                }
+                            }
+                        });
+                        this.textContent = 'Selected';
+                    }
                 } else if (category === 'amenities') {
+                    if (!selectedRoom) {
+                        alert('Amenities can only be selected when a room is booked.');
+                        return;
+                    }
+
                     const itemIndex = selectedAmenities.findIndex(item => item.id === card.dataset.amenityId);
                     if (itemIndex === -1) {
                         const quantity = Number(card.querySelector('.amenity-quantity')?.value || 1);
@@ -1416,12 +1520,10 @@
                             date: card.querySelector('.amenity-date')?.value || '',
                             time: card.querySelector('.amenity-time')?.value || '',
                         });
-                        this.textContent = 'Added';
-                        this.disabled = true;
+                        this.textContent = 'Selected';
                     } else {
                         selectedAmenities.splice(itemIndex, 1);
                         this.textContent = 'Add to Reservation';
-                        this.disabled = false;
                     }
                 } else if (category === 'event_place') {
                     const eventIndex = selectedEvent.findIndex(item => item.id === card.dataset.eventId);
@@ -1436,12 +1538,10 @@
                             startTime: card.querySelector('.event-start-time')?.value || '',
                             endTime: card.querySelector('.event-end-time')?.value || '',
                         });
-                        this.textContent = 'Added';
-                        this.disabled = true;
+                        this.textContent = 'Selected';
                     } else {
                         selectedEvent.splice(eventIndex, 1);
                         this.textContent = 'Add to Reservation';
-                        this.disabled = false;
                     }
                 } else if (category === 'dining') {
                     const diningIndex = selectedDining.findIndex(item => item.id === card.dataset.diningId);
@@ -1456,13 +1556,11 @@
                             date: document.getElementById('diningDate')?.value || '',
                             quantity,
                         });
-                        this.textContent = 'Added';
-                        this.disabled = true;
+                        this.textContent = 'Selected';
                     } else {
                         selectedDining[diningIndex].quantity = quantity;
                         selectedDining.splice(diningIndex, 1);
                         this.textContent = 'Add to Reservation';
-                        this.disabled = false;
                     }
                 }
 
@@ -1523,11 +1621,17 @@
                 return;
             }
 
-            if (!selectedRoom) {
-                alert('Please select a room before confirming your reservation.');
+            if (selectedAmenities.length > 0 && !selectedRoom) {
+                alert('Amenities can only be selected when a room is booked.');
                 return;
             }
-            if (!checkIn.value || !checkOut.value) {
+
+            if (!selectedRoom && selectedEvent.length === 0 && selectedDining.length === 0) {
+                alert('Please select a room, event place, or dining before confirming your reservation.');
+                return;
+            }
+
+            if (selectedRoom && (!checkIn.value || !checkOut.value)) {
                 alert('Please select check-in and check-out dates.');
                 return;
             }
@@ -1708,11 +1812,37 @@
             const firstAmenitySelection = selectedAmenities[0] || null;
             reservationCheckInTime.value = firstEventSelection?.startTime || firstAmenitySelection?.time || arrivalTime.value || '';
             reservationCheckOutTime.value = firstEventSelection?.endTime || reservationCheckInTime.value || '';
+
+            const existingPaymentMethodInput = reservationForm.querySelector('input[name="payment_method"]');
+            const existingPaymentDetailsInput = reservationForm.querySelector('input[name="payment_details"]');
+            const existingAmountPaidInput = reservationForm.querySelector('input[name="amount_paid"]');
+            if (existingPaymentMethodInput) existingPaymentMethodInput.remove();
+            if (existingPaymentDetailsInput) existingPaymentDetailsInput.remove();
+            if (existingAmountPaidInput) existingAmountPaidInput.remove();
+
             const paymentMethodInput = document.createElement('input');
             paymentMethodInput.type = 'hidden';
             paymentMethodInput.name = 'payment_method';
             paymentMethodInput.value = selectedPaymentMethod;
             reservationForm.appendChild(paymentMethodInput);
+
+            const paymentDetailsInput = document.createElement('input');
+            paymentDetailsInput.type = 'hidden';
+            paymentDetailsInput.name = 'payment_details';
+            paymentDetailsInput.value = getPaymentDetails();
+            reservationForm.appendChild(paymentDetailsInput);
+
+            const amountPaidInput = document.createElement('input');
+            amountPaidInput.type = 'hidden';
+            amountPaidInput.name = 'amount_paid';
+            amountPaidInput.value = selectedPaymentMethod === 'Cash / Pay at Hotel' ? Number(reservationTotalAmount.value || 0) : (
+                selectedPaymentMethod === 'GCash' ? getPaymentAmountValue('gcashPaymentAmount') :
+                selectedPaymentMethod === 'Maya' ? getPaymentAmountValue('mayaPaymentAmount') :
+                selectedPaymentMethod === 'Credit / Debit Card' ? getPaymentAmountValue('cardPaymentAmount') :
+                getPaymentAmountValue('transferAmount')
+            );
+            reservationForm.appendChild(amountPaidInput);
+
             reservationForm.submit();
         });
 

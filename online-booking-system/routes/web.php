@@ -59,9 +59,10 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
             ->orderBy('name')
             ->get();
         $diningTables = DiningTable::orderBy('table_no')->get();
+        $diningMenus = DiningMenu::orderBy('name')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
 
-        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems', 'diningTables', 'diningSchedules'));
+        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems', 'diningTables', 'diningMenus', 'diningSchedules'));
     })->name('reservation');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');

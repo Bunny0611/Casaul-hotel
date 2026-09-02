@@ -300,7 +300,7 @@
 
         <div class="summary-card yellow">
             <div>
-                <p>Pending<br>requests</p>
+                <p>Pending<br>reservations</p>
                 <h4>{{ $pendingRequests }}</h4>
             </div>
             <div class="icon-wrap"><i class="fas fa-bell"></i></div>
@@ -339,7 +339,7 @@
                 </div>
                 <div class="snapshot-card">
                     <strong>{{ $pendingRequests }}</strong>
-                    <span>Need cleaning</span>
+                    <span>Pending reservations</span>
                 </div>
                 <div class="snapshot-card">
                     <strong>{{ $maintenanceRooms }}</strong>

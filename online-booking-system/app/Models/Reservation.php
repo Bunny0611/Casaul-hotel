@@ -11,6 +11,11 @@ class Reservation extends Model
         'check_out' => 'date',
     ];
 
+    public function diningItems()
+    {
+        return $this->hasMany(ReservationDiningItem::class);
+    }
+
     protected $fillable = [
         'category',
         'room_id',
@@ -33,6 +38,7 @@ class Reservation extends Model
         'event_place_id',
         'dining_id',
         'payment_method',
+        'payment_details',
         'special_requests',
     ];
 

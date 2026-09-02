@@ -20,6 +20,7 @@ use App\Models\EventPlace;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
 use App\Models\DiningMenu;
+use App\Models\ReservationDiningItem;
 use App\Models\GuestRequest;
 
 class AdminController extends Controller
@@ -91,7 +92,7 @@ class AdminController extends Controller
         $maintenanceRooms = Room::where('status', 'maintenance')->count();
         $todayArrivals = Reservation::whereDate('check_in', today())->count();
         $todayDepartures = Reservation::whereDate('check_out', today())->count();
-        $pendingRequests = Room::where('cleaning_status', 'dirty')->count();
+        $pendingRequests = Reservation::where('status', 'pending')->count();
         $occupancyRate = $totalRooms > 0 ? min(100, round(($occupiedRooms / $totalRooms) * 100)) : 0;
 
         $recentActivity = Reservation::with('room')
@@ -518,13 +519,106 @@ class AdminController extends Controller
         $amenities = Amenity::orderBy('name')->get();
         $eventPlaces = EventPlace::orderBy('name')->get();
         $diningMenus = DiningMenu::orderBy('name')->get();
+        $diningSchedules = DiningSchedule::orderBy('available_from')->get();
+
         return request()->routeIs('employee.reservation')
-            ? view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus'))
-            : view('admin.reservations', compact('reservations', 'rooms'));
+            ? view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'))
+            : view('admin.reservations', compact('reservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'));
+    }
+
+    protected function normalizeDiningSelections(Request $request): array
+    {
+        $rawDiningItems = $request->input('dining_items');
+        if (is_string($rawDiningItems)) {
+            $decoded = json_decode($rawDiningItems, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $rawDiningItems = $decoded;
+            }
+        }
+
+        if (is_array($rawDiningItems) && !empty($rawDiningItems)) {
+            return collect($rawDiningItems)
+                ->filter(fn ($item) => is_array($item) && !empty($item['dining_id']))
+                ->map(function ($item) {
+                    return [
+                        'dining_id' => (int) $item['dining_id'],
+                        'quantity' => max(1, (int) ($item['quantity'] ?? 1)),
+                        'dining_area' => !empty($item['dining_area']) ? (string) $item['dining_area'] : null,
+                        'dining_schedule' => !empty($item['dining_schedule']) ? (string) $item['dining_schedule'] : null,
+                        'dining_date' => !empty($item['dining_date']) ? (string) $item['dining_date'] : null,
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        $diningIds = collect(explode(',', (string) $request->input('dining_id', '')))
+            ->map(fn ($id) => trim((string) $id))
+            ->filter(fn ($id) => $id !== '' && $id !== 'null' && $id !== 'upon_arriving')
+            ->values()
+            ->all();
+
+        if (empty($diningIds)) {
+            return [];
+        }
+
+        $areas = collect(explode(',', (string) $request->input('dining_area', '')))
+            ->map(fn ($value) => trim((string) $value))
+            ->values()
+            ->all();
+
+        $schedules = collect(explode(',', (string) $request->input('dining_schedule', '')))
+            ->map(fn ($value) => trim((string) $value))
+            ->values()
+            ->all();
+
+        $quantities = collect(explode(',', (string) $request->input('quantity', '')))
+            ->map(fn ($value) => trim((string) $value))
+            ->filter(fn ($value) => $value !== '')
+            ->values()
+            ->all();
+
+        $items = [];
+        foreach ($diningIds as $index => $diningId) {
+            $items[] = [
+                'dining_id' => (int) $diningId,
+                'quantity' => max(1, (int) ($quantities[$index] ?? $quantities[0] ?? 1)),
+                'dining_area' => $areas[$index] ?? $areas[0] ?? null,
+                'dining_schedule' => $schedules[$index] ?? $schedules[0] ?? null,
+                'dining_date' => null,
+            ];
+        }
+
+        return $items;
     }
 
     public function storeReservation(Request $request)
     {
+        $diningSelections = $this->normalizeDiningSelections($request);
+
+        $diningIds = $request->input('dining_id');
+        if (is_string($diningIds)) {
+            $diningIds = collect(explode(',', $diningIds))
+                ->map(fn ($id) => trim((string) $id))
+                ->filter(fn ($id) => $id !== '' && $id !== 'upon_arriving' && $id !== 'null')
+                ->values()
+                ->all();
+
+            if ($diningIds === []) {
+                $request->merge(['dining_id' => null]);
+            } else {
+                $request->merge(['dining_id' => implode(',', $diningIds)]);
+            }
+        }
+
+        if ($request->input('dining_id') === 'upon_arriving') {
+            $request->merge(['dining_id' => null]);
+        }
+
+        if (!empty($diningSelections)) {
+            $request->merge(['dining_id' => null]);
+        }
+
         $validated = $request->validate([
             'category' => ['required', 'in:rooms,amenities,event_place,dining'],
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
@@ -535,21 +629,33 @@ class AdminController extends Controller
             'number_of_guests' => ['nullable', 'required_if:category,event_place', 'integer', 'min:1'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
-            'quantity' => ['nullable', 'required_if:category,dining', 'integer', 'min:1'],
+            'quantity' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'required_if:category,amenities', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
+            'payment_details' => ['nullable', 'string', 'max:2000'],
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'amenity_id' => ['nullable', 'required_if:category,amenities', 'exists:amenities,id'],
             'event_place_id' => ['nullable', 'required_if:category,event_place', 'exists:event_places,id'],
-            'dining_id' => ['nullable', 'required_if:category,dining', 'exists:dining_menus,id'],
+            'dining_id' => ['nullable', 'string'],
             'duration_hours' => ['nullable', 'required_if:category,amenities', 'integer', 'min:1', 'max:24'],
             'special_requests' => ['nullable', 'string'],
             'submission_token' => ['nullable', 'string', 'max:100'],
         ]);
+
+        if (!empty($validated['dining_id'])) {
+            $diningIdList = collect(explode(',', $validated['dining_id']))
+                ->map(fn ($id) => trim((string) $id))
+                ->filter(fn ($id) => $id !== '')
+                ->all();
+
+            $invalidDiningIds = collect($diningIdList)->filter(fn ($id) => !DiningMenu::whereKey($id)->exists())->values()->all();
+            abort_if(!empty($invalidDiningIds), 422, 'One or more selected dining items are invalid.');
+            $validated['dining_id'] = implode(',', $diningIdList);
+        }
 
         $submissionToken = $validated['submission_token'] ?? null;
         $isEmployeeReservation = $request->routeIs('employee.reservations.store') || $request->user()?->role === 'employee';
@@ -577,7 +683,11 @@ class AdminController extends Controller
             unset($validated['duration_hours']);
         }
 
-        Reservation::create($validated);
+        $reservation = Reservation::create($validated);
+
+        if (!empty($diningSelections)) {
+            $reservation->diningItems()->createMany($diningSelections);
+        }
 
         return $isEmployeeReservation
             ? redirect()->route('employee.reservation')->with('success', 'Reservation created successfully!')
@@ -662,6 +772,27 @@ class AdminController extends Controller
     public function updateReservation(Request $request, $id)
     {
         $reservation = Reservation::findOrFail($id);
+        $diningSelections = $this->normalizeDiningSelections($request);
+
+        $diningIds = $request->input('dining_id');
+        if (is_string($diningIds)) {
+            $diningIds = collect(explode(',', $diningIds))
+                ->map(fn ($id) => trim((string) $id))
+                ->filter(fn ($id) => $id !== '' && $id !== 'upon_arriving' && $id !== 'null')
+                ->values()
+                ->all();
+
+            $request->merge(['dining_id' => $diningIds ? implode(',', $diningIds) : null]);
+        }
+
+        if ($request->input('dining_id') === 'upon_arriving') {
+            $request->merge(['dining_id' => null]);
+        }
+
+        if (!empty($diningSelections)) {
+            $request->merge(['dining_id' => null]);
+        }
+
         $validated = $request->validate([
             'category' => ['required', 'in:rooms,amenities,event_place,dining'],
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
@@ -672,17 +803,36 @@ class AdminController extends Controller
             'number_of_guests' => ['nullable', 'required_if:category,event_place', 'integer', 'min:1'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
-            'quantity' => ['nullable', 'required_if:category,dining', 'integer', 'min:1'],
+            'quantity' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
+            'payment_method' => ['nullable', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
+            'payment_details' => ['nullable', 'string', 'max:2000'],
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'special_requests' => ['nullable', 'string'],
+            'dining_id' => ['nullable', 'string'],
         ]);
 
+        if (!empty($validated['dining_id'])) {
+            $diningIdList = collect(explode(',', $validated['dining_id']))
+                ->map(fn ($id) => trim((string) $id))
+                ->filter(fn ($id) => $id !== '')
+                ->all();
+
+            $invalidDiningIds = collect($diningIdList)->filter(fn ($id) => !DiningMenu::whereKey($id)->exists())->values()->all();
+            abort_if(!empty($invalidDiningIds), 422, 'One or more selected dining items are invalid.');
+            $validated['dining_id'] = implode(',', $diningIdList);
+        }
+
         $reservation->update($validated);
+
+        if (!empty($diningSelections)) {
+            $reservation->diningItems()->delete();
+            $reservation->diningItems()->createMany($diningSelections);
+        }
 
         return $request->routeIs('employee.reservations.update')
             ? redirect()->route('employee.reservation')->with('success', 'Reservation updated successfully!')
