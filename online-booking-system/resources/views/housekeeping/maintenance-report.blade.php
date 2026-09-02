@@ -2681,6 +2681,13 @@
         });
     });
 
+    const AUTO_REFRESH_MS = 15000;
+    setInterval(function () {
+        if (!document.hidden) {
+            window.location.reload();
+        }
+    }, AUTO_REFRESH_MS);
+
 </script>
 
 @endsection
