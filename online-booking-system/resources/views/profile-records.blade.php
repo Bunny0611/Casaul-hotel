@@ -1,6 +1,348 @@
+
 @extends('app')
 
 @section('content')
+<style>
+    .reservation-action-group {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        position: relative;
+    }
+
+    .records-table:not(.guest-requests-table) th:last-child,
+    .records-table:not(.guest-requests-table) td:last-child {
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .reservation-view-btn,
+    .reservation-menu-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        padding: 9px 16px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .reservation-view-btn {
+        min-width: 128px;
+        border: 1px solid #d62839;
+        background: #fff;
+        color: #b91c1c;
+        box-shadow: 0 2px 8px rgba(182, 36, 58, 0.08);
+    }
+
+    .reservation-view-btn:hover {
+        background: #fff3f4;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(182, 36, 58, 0.12);
+    }
+
+    .reservation-menu-toggle {
+        width: 38px;
+        height: 38px;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        color: #475569;
+        padding: 0;
+    }
+
+    .reservation-menu-toggle:hover {
+        background: #f8fafc;
+    }
+
+    .reservation-menu-wrap {
+        position: relative;
+    }
+
+    .reservation-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        width: 190px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+        z-index: 10;
+        overflow: hidden;
+    }
+
+    .reservation-menu.hidden {
+        display: none;
+    }
+
+    .reservation-menu-item {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        text-align: left;
+        padding: 10px 14px;
+        font-size: 0.82rem;
+        color: #1f2937;
+        cursor: pointer;
+    }
+
+    .reservation-menu-item:hover {
+        background: #f8fafc;
+    }
+
+    .reservation-menu-item--danger {
+        color: #b91c1c;
+        font-weight: 600;
+    }
+
+    .reservation-menu-item--danger:hover {
+        background: #fff1f2;
+    }
+
+    .receipt-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.6);
+        z-index: 10000;
+    }
+
+    .receipt-modal.open {
+        display: flex;
+    }
+
+    .receipt-card {
+        width: min(720px, 100%);
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        padding: 28px;
+        border-radius: 4px;
+        background: #fff;
+        box-shadow: 0 25px 60px rgba(15, 23, 42, 0.2);
+    }
+
+    .receipt-header {
+        position: relative;
+        display: block;
+        padding-bottom: 14px;
+        border-bottom: 4px solid #c7d8e8;
+    }
+
+    .receipt-brand {
+        margin: 0;
+        color: #07549a;
+        font-size: 32px;
+        font-weight: 400;
+        text-align: center;
+    }
+
+    .receipt-contact {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 18px;
+        margin: 12px 0 4px;
+        color: #727b85;
+        font-size: 12px;
+    }
+
+    .receipt-contact span {
+        white-space: nowrap;
+    }
+
+    .receipt-contact i {
+        margin-right: 5px;
+        color: #727b85;
+    }
+
+    .receipt-subcontact {
+        margin: 0;
+        color: #727b85;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    .receipt-subcontact i {
+        margin-right: 5px;
+    }
+
+    .receipt-heading-row {
+        margin: 24px 0 16px;
+        text-align: center;
+    }
+
+    .receipt-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        margin: 0 0 18px;
+    }
+
+    .receipt-paid-by h4,
+    .receipt-booking h4,
+    .receipt-notes h4 {
+        margin: 0 0 8px;
+        color: #07549a;
+        font-size: 14px;
+    }
+
+    .receipt-paid-by p,
+    .receipt-booking p,
+    .receipt-notes p {
+        margin: 3px 0;
+        color: #4b5563;
+        font-size: 13px;
+    }
+
+    .receipt-heading {
+        margin: 0;
+        color: #07549a;
+        font-size: 32px;
+        letter-spacing: 0.04em;
+    }
+
+    .receipt-booking {
+        min-width: 220px;
+    }
+
+    .receipt-booking-details {
+        margin: 0 0 18px;
+    }
+
+    .receipt-booking p {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+    }
+
+    .receipt-booking strong {
+        color: #4b5563;
+        font-weight: 600;
+    }
+
+    .receipt-close {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        border: 0;
+        background: transparent;
+        color: #64748b;
+        font-size: 22px;
+        cursor: pointer;
+    }
+
+    .receipt-content {
+        color: #566176;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .receipt-table {
+        width: 100%;
+        border: 1px solid #7fa9d0;
+        border-radius: 4px;
+        border-spacing: 0;
+        overflow: hidden;
+    }
+
+    .receipt-table th {
+        padding: 9px 8px;
+        color: #fff;
+        background: #07549a;
+        font-size: 11px;
+        text-align: left;
+    }
+
+    .receipt-table td {
+        padding: 9px 8px;
+        border-top: 1px solid #d9e5ef;
+        color: #4b5563;
+        font-size: 12px;
+    }
+
+    .receipt-table th:not(:first-child),
+    .receipt-table td:not(:first-child) {
+        text-align: right;
+    }
+
+    .receipt-table .receipt-total-row td {
+        border-top: 2px solid #7fa9d0;
+        color: #07549a;
+        font-weight: 800;
+    }
+
+    .receipt-notes {
+        margin-top: 18px;
+    }
+
+    .receipt-notes h4 {
+        margin: 0 0 6px;
+        color: #07549a;
+        font-size: 14px;
+    }
+
+    .receipt-notes p {
+        margin: 0;
+        color: #4b5563;
+        font-size: 12px;
+    }
+
+    .receipt-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding-top: 14px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .receipt-actions button {
+        border: 0;
+        border-radius: 7px;
+        padding: 10px 16px;
+        color: #fff;
+        background: #d20b26;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .receipt-actions .receipt-print-btn {
+        background: #253570;
+    }
+
+    @media (max-width:700px) {
+        .receipt-card {
+            padding: 18px;
+        }
+
+        .receipt-brand,
+        .receipt-heading {
+            font-size: 25px;
+        }
+
+        .receipt-title-row {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .receipt-booking {
+            min-width: 0;
+            width: 100%;
+        }
+
+        .receipt-actions button {
+            flex: 1;
+        }
+    }
+</style>
 
 <div class="profile-page">
     <section class="profile-hero">
@@ -12,6 +354,18 @@
     <div class="records-toolbar">
         <a href="{{ route('guest.profile') }}" class="btn btn-back">&larr; Back to Profile</a>
     </div>
+
+    @if(session('success'))
+        <div class="reservation-alert reservation-alert--success" role="status">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="reservation-alert" role="alert">
+            {{ $errors->first() }}
+        </div>
+    @endif
 
     @if($reservations->isEmpty())
         <div class="records-empty">
@@ -31,11 +385,63 @@
                         <th>Check-out</th>
                         <th>Total</th>
                         <th>Status</th>
-                        <th>Request</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($reservations as $index => $reservation)
+                        @php
+                            $reservationReceiptLines = [];
+                            if ($reservation->room) {
+                                $nights = max(1, \Carbon\Carbon::parse($reservation->check_in)->diffInDays(\Carbon\Carbon::parse($reservation->check_out)));
+                                $roomCharge = (float) $reservation->room->price * $nights;
+                                $reservationReceiptLines[] = [
+                                    'quantity' => 1,
+                                    'description' => 'Room - ' . ($reservation->room->room_type ?? 'Room'),
+                                    'unitPrice' => '₱' . number_format($roomCharge, 2),
+                                    'amount' => '₱' . number_format($roomCharge, 2),
+                                ];
+                            }
+
+                            $amenityIds = $reservation->amenity_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->amenity_id)))) : [];
+                            foreach ($amenityIds as $amenityId) {
+                                $amenity = \App\Models\Amenity::find($amenityId);
+                                if ($amenity) {
+                                    $reservationReceiptLines[] = [
+                                        'quantity' => 1,
+                                        'description' => 'Amenities - ' . $amenity->name,
+                                        'unitPrice' => '₱' . number_format((float) $amenity->price, 2),
+                                        'amount' => '₱' . number_format((float) $amenity->price, 2),
+                                    ];
+                                }
+                            }
+
+                            $eventIds = $reservation->event_place_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_place_id)))) : [];
+                            foreach ($eventIds as $eventId) {
+                                $event = \App\Models\EventPlace::find($eventId);
+                                if ($event) {
+                                    $reservationReceiptLines[] = [
+                                        'quantity' => 1,
+                                        'description' => 'Event - ' . $event->name,
+                                        'unitPrice' => '₱' . number_format((float) $event->price, 2),
+                                        'amount' => '₱' . number_format((float) $event->price, 2),
+                                    ];
+                                }
+                            }
+
+                            foreach ($reservation->diningItems as $diningItem) {
+                                $menu = $diningItem->diningMenu;
+                                if ($menu) {
+                                    $lineTotal = (float) $menu->price * (int) $diningItem->quantity;
+                                    $reservationReceiptLines[] = [
+                                        'quantity' => (int) $diningItem->quantity,
+                                        'description' => 'Dining - ' . $menu->name,
+                                        'unitPrice' => '₱' . number_format((float) $menu->price, 2),
+                                        'amount' => '₱' . number_format($lineTotal, 2),
+                                    ];
+                                }
+                            }
+                        @endphp
                         <tr>
                             <td>{{ $index + 1 }}</td>
                             <td>{{ $reservation->room->room_type ?? 'Room' }}</td>
@@ -47,7 +453,52 @@
                                     {{ ucfirst($reservation->status) }}
                                 </span>
                             </td>
-                            <td>{{ $reservation->special_requests ?? '—' }}</td>
+                            <td>
+                                @if($reservation->status === 'completed')
+                                    <div class="reservation-action-group">
+                                        <button type="button"
+                                            class="reservation-view-btn"
+                                            data-view-receipt
+                                            data-receipt-id="RES-{{ str_pad($reservation->id, 4, '0', STR_PAD_LEFT) }}"
+                                            data-guest-name="{{ auth('guest')->user()->name }}"
+                                            data-guest-email="{{ auth('guest')->user()->email }}"
+                                            data-check-in="{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}"
+                                            data-check-out="{{ \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y') }}"
+                                            data-guests="{{ $reservation->number_of_guests ?? 2 }} Guests"
+                                            data-room="{{ $reservation->room->room_type ?? 'Room' }}"
+                                            data-total="₱{{ number_format($reservation->total_amount, 2) }}"
+                                            data-line-items='@json($reservationReceiptLines)'>
+                                            View Receipt
+                                        </button>
+                                        <div class="reservation-menu-wrap">
+                                            <button type="button" class="reservation-menu-toggle" aria-label="More actions" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="reservation-menu hidden">
+                                                <button type="button" class="reservation-menu-item" data-view-receipt data-receipt-id="RES-{{ str_pad($reservation->id, 4, '0', STR_PAD_LEFT) }}" data-guest-name="{{ auth('guest')->user()->name }}" data-guest-email="{{ auth('guest')->user()->email }}" data-check-in="{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}" data-check-out="{{ \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y') }}" data-guests="{{ $reservation->number_of_guests ?? 2 }} Guests" data-room="{{ $reservation->room->room_type ?? 'Room' }}" data-total="₱{{ number_format($reservation->total_amount, 2) }}" data-line-items='@json($reservationReceiptLines)'>View Receipt</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @elseif(in_array($reservation->status, ['pending', 'confirmed'], true))
+                                    <div class="reservation-action-group">
+                                        <button type="button" class="reservation-view-btn">View</button>
+                                        <div class="reservation-menu-wrap">
+                                            <button type="button" class="reservation-menu-toggle" aria-label="More actions" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="reservation-menu hidden">
+                                                <form method="POST" action="{{ route('guest.reservations.cancel', $reservation) }}" onsubmit="return confirm('Cancel this reservation? This action cannot be undone.');">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Cancel Reservation</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <span>—</span>
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -158,6 +609,51 @@
     </section>
 </div>
 
+<div class="receipt-modal" id="guest-receipt-modal" aria-hidden="true">
+    <div class="receipt-card" role="dialog" aria-modal="true" aria-labelledby="guest-receipt-title">
+        <div class="receipt-header">
+            <button type="button" class="receipt-close" id="guest-receipt-close" aria-label="Close receipt">&times;</button>
+            <h3 class="receipt-brand">Casaul Hotel</h3>
+            <div class="receipt-contact">
+                <span><i class="fas fa-map-marker-alt"></i> Casaul Hotel</span>
+                <span><i class="fas fa-phone"></i> +63 912 345 6789</span>
+                <span><i class="fas fa-envelope"></i> reservations@casaulhotel.com</span>
+            </div>
+            <p class="receipt-subcontact"><i class="fas fa-globe"></i> www.casaulhotel.com</p>
+        </div>
+        <div class="receipt-heading-row">
+            <h3 class="receipt-heading" id="guest-receipt-title">RECEIPT</h3>
+        </div>
+        <div class="receipt-title-row">
+            <div class="receipt-paid-by">
+                <h4>Paid By</h4>
+                <p id="guest-receipt-guest-name">Guest</p>
+                <p id="guest-receipt-guest-email">guest@example.com</p>
+            </div>
+            <div class="receipt-booking">
+                <p><span>Receipt #</span><strong id="guest-receipt-number">RES-0000</strong></p>
+                <p><span>Receipt Date</span><strong id="guest-receipt-date"></strong></p>
+            </div>
+        </div>
+        <div class="receipt-booking receipt-booking-details">
+            <h4>Booking Details</h4>
+            <p><span>Check-in</span><strong id="guest-receipt-checkin">—</strong></p>
+            <p><span>Check-out</span><strong id="guest-receipt-checkout">—</strong></p>
+            <p><span>Guests</span><strong id="guest-receipt-guests">2 Guests</strong></p>
+            <p><span>Room</span><strong id="guest-receipt-room">None</strong></p>
+        </div>
+        <div class="receipt-content" id="guest-receipt-content"></div>
+        <div class="receipt-notes">
+            <h4>Notes</h4>
+            <p>Thank you for choosing Casaul Hotel. We look forward to your next visit.</p>
+        </div>
+        <div class="receipt-actions">
+            <button type="button" id="guest-receipt-download-btn"><i class="fas fa-download"></i> Download</button>
+            <button type="button" class="receipt-print-btn" id="guest-receipt-print-btn"><i class="fas fa-print"></i> Print</button>
+        </div>
+    </div>
+</div>
+
 <div class="request-modal" id="guest-request-modal" role="dialog" aria-modal="true" aria-labelledby="guest-request-modal-title" aria-hidden="true">
     <div class="request-modal-card">
         <div class="request-modal-head"><h2 id="guest-request-modal-title">Request Details</h2><button type="button" class="request-modal-close" aria-label="Close"><i class="fas fa-times"></i></button></div>
@@ -174,6 +670,191 @@
 </div>
 
 <script>
+    function openGuestReceiptModal(button) {
+        const modal = document.getElementById('guest-receipt-modal');
+        const guestName = document.getElementById('guest-receipt-guest-name');
+        const guestEmail = document.getElementById('guest-receipt-guest-email');
+        const receiptNumber = document.getElementById('guest-receipt-number');
+        const receiptDate = document.getElementById('guest-receipt-date');
+        const receiptCheckIn = document.getElementById('guest-receipt-checkin');
+        const receiptCheckOut = document.getElementById('guest-receipt-checkout');
+        const receiptGuests = document.getElementById('guest-receipt-guests');
+        const receiptRoom = document.getElementById('guest-receipt-room');
+        const receiptContent = document.getElementById('guest-receipt-content');
+
+        const totalValue = button.dataset.total || '₱0.00';
+        const guestCount = button.dataset.guests || '2 Guests';
+        const roomName = button.dataset.room || 'Room';
+        const lineItems = (() => {
+            try {
+                return JSON.parse(button.dataset.lineItems || '[]');
+            } catch (error) {
+                return [];
+            }
+        })();
+
+        guestName.textContent = button.dataset.guestName || 'Guest';
+        guestEmail.textContent = button.dataset.guestEmail || 'guest@example.com';
+        receiptNumber.textContent = button.dataset.receiptId || 'RES-0000';
+        receiptDate.textContent = new Date().toLocaleDateString('en-US');
+        receiptCheckIn.textContent = button.dataset.checkIn || '—';
+        receiptCheckOut.textContent = button.dataset.checkOut || '—';
+        receiptGuests.textContent = guestCount;
+        receiptRoom.textContent = roomName;
+
+        const rows = lineItems.length ? lineItems : [{ quantity: 1, description: `Room - ${roomName}`, unitPrice: totalValue, amount: totalValue }];
+
+        receiptContent.innerHTML = `
+            <table class="receipt-table">
+                <thead>
+                    <tr>
+                        <th>Quantity</th>
+                        <th>Description</th>
+                        <th>Unit Price</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(item => `<tr><td>${item.quantity ?? 1}</td><td>${item.description ?? 'Reservation Item'}</td><td>${item.unitPrice ?? totalValue}</td><td>${item.amount ?? totalValue}</td></tr>`).join('')}
+                    <tr class="receipt-total-row">
+                        <td colspan="3">Total</td>
+                        <td>${totalValue}</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    document.querySelectorAll('[data-view-receipt]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            openGuestReceiptModal(this);
+        });
+    });
+
+    document.getElementById('guest-receipt-close')?.addEventListener('click', function () {
+        document.getElementById('guest-receipt-modal').classList.remove('open');
+        document.getElementById('guest-receipt-modal').setAttribute('aria-hidden', 'true');
+    });
+
+    const loadReceiptPdfTools = () => Promise.all([
+        new Promise((resolve, reject) => {
+            if (window.html2canvas) {
+                resolve();
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        }),
+        new Promise((resolve, reject) => {
+            if (window.jspdf?.jsPDF) {
+                resolve();
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        }),
+    ]);
+
+    const downloadGuestReceiptAsPdf = async () => {
+        const modal = document.getElementById('guest-receipt-modal');
+        const downloadButton = document.getElementById('guest-receipt-download-btn');
+        const originalLabel = downloadButton.innerHTML;
+        downloadButton.disabled = true;
+        downloadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+        try {
+            await loadReceiptPdfTools();
+            const receiptCard = modal.querySelector('.receipt-card');
+            const printableReceipt = receiptCard.cloneNode(true);
+            printableReceipt.querySelector('.receipt-close')?.remove();
+            printableReceipt.querySelector('.receipt-actions')?.remove();
+            printableReceipt.style.position = 'absolute';
+            printableReceipt.style.left = '-10000px';
+            printableReceipt.style.top = '0';
+            printableReceipt.style.width = `${receiptCard.offsetWidth}px`;
+            printableReceipt.style.maxHeight = 'none';
+            printableReceipt.style.height = 'auto';
+            printableReceipt.style.overflow = 'visible';
+            document.body.appendChild(printableReceipt);
+            const canvas = await window.html2canvas(printableReceipt, { scale: 2, backgroundColor: '#ffffff' });
+            printableReceipt.remove();
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 10;
+            const imageWidth = pageWidth - (margin * 2);
+            const imageHeight = (canvas.height * imageWidth) / canvas.width;
+            const imageData = canvas.toDataURL('image/jpeg', 0.95);
+            let remainingHeight = imageHeight;
+            let offset = 0;
+            pdf.addImage(imageData, 'JPEG', margin, margin, imageWidth, imageHeight);
+            remainingHeight -= pageHeight - (margin * 2);
+            while (remainingHeight > 0) {
+                offset += pageHeight - (margin * 2);
+                pdf.addPage();
+                pdf.addImage(imageData, 'JPEG', margin, margin - offset, imageWidth, imageHeight);
+                remainingHeight -= pageHeight - (margin * 2);
+            }
+            pdf.save(`${document.getElementById('guest-receipt-number').textContent || 'reservation'}-receipt.pdf`);
+        } catch (error) {
+            alert('The receipt PDF could not be downloaded. Please try again.');
+        } finally {
+            downloadButton.disabled = false;
+            downloadButton.innerHTML = originalLabel;
+        }
+    };
+
+    const printGuestReceipt = () => {
+        const modal = document.getElementById('guest-receipt-modal');
+        const printWindow = window.open('', '_blank', 'width=600,height=700');
+        if (!printWindow) {
+            return;
+        }
+        const printableReceipt = modal.querySelector('.receipt-card').cloneNode(true);
+        printableReceipt.querySelector('.receipt-close')?.remove();
+        printableReceipt.querySelector('.receipt-actions')?.remove();
+        printWindow.document.write(`<html><head><title>${document.getElementById('guest-receipt-number').textContent} Receipt</title><style>
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 24px; background: #fff; font-family: Arial, sans-serif; color: #172033; }
+            .receipt-card { width: 100%; padding: 28px; background: #fff; }
+            .receipt-header { position: relative; display: block; padding-bottom: 14px; border-bottom: 4px solid #c7d8e8; }
+            .receipt-brand { margin: 0; color: #07549a; font-size: 32px; font-weight: 400; text-align: center; }
+            .receipt-contact { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; margin: 12px 0 4px; color: #727b85; font-size: 12px; }
+            .receipt-subcontact { margin: 0; color: #727b85; text-align: center; font-size: 12px; }
+            .receipt-heading-row { margin: 24px 0 16px; text-align: center; }
+            .receipt-heading { margin: 0; color: #07549a; font-size: 32px; letter-spacing: .04em; }
+            .receipt-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin: 0 0 18px; }
+            .receipt-paid-by h4, .receipt-booking h4, .receipt-notes h4 { margin: 0 0 8px; color: #07549a; font-size: 14px; }
+            .receipt-paid-by p, .receipt-booking p, .receipt-notes p { margin: 3px 0; color: #4b5563; font-size: 13px; }
+            .receipt-booking { min-width: 220px; }
+            .receipt-booking p { display: flex; justify-content: space-between; gap: 18px; }
+            .receipt-booking strong { color: #4b5563; font-weight: 600; }
+            .receipt-content { color: #566176; font-size: 12px; }
+            .receipt-table { width: 100%; border: 1px solid #7fa9d0; border-spacing: 0; }
+            .receipt-table th { padding: 9px 8px; color: #fff; background: #07549a; font-size: 11px; text-align: left; }
+            .receipt-table td { padding: 9px 8px; border-top: 1px solid #d9e5ef; color: #4b5563; font-size: 12px; }
+            .receipt-table th:not(:first-child), .receipt-table td:not(:first-child) { text-align: right; }
+            .receipt-table .receipt-total-row td { border-top: 2px solid #7fa9d0; color: #07549a; font-weight: 800; }
+            .receipt-notes { margin-top: 18px; }
+            @media print { body { padding: 0; } .receipt-card { padding: 0; } }
+        </style></head><body>${printableReceipt.outerHTML}</body></html>`);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+    };
+
+    document.getElementById('guest-receipt-download-btn')?.addEventListener('click', downloadGuestReceiptAsPdf);
+    document.getElementById('guest-receipt-print-btn')?.addEventListener('click', printGuestReceipt);
+
     document.querySelectorAll('.guest-request-view').forEach(function (button) {
         button.addEventListener('click', function () {
             document.getElementById('guest-request-id').textContent = button.dataset.requestId;
@@ -187,6 +868,41 @@
             document.getElementById('guest-request-modal').setAttribute('aria-hidden', 'false');
         });
     });
+
+    document.querySelectorAll('.reservation-menu-toggle').forEach(function (button) {
+        button.addEventListener('click', function (event) {
+            event.stopPropagation();
+            const menu = this.nextElementSibling;
+            const isHidden = menu.classList.contains('hidden');
+
+            document.querySelectorAll('.reservation-menu').forEach(function (item) {
+                if (item !== menu) {
+                    item.classList.add('hidden');
+                }
+            });
+
+            document.querySelectorAll('.reservation-menu-toggle').forEach(function (item) {
+                if (item !== button) {
+                    item.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            menu.classList.toggle('hidden', !isHidden);
+            button.setAttribute('aria-expanded', String(isHidden));
+        });
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('.reservation-menu') && !event.target.closest('.reservation-menu-toggle')) {
+            document.querySelectorAll('.reservation-menu').forEach(function (item) {
+                item.classList.add('hidden');
+            });
+            document.querySelectorAll('.reservation-menu-toggle').forEach(function (item) {
+                item.setAttribute('aria-expanded', 'false');
+            });
+        }
+    });
+
     function closeGuestRequestModal() {
         document.getElementById('guest-request-modal').classList.remove('open');
         document.getElementById('guest-request-modal').setAttribute('aria-hidden', 'true');

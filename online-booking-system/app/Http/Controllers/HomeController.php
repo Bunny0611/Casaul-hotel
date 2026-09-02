@@ -353,6 +353,42 @@ class HomeController extends Controller
         return view('profile-records', compact('reservations', 'activeReservation', 'guestRequests'));
     }
 
+    public function receipts()
+    {
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
+
+        $receipts = Reservation::with('room')
+            ->where('guest_email', $guest->email)
+            ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('profile-receipts', compact('receipts'));
+    }
+
+    public function cancelReservation(Request $request, Reservation $reservation)
+    {
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
+
+        if ($reservation->guest_email !== $guest->email) {
+            abort(403, 'You can only cancel your own reservations.');
+        }
+
+        if (in_array($reservation->status, ['cancelled', 'completed'], true)) {
+            return redirect()->route('guest.records')->withErrors(['reservation' => 'This reservation cannot be cancelled.']);
+        }
+
+        if ($reservation->status === 'checked-in') {
+            return redirect()->route('guest.records')->withErrors(['reservation' => 'Checked-in stays must be cancelled at the front desk.']);
+        }
+
+        $reservation->update(['status' => 'cancelled']);
+
+        return redirect()->route('guest.records')->with('success', 'Your reservation has been cancelled successfully.');
+    }
+
     public function storeGuestRequest(Request $request)
     {
         $guest = Auth::guard('guest')->user();

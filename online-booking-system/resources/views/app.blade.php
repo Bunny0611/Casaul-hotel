@@ -83,6 +83,16 @@
                         <a href="{{ route('guest.records') }}" class="profile-menu-item" role="menuitem">
                             <i class="fas fa-list-alt"></i> My Reservations
                         </a>
+                        @php
+                            $guestHasReceiptAccess = \App\Models\Reservation::where('guest_email', auth('guest')->user()->email)
+                                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                                ->exists();
+                        @endphp
+                        @if($guestHasReceiptAccess)
+                            <a href="{{ route('guest.receipts') }}" class="profile-menu-item" role="menuitem">
+                                <i class="fas fa-receipt"></i> My Receipts
+                            </a>
+                        @endif
                         <a href="{{ route('guest.profile') }}" class="profile-menu-item" role="menuitem">
                             <i class="fas fa-user-circle"></i> My Profile
                         </a>
