@@ -1288,11 +1288,11 @@
         const roomEntries = [
             { label: 'Room Number', value: reservation.room_number || reservation.room || 'N/A' },
             { label: 'Room Type', value: reservation.room_type || 'N/A' },
-            { label: 'Check-in Date', value: formatDateValue(reservation.room_check_in || reservation.check_in || reservation.date) },
-            { label: 'Check-in Time', value: reservation.room_check_in_time || reservation.check_in_time || 'N/A' },
-            { label: 'Check-out Date', value: formatDateValue(reservation.room_check_out || reservation.check_out || reservation.date) },
-            { label: 'Check-out Time', value: reservation.room_check_out_time || reservation.check_out_time || 'N/A' },
-            { label: 'Number of Guests', value: reservation.room_number_of_guests || reservation.number_of_guests || 'N/A' },
+            { label: 'Check-in Date', value: formatDateValue(reservation.room_check_in || 'N/A') },
+            { label: 'Check-in Time', value: reservation.room_check_in_time || 'N/A' },
+            { label: 'Check-out Date', value: formatDateValue(reservation.room_check_out || 'N/A') },
+            { label: 'Check-out Time', value: reservation.room_check_out_time || 'N/A' },
+            { label: 'Number of Guests', value: reservation.room_number_of_guests !== undefined && reservation.room_number_of_guests !== null && reservation.room_number_of_guests !== '' && reservation.room_number_of_guests !== 'N/A' ? reservation.room_number_of_guests : 'N/A' },
             { label: 'Room Rate', value: reservation.room_rate && reservation.room_rate !== 'N/A' ? formatMoney(reservation.room_rate) : 'N/A' },
         ];
 
@@ -1306,10 +1306,10 @@
         const eventEntries = [
             { label: 'Event Place', value: reservation.event_place || 'N/A' },
             { label: 'Event Type', value: reservation.event_type || 'N/A' },
-            { label: 'Event Date', value: formatDateValue(reservation.event_date || reservation.check_in || reservation.date) },
-            { label: 'Start Time', value: reservation.event_start_time || reservation.start_time || reservation.check_in_time || 'N/A' },
-            { label: 'End Time', value: reservation.event_end_time || reservation.end_time || reservation.check_out_time || 'N/A' },
-            { label: 'Number of Guests', value: reservation.event_number_of_guests || reservation.number_of_guests || 'N/A' },
+            { label: 'Event Date', value: formatDateValue(reservation.event_date || 'N/A') },
+            { label: 'Start Time', value: reservation.event_start_time || 'N/A' },
+            { label: 'End Time', value: reservation.event_end_time || 'N/A' },
+            { label: 'Number of Guests', value: reservation.event_number_of_guests !== undefined && reservation.event_number_of_guests !== null && reservation.event_number_of_guests !== '' && reservation.event_number_of_guests !== 'N/A' ? reservation.event_number_of_guests : 'N/A' },
         ];
 
         const diningEntries = [
