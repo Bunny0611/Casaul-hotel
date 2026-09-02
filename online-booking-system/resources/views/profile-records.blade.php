@@ -86,28 +86,30 @@
                     <div class="reservation-alert" role="alert">{{ $errors->first() }}</div>
                 @endif
                 <div class="guest-request-fields">
-                    <label for="request-type-search">Request Type
-                        <div class="request-type-picker" data-request-type-picker>
-                            <input id="request-type-value" type="hidden" name="request_type" value="{{ old('request_type') }}" required>
-                            <input id="request-type-search" class="request-type-search" type="search" placeholder="Select what you need" autocomplete="off" aria-label="Search request types" aria-controls="request-type-options" aria-expanded="false" role="combobox">
-                            <button type="button" class="request-type-toggle" aria-label="Show request types" aria-controls="request-type-options" aria-expanded="false"><i class="fas fa-chevron-down"></i></button>
-                            <div class="request-type-options" id="request-type-options" role="listbox" hidden>
-                                <div class="request-type-group" data-request-type-group>
-                                    <span class="request-type-group-label">Housekeeping</span>
-                                    @foreach(['Extra Towels', 'Extra Pillows', 'Extra Blanket', 'Toiletries', 'Room Cleaning', 'Change Bedsheets', 'Other Housekeeping Request'] as $type)
-                                        <button type="button" role="option" class="request-type-option" data-value="{{ $type }}">{{ $type }}</button>
-                                    @endforeach
-                                </div>
-                                <div class="request-type-group" data-request-type-group>
-                                    <span class="request-type-group-label">General Assistance</span>
-                                    @foreach(['Broken Aircon', 'Broken TV', 'Broken Light', 'Plumbing/Water Problem', 'Late Checkout', 'Early Check-in', 'Dining/Food Request', 'Transportation Request', 'Other Request'] as $type)
-                                        <button type="button" role="option" class="request-type-option" data-value="{{ $type }}">{{ $type }}</button>
-                                    @endforeach
-                                </div>
-                                <p class="request-type-empty" hidden>No request types found.</p>
-                            </div>
+                    <div class="request-type-picker" data-request-type-picker>
+                        <label for="request-type-search">Request Type</label>
+                        <div class="request-type-field">
+                            <div id="selected-request-items" aria-live="polite"></div>
+                            <input id="request-type-search" class="request-type-search" type="search" placeholder="Select what you need" autocomplete="off" aria-label="Search request types" aria-controls="request-type-options" aria-expanded="true" role="combobox">
+                            <button type="button" class="request-type-toggle" aria-label="Show request types" aria-controls="request-type-options" aria-expanded="true"><i class="fas fa-chevron-down"></i></button>
                         </div>
-                    </label>
+                        <div class="request-type-options" id="request-type-options" role="listbox">
+                            <div class="request-type-group" data-request-type-group>
+                                <span class="request-type-group-label">HOUSEKEEPING</span>
+                                @foreach(['Extra Towels', 'Extra Pillows', 'Extra Blanket', 'Toiletries', 'Room Cleaning', 'Change Bedsheets', 'Other Housekeeping Request'] as $type)
+                                    <button type="button" role="option" class="request-type-option" data-value="{{ $type }}">{{ $type }}</button>
+                                @endforeach
+                            </div>
+                            <div class="request-type-group" data-request-type-group>
+                                <span class="request-type-group-label">General Assistance</span>
+                                @foreach(['Broken Aircon', 'Broken TV', 'Broken Light', 'Plumbing/Water Problem', 'Late Checkout', 'Early Check-in', 'Dining/Food Request', 'Transportation Request', 'Other Request'] as $type)
+                                    <button type="button" role="option" class="request-type-option" data-value="{{ $type }}">{{ $type }}</button>
+                                @endforeach
+                            </div>
+                            <p class="request-type-empty" hidden>No request types found.</p>
+                        </div>
+                        <input type="hidden" name="request_items" id="request-items-value" value="{{ old('request_items') }}" required>
+                    </div>
                     <label>Priority
                         <select name="priority" required>
                             <option value="Normal" {{ old('priority', 'Normal') === 'Normal' ? 'selected' : '' }}>Normal</option>
@@ -197,13 +199,15 @@
     const requestTypePicker = document.querySelector('[data-request-type-picker]');
     if (requestTypePicker) {
         const searchInput = requestTypePicker.querySelector('.request-type-search');
-        const valueInput = requestTypePicker.querySelector('#request-type-value');
         const toggleButton = requestTypePicker.querySelector('.request-type-toggle');
         const optionsPanel = requestTypePicker.querySelector('.request-type-options');
         const options = [...requestTypePicker.querySelectorAll('.request-type-option')];
         const emptyMessage = requestTypePicker.querySelector('.request-type-empty');
         const descriptionInput = document.getElementById('request-description');
         const otherRequestHint = document.getElementById('other-request-hint');
+        const selectedItemsContainer = document.getElementById('selected-request-items');
+        const requestItemsValue = document.getElementById('request-items-value');
+        const selectedItems = new Map();
 
         function setRequestTypeOpen(isOpen) {
             optionsPanel.hidden = !isOpen;
@@ -225,35 +229,221 @@
             emptyMessage.hidden = visibleCount > 0;
         }
 
+        function syncSelectedItems() {
+            const items = Array.from(selectedItems.entries()).map(([type, quantity]) => ({ type, quantity }));
+            requestItemsValue.value = JSON.stringify(items);
+
+            selectedItemsContainer.innerHTML = '';
+            if (items.length === 0) {
+                selectedItemsContainer.hidden = true;
+                return;
+            }
+
+            selectedItemsContainer.hidden = false;
+            selectedItemsContainer.style.color = '#111827';
+            selectedItemsContainer.style.fontSize = '15px';
+
+            items.forEach(function (item) {
+                const chip = document.createElement('div');
+                chip.style.display = 'inline-flex';
+                chip.style.alignItems = 'center';
+                chip.style.gap = '8px';
+                chip.style.marginRight = '8px';
+                chip.style.marginBottom = '6px';
+                chip.style.padding = '4px 8px';
+                chip.style.border = '1px solid #d1d5db';
+                chip.style.borderRadius = '4px';
+                chip.style.background = '#f3f4f6';
+                chip.style.fontSize = '14px';
+                chip.style.lineHeight = '1.4';
+
+                const text = document.createElement('span');
+                text.textContent = item.type;
+
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.textContent = '×';
+                removeButton.dataset.itemType = item.type;
+                removeButton.style.border = 'none';
+                removeButton.style.background = 'transparent';
+                removeButton.style.cursor = 'pointer';
+                removeButton.style.fontSize = '16px';
+                removeButton.style.padding = '0';
+                removeButton.style.color = '#374151';
+
+                const quantityInput = document.createElement('input');
+                quantityInput.type = 'number';
+                quantityInput.min = '1';
+                quantityInput.value = item.quantity;
+                quantityInput.dataset.itemType = item.type;
+                quantityInput.style.width = '42px';
+                quantityInput.style.border = '1px solid #d1d5db';
+                quantityInput.style.borderRadius = '3px';
+                quantityInput.style.padding = '2px 4px';
+                quantityInput.style.fontSize = '14px';
+
+                chip.appendChild(text);
+                chip.appendChild(removeButton);
+                chip.appendChild(quantityInput);
+                selectedItemsContainer.appendChild(chip);
+            });
+
+            selectedItemsContainer.querySelectorAll('input[data-item-type]').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    const type = input.dataset.itemType;
+                    const value = Math.max(1, Number(input.value) || 1);
+                    input.value = value;
+                    if (selectedItems.has(type)) {
+                        selectedItems.set(type, value);
+                        syncSelectedItems();
+                    }
+                });
+            });
+
+            selectedItemsContainer.querySelectorAll('button[data-item-type]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    selectedItems.delete(button.dataset.itemType);
+                    syncSelectedItems();
+                });
+            });
+        }
+
+        function addSelectedType(type) {
+            if (!selectedItems.has(type)) {
+                selectedItems.set(type, 1);
+            }
+            syncSelectedItems();
+        }
+
         function selectRequestType(option) {
-            valueInput.value = option.dataset.value;
-            searchInput.value = option.dataset.value;
-            options.forEach(function (item) { item.setAttribute('aria-selected', String(item === option)); });
-            const isOtherRequest = option.dataset.value.startsWith('Other');
+            const type = option.dataset.value;
+            const isOtherRequest = type.startsWith('Other');
+            addSelectedType(type);
+            searchInput.value = '';
             otherRequestHint.hidden = !isOtherRequest;
             descriptionInput.placeholder = isOtherRequest
                 ? 'Please describe exactly what assistance you need.'
                 : 'Please describe what you need or the problem you are experiencing.';
-            setRequestTypeOpen(false);
+            setRequestTypeOpen(true);
+            filterRequestTypes();
         }
 
-        const oldRequestType = valueInput.value;
-        if (oldRequestType) {
-            searchInput.value = oldRequestType;
-            const oldOption = options.find(function (option) { return option.dataset.value === oldRequestType; });
-            if (oldOption) {
-                oldOption.setAttribute('aria-selected', 'true');
-                selectRequestType(oldOption);
-            }
-        }
         searchInput.addEventListener('focus', function () { setRequestTypeOpen(true); filterRequestTypes(); });
-        searchInput.addEventListener('input', function () { valueInput.value = ''; setRequestTypeOpen(true); filterRequestTypes(); });
-        toggleButton.addEventListener('click', function () { setRequestTypeOpen(optionsPanel.hidden); searchInput.focus(); filterRequestTypes(); });
+        searchInput.addEventListener('input', function () { setRequestTypeOpen(true); filterRequestTypes(); });
+        toggleButton.addEventListener('click', function () { setRequestTypeOpen(!optionsPanel.hidden); searchInput.focus(); filterRequestTypes(); });
         options.forEach(function (option) { option.addEventListener('click', function () { selectRequestType(option); }); });
         document.addEventListener('click', function (event) {
             if (!requestTypePicker.contains(event.target)) setRequestTypeOpen(false);
         });
+
+        syncSelectedItems();
+        setRequestTypeOpen(true);
     }
 </script>
+
+<style>
+    .request-type-picker {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        position: relative;
+    }
+
+    .request-type-field {
+        position: relative;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        min-height: 44px;
+        padding: 8px 40px 8px 10px;
+        border: 1px solid #d5d7db;
+        border-radius: 6px;
+        background: #fff;
+        width: 100%;
+    }
+
+    .request-type-search {
+        flex: 1 1 100%;
+        min-width: 100px;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 15px;
+        color: #111827;
+        padding: 0;
+        margin: 0;
+    }
+
+    .request-type-toggle {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: none;
+        background: transparent;
+        color: #374151;
+        cursor: pointer;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #selected-request-items {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        width: 100%;
+        min-height: 24px;
+        color: #6b7280;
+    }
+
+    #selected-request-items[hidden] {
+        display: none;
+    }
+
+    .request-type-options {
+        margin-top: 6px;
+        background: #fff;
+        border: 1px solid #d5d7db;
+        border-radius: 6px;
+        max-height: 220px;
+        overflow-y: auto;
+        width: 100%;
+    }
+
+    .request-type-group {
+        display: block;
+        padding: 0;
+    }
+
+    .request-type-group-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: #374151;
+        text-transform: uppercase;
+        padding: 10px 12px 6px;
+        background: #f9fafb;
+    }
+
+    .request-type-option {
+        width: 100%;
+        text-align: left;
+        font-size: 15px;
+        padding: 10px 12px;
+        border: none;
+        background: transparent;
+        color: #111827;
+        cursor: pointer;
+    }
+
+    .request-type-option:hover,
+    .request-type-option[aria-selected="true"] {
+        background: #eef4ff;
+    }
+</style>
 
 @endsection

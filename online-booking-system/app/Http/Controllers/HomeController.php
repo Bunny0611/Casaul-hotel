@@ -361,7 +361,7 @@ class HomeController extends Controller
         ]);
 
         $validated = $request->validate([
-            'request_type' => ['required', 'string', 'in:'.implode(',', $requestTypes)],
+            'request_items' => ['required', 'json'],
             'description' => ['required', 'string', 'max:5000'],
             'priority' => ['required', 'in:Normal,Urgent'],
             'preferred_time' => ['nullable', 'date_format:H:i'],
@@ -372,22 +372,53 @@ class HomeController extends Controller
             return back()->withErrors(['request_type' => 'You need an active reservation to submit a guest request.'])->withInput();
         }
 
-        $guestRequest = GuestRequest::create([
-            'guest_id' => $guest->id,
-            'reservation_id' => $reservation->id,
-            'room_id' => $reservation->room_id,
-            'request_type' => $validated['request_type'],
-            'description' => $validated['description'],
-            'department' => in_array($validated['request_type'], $housekeepingTypes, true) ? 'Housekeeping' : 'Employee',
-            'priority' => $validated['priority'],
-            'preferred_time' => $validated['preferred_time'] ?? null,
-            'status' => 'New',
-            'submitted_at' => now(),
-        ]);
+        $requestItems = json_decode($validated['request_items'], true);
+        $requestItems = is_array($requestItems) ? $requestItems : [];
+
+        $validItems = [];
+        foreach ($requestItems as $item) {
+            $type = trim((string) ($item['type'] ?? ''));
+            $quantity = (int) ($item['quantity'] ?? 1);
+
+            if ($type === '' || !in_array($type, $requestTypes, true) || $quantity < 1) {
+                continue;
+            }
+
+            $validItems[] = [
+                'request_type' => $type,
+                'quantity' => $quantity,
+                'department' => in_array($type, $housekeepingTypes, true) ? 'Housekeeping' : 'Employee',
+            ];
+        }
+
+        if (empty($validItems)) {
+            return back()->withErrors(['request_type' => 'Please select at least one valid request type.'])->withInput();
+        }
+
+        $createdIds = [];
+        foreach ($validItems as $item) {
+            $guestRequest = GuestRequest::create([
+                'guest_id' => $guest->id,
+                'reservation_id' => $reservation->id,
+                'room_id' => $reservation->room_id,
+                'request_type' => $item['request_type'],
+                'description' => $validated['description'],
+                'department' => $item['department'],
+                'priority' => $validated['priority'],
+                'preferred_time' => $validated['preferred_time'] ?? null,
+                'status' => 'New',
+                'quantity' => $item['quantity'],
+                'submitted_at' => now(),
+            ]);
+
+            $createdIds[] = $guestRequest->id;
+        }
+
+        $firstRequestId = $createdIds[0] ?? null;
 
         return redirect()->route('guest.records')
             ->with('request_success', 'Your request has been submitted successfully.')
-            ->with('request_id', $guestRequest->id);
+            ->with('request_id', $firstRequestId);
     }
 
     protected function activeReservationFor($guest): ?Reservation

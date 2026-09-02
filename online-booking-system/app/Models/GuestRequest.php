@@ -16,6 +16,7 @@ class GuestRequest extends Model
         'priority',
         'preferred_time',
         'status',
+        'quantity',
         'assigned_employee_id',
         'employee_notes',
         'submitted_at',

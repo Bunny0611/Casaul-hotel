@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\GuestRequest;
 use App\Models\HousekeepingTask;
 use App\Models\Room;
 use App\Models\Reservation;
 use App\Models\Staff;
 use App\Models\MaintenanceReport;
+use App\Models\Message;
 
 class HousekeepingController extends Controller
 {
@@ -118,7 +120,137 @@ class HousekeepingController extends Controller
 
     public function guestRequests()
     {
-        return view('housekeeping.guest-requests');
+        $requests = GuestRequest::with(['guest', 'room', 'reservation'])
+            ->where('department', 'Housekeeping')
+            ->latest('submitted_at')
+            ->get();
+
+        $groupedRequests = $requests->groupBy(function ($request) {
+            $signature = [
+                $request->guest_id ?? 'guest',
+                $request->reservation_id ?? 'reservation',
+                $request->room_id ?? 'room',
+                trim((string) ($request->description ?? '')),
+                trim((string) ($request->preferred_time ?? '')),
+                trim((string) ($request->priority ?? '')),
+                trim((string) ($request->status ?? '')),
+                $request->submitted_at ? $request->submitted_at->toDateTimeString() : now()->toDateTimeString(),
+            ];
+
+            return md5(implode('|', $signature));
+        })->map(function ($group) {
+            $first = $group->first();
+
+            return (object) [
+                'id' => $first->id,
+                'guest_id' => $first->guest_id,
+                'reservation_id' => $first->reservation_id,
+                'room_id' => $first->room_id,
+                'guest' => $first->guest,
+                'room' => $first->room,
+                'reservation' => $first->reservation,
+                'request_type' => $group->pluck('request_type')->unique()->implode(', '),
+                'description' => $first->description,
+                'department' => $first->department,
+                'priority' => $first->priority,
+                'preferred_time' => $first->preferred_time,
+                'status' => $first->status,
+                'quantity' => $group->sum(fn ($item) => (int) ($item->quantity ?? 1)),
+                'submitted_at' => $first->submitted_at,
+                'items' => $group->map(fn ($item) => [
+                    'request_type' => $item->request_type,
+                    'quantity' => (int) ($item->quantity ?? 1),
+                    'status' => $item->status,
+                    'guest_note' => $item->description ?: 'No note provided',
+                ])->values()->all(),
+            ];
+        })->values();
+
+        $requests = $groupedRequests;
+
+        $stats = [
+            'pending' => $groupedRequests->whereIn('status', ['New', 'In Progress'])->count(),
+            'resolved' => $groupedRequests->where('status', 'Completed')->count(),
+            'total' => $groupedRequests->count(),
+        ];
+
+        return view('housekeeping.guest-requests', compact('requests', 'groupedRequests', 'stats'));
+    }
+
+    public function guestRequestDetails($id)
+    {
+        $request = GuestRequest::with(['guest', 'room', 'reservation'])
+            ->where('department', 'Housekeeping')
+            ->findOrFail($id);
+
+        $requestData = [
+            'id' => $request->id,
+            'requestId' => 'REQ-' . str_pad($request->id, 4, '0', STR_PAD_LEFT),
+            'reservation' => $request->reservation ? 'RES-' . str_pad($request->reservation->id, 4, '0', STR_PAD_LEFT) : 'N/A',
+            'guest' => $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest',
+            'room' => $request->room ? ($request->room->room_type ? $request->room->room_type . ' - ' . $request->room->room_number : $request->room->room_number) : 'Room info unavailable',
+            'checkIn' => $request->reservation?->check_in ? $request->reservation->check_in->format('M d, Y') : '—',
+            'checkOut' => $request->reservation?->check_out ? $request->reservation->check_out->format('M d, Y') : '—',
+            'nights' => $request->reservation ? (($request->reservation->nights ?? '1') . ' Nights') : '—',
+            'status' => $request->status,
+            'requestType' => $request->request_type,
+            'description' => $request->description,
+            'preferredTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : 'Not specified',
+            'priority' => $request->priority,
+            'submitted' => $request->submitted_at ? $request->submitted_at->format('M d, Y \a\t g:i A') : '—',
+            'submittedShort' => $request->submitted_at ? $request->submitted_at->format('M d, Y') : '—',
+            'quantity' => (int) ($request->quantity ?? 1),
+            'guestNote' => $request->description ?: 'No note provided',
+            'specialRequest' => $request->description ?: 'No special request.',
+            'estimatedArrivalTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : '—',
+            'items' => [[
+                'request_type' => $request->request_type,
+                'quantity' => (int) ($request->quantity ?? 1),
+                'status' => $request->status,
+                'guest_note' => $request->description ?: 'No note provided',
+            ]],
+        ];
+
+        return view('housekeeping.guest-request-details', compact('request', 'requestData'));
+    }
+
+    public function updateGuestRequest(Request $request, $id)
+    {
+        $guestRequest = GuestRequest::findOrFail($id);
+        
+        $validated = $request->validate([
+            'notes' => 'nullable|string',
+            'status' => 'nullable|string|in:New,In Progress,Delivered,Completed',
+        ]);
+
+        if (isset($validated['notes'])) {
+            $guestRequest->employee_notes = $validated['notes'];
+        }
+
+        if (isset($validated['status'])) {
+            $guestRequest->status = $validated['status'];
+        }
+
+        $guestRequest->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Guest request updated successfully',
+            'data' => $guestRequest,
+        ]);
+    }
+
+    public function markGuestRequestDelivered(Request $request, $id)
+    {
+        $guestRequest = GuestRequest::findOrFail($id);
+        $guestRequest->status = 'Delivered';
+        $guestRequest->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Guest request marked as delivered',
+            'data' => $guestRequest,
+        ]);
     }
 
     public function maintenanceReport()
@@ -201,6 +333,21 @@ class HousekeepingController extends Controller
             ->where('status', 'completed')->latest('finished_at')->get();
 
         return view('housekeeping.cleaning-history', compact('tasks'));
+    }
+
+    public function messages()
+    {
+        $messages = Message::latest()->get();
+        
+        $stats = [
+            'unread' => $messages->where('is_replied', false)->count(),
+            'replied' => $messages->where('is_replied', true)->count(),
+            'total' => $messages->count(),
+        ];
+        
+        $dateFilter = 'today';
+
+        return view('housekeeping.messages', compact('messages', 'stats', 'dateFilter'));
     }
 
     public function updateStatus(Request $request, $id)

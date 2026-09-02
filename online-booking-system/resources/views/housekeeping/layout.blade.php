@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>CASAUL Hotel - Housekeeping</title>
 
@@ -238,6 +239,15 @@
                 >
                     <i class="fas fa-bell w-6"></i>
                     <span>Guest Requests</span>
+                </a>
+
+                <a
+                    href="{{ route('housekeeping.messages') }}"
+                    class="nav-item px-5 py-3.5
+                    {{ request()->routeIs('housekeeping.messages') ? 'active' : '' }}"
+                >
+                    <i class="fas fa-comment-dots w-6"></i>
+                    <span>Messages</span>
                 </a>
 
                 <a
