@@ -3,6 +3,76 @@
 
 @section('content')
 <style>
+    .records-category-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+        padding: 16px 15px;
+        border: 1px solid #e5e7eb;
+        border-radius: 0 0 14px 14px;
+        background: #fff;
+    }
+
+    .records-category-tab {
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: 10px 17px;
+        background: #fff;
+        color: #1f3551;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .records-category-tab:hover,
+    .records-category-tab.is-active {
+        border-color: #ff6b17;
+        background: #ff6b17;
+        color: #fff;
+    }
+
+    .records-table-row.is-filtered {
+        display: none;
+    }
+
+    .record-detail-list {
+        display: grid;
+        gap: 3px;
+        min-width: 150px;
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    .record-detail-list span {
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 500;
+    }
+
+    .reservation-records-table {
+        table-layout: fixed;
+    }
+
+    .reservation-records-table th:nth-child(1),
+    .reservation-records-table td:nth-child(1) {
+        width: 5%;
+    }
+
+    .reservation-records-table th:nth-child(2),
+    .reservation-records-table td:nth-child(2) {
+        width: 16%;
+    }
+
+    .reservation-records-table th:nth-child(3),
+    .reservation-records-table td:nth-child(3),
+    .reservation-records-table th:nth-child(4),
+    .reservation-records-table td:nth-child(4) {
+        width: 15%;
+    }
+
     .reservation-action-group {
         display: flex;
         align-items: center;
@@ -454,14 +524,20 @@
             <a href="{{ route('reservation') }}" class="btn">Make a Reservation</a>
         </div>
     @else
+        <div class="records-category-tabs" role="tablist" aria-label="Reservation categories">
+            <button type="button" class="records-category-tab is-active" data-record-filter="rooms" role="tab" aria-selected="true">ROOMS</button>
+            <button type="button" class="records-category-tab" data-record-filter="amenities" role="tab" aria-selected="false">AMENITIES</button>
+            <button type="button" class="records-category-tab" data-record-filter="event-place" role="tab" aria-selected="false">EVENT PLACE</button>
+            <button type="button" class="records-category-tab" data-record-filter="dining" role="tab" aria-selected="false">DINING</button>
+        </div>
         <div class="records-table-wrap">
-            <table class="records-table">
+            <table class="records-table reservation-records-table">
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Room</th>
-                        <th>Check-in</th>
-                        <th>Check-out</th>
+                        <th data-record-heading="details">Room</th>
+                        <th data-record-heading="date">Check-in</th>
+                        <th data-record-heading="schedule">Check-out</th>
                         <th>Total</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -580,11 +656,53 @@
                                 'diningSchedule' => $reservation->dining_schedule,
                             ];
                         @endphp
-                        <tr>
+                        @php
+                            $reservationCategory = strtolower((string) ($reservation->category ?? 'rooms'));
+                            $recordCategories = collect();
+                            if ($reservation->room_id || str_contains($reservationCategory, 'room')) {
+                                $recordCategories->push('rooms');
+                            }
+                            if ($reservation->amenity_id || str_contains($reservationCategory, 'amen')) {
+                                $recordCategories->push('amenities');
+                            }
+                            if ($reservation->event_place_id || str_contains($reservationCategory, 'event')) {
+                                $recordCategories->push('event-place');
+                            }
+                            if ($reservation->dining_id || $reservation->diningItems->isNotEmpty() || str_contains($reservationCategory, 'dining')) {
+                                $recordCategories->push('dining');
+                            }
+                            $recordCategories = $recordCategories->unique()->values()->all() ?: ['rooms'];
+                        @endphp
+                        @foreach($recordCategories as $recordCategory)
+                            @php
+                            $recordDetailNames = match ($recordCategory) {
+                                'amenities' => \App\Models\Amenity::whereIn('id', $amenityIds)->pluck('name')->all(),
+                                'event-place' => \App\Models\EventPlace::whereIn('id', $eventIds)->pluck('name')->all(),
+                                'dining' => $reservation->diningItems->map(fn ($item) => $item->diningMenu?->name)->filter()->values()->all(),
+                                default => [$reservation->room->room_type ?? 'Room'],
+                            };
+                            $diningItem = $reservation->diningItems->first();
+                            $recordDate = $recordCategory === 'dining' ? ($diningItem?->dining_date ?? $reservation->check_in) : $reservation->check_in;
+                            $recordSchedule = $recordCategory === 'dining'
+                                ? collect([$diningItem?->dining_area, $diningItem?->dining_schedule])->filter()->implode(' | ')
+                                : ($recordCategory === 'amenities' ? ($reservation->check_in_time ?? '') : optional($reservation->check_out)->format('M d, Y'));
+                            @endphp
+                            <tr class="records-table-row" data-record-category="{{ $recordCategory }}">
                             <td>{{ $index + 1 }}</td>
-                            <td>{{ $reservation->room->room_type ?? 'Room' }}</td>
-                            <td>{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}</td>
-                            <td>{{ \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y') }}</td>
+                            <td>
+                                <div class="record-detail-list">
+                                    @forelse($recordDetailNames as $recordDetailName)
+                                        <span>{{ $recordDetailName }}</span>
+                                    @empty
+                                        <span>{{ ucfirst(str_replace('-', ' ', $recordCategory)) }}</span>
+                                    @endforelse
+                                    @if($recordCategory === 'dining' && $recordSchedule)
+                                        <span>{{ $recordSchedule }}</span>
+                                    @endif
+                                </div>
+                            </td>
+                            <td>{{ optional($recordDate)->format('M d, Y') ?? '—' }}</td>
+                            <td>{{ $recordSchedule ?: '—' }}</td>
                             <td>₱{{ number_format($reservation->total_amount, 2) }}</td>
                             <td>
                                 <span class="status-badge status-{{ $reservation->status }}">
@@ -691,7 +809,8 @@
                                     <span>—</span>
                                 @endif
                             </td>
-                        </tr>
+                            </tr>
+                        @endforeach
                     @endforeach
                 </tbody>
             </table>
@@ -862,6 +981,48 @@
 </div>
 
 <script>
+    const applyRecordFilter = (selectedCategory) => {
+        const selectedTab = document.querySelector(`[data-record-filter="${selectedCategory}"]`)
+            || document.querySelector('[data-record-filter="rooms"]');
+        const activeCategory = selectedTab.dataset.recordFilter;
+        const headingLabels = {
+            rooms: ['Room', 'Check-in', 'Check-out'],
+            amenities: ['Amenity', 'Date', 'Time'],
+            'event-place': ['Event Place', 'Date', 'Schedule'],
+            dining: ['Dining', 'Date', 'Schedule'],
+        }[activeCategory];
+
+        document.querySelectorAll('[data-record-filter]').forEach(function (item) {
+            const isActive = item === selectedTab;
+            item.classList.toggle('is-active', isActive);
+            item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        document.querySelectorAll('.records-table-row').forEach(function (row) {
+            row.classList.toggle('is-filtered', row.dataset.recordCategory !== activeCategory);
+        });
+
+        let visibleRowNumber = 1;
+        document.querySelectorAll('.reservation-records-table .records-table-row').forEach(function (row) {
+            if (!row.classList.contains('is-filtered')) {
+                row.cells[0].textContent = visibleRowNumber++;
+            }
+        });
+
+        document.querySelector('[data-record-heading="details"]').textContent = headingLabels[0];
+        document.querySelector('[data-record-heading="date"]').textContent = headingLabels[1];
+        document.querySelector('[data-record-heading="schedule"]').textContent = headingLabels[2];
+        localStorage.setItem('guestRecordsCategory', activeCategory);
+    };
+
+    document.querySelectorAll('[data-record-filter]').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            applyRecordFilter(this.dataset.recordFilter);
+        });
+    });
+
+    applyRecordFilter(localStorage.getItem('guestRecordsCategory') || 'rooms');
+
     function openGuestReceiptModal(button) {
         const modal = document.getElementById('guest-receipt-modal');
         const guestName = document.getElementById('guest-receipt-guest-name');
