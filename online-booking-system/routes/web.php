@@ -43,6 +43,7 @@ Route::middleware(['auth:guest', 'role:guest'])->group(function () {
     Route::get('/guest/profile', [HomeController::class, 'profile'])->name('guest.profile');
     Route::get('/guest/records', [HomeController::class, 'records'])->name('guest.records');
     Route::get('/guest/receipts', [HomeController::class, 'receipts'])->name('guest.receipts');
+    Route::delete('/guest/reservations/{reservation}', [HomeController::class, 'deleteReservation'])->name('guest.reservations.delete');
     Route::patch('/guest/reservations/{reservation}/cancel', [HomeController::class, 'cancelReservation'])->name('guest.reservations.cancel');
     Route::post('/guest/requests', [HomeController::class, 'storeGuestRequest'])->name('guest.requests.store');
 });

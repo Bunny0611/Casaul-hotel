@@ -623,17 +623,37 @@
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="reservation-menu hidden">
-                                                <form method="POST" action="{{ route('guest.reservations.cancel', $reservation) }}" onsubmit="return confirm('Cancel this reservation? This action cannot be undone.');">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Cancel Reservation</button>
-                                                </form>
+                                                @if($reservation->status === 'confirmed')
+                                                    <form method="POST" action="{{ route('guest.reservations.delete', $reservation) }}" onsubmit="return confirm('Delete this confirmed reservation? This action cannot be undone.');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Delete Reservation</button>
+                                                    </form>
+                                                @else
+                                                    <form method="POST" action="{{ route('guest.reservations.cancel', $reservation) }}" onsubmit="return confirm('Cancel this reservation? This action cannot be undone.');">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Cancel Reservation</button>
+                                                    </form>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
                                 @elseif($reservation->status === 'checked-in')
                                     <div class="reservation-action-group">
                                         <button type="button" class="reservation-view-btn" data-view-receipt data-reservation='@json($reservationDetails)'>View</button>
+                                        <div class="reservation-menu-wrap">
+                                            <button type="button" class="reservation-menu-toggle" aria-label="More actions" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="reservation-menu hidden">
+                                                <form method="POST" action="{{ route('guest.reservations.delete', $reservation) }}" onsubmit="return confirm('Delete this checked-in reservation? This action cannot be undone.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Delete Reservation</button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
                                 @else
                                     <span>—</span>

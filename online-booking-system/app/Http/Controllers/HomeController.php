@@ -430,6 +430,35 @@ class HomeController extends Controller
         return view('profile-receipts', compact('receipts'));
     }
 
+    public function deleteReservation(Request $request, Reservation $reservation)
+    {
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
+
+        if ($reservation->guest_email !== $guest->email) {
+            abort(403, 'You can only delete your own reservations.');
+        }
+
+        if (!in_array($reservation->status, ['confirmed', 'checked-in'], true)) {
+            return redirect()->route('guest.records')->withErrors([
+                'reservation' => 'Only confirmed or checked-in reservations can be deleted.',
+            ]);
+        }
+
+        if ($reservation->status === 'checked-in') {
+            $reservation->loadMissing('room');
+            $reservation->room?->update([
+                'status' => 'available',
+                'cleaning_status' => 'dirty',
+            ]);
+        }
+
+        $reservation->diningItems()->delete();
+        $reservation->delete();
+
+        return redirect()->route('guest.records')->with('success', 'Your reservation has been deleted.');
+    }
+
     public function cancelReservation(Request $request, Reservation $reservation)
     {
         $guest = Auth::guard('guest')->user();
