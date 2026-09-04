@@ -189,16 +189,28 @@ class HomeController extends Controller
     {
         $diningSelections = $this->normalizeDiningSelections($request);
 
-        if (!empty($diningSelections) || !empty($request->input('dining_id')) || !empty($request->input('dining_area')) || !empty($request->input('dining_schedule'))) {
-            $request->merge(['category' => 'dining']);
-        }
-
         $request->merge([
             'amenity_id' => $this->normalizeIdList($request->input('amenity_id')),
             'event_place_id' => $this->normalizeIdList($request->input('event_place_id')),
             'dining_id' => empty($diningSelections) ? $this->normalizeIdList($request->input('dining_id')) : null,
             'category' => $request->input('category', 'rooms'),
         ]);
+
+        // Determine reservation category based on what's selected (priority order matters)
+        $eventPlaceId = $request->input('event_place_id');
+        $amenityId = $request->input('amenity_id');
+        $hasDining = !empty($diningSelections) || !empty($request->input('dining_id')) || !empty($request->input('dining_area')) || !empty($request->input('dining_schedule'));
+
+        if (!empty($eventPlaceId)) {
+            $request->merge(['category' => 'event_place']);
+        } elseif (!empty($amenityId)) {
+            $request->merge(['category' => 'amenity']);
+        } elseif ($hasDining) {
+            $request->merge(['category' => 'dining']);
+        } else {
+            // Default to room if no amenities, events, or dining selected
+            $request->merge(['category' => 'room']);
+        }
 
         $validated = $request->validate([
             'category' => ['required', 'in:rooms,amenities,event_place,dining'],
@@ -394,6 +406,42 @@ class HomeController extends Controller
             ->get();
 
         return view('profile-records', compact('reservations', 'activeReservation', 'guestRequests'));
+    }
+
+    public function receipts()
+    {
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
+
+        $receipts = Reservation::with('room')
+            ->where('guest_email', $guest->email)
+            ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('profile-receipts', compact('receipts'));
+    }
+
+    public function cancelReservation(Request $request, Reservation $reservation)
+    {
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
+
+        if ($reservation->guest_email !== $guest->email) {
+            abort(403, 'You can only cancel your own reservations.');
+        }
+
+        if (in_array($reservation->status, ['cancelled', 'completed'], true)) {
+            return redirect()->route('guest.records')->withErrors(['reservation' => 'This reservation cannot be cancelled.']);
+        }
+
+        if ($reservation->status === 'checked-in') {
+            return redirect()->route('guest.records')->withErrors(['reservation' => 'Checked-in stays must be cancelled at the front desk.']);
+        }
+
+        $reservation->update(['status' => 'cancelled']);
+
+        return redirect()->route('guest.records')->with('success', 'Your reservation has been cancelled successfully.');
     }
 
     public function storeGuestRequest(Request $request)

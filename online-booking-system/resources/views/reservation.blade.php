@@ -60,7 +60,7 @@
 
     .confirmation-modal{ position:fixed; inset:0; display:none; align-items:flex-start; justify-content:center; background:rgba(2,6,23,0.55); z-index:9999; padding:20px; overflow-y:auto; }
     .confirmation-modal.open{ display:flex; }
-    .confirmation-card{ width:min(760px,100%); max-height:calc(100vh - 40px); overflow-y:auto; box-sizing:border-box; border-radius:20px; padding:28px; background:linear-gradient(180deg,#fff,#fbfdff); box-shadow: 0 32px 80px rgba(2,6,23,0.18); border:1px solid rgba(15,23,42,0.06); }
+    .confirmation-card{ position:relative; width:min(760px,100%); max-height:calc(100vh - 40px); overflow-y:auto; box-sizing:border-box; border-radius:20px; padding:28px; background:linear-gradient(180deg,#fff,#fbfdff); box-shadow: 0 32px 80px rgba(2,6,23,0.18); border:1px solid rgba(15,23,42,0.06); }
     .confirmation-item{ border-radius:12px; padding:12px; background:#f8fafc; color:#0f172a; }
     .confirmation-total-amount{ font-size:1.6rem; color:#0f172a; }
 
@@ -72,6 +72,13 @@
 
     .confirm-submit-btn{ background: var(--accent); color:white; border-radius:999px; padding:12px 22px; }
     .confirm-cancel-btn{ background: #f3f4f6; border-radius:999px; padding:12px 22px; }
+
+    .notification-toast { position:absolute; top:14px; left:50%; transform:translateX(-50%); display:none; align-items:center; gap:10px; max-width:calc(100% - 32px); padding:12px 18px; border-radius:10px; border:2px solid #d92d2d; background:#fff; color:#c33; box-shadow:0 10px 22px rgba(15,23,42,0.12); font-size:14px; font-weight:700; line-height:1.4; z-index:10; pointer-events:none; animation:slideDown 0.3s ease-out; }
+    .notification-toast.show { display:flex; }
+    .notification-toast i { font-size:16px; }
+    @keyframes slideDown { from { opacity:0; transform:translateX(-50%) translateY(-10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+    @keyframes slideUp { from { opacity:1; transform:translateX(-50%) translateY(0); } to { opacity:0; transform:translateX(-50%) translateY(-10px); } }
+    .notification-toast.hide { animation:slideUp 0.3s ease-out forwards; }
 
     @media (max-width: 640px){
         .confirmation-modal{ padding:12px; }
@@ -725,6 +732,10 @@
                 <h3 style="margin:0; font-size:1.5rem; color:#111827;">Confirm Your Reservation</h3>
                 <button type="button" class="confirmation-close" id="confirmationCloseBtn" style="border:none; background:transparent; color:#334155; font-size:1.5rem; cursor:pointer; line-height:1;">×</button>
             </div>
+            <div class="notification-toast" id="notificationToast" style="position:relative; top:auto; left:auto; transform:none; margin-bottom:20px;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="notificationMessage"></span>
+            </div>
             <p class="confirmation-text" style="margin:0 0 24px; color:#4b5563; font-size:0.98rem; line-height:1.6;">Review all reservation details before submitting.</p>
             <div class="confirmation-review">
                 <section class="review-section">
@@ -966,6 +977,8 @@
         const reservationLeft = document.querySelector('.reservation-left');
         const tabs = document.querySelectorAll('.tab-btn');
         const panels = document.querySelectorAll('.reservation-panel');
+        const notificationToast = document.getElementById('notificationToast');
+        const notificationMessage = document.getElementById('notificationMessage');
         const checkIn = document.getElementById('checkIn');
         const checkOut = document.getElementById('checkOut');
         const summaryRoom = document.getElementById('summaryRoom');
@@ -1165,6 +1178,26 @@
                 return `Account: ${value('bankAccountName') || '—'} • Bank: ${value('bankName') || '—'} • Amount: ${amountValue('transferAmount')} • Reference: ${value('bankReferenceNumber') || '—'} • Date: ${value('transferDate') || '—'}${fileName('bankPaymentProof') ? ` • Proof: ${fileName('bankPaymentProof')}` : ''}`;
             }
             return 'Pay at hotel';
+        };
+
+        const showNotification = (message) => {
+            if (!detailsTerms || detailsTerms.checked) {
+                notificationToast.classList.remove('show', 'hide');
+                notificationToast.style.display = 'none';
+                return;
+            }
+
+            notificationMessage.textContent = message;
+            notificationToast.style.display = 'flex';
+            notificationToast.classList.remove('hide');
+            notificationToast.classList.add('show');
+            setTimeout(() => {
+                notificationToast.classList.add('hide');
+                setTimeout(() => {
+                    notificationToast.classList.remove('show');
+                    notificationToast.style.display = 'none';
+                }, 300);
+            }, 4500);
         };
 
         const getPaymentDetailRows = () => {
@@ -1597,6 +1630,8 @@
             confirmationModal.classList.add('open');
             confirmationModal.style.display = 'flex';
             confirmationModal.setAttribute('aria-hidden', 'false');
+            notificationToast.classList.remove('show', 'hide');
+            notificationToast.style.display = 'none';
         };
 
         const closeConfirmationModal = () => {
@@ -1609,6 +1644,8 @@
             confirmationModal.classList.remove('open');
             confirmationModal.style.display = 'none';
             confirmationModal.setAttribute('aria-hidden', 'true');
+            notificationToast.classList.remove('show', 'hide');
+            notificationToast.style.display = 'none';
         };
 
         confirmBtn.addEventListener('click', function () {
@@ -1689,6 +1726,13 @@
         receiptModal.addEventListener('click', function (event) {
             if (event.target === receiptModal) {
                 closeReceiptModal();
+            }
+        });
+
+        detailsTerms.addEventListener('change', function () {
+            if (this.checked) {
+                notificationToast.classList.remove('show', 'hide');
+                notificationToast.style.display = 'none';
             }
         });
 
@@ -1789,6 +1833,10 @@
             }
 
             if (!reservationPage.classList.contains('confirm-step')) {
+                if (!detailsTerms.checked) {
+                    showNotification('Please check Terms & Conditions before proceeding.');
+                    return;
+                }
                 reservationPage.classList.add('confirm-step');
                 modalConfirmBtn.textContent = 'Submit Reservation';
                 modalCancelBtn.textContent = 'Back to Details';
@@ -1799,12 +1847,6 @@
 
             modalConfirmBtn.disabled = true;
             modalConfirmBtn.textContent = 'Submitting...';
-            if (!detailsTerms.checked) {
-                modalConfirmBtn.disabled = false;
-                modalConfirmBtn.textContent = 'Confirm Reservation';
-                alert('Please agree to the Terms & Conditions before submitting.');
-                return;
-            }
 
             reservationGuestName.value = detailsGuestName.value || 'Guest';
             reservationGuestEmail.value = detailsGuestEmail.value || 'guest@example.com';
