@@ -86,6 +86,7 @@
     }
 
     .reservation-menu-item {
+        display: block;
         width: 100%;
         border: 0;
         background: transparent;
@@ -94,6 +95,8 @@
         font-size: 0.82rem;
         color: #1f2937;
         cursor: pointer;
+        text-decoration: none;
+        box-sizing: border-box;
     }
 
     .reservation-menu-item:hover {
@@ -611,7 +614,12 @@
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="reservation-menu hidden">
-                                                <button type="button" class="reservation-menu-item" data-view-receipt data-reservation='@json($reservationDetails)' data-receipt-id="RES-{{ str_pad($reservation->id, 4, '0', STR_PAD_LEFT) }}" data-guest-name="{{ auth('guest')->user()->name }}" data-guest-email="{{ auth('guest')->user()->email }}" data-check-in="{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}" data-check-out="{{ \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y') }}" data-guests="{{ $reservation->number_of_guests ?? 2 }} Guests" data-room="{{ $reservation->room->room_type ?? 'Room' }}" data-total="₱{{ number_format($reservation->total_amount, 2) }}" data-line-items='@json($reservationReceiptLines)'>View Receipt</button>
+                                                <form method="POST" action="{{ route('guest.reservations.delete', $reservation) }}" onsubmit="return confirm('Delete this checked-out reservation? This action cannot be undone.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <input type="hidden" name="category" value="{{ $reservation->category }}">
+                                                    <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Delete Reservation</button>
+                                                </form>
                                             </div>
                                         </div>
                                     </div>
@@ -624,15 +632,20 @@
                                             </button>
                                             <div class="reservation-menu hidden">
                                                 @if($reservation->status === 'confirmed')
+                                                    <a href="{{ route('guest.receipts') }}" class="reservation-menu-item">
+                                                        View Receipt
+                                                    </a>
                                                     <form method="POST" action="{{ route('guest.reservations.delete', $reservation) }}" onsubmit="return confirm('Delete this confirmed reservation? This action cannot be undone.');">
                                                         @csrf
                                                         @method('DELETE')
+                                                        <input type="hidden" name="category" value="{{ $reservation->category }}">
                                                         <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Delete Reservation</button>
                                                     </form>
                                                 @else
                                                     <form method="POST" action="{{ route('guest.reservations.cancel', $reservation) }}" onsubmit="return confirm('Cancel this reservation? This action cannot be undone.');">
                                                         @csrf
                                                         @method('PATCH')
+                                                        <input type="hidden" name="category" value="{{ $reservation->category }}">
                                                         <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Cancel Reservation</button>
                                                     </form>
                                                 @endif
@@ -647,9 +660,11 @@
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="reservation-menu hidden">
+                                                <button type="button" class="reservation-menu-item" data-view-receipt data-reservation='@json($reservationDetails)'>View Receipt</button>
                                                 <form method="POST" action="{{ route('guest.reservations.delete', $reservation) }}" onsubmit="return confirm('Delete this checked-in reservation? This action cannot be undone.');">
                                                     @csrf
                                                     @method('DELETE')
+                                                    <input type="hidden" name="category" value="{{ $reservation->category }}">
                                                     <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Delete Reservation</button>
                                                 </form>
                                             </div>
@@ -666,6 +681,7 @@
                                                 <form method="POST" action="{{ route('guest.reservations.delete', $reservation) }}" onsubmit="return confirm('Delete this cancelled reservation? This action cannot be undone.');">
                                                     @csrf
                                                     @method('DELETE')
+                                                    <input type="hidden" name="category" value="{{ $reservation->category }}">
                                                     <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Delete Reservation</button>
                                                 </form>
                                             </div>

@@ -460,18 +460,28 @@ class HomeController extends Controller
         return view('profile-receipts', compact('receipts'));
     }
 
-    public function deleteReservation(Request $request, Reservation $reservation)
+    public function deleteReservation(Request $request, $reservation)
     {
         $guest = Auth::guard('guest')->user();
         abort_unless($guest, 403);
+
+        $reservation = match ($request->input('category')) {
+            'rooms' => RoomReservation::find($reservation),
+            'event_place' => EventReservation::find($reservation),
+            'amenities' => AmenityReservation::find($reservation),
+            'dining' => DiningReservation::find($reservation),
+            default => Reservation::find($reservation),
+        };
+
+        abort_if(!$reservation, 404, 'Reservation not found.');
 
         if ($reservation->guest_email !== $guest->email) {
             abort(403, 'You can only delete your own reservations.');
         }
 
-        if (!in_array($reservation->status, ['cancelled', 'confirmed', 'checked-in'], true)) {
+        if (!in_array($reservation->status, ['cancelled', 'confirmed', 'checked-in', 'completed'], true)) {
             return redirect()->route('guest.records')->withErrors([
-                'reservation' => 'Only cancelled, confirmed, or checked-in reservations can be deleted.',
+                'reservation' => 'Only cancelled, confirmed, checked-in, or checked-out reservations can be deleted.',
             ]);
         }
 
@@ -483,16 +493,28 @@ class HomeController extends Controller
             ]);
         }
 
-        $reservation->diningItems()->delete();
+        if (method_exists($reservation, 'diningItems')) {
+            $reservation->diningItems()->delete();
+        }
         $reservation->delete();
 
         return redirect()->route('guest.records')->with('success', 'Your reservation has been deleted.');
     }
 
-    public function cancelReservation(Request $request, Reservation $reservation)
+    public function cancelReservation(Request $request, $reservation)
     {
         $guest = Auth::guard('guest')->user();
         abort_unless($guest, 403);
+
+        $reservation = match ($request->input('category')) {
+            'rooms' => RoomReservation::find($reservation),
+            'event_place' => EventReservation::find($reservation),
+            'amenities' => AmenityReservation::find($reservation),
+            'dining' => DiningReservation::find($reservation),
+            default => Reservation::find($reservation),
+        };
+
+        abort_if(!$reservation, 404, 'Reservation not found.');
 
         if ($reservation->guest_email !== $guest->email) {
             abort(403, 'You can only cancel your own reservations.');
