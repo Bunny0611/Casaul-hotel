@@ -372,6 +372,24 @@ class AdminController extends Controller
         return redirect()->route('admin.rooms')->with('success', 'Inventory status updated successfully.');
     }
 
+    public function updateDiningStatus(Request $request, $type, $id)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'max:50'],
+        ]);
+
+        $model = match ($type) {
+            'tables' => DiningTable::class,
+            'menus' => DiningMenu::class,
+            'schedules' => DiningSchedule::class,
+            default => abort(404),
+        };
+
+        $model::findOrFail($id)->update(['status' => strtolower($validated['status'])]);
+
+        return response()->json(['status' => strtolower($validated['status'])]);
+    }
+
     public function destroyInventoryItem($id)
     {
         $category = request()->input('category', 'dining');
@@ -730,6 +748,20 @@ class AdminController extends Controller
             unset($validated['duration_hours']);
             $reservation = AmenityReservation::create($validated);
         } elseif ($category === 'dining') {
+            $hasDiningConflict = DiningReservation::query()
+                ->activeForTableAndSchedule(
+                    (string) $validated['dining_area'],
+                    $validated['check_in'],
+                    $validated['dining_schedule']
+                )
+                ->exists();
+
+            if ($hasDiningConflict) {
+                throw ValidationException::withMessages([
+                    'dining_area' => 'This table is already reserved for the selected dining schedule. Please choose another table or schedule.',
+                ]);
+            }
+
             $reservation = DiningReservation::create($validated);
             if (!empty($diningSelections)) {
                 $reservation->diningItems()->createMany($diningSelections);
@@ -824,6 +856,21 @@ class AdminController extends Controller
                         'cleaning_status' => 'dirty',
                     ]);
                 }
+            }
+
+            if ($reservation instanceof DiningReservation && $validated['status'] === 'confirmed') {
+                $tableNumbers = collect(explode(',', (string) $reservation->dining_area))
+                    ->map(fn ($tableNumber) => trim($tableNumber))
+                    ->filter()
+                    ->values();
+
+                if ($tableNumbers->isNotEmpty()) {
+                    DiningTable::whereIn('table_no', $tableNumbers)->update(['status' => 'reserved']);
+                }
+            }
+
+            if ($reservation instanceof EventReservation && $validated['status'] === 'confirmed' && $reservation->eventPlace) {
+                $reservation->eventPlace->update(['status' => 'reserved']);
             }
         });
 

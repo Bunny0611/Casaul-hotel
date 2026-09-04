@@ -94,9 +94,11 @@ class HomeController extends Controller
             ->get();
 
         $diningSchedules = DiningSchedule::where('status', 'Active')->orderBy('available_from')->get();
-        $diningTables = DiningTable::where('status', 'Available')->orderBy('table_no')->get();
+        $diningTables = DiningTable::whereIn('status', ['Available', 'Reserved'])->orderBy('table_no')->get();
+        $diningReservations = DiningReservation::whereNotIn('status', ['cancelled', 'completed'])
+            ->get(['dining_area', 'dining_schedule', 'check_in']);
 
-        return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningSchedules', 'diningTables'));
+        return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningSchedules', 'diningTables', 'diningReservations'));
     }
 
     private function normalizeIdList($value): ?string
@@ -409,6 +411,17 @@ class HomeController extends Controller
                 ]);
             }
         } else {
+            $tableNumber = (string) ($validated['dining_area'] ?? '');
+            $hasDiningConflict = DiningReservation::query()
+                ->activeForTableAndSchedule($tableNumber, $validated['check_in'], $validated['dining_schedule'])
+                ->exists();
+
+            if ($hasDiningConflict) {
+                throw ValidationException::withMessages([
+                    'dining_area' => 'This table is already reserved for the selected dining schedule. Please choose another table or schedule.',
+                ]);
+            }
+
             $reservation = DiningReservation::create(collect($validated)->only([
                 'guest_name', 'guest_email', 'guest_phone', 'dining_area',
                 'dining_schedule', 'check_in', 'check_out', 'quantity',
