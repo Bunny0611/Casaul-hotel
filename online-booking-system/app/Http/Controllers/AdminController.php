@@ -767,6 +767,20 @@ class AdminController extends Controller
 
             $reservation->update(['status' => $validated['status']]);
 
+            if ($reservation instanceof RoomReservation && in_array($validated['status'], ['checked-in', 'completed'], true)) {
+                $legacyReservation = Reservation::query()
+                    ->where('guest_email', $reservation->guest_email)
+                    ->where('room_id', $reservation->room_id)
+                    ->whereDate('check_in', $reservation->check_in)
+                    ->whereDate('check_out', $reservation->check_out)
+                    ->where('total_amount', $reservation->total_amount)
+                    ->whereNotIn('status', ['cancelled', 'completed'])
+                    ->latest('id')
+                    ->first();
+
+                $legacyReservation?->update(['status' => $validated['status']]);
+            }
+
             // Only update room status for room reservations
             if ($reservationType === 'room' && $reservation->room) {
                 if ($validated['status'] === 'checked-in') {
@@ -782,6 +796,12 @@ class AdminController extends Controller
                 }
             }
         });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Reservation status updated successfully.',
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Reservation status updated successfully!');
     }

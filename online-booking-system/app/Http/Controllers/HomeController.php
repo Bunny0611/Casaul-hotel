@@ -439,9 +439,9 @@ class HomeController extends Controller
             abort(403, 'You can only delete your own reservations.');
         }
 
-        if (!in_array($reservation->status, ['confirmed', 'checked-in'], true)) {
+        if (!in_array($reservation->status, ['cancelled', 'confirmed', 'checked-in'], true)) {
             return redirect()->route('guest.records')->withErrors([
-                'reservation' => 'Only confirmed or checked-in reservations can be deleted.',
+                'reservation' => 'Only cancelled, confirmed, or checked-in reservations can be deleted.',
             ]);
         }
 

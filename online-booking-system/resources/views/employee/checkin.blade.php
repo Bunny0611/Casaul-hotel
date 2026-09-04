@@ -473,7 +473,7 @@
                     </thead>
                     <tbody>
                         @forelse($checkOuts as $reservation)
-                            @php($paid = $reservation->payments->sum('amount'))
+                            @php($paid = max((float) ($reservation->amount_paid ?? 0), (float) $reservation->payments->sum('amount')))
                             <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-check-in-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-check-out-date="{{ $reservation->check_out?->format('Y-m-d') }}" data-time="{{ ($reservation->check_out_time ?: $reservation->check_in_time) ? \Illuminate\Support\Carbon::parse($reservation->check_out_time ?: $reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-total="{{ number_format($reservation->total_amount, 2, '.', '') }}" data-paid="{{ number_format($paid, 2, '.', '') }}" data-status="{{ ucfirst($reservation->status) }}">
                                 <td class="py-3 pr-3 whitespace-nowrap text-sm font-semibold text-slate-800">RES-{{ $reservation->id }}</td>
                                 <td class="py-3 pr-3 text-sm text-slate-700">{{ $reservation->guest_name }}</td>
@@ -784,13 +784,19 @@
             body: new FormData(form),
             headers: { 'Accept': 'application/json' }
         })
-        .then(response => response.json())
-        .then(data => {
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || Object.values(data.errors || {}).flat().join(' ') || 'Unable to confirm check-out.');
+                });
+            }
+
+            return response.json();
+        })
+        .then(() => {
             if (window.currentCheckOutRow) {
                 const statusCell = window.currentCheckOutRow.querySelector('td:nth-child(3)');
-                const actionCell = window.currentCheckOutRow.querySelector('td:nth-child(4)');
                 statusCell.innerHTML = '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"><i class="fas fa-check-circle"></i> Confirmed</span>';
-                actionCell.innerHTML = '<span class="text-sm font-semibold text-slate-400">Completed</span>';
                 window.currentCheckOutRow.dataset.status = 'Completed';
             }
             closeModal('checkOutModal');

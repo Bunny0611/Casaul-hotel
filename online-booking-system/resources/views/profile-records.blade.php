@@ -523,7 +523,7 @@
                                 'guestName' => $reservation->guest_name,
                                 'guestEmail' => $reservation->guest_email,
                                 'guestPhone' => $reservation->guest_phone,
-                                'status' => ucfirst($reservation->status),
+                                'status' => $reservation->status === 'completed' ? 'Checked-out' : ucfirst($reservation->status),
                                 'category' => $reservation->category,
                                 'checkIn' => optional($reservation->check_in)->format('M d, Y'),
                                 'checkInTime' => $reservation->check_in_time,
@@ -585,7 +585,7 @@
                             <td>₱{{ number_format($reservation->total_amount, 2) }}</td>
                             <td>
                                 <span class="status-badge status-{{ $reservation->status }}">
-                                    {{ ucfirst($reservation->status) }}
+                                    {{ $reservation->status === 'completed' ? 'Checked-out' : ucfirst($reservation->status) }}
                                 </span>
                             </td>
                             <td>
@@ -648,6 +648,22 @@
                                             </button>
                                             <div class="reservation-menu hidden">
                                                 <form method="POST" action="{{ route('guest.reservations.delete', $reservation) }}" onsubmit="return confirm('Delete this checked-in reservation? This action cannot be undone.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Delete Reservation</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @elseif($reservation->status === 'cancelled')
+                                    <div class="reservation-action-group">
+                                        <button type="button" class="reservation-view-btn" data-view-receipt data-reservation='@json($reservationDetails)'>View</button>
+                                        <div class="reservation-menu-wrap">
+                                            <button type="button" class="reservation-menu-toggle" aria-label="More actions" aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <div class="reservation-menu hidden">
+                                                <form method="POST" action="{{ route('guest.reservations.delete', $reservation) }}" onsubmit="return confirm('Delete this cancelled reservation? This action cannot be undone.');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="reservation-menu-item reservation-menu-item--danger">Delete Reservation</button>
