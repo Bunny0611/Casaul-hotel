@@ -2,51 +2,53 @@
 
 @section('content')
 
-@include('partials.section-hero', [
-    'title' => 'ABOUT US',
-    'subtitle' => 'A warm and welcoming retreat in the heart of Tabaco City, where comfort, hospitality, and local charm come together.',
-    'cta' => ['href' => '#about-us', 'label' => 'Discover More'],
-    'backgroundImage' => 'image/Royal-Suite-room.jpg',
-])
+<section class="about-page" id="about-us">
+    <div class="about-container">
+        <header class="about-heading">
+            <div class="about-ornament" aria-hidden="true"><span></span><i class="fas fa-spa"></i><span></span></div>
+            <p class="about-kicker">Welcome to CASAUL</p>
+            <h1>About <strong>CASAUL</strong> Hotel</h1>
+            <p class="about-lead">Where comfort meets genuine hospitality.</p>
+        </header>
 
-<section class="about-us-section" id="about-us" style="padding: 80px 20px; background: #f8f7f3;">
-    <div style="max-width: 1100px; margin: 0 auto; display: grid; gap: 40px;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
-            <div style="background: white; padding: 30px; border-radius: 16px; box-shadow: 0 12px 30px rgba(0,0,0,0.08);">
-                <h3 style="font-size: 1.3rem; margin-bottom: 10px; color: #8b5e3c;">Our Story</h3>
-                <p style="line-height: 1.8; color: #555;">
-                    CASAUL Hotel is a proud hospitality destination rooted in Filipino warmth and service excellence. From our first welcome to your last goodbye, we aim to make every stay memorable and meaningful.
-                </p>
-            </div>
-
-            <div style="background: white; padding: 30px; border-radius: 16px; box-shadow: 0 12px 30px rgba(0,0,0,0.08);">
-                <h3 style="font-size: 1.3rem; margin-bottom: 10px; color: #8b5e3c;">Mission</h3>
-                <p style="line-height: 1.8; color: #555;">
-                    To provide exceptional hospitality through comfort, sincere service, and thoughtful experiences that make every guest feel at home.
-                </p>
-            </div>
-
-            <div style="background: white; padding: 30px; border-radius: 16px; box-shadow: 0 12px 30px rgba(0,0,0,0.08);">
-                <h3 style="font-size: 1.3rem; margin-bottom: 10px; color: #8b5e3c;">Vision</h3>
-                <p style="line-height: 1.8; color: #555;">
-                    To become one of the most trusted and admired hotel brands in the region, known for quality, hospitality, and lasting guest relationships.
-                </p>
-            </div>
+        <div class="about-feature-image">
+            <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="A refined guest room at CASAUL Hotel">
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px;">
-            <div style="background: #fff; padding: 25px; border-radius: 14px; border: 1px solid #e8e2d8;">
-                <h4 style="color: #2f3e46; margin-bottom: 8px;">Comfort</h4>
-                <p style="line-height: 1.7; color: #666;">Thoughtfully designed rooms and modern amenities for a relaxing stay.</p>
-            </div>
-            <div style="background: #fff; padding: 25px; border-radius: 14px; border: 1px solid #e8e2d8;">
-                <h4 style="color: #2f3e46; margin-bottom: 8px;">Hospitality</h4>
-                <p style="line-height: 1.7; color: #666;">A team committed to being attentive, warm, and genuinely helpful.</p>
-            </div>
-            <div style="background: #fff; padding: 25px; border-radius: 14px; border: 1px solid #e8e2d8;">
-                <h4 style="color: #2f3e46; margin-bottom: 8px;">Community</h4>
-                <p style="line-height: 1.7; color: #666;">We celebrate local culture and support the community we proudly serve.</p>
-            </div>
+        <div class="about-purpose-grid">
+            <article class="about-card about-story-card">
+                <div class="about-card-icon"><i class="fas fa-book-open"></i></div>
+                <div>
+                    <h2>Our Story</h2>
+                    <div class="about-rule"></div>
+                    <p>CASAUL Hotel is a proud hospitality destination rooted in Filipino warmth and service excellence. From our first welcome to your last goodbye, we aim to make every stay memorable and meaningful.</p>
+                    <p>We continually evolve to meet the needs of modern travelers while staying true to our values of comfort, care, and community.</p>
+                </div>
+            </article>
+
+            <article class="about-card about-purpose-card mission-card">
+                <div class="about-card-icon"><i class="fas fa-bullseye"></i></div>
+                <div>
+                    <h2>Mission</h2>
+                    <div class="about-rule"></div>
+                    <p>To provide exceptional hospitality through comfort, sincere service, and thoughtful experiences that make every guest feel at home.</p>
+                </div>
+            </article>
+
+            <article class="about-card about-purpose-card vision-card">
+                <div class="about-card-icon"><i class="fas fa-eye"></i></div>
+                <div>
+                    <h2>Vision</h2>
+                    <div class="about-rule"></div>
+                    <p>To become one of the most trusted and admired hotel brands in the region, known for quality, hospitality, and lasting guest relationships.</p>
+                </div>
+            </article>
+        </div>
+
+        <div class="about-values-grid">
+            <article class="about-value-card"><div class="about-value-icon"><i class="fas fa-bed"></i></div><div><h3>Comfort</h3><div class="about-rule"></div><p>Thoughtfully designed rooms and modern amenities for a relaxing stay.</p></div></article>
+            <article class="about-value-card"><div class="about-value-icon"><i class="fas fa-concierge-bell"></i></div><div><h3>Hospitality</h3><div class="about-rule"></div><p>A team committed to being attentive, warm, and genuinely helpful.</p></div></article>
+            <article class="about-value-card"><div class="about-value-icon"><i class="fas fa-users"></i></div><div><h3>Community</h3><div class="about-rule"></div><p>We celebrate local culture and support the community we proudly serve.</p></div></article>
         </div>
     </div>
 </section>
