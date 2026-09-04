@@ -113,8 +113,9 @@
 
 </nav>
 
-@php($signupHasErrors = $errors->any() && old('first_name') !== null)
-<div class="auth-modal-backdrop{{ $errors->any() ? ' open' : '' }}" id="guest-auth-modal" aria-hidden="{{ $errors->any() ? 'false' : 'true' }}">
+@php($signupHasErrors = $errors->hasAny(['first_name', 'last_name', 'middle_initial', 'contact_no', 'password_confirmation']))
+@php($authHasErrors = $errors->has('email') || $signupHasErrors)
+<div class="auth-modal-backdrop{{ $authHasErrors ? ' open' : '' }}" id="guest-auth-modal" aria-hidden="{{ $authHasErrors ? 'false' : 'true' }}">
     <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="guest-auth-title">
         <button type="button" class="auth-close-btn" id="guest-auth-close" aria-label="Close">×</button>
 
@@ -124,7 +125,7 @@
             <p>Sign in to continue or create a guest account.</p>
         </div>
 
-        @if($errors->any())
+        @if($authHasErrors)
             <div id="auth-message" class="auth-message" role="alert">
                 {{ $errors->first() }}
             </div>

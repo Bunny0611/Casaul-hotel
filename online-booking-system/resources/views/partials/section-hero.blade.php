@@ -4,6 +4,8 @@
     $cta = $cta ?? null;
     $backgroundImage = $backgroundImage ?? null;
     $backgroundVideo = $backgroundVideo ?? null;
+    $ctaRequiresGuestAuth = $cta['requiresGuestAuth'] ?? false;
+    $ctaNeedsAuth = $ctaRequiresGuestAuth && !auth('guest')->check();
 @endphp
 
 <section class="hero">
@@ -27,7 +29,7 @@
         @endif
 
         @if(!empty($cta))
-            <a href="{{ $cta['href'] }}" class="btn">{{ $cta['label'] }}</a>
+            <a href="{{ $ctaNeedsAuth ? '#guest-auth-modal' : $cta['href'] }}" class="btn{{ $ctaNeedsAuth ? ' js-auth-trigger' : '' }}"{{ $ctaNeedsAuth ? ' data-auth-trigger' : '' }}>{{ $cta['label'] }}</a>
         @endif
     </div>
 </section>

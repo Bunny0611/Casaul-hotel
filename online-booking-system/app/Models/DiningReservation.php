@@ -38,6 +38,6 @@ class DiningReservation extends Model
 
     public function diningItems()
     {
-        return $this->hasMany(ReservationDiningItem::class, 'reservation_id');
+        return $this->hasMany(DiningReservationItem::class);
     }
 }
