@@ -169,7 +169,11 @@
     .receipt-booking { min-width:220px; }
     .receipt-booking-details { margin:0 0 18px; }
     .receipt-booking p { display:flex; justify-content:space-between; gap:18px; }
+    .receipt-booking [hidden] { display:none !important; }
     .receipt-booking strong { color:#4b5563; font-weight:600; }
+    .receipt-reservation-details { margin-top:8px; }
+    .receipt-reservation-detail { display:flex; justify-content:space-between; gap:18px; margin:3px 0; }
+    .receipt-reservation-detail strong { text-align:right; }
     .receipt-close { position:absolute; top:-8px; right:-8px; border:0; background:transparent; color:#64748b; font-size:22px; cursor:pointer; }
     .receipt-content { color:#566176; font-size:12px; line-height:1.5; }
     .receipt-table { width:100%; border:1px solid #7fa9d0; border-radius:4px; border-spacing:0; overflow:hidden; }
@@ -242,9 +246,14 @@
     .details-service-item.dining-service .details-service-label { color:#f28c18; }
     .details-service-value { display:block; color:#172033; font-size:14px; font-weight:700; line-height:1.4; overflow-wrap:anywhere; }
     .details-service-meta { display:block; margin-top:4px; color:#566176; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+    .details-service-detail-row { display:flex; align-items:center; gap:10px; padding:5px 0; color:#566176; font-size:12px; line-height:1.4; }
+    .details-service-detail-row i { width:16px; flex:0 0 16px; color:inherit; text-align:center; }
+    .details-service-detail-row strong { margin-left:auto; color:#172033; font-weight:600; text-align:right; }
     .details-guest-info { grid-column:1 / -1; width:100%; box-sizing:border-box; }
     .details-secondary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:10px 0 12px; }
     .details-secondary-grid .details-form-section { min-width:0; }
+    .details-mode .details-secondary-grid [hidden] { display:none !important; }
+    .details-secondary-grid.details-only-services .details-services-summary { grid-column:1 / -1; }
     .details-guest-info .guest-info-fields { gap:12px 16px; }
     .guest-info-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
     .guest-request-field { grid-column:1 / -1; }
@@ -808,28 +817,30 @@
                     </div>
                 </section>
             </div>
-            <div class="details-secondary-grid">
-                <section class="details-form-section details-summary-room">
+            <div class="details-secondary-grid" id="detailsSecondaryGrid">
+                <section class="details-form-section details-summary-room" id="detailsRoomSummary">
                     <h4 class="details-summary-title"><i class="fas fa-bed"></i> Room Summary</h4>
-                    <strong class="details-summary-room-name" id="detailsRoomName">None selected</strong>
+                    <strong class="details-summary-room-name" id="detailsRoomName"></strong>
                     <div class="details-summary-row"><i class="fas fa-calendar-check"></i><span class="details-summary-label">Check-in</span><span class="details-summary-value" id="detailsCheckIn">—</span></div>
                     <div class="details-summary-row"><i class="fas fa-clock"></i><span class="details-summary-label">Arrival time</span><span class="details-summary-value" id="detailsArrivalTime">—</span></div>
                     <div class="details-summary-row"><i class="fas fa-calendar-check"></i><span class="details-summary-label">Check-out</span><span class="details-summary-value" id="detailsCheckOut">—</span></div>
                     <div class="details-summary-row"><i class="fas fa-users"></i><span class="details-summary-label">Guests</span><span class="details-summary-value" id="detailsRoomGuests">2 Guests</span></div>
+                    <div class="details-summary-row"><i class="fas fa-peso-sign"></i><span class="details-summary-label">Amount</span><span class="details-summary-value" id="detailsRoomAmount"></span></div>
+                    <div class="details-summary-row"><i class="fas fa-circle-check"></i><span class="details-summary-label">Status</span><span class="details-summary-value" id="detailsRoomStatus"></span></div>
                 </section>
-                <section class="details-form-section details-services-summary">
-                    <h4 class="details-summary-title"><i class="fas fa-list-check"></i> Selected Services</h4>
-                    <div class="details-service-item amenity-service">
+                <section class="details-form-section details-services-summary" id="detailsServicesSummary">
+                    <h4 class="details-summary-title"><i class="fas fa-list-check"></i> <span id="detailsServicesTitle">Selected Services</span></h4>
+                    <div class="details-service-item amenity-service" id="detailsAmenityService">
                         <div class="details-service-icon"><i class="fas fa-square-parking"></i></div>
-                        <div><p class="details-service-label">Amenity</p><strong class="details-service-value" id="detailsAmenitiesTitle">None</strong><span class="details-service-meta" id="detailsAmenitiesSummary"></span></div>
+                        <div><p class="details-service-label">Amenity</p><strong class="details-service-value" id="detailsAmenitiesTitle"></strong><span class="details-service-meta" id="detailsAmenitiesSummary"></span><span class="details-service-meta" id="detailsAmenitiesAmount"></span><span class="details-service-meta" id="detailsAmenitiesStatus"></span></div>
                     </div>
-                    <div class="details-service-item event-service">
+                    <div class="details-service-item event-service" id="detailsEventService">
                         <div class="details-service-icon"><i class="fas fa-ring"></i></div>
-                        <div><p class="details-service-label">Event</p><strong class="details-service-value" id="detailsEventTitle">None</strong><span class="details-service-meta" id="detailsEventSummary"></span></div>
+                        <div><p class="details-service-label">Event</p><strong class="details-service-value" id="detailsEventTitle"></strong><div class="details-service-meta" id="detailsEventSummary"></div><span class="details-service-meta" id="detailsEventAmount"></span><span class="details-service-meta" id="detailsEventStatus"></span></div>
                     </div>
-                    <div class="details-service-item dining-service">
+                    <div class="details-service-item dining-service" id="detailsDiningService">
                         <div class="details-service-icon"><i class="fas fa-utensils"></i></div>
-                        <div><p class="details-service-label">Dining</p><strong class="details-service-value" id="detailsDiningTitle">None</strong><span class="details-service-meta" id="detailsDiningSummary"></span></div>
+                        <div><p class="details-service-label">Dining</p><strong class="details-service-value" id="detailsDiningTitle"></strong><span class="details-service-meta" id="detailsDiningSummary"></span><span class="details-service-meta" id="detailsDiningAmount"></span><span class="details-service-meta" id="detailsDiningStatus"></span></div>
                     </div>
                 </section>
             </div>
@@ -936,10 +947,11 @@
             </div>
             <div class="receipt-booking receipt-booking-details">
                 <h4>Booking Details</h4>
-                <p><span>Check-in</span><strong id="receiptCheckIn">—</strong></p>
-                <p><span>Check-out</span><strong id="receiptCheckOut">—</strong></p>
-                <p><span>Guests</span><strong id="receiptGuests">2 Guests</strong></p>
-                <p><span>Room</span><strong id="receiptRoom">None</strong></p>
+                <p id="receiptCheckInRow"><span id="receiptCheckInLabel">Check-in</span><strong id="receiptCheckIn">—</strong></p>
+                <p id="receiptCheckOutRow"><span id="receiptCheckOutLabel">Check-out</span><strong id="receiptCheckOut">—</strong></p>
+                <p id="receiptGuestsRow"><span>Guests</span><strong id="receiptGuests">2 Guests</strong></p>
+                <p id="receiptRoomRow"><span>Room</span><strong id="receiptRoom"></strong></p>
+                <div class="receipt-reservation-details" id="receiptReservationDetails"></div>
             </div>
             <div class="receipt-content" id="receiptContent"></div>
             <div class="receipt-notes">
@@ -1037,8 +1049,15 @@
         const receiptDate = document.getElementById('receiptDate');
         const receiptCheckIn = document.getElementById('receiptCheckIn');
         const receiptCheckOut = document.getElementById('receiptCheckOut');
+        const receiptCheckInLabel = document.getElementById('receiptCheckInLabel');
+        const receiptCheckOutLabel = document.getElementById('receiptCheckOutLabel');
         const receiptGuests = document.getElementById('receiptGuests');
+        const receiptGuestsRow = document.getElementById('receiptGuestsRow');
         const receiptRoom = document.getElementById('receiptRoom');
+        const receiptReservationDetails = document.getElementById('receiptReservationDetails');
+        const receiptCheckInRow = document.getElementById('receiptCheckInRow');
+        const receiptCheckOutRow = document.getElementById('receiptCheckOutRow');
+        const receiptRoomRow = document.getElementById('receiptRoomRow');
         const receiptCloseBtn = document.getElementById('receiptCloseBtn');
         const receiptDownloadBtn = document.getElementById('receiptDownloadBtn');
         const receiptPrintBtn = document.getElementById('receiptPrintBtn');
@@ -1080,10 +1099,25 @@
         const detailsRoomGuests = document.getElementById('detailsRoomGuests');
         const detailsAmenitiesTitle = document.getElementById('detailsAmenitiesTitle');
         const detailsAmenitiesSummary = document.getElementById('detailsAmenitiesSummary');
+        const detailsAmenitiesAmount = document.getElementById('detailsAmenitiesAmount');
+        const detailsAmenitiesStatus = document.getElementById('detailsAmenitiesStatus');
         const detailsEventTitle = document.getElementById('detailsEventTitle');
         const detailsEventSummary = document.getElementById('detailsEventSummary');
+        const detailsEventAmount = document.getElementById('detailsEventAmount');
+        const detailsEventStatus = document.getElementById('detailsEventStatus');
         const detailsDiningTitle = document.getElementById('detailsDiningTitle');
         const detailsDiningSummary = document.getElementById('detailsDiningSummary');
+        const detailsDiningAmount = document.getElementById('detailsDiningAmount');
+        const detailsDiningStatus = document.getElementById('detailsDiningStatus');
+        const detailsRoomAmount = document.getElementById('detailsRoomAmount');
+        const detailsRoomStatus = document.getElementById('detailsRoomStatus');
+        const detailsRoomSummary = document.getElementById('detailsRoomSummary');
+        const detailsSecondaryGrid = document.getElementById('detailsSecondaryGrid');
+        const detailsServicesSummary = document.getElementById('detailsServicesSummary');
+        const detailsServicesTitle = document.getElementById('detailsServicesTitle');
+        const detailsAmenityService = document.getElementById('detailsAmenityService');
+        const detailsEventService = document.getElementById('detailsEventService');
+        const detailsDiningService = document.getElementById('detailsDiningService');
         const detailsGuestName = document.getElementById('detailsGuestName');
         const detailsGuestEmail = document.getElementById('detailsGuestEmail');
         const detailsGuestPhone = document.getElementById('detailsGuestPhone');
@@ -1231,7 +1265,6 @@
                 document.getElementById(this.dataset.tab).classList.add('active');
             });
         });
-
         const updateSummary = () => {
             const selectedEventTitles = selectedEvent.map(item => item.title).join(', ');
             const selectedDiningTitles = selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ');
@@ -1262,25 +1295,53 @@
 
             const total = calculateTotal();
             const hasRoomSelection = Boolean(selectedRoom);
-            detailsRoomName.textContent = hasRoomSelection ? selectedRoom : 'None selected';
+            const hasAmenitySelection = selectedAmenities.length > 0;
+            const hasEventSelection = selectedEvent.length > 0;
+            const hasDiningSelection = selectedDining.length > 0;
+            const selectedServiceCount = Number(hasAmenitySelection) + Number(hasEventSelection) + Number(hasDiningSelection);
+            detailsRoomSummary.hidden = !hasRoomSelection;
+            detailsSecondaryGrid.classList.toggle('details-only-services', !hasRoomSelection);
+            detailsAmenityService.hidden = !hasAmenitySelection;
+            detailsEventService.hidden = !hasEventSelection;
+            detailsDiningService.hidden = !hasDiningSelection;
+            detailsServicesSummary.hidden = selectedServiceCount === 0;
+            detailsServicesTitle.textContent = selectedServiceCount === 1
+                ? (hasAmenitySelection ? 'Amenity Summary' : hasEventSelection ? 'Event Summary' : 'Dining Summary')
+                : 'Selected Services';
+            detailsRoomName.textContent = hasRoomSelection ? selectedRoom : '';
             detailsCheckIn.textContent = hasRoomSelection ? formatDisplayDate(checkIn.value) : '—';
             detailsArrivalTime.textContent = hasRoomSelection ? formatDisplayTime(arrivalTime.value) : '—';
             detailsCheckOut.textContent = hasRoomSelection ? formatDisplayDate(checkOut.value) : '—';
             detailsRoomGuests.textContent = hasRoomSelection ? `${selectedRoomCapacity + selectedExtraGuests} Guests` : '—';
-            detailsAmenitiesTitle.textContent = selectedAmenities.length ? selectedAmenities.map(item => item.title).join(', ') : 'None';
-            detailsAmenitiesSummary.textContent = selectedAmenities.length
-                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
+            detailsRoomAmount.textContent = hasRoomSelection ? `Amount: ${formatCurrencyValue(roomPrice + (selectedExtraGuests * selectedExtraGuestPrice))}` : '';
+            detailsRoomStatus.textContent = hasRoomSelection ? 'Status: Reserved' : '';
+            detailsAmenitiesTitle.textContent = hasAmenitySelection ? selectedAmenities.map(item => item.title).join(', ') : '';
+            detailsAmenitiesSummary.textContent = hasAmenitySelection
+                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''}`).join(', ')
                 : '';
-            detailsEventTitle.textContent = selectedEvent.length ? selectedEvent.map(item => item.title).join(', ') : 'None';
-            detailsEventSummary.textContent = selectedEvent.length
-                ? selectedEvent.map(item => `${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}`).join(', ')
+            detailsAmenitiesAmount.textContent = hasAmenitySelection ? `Amount: ${formatCurrencyValue(sumItemTotal(selectedAmenities))}` : '';
+            detailsAmenitiesStatus.textContent = hasAmenitySelection ? 'Status: Reserved' : '';
+            detailsEventTitle.textContent = hasEventSelection ? selectedEvent.map(item => item.title).join(', ') : '';
+            detailsEventSummary.innerHTML = hasEventSelection
+                ? selectedEvent.map(item => [
+                    ['fa-map-marker-alt', 'Event Place', item.title],
+                    ['fa-star', 'Event Type', item.type],
+                    ['fa-calendar-check', 'Event Date', item.date ? formatDisplayDate(item.date) : ''],
+                    ['fa-clock', 'Start Time', item.startTime ? formatDisplayTime(item.startTime) : ''],
+                    ['fa-clock', 'End Time', item.endTime ? formatDisplayTime(item.endTime) : ''],
+                    ['fa-users', 'Guests', item.guests ? `${item.guests} guests` : ''],
+                ].filter(([, , value]) => value).map(([icon, label, value]) => `<div class="details-service-detail-row"><i class="fas ${icon}"></i><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join(''))
                 : '';
-            detailsDiningTitle.textContent = selectedDining.length
+            detailsEventAmount.textContent = hasEventSelection ? `Amount: ${formatCurrencyValue(selectedEvent.reduce((sum, item) => sum + Number(item.price || 0), 0))}` : '';
+            detailsEventStatus.textContent = hasEventSelection ? 'Status: Reserved' : '';
+            detailsDiningTitle.textContent = hasDiningSelection
                 ? selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ')
-                : 'None';
-            detailsDiningSummary.textContent = selectedDining.length
+                : '';
+            detailsDiningSummary.textContent = hasDiningSelection
                 ? [selectedDiningTable ? `Table ${selectedDiningTable}` : null, selectedDiningSchedule || null, selectedDiningDate || null].filter(Boolean).join(' • ') || 'No table selected'
                 : '';
+            detailsDiningAmount.textContent = hasDiningSelection ? `Amount: ${formatCurrencyValue(selectedDining.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0))}` : '';
+            detailsDiningStatus.textContent = hasDiningSelection ? 'Status: Reserved' : '';
 
             confirmReservationId.textContent = selectedRoom ? `RES-${Math.floor(Math.random() * 9000) + 1000}` : 'RES-0000';
             confirmRoom.textContent = selectedRoom ? selectedRoom : 'None';
@@ -1364,7 +1425,7 @@
             reservationTotalAmount.value = total;
             reservationCheckIn.value = bookingDate;
             reservationCheckOut.value = bookingEndDate;
-        }
+        };
 
         checkIn.addEventListener('change', updateSummary);
         checkOut.addEventListener('change', updateSummary);
@@ -1734,21 +1795,70 @@
         });
 
         seeReceiptBtn.addEventListener('click', function () {
-            const receiptItems = [
-                ['1', 'Room - ' + confirmRoom.textContent, confirmRoomCharge.textContent, confirmRoomCharge.textContent],
-                ['1', 'Amenities - ' + confirmAmenitiesTitle.textContent, confirmAmenitiesCharge.textContent, confirmAmenitiesCharge.textContent],
-                ['1', 'Event - ' + confirmEventTitle.textContent, confirmEventCharge.textContent, confirmEventCharge.textContent],
-                ['1', 'Dining - ' + confirmDiningTitle.textContent, confirmDiningCharge.textContent, confirmDiningCharge.textContent],
-                [String(selectedExtraGuests), 'Extra person', `₱${selectedExtraGuests * selectedExtraGuestPrice}`, confirmExtraGuestCharge.textContent],
-            ];
+            const receiptItems = [];
+            if (selectedRoom) {
+                receiptItems.push(['1', `Room - ${selectedRoom}`, formatCurrencyValue(roomPrice), formatCurrencyValue(roomPrice)]);
+            }
+            if (selectedAmenities.length) {
+                selectedAmenities.forEach(item => {
+                    const quantity = Number(item.quantity || 1);
+                    const unitPrice = Number(item.price || 0);
+                    receiptItems.push([String(quantity), `Amenity - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(unitPrice * quantity)]);
+                });
+            }
+            if (selectedEvent.length) {
+                selectedEvent.forEach(item => {
+                    const amount = Number(item.price || 0);
+                    receiptItems.push(['1', 'Event Reservation', formatCurrencyValue(amount), formatCurrencyValue(amount)]);
+                });
+            }
+            if (selectedDining.length) {
+                selectedDining.forEach(item => {
+                    const quantity = Number(item.quantity || 1);
+                    const unitPrice = Number(item.price || 0);
+                    receiptItems.push([String(quantity), `Dining - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(unitPrice * quantity)]);
+                });
+            }
+            if (selectedExtraGuests > 0) {
+                receiptItems.push([String(selectedExtraGuests), 'Extra person', formatCurrencyValue(selectedExtraGuestPrice), formatCurrencyValue(selectedExtraGuests * selectedExtraGuestPrice)]);
+            }
             receiptGuestName.textContent = detailsGuestName.value || 'Guest';
             receiptGuestEmail.textContent = detailsGuestEmail.value || 'guest@example.com';
             receiptNumber.textContent = confirmReservationId.textContent;
             receiptDate.textContent = new Date().toLocaleDateString('en-US');
             receiptCheckIn.textContent = confirmArrivingOn.textContent;
             receiptCheckOut.textContent = confirmCheckOut.textContent;
-            receiptGuests.textContent = confirmGuests.textContent;
-            receiptRoom.textContent = confirmRoom.textContent;
+            receiptGuests.textContent = selectedRoom
+                ? `${selectedRoomCapacity + selectedExtraGuests} Guests`
+                : selectedEvent.length
+                    ? `${selectedEvent.reduce((sum, item) => sum + Number(item.guests || 0), 0)} Guests`
+                    : '—';
+            receiptRoom.textContent = selectedRoom ? selectedRoom : '';
+            const firstReservation = selectedEvent[0] || selectedDining[0] || selectedAmenities[0];
+            const hasDateOrTime = Boolean(firstReservation?.date || firstReservation?.startTime || firstReservation?.time || firstReservation?.schedule);
+            receiptCheckInLabel.textContent = selectedRoom ? 'Check-in' : 'Date';
+            receiptCheckOutLabel.textContent = selectedRoom ? 'Check-out' : 'Time';
+            receiptCheckIn.textContent = selectedRoom
+                ? confirmArrivingOn.textContent
+                : firstReservation?.date ? formatDisplayDate(firstReservation.date) : '—';
+            receiptCheckOut.textContent = selectedRoom
+                ? confirmCheckOut.textContent
+                : selectedEvent.length && firstReservation.startTime
+                    ? `${formatDisplayTime(firstReservation.startTime)} - ${formatDisplayTime(firstReservation.endTime)}`
+                    : firstReservation?.time || firstReservation?.schedule || '—';
+            receiptCheckInRow.hidden = !selectedRoom && !hasDateOrTime;
+            receiptCheckOutRow.hidden = !selectedRoom && !hasDateOrTime;
+            receiptGuestsRow.hidden = !selectedRoom && !selectedEvent.length;
+            receiptRoomRow.hidden = !selectedRoom;
+            const reservationDetails = [];
+            selectedAmenities.forEach(item => {
+                reservationDetails.push(['Amenity', item.title]);
+            });
+            selectedDining.forEach(item => {
+                reservationDetails.push(['Dining', `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`]);
+                if (item.table) reservationDetails.push(['Dining Table', item.table]);
+            });
+            receiptReservationDetails.innerHTML = reservationDetails.map(([label, value]) => `<p class="receipt-reservation-detail"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></p>`).join('');
             receiptContent.innerHTML = `<table class="receipt-table"><thead><tr><th>Quantity</th><th>Description</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>${receiptItems.map(([quantity, description, unitPrice, amount]) => `<tr><td>${escapeHtml(quantity)}</td><td>${escapeHtml(description)}</td><td>${escapeHtml(unitPrice)}</td><td>${escapeHtml(amount)}</td></tr>`).join('')}<tr class="receipt-total-row"><td colspan="3">Total</td><td>${escapeHtml(confirmTotalAmount.textContent)}</td></tr></tbody></table>`;
             receiptModal.classList.add('open');
             receiptModal.setAttribute('aria-hidden', 'false');

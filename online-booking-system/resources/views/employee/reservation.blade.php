@@ -7,6 +7,14 @@
     $reservations = $reservations ?? collect([]);
     $formatDate = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('F j, Y') : 'N/A';
     $formatTime = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('g:i A') : 'Time not set';
+    $formatEventDuration = function ($start, $end) {
+        if (!$start || !$end) {
+            return 'N/A';
+        }
+
+        $minutes = abs(\Carbon\Carbon::parse($end)->diffInMinutes(\Carbon\Carbon::parse($start)));
+        return floor($minutes / 60) . 'h' . ($minutes % 60 ? ' ' . ($minutes % 60) . 'm' : '');
+    };
     $uniqueCsvValue = function ($value) {
         if (is_null($value) || $value === '') {
             return 'N/A';
@@ -465,8 +473,8 @@
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->eventPlace?->name ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_type ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $formatDate($reservation->check_in) }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatTime($reservation->check_in_time) }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatTime($reservation->check_out_time) }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatTime($reservation->event_start_time) }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatTime($reservation->event_end_time) }}</td>
                                 <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount ?? 0, 2) }}</td>
                                 <td class="px-6 py-4">
                                     <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
@@ -487,8 +495,9 @@
                                             'event_place' => $reservation->eventPlace?->name ?? 'N/A',
                                             'event_type' => $reservation->event_type ?? 'N/A',
                                             'event_date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
-                                            'event_start_time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
-                                            'event_end_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
+                                            'event_start_time' => $reservation->event_start_time ? \Carbon\Carbon::parse($reservation->event_start_time)->format('g:i A') : 'N/A',
+                                            'event_end_time' => $reservation->event_end_time ? \Carbon\Carbon::parse($reservation->event_end_time)->format('g:i A') : 'N/A',
+                                            'event_duration' => $formatEventDuration($reservation->event_start_time, $reservation->event_end_time),
                                             'event_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
                                             'selected_services' => $reservation->eventPlace ? ['Event Place: ' . $reservation->eventPlace->name . ($reservation->event_type ? ' — ' . $reservation->event_type : '')] : [],
                                             'amount_paid' => $reservation->amount_paid ?? 0,
@@ -538,8 +547,8 @@
                             <p><span class="font-medium text-gray-700">Place:</span> {{ $reservation->eventPlace?->name ?? 'N/A' }}</p>
                             <p><span class="font-medium text-gray-700">Type:</span> {{ $reservation->event_type ?? 'N/A' }}</p>
                             <p><span class="font-medium text-gray-700">Date:</span> {{ $formatDate($reservation->check_in) }}</p>
-                            <p><span class="font-medium text-gray-700">Start:</span> {{ $formatTime($reservation->check_in_time) }}</p>
-                            <p><span class="font-medium text-gray-700">End:</span> {{ $formatTime($reservation->check_out_time) }}</p>
+                            <p><span class="font-medium text-gray-700">Start:</span> {{ $formatTime($reservation->event_start_time) }}</p>
+                            <p><span class="font-medium text-gray-700">End:</span> {{ $formatTime($reservation->event_end_time) }}</p>
                             <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
                         </div>
                         <div class="mt-4 flex items-center gap-2">
@@ -555,8 +564,9 @@
                                 'event_place' => $reservation->eventPlace?->name ?? 'N/A',
                                 'event_type' => $reservation->event_type ?? 'N/A',
                                 'event_date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
-                                'event_start_time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
-                                'event_end_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
+                                'event_start_time' => $reservation->event_start_time ? \Carbon\Carbon::parse($reservation->event_start_time)->format('g:i A') : 'N/A',
+                                'event_end_time' => $reservation->event_end_time ? \Carbon\Carbon::parse($reservation->event_end_time)->format('g:i A') : 'N/A',
+                                'event_duration' => $formatEventDuration($reservation->event_start_time, $reservation->event_end_time),
                                 'event_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
                                 'selected_services' => $reservation->eventPlace ? ['Event Place: ' . $reservation->eventPlace->name . ($reservation->event_type ? ' — ' . $reservation->event_type : '')] : [],
                                 'amount_paid' => $reservation->amount_paid ?? 0,
@@ -1313,6 +1323,7 @@
             { label: 'Event Date', value: formatDateValue(reservation.event_date || 'N/A') },
             { label: 'Start Time', value: reservation.event_start_time || 'N/A' },
             { label: 'End Time', value: reservation.event_end_time || 'N/A' },
+            { label: 'Event Hours', value: reservation.event_duration || 'N/A' },
             { label: 'Number of Guests', value: reservation.event_number_of_guests !== undefined && reservation.event_number_of_guests !== null && reservation.event_number_of_guests !== '' && reservation.event_number_of_guests !== 'N/A' ? reservation.event_number_of_guests : 'N/A' },
         ];
 
