@@ -399,6 +399,36 @@ class HomeController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $categoryReservations = collect([
+            RoomReservation::with(['room', 'payments'])
+                ->where('guest_email', $guest->email)->get()
+                ->each(fn ($reservation) => $reservation->category = 'rooms'),
+            EventReservation::with(['eventPlace', 'payments'])
+                ->where('guest_email', $guest->email)->get()
+                ->each(fn ($reservation) => $reservation->category = 'event_place'),
+            AmenityReservation::with(['amenity', 'payments'])
+                ->where('guest_email', $guest->email)->get()
+                ->each(fn ($reservation) => $reservation->category = 'amenities'),
+            DiningReservation::with(['diningItems.diningMenu', 'payments'])
+                ->where('guest_email', $guest->email)->get()
+                ->each(fn ($reservation) => $reservation->category = 'dining'),
+        ])->flatten(1)->map(function ($source) {
+            $reservation = new Reservation();
+            $reservation->forceFill($source->getAttributes());
+            $reservation->setAttribute('category', $source->category);
+            $reservation->setRelation('room', $source->relationLoaded('room') ? $source->getRelation('room') : null);
+            $reservation->setRelation('amenities', $source->relationLoaded('amenity') && $source->amenity ? collect([$source->amenity]) : collect());
+            $reservation->setRelation('eventPlaces', $source->relationLoaded('eventPlace') && $source->eventPlace ? collect([$source->eventPlace]) : collect());
+            $reservation->setRelation('diningItems', $source->relationLoaded('diningItems') ? $source->getRelation('diningItems') : collect());
+            $reservation->setRelation('payments', $source->relationLoaded('payments') ? $source->getRelation('payments') : collect());
+
+            return $reservation;
+        });
+
+        $reservations = $reservations->concat($categoryReservations)
+            ->sortByDesc('created_at')
+            ->values();
+
         $reservations->each(function (Reservation $reservation) {
             $amenityIds = array_values(array_filter(array_map('trim', explode(',', (string) $reservation->amenity_id))));
             $eventPlaceIds = array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_place_id))));
