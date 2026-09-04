@@ -79,7 +79,7 @@
                         $statusClass = $status === 'Completed' ? 'green' : ($status === 'In Progress' ? 'blue' : 'amber');
                         $room = $request->room ?? $request->reservation?->room;
                     @endphp
-                    <tr><td><span class="request-id">REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</span></td><td><span class="guest-name">{{ $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest' }}</span></td><td><span class="request-name">{{ $room?->room_number ?? 'N/A' }}</span></td><td><span class="request-name">{{ $request->request_type }}</span></td><td><span class="guest-name">{{ $request->preferred_time ?? 'Any time' }}</span></td><td><span class="priority {{ strtolower($request->priority) === 'low' ? 'low' : (strtolower($request->priority) === 'medium' ? 'medium' : '') }}">{{ $request->priority }}</span></td><td><span class="muted">{{ optional($request->submitted_at)->format('M d, Y g:i A') }}</span></td><td><span class="badge {{ $statusClass }}">{{ $status }}</span></td><td><a href="{{ route('employee.guest-requests.show', ['id' => $request->id]) }}" class="view-button"><i class="fas fa-eye"></i> View</a></td></tr>
+                    <tr><td><span class="request-id">REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</span></td><td><span class="guest-name">{{ $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest' }}</span></td><td><span class="request-name">{{ $room?->room_number ?? 'N/A' }}</span></td><td><span class="request-name">{{ $request->request_type }}</span></td><td><span class="guest-name">{{ $request->preferred_time ?? 'Any time' }}</span></td><td><span class="priority {{ strtolower($request->priority) === 'low' ? 'low' : (strtolower($request->priority) === 'medium' ? 'medium' : '') }}">{{ $request->priority }}</span></td><td><span class="muted">{{ optional($request->submitted_at)->format('M d, Y g:i A') }}</span></td><td><span class="badge {{ $statusClass }}">{{ $status }}</span></td><td><a href="{{ route('employee.guest-requests.show', ['id' => $request->id]) }}" class="view-button request-view-button" data-request-id="REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}" data-request-title="{{ $request->request_type }}" data-request-status="{{ $status }}" data-request-time="{{ optional($request->submitted_at)->format('M d, Y g:i A') }}"><i class="fas fa-eye"></i> View</a></td></tr>
                 @empty
                     <tr><td colspan="9" style="text-align:center;padding:2rem;color:#64748b;">No Employee requests found.</td></tr>
                 @endforelse
@@ -118,7 +118,8 @@
 </div>
 <script>
     document.querySelectorAll('.request-view-button').forEach(function (button) {
-        button.addEventListener('click', function () {
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
             document.getElementById('guestRequestModalId').textContent = button.dataset.requestId;
             document.getElementById('guestRequestModalRequest').textContent = button.dataset.requestTitle;
             document.getElementById('guestRequestModalStatus').textContent = button.dataset.requestStatus;

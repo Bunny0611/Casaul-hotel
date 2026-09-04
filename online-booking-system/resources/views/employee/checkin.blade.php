@@ -421,23 +421,29 @@
             <div class="overflow-hidden">
                 <table class="w-full table-fixed text-sm">
                     <colgroup>
-                        <col class="w-1/4" />
-                        <col class="w-2/4" />
+                        <col class="w-1/5" />
+                        <col class="w-2/5" />
                         <col class="w-1/4" />
                     </colgroup>
                     <thead>
                         <tr class="border-b border-slate-200 text-left text-slate-500">
                             <th class="pb-2 pr-3">Reservation ID</th>
                             <th class="pb-2 pr-3">Guest</th>
-                            <th class="pb-2">Action</th>
+                            <th class="pb-2 pr-3">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($checkIns as $reservation)
                             <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_in?->format('F j, Y') }}" data-time="{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-guests="{{ $reservation->number_of_guests ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-balance="₱{{ number_format($reservation->total_amount, 2) }}" data-payment-status="{{ $reservation->payment_method ? 'Paid' : 'Unpaid' }}">
-                                <td class="py-3 pr-3 whitespace-nowrap">RES-{{ $reservation->id }}</td>
-                                <td class="py-3 pr-3 truncate-cell" title="{{ $reservation->guest_name }}">{{ $reservation->guest_name }}</td>
-                                <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-emerald-600" onclick="openCheckInModal(this.closest('tr'))">Check In</button></td>
+                                <td class="py-3 pr-3 whitespace-nowrap text-sm font-semibold text-slate-800">RES-{{ $reservation->id }}</td>
+                                <td class="py-3 pr-3 text-sm text-slate-700">{{ $reservation->guest_name }}</td>
+                                <td class="py-3 pr-3 whitespace-nowrap">
+                                    @if($reservation->status === 'checked-in')
+                                        <span class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 hover:opacity-80 transition" onclick="openCheckInModal(this.closest('tr'))"><i class="fas fa-check-circle"></i> Confirmed</span>
+                                    @else
+                                        <span class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 hover:opacity-80 transition" onclick="openCheckInModal(this.closest('tr'))"><i class="fas fa-clock"></i> Pending</span>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
@@ -454,24 +460,30 @@
             <div class="overflow-hidden">
                 <table class="w-full table-fixed text-sm">
                     <colgroup>
-                        <col class="w-1/4" />
-                        <col class="w-2/4" />
+                        <col class="w-1/5" />
+                        <col class="w-2/5" />
                         <col class="w-1/4" />
                     </colgroup>
                     <thead>
                         <tr class="border-b border-slate-200 text-left text-slate-500">
                             <th class="pb-2 pr-3">Reservation ID</th>
                             <th class="pb-2 pr-3">Guest</th>
-                            <th class="pb-2">Action</th>
+                            <th class="pb-2 pr-3">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($checkOuts as $reservation)
                             @php($paid = $reservation->payments->sum('amount'))
                             <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-check-in-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-check-out-date="{{ $reservation->check_out?->format('Y-m-d') }}" data-time="{{ ($reservation->check_out_time ?: $reservation->check_in_time) ? \Illuminate\Support\Carbon::parse($reservation->check_out_time ?: $reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-total="{{ number_format($reservation->total_amount, 2, '.', '') }}" data-paid="{{ number_format($paid, 2, '.', '') }}" data-status="{{ ucfirst($reservation->status) }}">
-                                <td class="py-3 pr-3 whitespace-nowrap">RES-{{ $reservation->id }}</td>
-                                <td class="py-3 pr-3 truncate-cell" title="{{ $reservation->guest_name }}">{{ $reservation->guest_name }}</td>
-                                <td class="py-3 whitespace-nowrap"><button type="button" class="text-sm font-semibold text-rose-600" onclick="openCheckOutModal(this.closest('tr'))">Check Out</button></td>
+                                <td class="py-3 pr-3 whitespace-nowrap text-sm font-semibold text-slate-800">RES-{{ $reservation->id }}</td>
+                                <td class="py-3 pr-3 text-sm text-slate-700">{{ $reservation->guest_name }}</td>
+                                <td class="py-3 pr-3 whitespace-nowrap">
+                                    @if($reservation->status === 'completed')
+                                        <span class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 hover:opacity-80 transition" onclick="openCheckOutModal(this.closest('tr'))"><i class="fas fa-check-circle"></i> Confirmed</span>
+                                    @else
+                                        <span class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 hover:opacity-80 transition" onclick="openCheckOutModal(this.closest('tr'))"><i class="fas fa-clock"></i> Pending</span>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
@@ -534,7 +546,7 @@
 
         <div class="modal-actions">
             <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('checkInModal')">Cancel</button>
-            <form id="checkInForm" method="POST" action="{{ route('employee.reservations.status', ['id' => '__ID__']) }}">
+            <form id="checkInForm" method="POST" action="{{ route('employee.reservations.status', ['id' => '__ID__']) }}" onsubmit="handleCheckInSubmit(event)">
                 @csrf
                 @method('PATCH')
                 <input type="hidden" name="status" value="checked-in">
@@ -606,7 +618,7 @@
 
         <div class="modal-actions">
             <button type="button" class="modal-btn modal-btn-secondary" onclick="closeModal('checkOutModal')">Cancel</button>
-            <form id="checkOutForm" method="POST" action="{{ route('employee.reservations.status', ['id' => '__ID__']) }}">
+            <form id="checkOutForm" method="POST" action="{{ route('employee.reservations.status', ['id' => '__ID__']) }}" onsubmit="handleCheckOutSubmit(event)">
                 @csrf
                 @method('PATCH')
                 <input type="hidden" name="status" value="completed">
@@ -642,6 +654,8 @@
 </div>
 
 <script>
+    let currentCheckInRow = null;
+
     function applyFilters() {
         const reservation = document.getElementById('searchReservation')?.value.toLowerCase() || '';
         const guest = document.getElementById('searchGuest')?.value.toLowerCase() || '';
@@ -669,9 +683,12 @@
     });
 
     function openCheckInModal(row) {
+        currentCheckInRow = row;
         const reservation = row.dataset.reservation;
         const reservationId = reservation.replace('RES-', '');
         const date = row.dataset.date ? new Date(`${row.dataset.date}T00:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A';
+        const isConfirmed = row.dataset.status.toLowerCase() === 'checked-in';
+        
         document.getElementById('checkInReservation').textContent = reservation;
         document.getElementById('checkInGuest').textContent = row.dataset.guest || 'N/A';
         document.getElementById('checkInRoom').textContent = row.dataset.room || 'N/A';
@@ -680,15 +697,52 @@
         document.getElementById('checkInDate').textContent = date;
         document.getElementById('checkInTime').textContent = row.dataset.time || 'N/A';
         document.getElementById('checkInPaymentStatus').textContent = row.dataset.paymentStatus || 'Unpaid';
+        
+        const submitBtn = document.querySelector('#checkInForm button[type="submit"]');
+        if (isConfirmed) {
+            submitBtn.textContent = 'Already Confirmed';
+            submitBtn.disabled = true;
+        } else {
+            submitBtn.textContent = 'Confirm Check-in';
+            submitBtn.disabled = false;
+        }
+        
         document.getElementById('checkInForm').action = document.getElementById('checkInForm').action.replace('__ID__', reservationId);
         document.getElementById('checkInModal').classList.remove('hidden');
         document.getElementById('checkInModal').classList.add('flex');
+    }
+
+    function handleCheckInSubmit(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (currentCheckInRow) {
+                const statusCell = currentCheckInRow.querySelector('td:nth-child(3)');
+                const actionCell = currentCheckInRow.querySelector('td:nth-child(4)');
+                statusCell.innerHTML = '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"><i class="fas fa-check-circle"></i> Confirmed</span>';
+                actionCell.innerHTML = '<span class="text-sm font-semibold text-slate-400">Completed</span>';
+                currentCheckInRow.dataset.status = 'Checked-in';
+            }
+            closeModal('checkInModal');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Unable to confirm check-in. Please try again.');
+        });
     }
 
     function openCheckOutModal(row) {
         window.currentCheckOutRow = row;
         const reservation = row.dataset.reservation;
         const reservationId = reservation.replace('RES-', '');
+        const isCompleted = row.dataset.status.toLowerCase() === 'completed';
+        
         document.getElementById('checkOutReservation').textContent = reservation;
         document.getElementById('checkOutGuest').textContent = row.dataset.guest || 'N/A';
         document.getElementById('checkOutRoom').textContent = row.dataset.room || 'N/A';
@@ -701,17 +755,62 @@
         document.getElementById('checkOutTotal').textContent = formatCurrency(total);
         document.getElementById('checkOutPaid').textContent = formatCurrency(paid);
         document.getElementById('checkOutBalance').textContent = formatCurrency(Math.max(total - paid, 0));
-        updateCheckoutPaymentState(total, paid);
+        
+        const recordPaymentButton = document.getElementById('recordPaymentButton');
+        const submitBtn = document.querySelector('#checkOutForm button[type="submit"]');
+        
+        if (isCompleted) {
+            recordPaymentButton.classList.add('hidden');
+            submitBtn.textContent = 'Already Confirmed';
+            submitBtn.disabled = true;
+            updateCheckoutPaymentState(total, paid, true);
+        } else {
+            recordPaymentButton.classList.remove('hidden');
+            submitBtn.textContent = 'Confirm Check-out';
+            submitBtn.disabled = false;
+            updateCheckoutPaymentState(total, paid, false);
+        }
+        
         document.getElementById('checkOutForm').action = `{{ url('/employee/reservations') }}/${reservationId}/status`;
         document.getElementById('checkOutModal').classList.remove('hidden');
         document.getElementById('checkOutModal').classList.add('flex');
     }
 
-    function updateCheckoutPaymentState(total, paid) {
+    function handleCheckOutSubmit(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (window.currentCheckOutRow) {
+                const statusCell = window.currentCheckOutRow.querySelector('td:nth-child(3)');
+                const actionCell = window.currentCheckOutRow.querySelector('td:nth-child(4)');
+                statusCell.innerHTML = '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"><i class="fas fa-check-circle"></i> Confirmed</span>';
+                actionCell.innerHTML = '<span class="text-sm font-semibold text-slate-400">Completed</span>';
+                window.currentCheckOutRow.dataset.status = 'Completed';
+            }
+            closeModal('checkOutModal');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Unable to confirm check-out. Please try again.');
+        });
+    }
+
+    function updateCheckoutPaymentState(total, paid, isCompleted = false) {
         const balance = Math.max(total - paid, 0);
         document.getElementById('checkOutPaymentStatus').textContent = balance === 0 ? 'Paid' : 'Unpaid';
-        document.getElementById('recordPaymentButton').classList.toggle('hidden', balance === 0);
-        document.getElementById('confirmCheckOutButton').disabled = balance > 0;
+        const recordPaymentButton = document.getElementById('recordPaymentButton');
+        if (isCompleted) {
+            recordPaymentButton.classList.add('hidden');
+        } else {
+            recordPaymentButton.classList.toggle('hidden', balance === 0);
+        }
+        document.getElementById('confirmCheckOutButton').disabled = balance > 0 && !isCompleted;
     }
 
     function openPaymentModal() {

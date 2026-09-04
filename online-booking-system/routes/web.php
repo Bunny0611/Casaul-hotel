@@ -8,6 +8,7 @@ use App\Http\Controllers\ProfileController;
 use App\Models\Message;
 use App\Models\InventoryItem;
 use App\Models\Reservation;
+use App\Models\RoomReservation;
 use App\Models\Room;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
@@ -60,17 +61,13 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::post('/reservations/{id}/payments', [AdminController::class, 'storePayment'])->name('reservations.payments.store');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::get('/checkin', function () {
-        $today = now()->toDateString();
-
-        $checkIns = Reservation::with('room')
-            ->whereDate('check_in', $today)
+        $checkIns = RoomReservation::with('room')
             ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
             ->latest()
             ->get();
 
-        $checkOuts = Reservation::with(['room', 'payments'])
-            ->whereDate('check_out', $today)
-            ->whereIn('status', ['confirmed', 'checked-in'])
+        $checkOuts = RoomReservation::with(['room', 'payments'])
+            ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
             ->latest()
             ->get();
 

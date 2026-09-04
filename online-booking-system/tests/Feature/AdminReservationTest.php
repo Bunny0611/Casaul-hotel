@@ -127,4 +127,74 @@ class AdminReservationTest extends TestCase
         $this->assertNotNull($reservation);
         $this->assertSame(123.0, (float) $reservation->amount_paid);
     }
+
+    public function test_public_booking_marks_pay_at_hotel_as_unpaid(): void
+    {
+        $room = Room::create([
+            'room_number' => '203',
+            'room_type' => 'Deluxe',
+            'price' => 2500.00,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'description' => 'Deluxe room',
+            'status' => 'available',
+        ]);
+
+        $response = $this->post(route('reservation.store'), [
+            'room_id' => $room->id,
+            'guest_name' => 'Pay Later Guest',
+            'guest_email' => 'paylater@example.com',
+            'guest_phone' => '09191234568',
+            'check_in' => now()->addDay()->format('Y-m-d'),
+            'check_out' => now()->addDays(2)->format('Y-m-d'),
+            'total_amount' => 5000.00,
+            'payment_method' => 'Cash / Pay at Hotel',
+            'amount_paid' => 5000.00,
+        ]);
+
+        $response->assertRedirect(route('reservation'));
+        $this->assertDatabaseHas('room_reservations', [
+            'guest_email' => 'paylater@example.com',
+            'payment_method' => 'Cash / Pay at Hotel',
+            'amount_paid' => 0,
+        ]);
+    }
+
+    public function test_public_booking_can_create_an_event_place_reservation(): void
+    {
+        $eventPlace = \App\Models\EventPlace::create([
+            'name' => 'Garden Hall',
+            'event_type' => 'Wedding',
+            'description' => 'Outdoor venue',
+            'price' => 25000,
+            'pricing_basis' => 'Per Event',
+            'capacity' => 80,
+            'location' => 'Garden',
+            'status' => 'available',
+        ]);
+
+        $eventDate = now()->addDay()->format('Y-m-d');
+        $response = $this->post(route('reservation.store'), [
+            'category' => 'event_place',
+            'event_place_id' => $eventPlace->id,
+            'event_type' => 'Wedding',
+            'guest_name' => 'Event Guest',
+            'guest_email' => 'event@example.com',
+            'guest_phone' => '09191234569',
+            'check_in' => $eventDate,
+            'check_out' => $eventDate,
+            'check_in_time' => '10:00',
+            'check_out_time' => '18:00',
+            'number_of_guests' => 50,
+            'total_amount' => 25000,
+            'payment_method' => 'Cash / Pay at Hotel',
+        ]);
+
+        $response->assertRedirect(route('reservation'));
+        $this->assertDatabaseHas('event_reservations', [
+            'event_place_id' => $eventPlace->id,
+            'guest_email' => 'event@example.com',
+            'number_of_guests' => 50,
+        ]);
+    }
 }

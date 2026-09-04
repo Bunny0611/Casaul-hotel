@@ -9,6 +9,44 @@ use Tests\TestCase;
 
 class EmployeeGuestRequestsTest extends TestCase
 {
+    public function test_employee_page_only_shows_employee_requests(): void
+    {
+        $employee = Staff::factory()->create(['role' => 'employee']);
+        $guest = Guest::factory()->create();
+
+        GuestRequest::create([
+            'guest_id' => $guest->id,
+            'reservation_id' => null,
+            'room_id' => null,
+            'request_type' => 'Late Checkout',
+            'description' => 'Need a late checkout request.',
+            'department' => 'Employee',
+            'priority' => 'Normal',
+            'preferred_time' => '17:00',
+            'status' => 'New',
+            'submitted_at' => now(),
+        ]);
+
+        GuestRequest::create([
+            'guest_id' => $guest->id,
+            'reservation_id' => null,
+            'room_id' => null,
+            'request_type' => 'Extra Towels',
+            'description' => 'Need extra towels for the room.',
+            'department' => 'Housekeeping',
+            'priority' => 'Normal',
+            'preferred_time' => '15:00',
+            'status' => 'New',
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($employee)
+            ->get(route('employee.guest-requests'))
+            ->assertOk()
+            ->assertSee('Late Checkout')
+            ->assertDontSee('Extra Towels');
+    }
+
     public function test_housekeeping_page_only_shows_housekeeping_requests(): void
     {
         $housekeepingStaff = Staff::factory()->create(['role' => 'housekeeping']);
