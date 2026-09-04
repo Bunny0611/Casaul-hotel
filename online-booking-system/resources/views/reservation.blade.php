@@ -1314,7 +1314,9 @@
             reservationAmenityId.value = selectedAmenities.map(item => item.id).filter(Boolean).join(',');
             reservationEventPlaceId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
             reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
-            reservationEventGuests.value = selectedEventGuests || '';
+            reservationEventGuests.value = selectedRoom
+                ? selectedExtraGuests + 2
+                : (selectedEventGuests || '');
             reservationTotalAmount.value = total;
             reservationCheckIn.value = checkIn.value;
             reservationCheckOut.value = checkOut.value;

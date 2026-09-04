@@ -8,6 +8,7 @@ use App\Http\Controllers\ProfileController;
 use App\Models\Message;
 use App\Models\InventoryItem;
 use App\Models\Reservation;
+use App\Models\RoomReservation;
 use App\Models\Room;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
@@ -51,36 +52,20 @@ Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
     Route::redirect('/', '/employee/dashboard')->name('index');
     Route::get('/dashboard', [AdminController::class, 'employeeDashboard'])->name('dashboard');
-    Route::get('/reservation', function () {
-        $reservations = Reservation::with(['room', 'amenity', 'eventPlace', 'diningMenu'])->latest()->get();
-        $rooms = Room::orderBy('room_number')->get();
-        $inventoryItems = InventoryItem::whereIn('category', ['amenities', 'event_place', 'dining'])
-            ->whereIn('status', ['available', 'limited', 'Available', 'Limited'])
-            ->orderBy('name')
-            ->get();
-        $diningTables = DiningTable::orderBy('table_no')->get();
-        $diningMenus = DiningMenu::orderBy('name')->get();
-        $diningSchedules = DiningSchedule::orderBy('available_from')->get();
-
-        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems', 'diningTables', 'diningMenus', 'diningSchedules'));
-    })->name('reservation');
+    Route::get('/reservation', [AdminController::class, 'reservations'])->name('reservation');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
     Route::post('/reservations/{id}/payments', [AdminController::class, 'storePayment'])->name('reservations.payments.store');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::get('/checkin', function () {
-        $today = now()->toDateString();
-
-        $checkIns = Reservation::with('room')
-            ->whereDate('check_in', $today)
+        $checkIns = RoomReservation::with('room')
             ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
             ->latest()
             ->get();
 
-        $checkOuts = Reservation::with(['room', 'payments'])
-            ->whereDate('check_out', $today)
-            ->whereIn('status', ['confirmed', 'checked-in'])
+        $checkOuts = RoomReservation::with(['room', 'payments'])
+            ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
             ->latest()
             ->get();
 
