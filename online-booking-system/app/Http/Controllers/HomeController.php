@@ -351,10 +351,18 @@ class HomeController extends Controller
         $guest = Auth::guard('guest')->user();
         abort_unless($guest, 403);
 
-        $reservations = Reservation::with('room')
+        $reservations = Reservation::with(['room', 'diningItems.diningMenu', 'payments'])
             ->where('guest_email', $guest->email)
             ->orderBy('created_at', 'desc')
             ->get();
+
+        $reservations->each(function (Reservation $reservation) {
+            $amenityIds = array_values(array_filter(array_map('trim', explode(',', (string) $reservation->amenity_id))));
+            $eventPlaceIds = array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_place_id))));
+
+            $reservation->setRelation('amenities', Amenity::whereIn('id', $amenityIds)->get());
+            $reservation->setRelation('eventPlaces', EventPlace::whereIn('id', $eventPlaceIds)->get());
+        });
 
         $activeReservation = $this->activeReservationFor($guest);
         $guestRequests = GuestRequest::with('room')
@@ -392,11 +400,15 @@ class HomeController extends Controller
             return redirect()->route('guest.records')->withErrors(['reservation' => 'This reservation cannot be cancelled.']);
         }
 
-        if ($reservation->status === 'checked-in') {
-            return redirect()->route('guest.records')->withErrors(['reservation' => 'Checked-in stays must be cancelled at the front desk.']);
-        }
-
         $reservation->update(['status' => 'cancelled']);
+
+        if ($reservation->status === 'checked-in') {
+            $reservation->loadMissing('room');
+            $reservation->room?->update([
+                'status' => 'available',
+                'cleaning_status' => 'dirty',
+            ]);
+        }
 
         return redirect()->route('guest.records')->with('success', 'Your reservation has been cancelled successfully.');
     }

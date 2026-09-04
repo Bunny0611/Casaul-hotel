@@ -75,6 +75,12 @@
         overflow: hidden;
     }
 
+    .reservation-menu.is-viewport-menu {
+        position: fixed;
+        top: auto;
+        right: auto;
+    }
+
     .reservation-menu.hidden {
         display: none;
     }
@@ -245,6 +251,72 @@
         line-height: 1.5;
     }
 
+    .reservation-detail-section {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid #d9e5ef;
+    }
+
+    .reservation-detail-section h4 {
+        margin: 0 0 10px;
+        color: #07549a;
+        font-size: 14px;
+    }
+
+    .reservation-detail-section p {
+        margin: 6px 0 0;
+    }
+
+    .reservation-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 16px;
+    }
+
+    .reservation-detail-grid--summary {
+        padding: 12px;
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+    }
+
+    .reservation-detail-field {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 4px 0;
+    }
+
+    .reservation-detail-field span {
+        color: #64748b;
+    }
+
+    .reservation-detail-field strong {
+        color: #334155;
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+
+    .reservation-detail-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .reservation-detail-item strong {
+        color: #334155;
+    }
+
+    .reservation-detail-item > span {
+        float: right;
+        color: #07549a;
+        font-weight: 700;
+    }
+
+    .reservation-detail-item p,
+    .reservation-detail-empty {
+        color: #64748b;
+    }
+
     .receipt-table {
         width: 100%;
         border: 1px solid #7fa9d0;
@@ -340,6 +412,10 @@
 
         .receipt-actions button {
             flex: 1;
+        }
+
+        .reservation-detail-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -441,6 +517,65 @@
                                     ];
                                 }
                             }
+
+                            $reservationDetails = [
+                                'id' => 'RES-' . str_pad($reservation->id, 4, '0', STR_PAD_LEFT),
+                                'guestName' => $reservation->guest_name,
+                                'guestEmail' => $reservation->guest_email,
+                                'guestPhone' => $reservation->guest_phone,
+                                'status' => ucfirst($reservation->status),
+                                'category' => $reservation->category,
+                                'checkIn' => optional($reservation->check_in)->format('M d, Y'),
+                                'checkInTime' => $reservation->check_in_time,
+                                'checkOut' => optional($reservation->check_out)->format('M d, Y'),
+                                'checkOutTime' => $reservation->check_out_time,
+                                'guests' => $reservation->number_of_guests,
+                                'room' => $reservation->room ? [
+                                    'number' => $reservation->room->room_number,
+                                    'type' => $reservation->room->room_type,
+                                    'floor' => $reservation->room->floor,
+                                    'capacity' => $reservation->room->capacity,
+                                    'price' => '₱' . number_format((float) $reservation->room->price, 2),
+                                    'description' => $reservation->room->description,
+                                ] : null,
+                                'amenities' => $reservation->amenities->map(fn ($amenity) => [
+                                    'name' => $amenity->name,
+                                    'description' => $amenity->description,
+                                    'price' => '₱' . number_format((float) $amenity->price, 2),
+                                ])->values(),
+                                'eventPlaces' => $reservation->eventPlaces->map(fn ($eventPlace) => [
+                                    'name' => $eventPlace->name,
+                                    'type' => $eventPlace->event_type,
+                                    'location' => $eventPlace->location,
+                                    'capacity' => $eventPlace->capacity,
+                                    'price' => '₱' . number_format((float) $eventPlace->price, 2),
+                                    'description' => $eventPlace->description,
+                                ])->values(),
+                                'dining' => $reservation->diningItems->map(fn ($diningItem) => [
+                                    'name' => $diningItem->diningMenu?->name,
+                                    'category' => $diningItem->diningMenu?->category,
+                                    'quantity' => $diningItem->quantity,
+                                    'area' => $diningItem->dining_area,
+                                    'schedule' => $diningItem->dining_schedule,
+                                    'date' => optional($diningItem->dining_date)->format('M d, Y'),
+                                    'price' => $diningItem->diningMenu ? '₱' . number_format((float) $diningItem->diningMenu->price, 2) : null,
+                                ])->filter(fn ($item) => $item['name'])->values(),
+                                'paymentMethod' => $reservation->payment_method,
+                                'paymentDetails' => $reservation->payment_details,
+                                'payments' => $reservation->payments->map(fn ($payment) => [
+                                    'amount' => '₱' . number_format((float) $payment->amount, 2),
+                                    'method' => $payment->payment_method,
+                                    'date' => optional($payment->payment_date)->format('M d, Y'),
+                                    'reference' => $payment->reference_number,
+                                    'notes' => $payment->notes,
+                                ])->values(),
+                                'amountPaid' => '₱' . number_format((float) $reservation->amount_paid, 2),
+                                'total' => '₱' . number_format((float) $reservation->total_amount, 2),
+                                'specialRequests' => $reservation->special_requests,
+                                'eventType' => $reservation->event_type,
+                                'diningArea' => $reservation->dining_area,
+                                'diningSchedule' => $reservation->dining_schedule,
+                            ];
                         @endphp
                         <tr>
                             <td>{{ $index + 1 }}</td>
@@ -459,6 +594,7 @@
                                         <button type="button"
                                             class="reservation-view-btn"
                                             data-view-receipt
+                                            data-reservation='@json($reservationDetails)'
                                             data-receipt-id="RES-{{ str_pad($reservation->id, 4, '0', STR_PAD_LEFT) }}"
                                             data-guest-name="{{ auth('guest')->user()->name }}"
                                             data-guest-email="{{ auth('guest')->user()->email }}"
@@ -475,13 +611,13 @@
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="reservation-menu hidden">
-                                                <button type="button" class="reservation-menu-item" data-view-receipt data-receipt-id="RES-{{ str_pad($reservation->id, 4, '0', STR_PAD_LEFT) }}" data-guest-name="{{ auth('guest')->user()->name }}" data-guest-email="{{ auth('guest')->user()->email }}" data-check-in="{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}" data-check-out="{{ \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y') }}" data-guests="{{ $reservation->number_of_guests ?? 2 }} Guests" data-room="{{ $reservation->room->room_type ?? 'Room' }}" data-total="₱{{ number_format($reservation->total_amount, 2) }}" data-line-items='@json($reservationReceiptLines)'>View Receipt</button>
+                                                <button type="button" class="reservation-menu-item" data-view-receipt data-reservation='@json($reservationDetails)' data-receipt-id="RES-{{ str_pad($reservation->id, 4, '0', STR_PAD_LEFT) }}" data-guest-name="{{ auth('guest')->user()->name }}" data-guest-email="{{ auth('guest')->user()->email }}" data-check-in="{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}" data-check-out="{{ \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y') }}" data-guests="{{ $reservation->number_of_guests ?? 2 }} Guests" data-room="{{ $reservation->room->room_type ?? 'Room' }}" data-total="₱{{ number_format($reservation->total_amount, 2) }}" data-line-items='@json($reservationReceiptLines)'>View Receipt</button>
                                             </div>
                                         </div>
                                     </div>
                                 @elseif(in_array($reservation->status, ['pending', 'confirmed'], true))
                                     <div class="reservation-action-group">
-                                        <button type="button" class="reservation-view-btn">View</button>
+                                        <button type="button" class="reservation-view-btn" data-view-receipt data-reservation='@json($reservationDetails)'>View</button>
                                         <div class="reservation-menu-wrap">
                                             <button type="button" class="reservation-menu-toggle" aria-label="More actions" aria-expanded="false">
                                                 <i class="fas fa-ellipsis-v"></i>
@@ -494,6 +630,10 @@
                                                 </form>
                                             </div>
                                         </div>
+                                    </div>
+                                @elseif($reservation->status === 'checked-in')
+                                    <div class="reservation-action-group">
+                                        <button type="button" class="reservation-view-btn" data-view-receipt data-reservation='@json($reservationDetails)'>View</button>
                                     </div>
                                 @else
                                     <span>—</span>
@@ -681,6 +821,52 @@
         const receiptGuests = document.getElementById('guest-receipt-guests');
         const receiptRoom = document.getElementById('guest-receipt-room');
         const receiptContent = document.getElementById('guest-receipt-content');
+        const reservationTitle = document.getElementById('guest-receipt-title');
+        const reservationNotes = document.querySelector('#guest-receipt-modal .receipt-notes p');
+
+        let reservation = null;
+        try {
+            reservation = JSON.parse(button.dataset.reservation || 'null');
+        } catch (error) {
+            reservation = null;
+        }
+
+        const escapeHtml = (value) => String(value ?? '—')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        const field = (label, value) => `<div class="reservation-detail-field"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value || '—')}</strong></div>`;
+        const list = (items, emptyLabel, renderItem) => items?.length
+            ? items.map(renderItem).join('')
+            : `<p class="reservation-detail-empty">${escapeHtml(emptyLabel)}</p>`;
+
+        if (reservation) {
+            reservationTitle.textContent = 'RESERVATION DETAILS';
+            guestName.textContent = reservation.guestName || 'Guest';
+            guestEmail.textContent = reservation.guestEmail || '—';
+            receiptNumber.textContent = reservation.id || 'RES-0000';
+            receiptDate.textContent = reservation.status || '—';
+            receiptCheckIn.textContent = reservation.checkIn || '—';
+            receiptCheckOut.textContent = reservation.checkOut || '—';
+            receiptGuests.textContent = reservation.guests ? `${reservation.guests} Guests` : '—';
+            receiptRoom.textContent = reservation.room?.type || '—';
+            reservationNotes.textContent = reservation.specialRequests || 'No special requests.';
+
+            const room = reservation.room ? `<div class="reservation-detail-section"><h4>Room</h4><div class="reservation-detail-grid">
+                ${field('Room type', reservation.room.type)}${field('Room number', reservation.room.number)}${field('Floor', reservation.room.floor)}${field('Capacity', reservation.room.capacity)}${field('Rate', reservation.room.price)}
+                </div><p>${escapeHtml(reservation.room.description || 'No room description.')}</p></div>` : '';
+            const amenities = `<div class="reservation-detail-section"><h4>Amenities</h4>${list(reservation.amenities, 'No amenities selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>`;
+            const eventPlaces = `<div class="reservation-detail-section"><h4>Event Place</h4>${list(reservation.eventPlaces, 'No event place selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.type, item.location, item.capacity ? `Capacity: ${item.capacity}` : ''].filter(Boolean).join(' | '))}</p><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>`;
+            const dining = `<div class="reservation-detail-section"><h4>Dining</h4>${list(reservation.dining, 'No dining items selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)} x${escapeHtml(item.quantity)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.category, item.area, item.schedule, item.date].filter(Boolean).join(' | '))}</p></div>`)}</div>`;
+            const payments = `<div class="reservation-detail-section"><h4>Payment</h4><div class="reservation-detail-grid">${field('Reservation method', reservation.paymentMethod)}${field('Payment details', reservation.paymentDetails)}${field('Amount paid', reservation.amountPaid)}${field('Total amount', reservation.total)}</div>${list(reservation.payments, 'No separate payment transactions recorded.', payment => `<div class="reservation-detail-item"><strong>${escapeHtml(payment.method)} - ${escapeHtml(payment.amount)}</strong><p>${escapeHtml([payment.date, payment.reference ? `Reference: ${payment.reference}` : '', payment.notes].filter(Boolean).join(' | '))}</p></div>`)}</div>`;
+
+            receiptContent.innerHTML = `<div class="reservation-detail-grid reservation-detail-grid--summary">${field('Status', reservation.status)}${field('Category', reservation.category)}${field('Phone', reservation.guestPhone)}${field('Check-in time', reservation.checkInTime)}${field('Check-out time', reservation.checkOutTime)}${field('Event type', reservation.eventType)}${field('Dining area', reservation.diningArea)}${field('Dining schedule', reservation.diningSchedule)}</div>${room}${amenities}${eventPlaces}${dining}${payments}`;
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+            return;
+        }
 
         const totalValue = button.dataset.total || '₱0.00';
         const guestCount = button.dataset.guests || '2 Guests';
@@ -822,34 +1008,25 @@
         const printableReceipt = modal.querySelector('.receipt-card').cloneNode(true);
         printableReceipt.querySelector('.receipt-close')?.remove();
         printableReceipt.querySelector('.receipt-actions')?.remove();
-        printWindow.document.write(`<html><head><title>${document.getElementById('guest-receipt-number').textContent} Receipt</title><style>
-            * { box-sizing: border-box; }
-            body { margin: 0; padding: 24px; background: #fff; font-family: Arial, sans-serif; color: #172033; }
-            .receipt-card { width: 100%; padding: 28px; background: #fff; }
-            .receipt-header { position: relative; display: block; padding-bottom: 14px; border-bottom: 4px solid #c7d8e8; }
-            .receipt-brand { margin: 0; color: #07549a; font-size: 32px; font-weight: 400; text-align: center; }
-            .receipt-contact { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; margin: 12px 0 4px; color: #727b85; font-size: 12px; }
-            .receipt-subcontact { margin: 0; color: #727b85; text-align: center; font-size: 12px; }
-            .receipt-heading-row { margin: 24px 0 16px; text-align: center; }
-            .receipt-heading { margin: 0; color: #07549a; font-size: 32px; letter-spacing: .04em; }
-            .receipt-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin: 0 0 18px; }
-            .receipt-paid-by h4, .receipt-booking h4, .receipt-notes h4 { margin: 0 0 8px; color: #07549a; font-size: 14px; }
-            .receipt-paid-by p, .receipt-booking p, .receipt-notes p { margin: 3px 0; color: #4b5563; font-size: 13px; }
-            .receipt-booking { min-width: 220px; }
-            .receipt-booking p { display: flex; justify-content: space-between; gap: 18px; }
-            .receipt-booking strong { color: #4b5563; font-weight: 600; }
-            .receipt-content { color: #566176; font-size: 12px; }
-            .receipt-table { width: 100%; border: 1px solid #7fa9d0; border-spacing: 0; }
-            .receipt-table th { padding: 9px 8px; color: #fff; background: #07549a; font-size: 11px; text-align: left; }
-            .receipt-table td { padding: 9px 8px; border-top: 1px solid #d9e5ef; color: #4b5563; font-size: 12px; }
-            .receipt-table th:not(:first-child), .receipt-table td:not(:first-child) { text-align: right; }
-            .receipt-table .receipt-total-row td { border-top: 2px solid #7fa9d0; color: #07549a; font-weight: 800; }
-            .receipt-notes { margin-top: 18px; }
-            @media print { body { padding: 0; } .receipt-card { padding: 0; } }
+        const pageStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+            .map((style) => style.outerHTML)
+            .join('');
+        printWindow.document.write(`<html><head><title>${document.getElementById('guest-receipt-number').textContent} Reservation</title>${pageStyles}<style>
+            @page { margin: 12mm; }
+            html, body { margin: 0; padding: 0; background: #fff; }
+            body { display: block; }
+            .receipt-card { width: 100%; max-height: none; overflow: visible; box-shadow: none; }
         </style></head><body>${printableReceipt.outerHTML}</body></html>`);
         printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
+        const print = () => {
+            printWindow.focus();
+            printWindow.print();
+        };
+        if (printWindow.document.fonts?.ready) {
+            printWindow.document.fonts.ready.then(print);
+        } else {
+            print();
+        }
     };
 
     document.getElementById('guest-receipt-download-btn')?.addEventListener('click', downloadGuestReceiptAsPdf);
@@ -872,12 +1049,16 @@
     document.querySelectorAll('.reservation-menu-toggle').forEach(function (button) {
         button.addEventListener('click', function (event) {
             event.stopPropagation();
-            const menu = this.nextElementSibling;
+            const menu = this._reservationMenu || this.nextElementSibling;
             const isHidden = menu.classList.contains('hidden');
 
             document.querySelectorAll('.reservation-menu').forEach(function (item) {
                 if (item !== menu) {
                     item.classList.add('hidden');
+                    if (item._reservationMenuWrap) {
+                        item._reservationMenuWrap.appendChild(item);
+                        item.classList.remove('is-viewport-menu');
+                    }
                 }
             });
 
@@ -887,7 +1068,35 @@
                 }
             });
 
-            menu.classList.toggle('hidden', !isHidden);
+            if (isHidden) {
+                const menuWrap = button.parentElement;
+                const buttonRect = button.getBoundingClientRect();
+                menu._reservationMenuWrap = menuWrap;
+                button._reservationMenu = menu;
+                document.body.appendChild(menu);
+                menu.classList.add('is-viewport-menu');
+                menu.classList.remove('hidden');
+
+                const menuHeight = menu.offsetHeight;
+                const spaceBelow = window.innerHeight - buttonRect.bottom;
+                const top = spaceBelow >= menuHeight + 8
+                    ? buttonRect.bottom + 8
+                    : Math.max(8, buttonRect.top - menuHeight - 8);
+                const left = Math.min(
+                    Math.max(8, buttonRect.right - menu.offsetWidth),
+                    window.innerWidth - menu.offsetWidth - 8
+                );
+                menu.style.top = `${top}px`;
+                menu.style.left = `${left}px`;
+            } else {
+                menu.classList.add('hidden');
+                menu.classList.remove('is-viewport-menu');
+                if (menu._reservationMenuWrap) {
+                    menu._reservationMenuWrap.appendChild(menu);
+                }
+                menu.style.top = '';
+                menu.style.left = '';
+            }
             button.setAttribute('aria-expanded', String(isHidden));
         });
     });
@@ -896,6 +1105,12 @@
         if (!event.target.closest('.reservation-menu') && !event.target.closest('.reservation-menu-toggle')) {
             document.querySelectorAll('.reservation-menu').forEach(function (item) {
                 item.classList.add('hidden');
+                item.classList.remove('is-viewport-menu');
+                if (item._reservationMenuWrap) {
+                    item._reservationMenuWrap.appendChild(item);
+                }
+                item.style.top = '';
+                item.style.left = '';
             });
             document.querySelectorAll('.reservation-menu-toggle').forEach(function (item) {
                 item.setAttribute('aria-expanded', 'false');

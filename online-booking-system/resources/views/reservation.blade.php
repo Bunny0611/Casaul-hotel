@@ -128,6 +128,8 @@
     .reservation-card h4 { font-size:11px; }
     .reservation-card-meta { gap:8px; font-size:9px; }
     .reservation-card-body > p { margin:0; color:#788398; font-size:9px; line-height:1.45; }
+    .event-time-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .event-time-row .field-input { padding-left:4px; padding-right:2px; }
     .reservation-card-footer { display:block; }
     .reservation-card .price { display:block; margin-bottom:7px; color:#d20b26; font-size:11px; font-weight:800; }
     .select-option-btn { width:100%; padding:7px 8px; border:1px solid #ff9aa7; border-radius:7px; color:#d20b26; background:#fff; font-size:10px; }
@@ -569,14 +571,20 @@
                                 <div class="event-options">
                                     <label class="field-label" for="eventDate-{{ $event->id }}">Event Date</label>
                                     <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date">
-                                    <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
-                                    <input id="eventStart-{{ $event->id }}" class="field-input event-start-time" type="time">
-                                    <label class="field-label" for="eventEnd-{{ $event->id }}">End Time</label>
-                                    <input id="eventEnd-{{ $event->id }}" class="field-input event-end-time" type="time">
-                                    <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests</label>
-                                    <select id="eventGuests-{{ $event->id }}" class="field-input event-guests">
-                                        @for($guests = 1; $guests <= $event->capacity; $guests++)<option value="{{ $guests }}">{{ $guests }}</option>@endfor
-                                    </select>
+                                    <div class="event-time-row">
+                                        <div>
+                                            <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
+                                            <input id="eventStart-{{ $event->id }}" class="field-input event-start-time" type="time" lang="en-US">
+                                        </div>
+                                        <div>
+                                            <label class="field-label" for="eventEnd-{{ $event->id }}">End Time</label>
+                                            <input id="eventEnd-{{ $event->id }}" class="field-input event-end-time" type="time" lang="en-US" readonly aria-readonly="true">
+                                        </div>
+                                    </div>
+                                    <label class="field-label" for="eventDuration-{{ $event->id }}">How Many Hours?</label>
+                                    <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="24" step="1" value="1">
+                                    <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests (max {{ $event->capacity }})</label>
+                                    <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric">
                                 </div>
                                 <div class="reservation-card-footer">
                                     <span class="price">₱{{ number_format($event->price, 0) }}</span>
@@ -1181,23 +1189,7 @@
         };
 
         const showNotification = (message) => {
-            if (!detailsTerms || detailsTerms.checked) {
-                notificationToast.classList.remove('show', 'hide');
-                notificationToast.style.display = 'none';
-                return;
-            }
-
-            notificationMessage.textContent = message;
-            notificationToast.style.display = 'flex';
-            notificationToast.classList.remove('hide');
-            notificationToast.classList.add('show');
-            setTimeout(() => {
-                notificationToast.classList.add('hide');
-                setTimeout(() => {
-                    notificationToast.classList.remove('show');
-                    notificationToast.style.display = 'none';
-                }, 300);
-            }, 4500);
+            alert(message);
         };
 
         const getPaymentDetailRows = () => {
@@ -1217,6 +1209,17 @@
                 return [['fa-user', 'Account Name', value('bankAccountName') || '—'], ['fa-university', 'Bank', value('bankName') || '—'], ['fa-money-bill-wave', 'Amount', formatCurrencyValue(getPaymentAmountValue('transferAmount'))], ['fa-receipt', 'Reference Number', value('bankReferenceNumber') || '—'], ['fa-calendar', 'Transfer Date', value('transferDate') || '—'], ['fa-shield-alt', 'Proof of Payment', file('bankPaymentProof')?.name || 'Not uploaded']];
             }
             return [];
+        };
+
+        const normalizeEventGuestCount = (input, card) => {
+            const maximum = Math.max(1, Number(card?.dataset.capacity) || Number(input?.max) || 1);
+            const enteredValue = Number(input?.value);
+            const guestCount = Number.isFinite(enteredValue) ? Math.round(enteredValue) : 1;
+            const normalizedValue = Math.min(maximum, Math.max(1, guestCount));
+            if (input) {
+                input.value = normalizedValue;
+            }
+            return normalizedValue;
         };
 
         tabs.forEach(tab => {
@@ -1456,15 +1459,38 @@
             });
         });
 
-        document.querySelectorAll('.event-date, .event-start-time, .event-end-time, .event-guests').forEach(input => {
+        const updateEventEndTime = (card) => {
+            const startTime = card.querySelector('.event-start-time')?.value || '';
+            const durationHours = Math.max(1, Math.min(24, Number(card.querySelector('.event-duration')?.value || 1)));
+            const endTimeInput = card.querySelector('.event-end-time');
+            if (!endTimeInput) {
+                return '';
+            }
+
+            if (!startTime) {
+                endTimeInput.value = '';
+                return '';
+            }
+
+            const [hours, minutes] = startTime.split(':').map(Number);
+            const endMinutes = (hours * 60) + minutes + (durationHours * 60);
+            const normalizedMinutes = endMinutes % (24 * 60);
+            const endTime = `${String(Math.floor(normalizedMinutes / 60)).padStart(2, '0')}:${String(normalizedMinutes % 60).padStart(2, '0')}`;
+            endTimeInput.value = endTime;
+            return endTime;
+        };
+
+        document.querySelectorAll('.event-date, .event-start-time, .event-duration, .event-guests').forEach(input => {
             input.addEventListener('change', function () {
                 const card = this.closest('.reservation-card');
                 const eventItem = selectedEvent.find(item => item.id === card.dataset.eventId);
+                const endTime = updateEventEndTime(card);
                 if (eventItem) {
-                    eventItem.guests = Number(card.querySelector('.event-guests')?.value || 1);
+                    eventItem.guests = normalizeEventGuestCount(card.querySelector('.event-guests'), card);
                     eventItem.date = card.querySelector('.event-date')?.value || '';
                     eventItem.startTime = card.querySelector('.event-start-time')?.value || '';
-                    eventItem.endTime = card.querySelector('.event-end-time')?.value || '';
+                    eventItem.endTime = endTime;
+                    eventItem.durationHours = Number(card.querySelector('.event-duration')?.value || 1);
                     updateSummary();
                 }
             });
@@ -1566,7 +1592,7 @@
                             type: card.dataset.eventType,
                             title,
                             price,
-                            guests: Number(card.querySelector('.event-guests')?.value || 1),
+                            guests: normalizeEventGuestCount(card.querySelector('.event-guests'), card),
                             date: card.querySelector('.event-date')?.value || '',
                             startTime: card.querySelector('.event-start-time')?.value || '',
                             endTime: card.querySelector('.event-end-time')?.value || '',
