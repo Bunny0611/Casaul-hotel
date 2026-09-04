@@ -73,6 +73,61 @@
         display: none;
     }
 
+    .room-management-page [data-dining-subpanel] td:last-child button:has(.fa-edit) {
+        border-radius: 0.5rem;
+        border: 1px solid #bfdbfe;
+        background-color: #eff6ff;
+        padding: 0.5rem 0.75rem;
+        color: #1d4ed8;
+    }
+
+    .room-management-page [data-dining-subpanel] td:last-child button:has(.fa-edit):hover {
+        background-color: #dbeafe;
+    }
+
+    .room-management-page [data-dining-subpanel] td:last-child button:has(.fa-trash) {
+        border-radius: 0.5rem;
+        border: 1px solid #fecaca;
+        background-color: #fef2f2;
+        padding: 0.5rem 0.75rem;
+        color: #b91c1c;
+    }
+
+    .room-management-page [data-dining-subpanel] td:last-child button:has(.fa-trash):hover {
+        background-color: #fee2e2;
+    }
+
+    .room-management-page [data-dining-subpanel] td:last-child button:has(.fa-exchange-alt) {
+        border-radius: 0.5rem;
+        border: 1px solid #a7f3d0;
+        background-color: #ecfdf5;
+        padding: 0.5rem 0.75rem;
+        color: #047857;
+    }
+
+    .room-management-page [data-dining-subpanel] td:last-child button:has(.fa-exchange-alt):hover {
+        background-color: #d1fae5;
+    }
+
+    .room-management-page [data-dining-subpanel] td:nth-last-child(2) span {
+        display: inline-flex;
+        border: 0;
+        border-radius: 9999px;
+        background-color: #059669;
+        padding: 0.25rem 0.75rem;
+        color: #fff;
+        font-size: 0.75rem;
+        line-height: 1rem;
+        font-weight: 500;
+    }
+
+    .room-management-page [data-dining-subpanel] td:nth-last-child(2) span.status-available { background-color: #059669; }
+    .room-management-page [data-dining-subpanel] td:nth-last-child(2) span.status-reserved { background-color: #d97706; }
+    .room-management-page [data-dining-subpanel] td:nth-last-child(2) span.status-unavailable { background-color: #dc2626; }
+    .room-management-page [data-dining-subpanel] td:nth-last-child(2) span.status-occupied { background-color: #2563eb; }
+    .room-management-page [data-dining-subpanel] td:nth-last-child(2) span.status-maintenance { background-color: #7c3aed; }
+    .room-management-page [data-dining-subpanel] td:nth-last-child(2) span.status-limited { background-color: #ca8a04; }
+
     @media (max-width: 640px) {
         .room-management-page .dining-card-header {
             align-items: stretch;
@@ -168,7 +223,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
+                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status), @json($room->description))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
                                         <i class='fas fa-edit'></i>
                                     </button>
                                     <button type="button" onclick="changeStatus({{ $room->id }})" class="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 transition hover:bg-emerald-100" aria-label="Change room status">
@@ -789,6 +844,10 @@
                 </div>
             </div>
             <div>
+                <label class="mb-1 block text-sm font-medium text-gray-700">Description</label>
+                <textarea name="description" id="editDescription" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+            </div>
+            <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700">Room Image (Optional)</label>
                 <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
             </div>
@@ -843,7 +902,7 @@
         document.getElementById('addRoomModal').classList.remove('flex');
     }
 
-    function editRoom(id, roomNumber, roomType, price, floor, capacity, status) {
+    function editRoom(id, roomNumber, roomType, price, floor, capacity, status, description) {
         document.getElementById('editRoomId').value = id;
         document.getElementById('editRoomNumber').value = roomNumber;
         document.getElementById('editRoomType').value = roomType;
@@ -851,6 +910,7 @@
         document.getElementById('editFloor').value = floor;
         document.getElementById('editCapacity').value = capacity;
         document.getElementById('editStatus').value = status;
+        document.getElementById('editDescription').value = description || '';
         var editRoute = "{{ route('admin.rooms.update', ['id' => '__ID__']) }}";
         document.getElementById('editRoomForm').action = editRoute.replace('__ID__', id);
         document.getElementById('editRoomModal').classList.remove('hidden');
@@ -1146,19 +1206,22 @@
         const section = panel ? panel.getAttribute('data-dining-subpanel') : 'tables';
         const isTable = section === 'tables';
         const isSchedule = section === 'schedule';
-        const status = cells[isSchedule ? 3 : 4].textContent.trim();
+        const statusIndex = isSchedule ? 4 : 5;
+        const status = cells[statusIndex].textContent.trim();
 
         document.getElementById('editDiningTitle').textContent = isTable ? 'Edit Table / Seating' : isSchedule ? 'Edit Dining Schedule' : 'Edit Menu / Meal';
         document.getElementById('editDiningNameLabel').textContent = isTable ? 'Table Number' : isSchedule ? 'Meal Period' : 'Meal Name';
         document.getElementById('editDiningTypeLabel').textContent = isTable ? 'Table Type' : isSchedule ? 'Schedule Type' : 'Category';
         document.getElementById('editDiningValueLabel').textContent = isTable ? 'Capacity' : isSchedule ? 'Maximum Guests' : 'Price (₱)';
         document.getElementById('editDiningDetailLabel').textContent = isTable ? 'Location' : 'Available Time';
-        document.getElementById('editDiningName').value = cells[0].textContent.trim();
-        document.getElementById('editDiningType').value = cells[1].textContent.trim();
-        document.getElementById('editDiningValue').value = cells[2].textContent.replace('₱', '').trim();
-        document.getElementById('editDiningDetail').value = cells[3].textContent.trim();
+        document.getElementById('editDiningName').value = cells[1].textContent.trim();
+        document.getElementById('editDiningType').value = cells[2].textContent.trim();
+        document.getElementById('editDiningValue').value = cells[3].textContent.replace('₱', '').trim();
+        document.getElementById('editDiningDetail').value = cells[isSchedule ? 2 : 4].textContent.trim();
         document.getElementById('editDiningStatus').value = status;
         window.editingDiningRow = row;
+        window.editingDiningId = row.querySelector('input[type="checkbox"]').value;
+        window.editingDiningType = section;
         document.getElementById('editDiningForm').dataset.section = section;
         document.getElementById('editDiningForm').dataset.table = isTable ? 'true' : 'false';
         document.getElementById('editDiningForm').dataset.schedule = isSchedule ? 'true' : 'false';
@@ -1166,7 +1229,7 @@
         document.getElementById('editDiningModal').classList.add('flex');
     }
 
-    function saveDiningEdit(event) {
+    async function saveDiningEdit(event) {
         event.preventDefault();
         const form = event.currentTarget;
         const row = window.editingDiningRow;
@@ -1176,11 +1239,35 @@
         const value = document.getElementById('editDiningValue').value.trim();
         const isTable = form.dataset.table === 'true';
         const isSchedule = form.dataset.schedule === 'true';
-        cells[0].textContent = document.getElementById('editDiningName').value.trim();
-        cells[1].textContent = document.getElementById('editDiningType').value.trim();
-        cells[2].textContent = isTable || isSchedule ? value : '₱' + value;
-        cells[3].textContent = document.getElementById('editDiningDetail').value.trim();
-        cells[isSchedule ? 3 : 4].querySelector('span').textContent = document.getElementById('editDiningStatus').value;
+        const status = document.getElementById('editDiningStatus').value;
+        const statusRoute = "{{ route('admin.dining.status', ['type' => '__TYPE__', 'id' => '__ID__']) }}"
+            .replace('__TYPE__', window.editingDiningType)
+            .replace('__ID__', window.editingDiningId);
+
+        try {
+            const response = await fetch(statusRoute, {
+                method: 'PATCH',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status })
+            });
+
+            if (!response.ok) throw new Error('Status update failed');
+        } catch (error) {
+            alert('Unable to update the dining status. Please try again.');
+            return;
+        }
+
+        cells[1].textContent = document.getElementById('editDiningName').value.trim();
+        cells[2].textContent = document.getElementById('editDiningType').value.trim();
+        cells[3].textContent = isTable || isSchedule ? value : '₱' + value;
+        cells[isSchedule ? 2 : 4].textContent = document.getElementById('editDiningDetail').value.trim();
+        const statusElement = cells[isSchedule ? 4 : 5].querySelector('span');
+        statusElement.textContent = status;
+        setDiningStatusColor(statusElement, status);
         closeEditDiningModal();
     }
 
@@ -1191,6 +1278,11 @@
         if (confirm('Delete ' + itemName + '?')) {
             row.remove();
         }
+    }
+
+    function setDiningStatusColor(statusElement, status) {
+        const statusClass = 'status-' + String(status).toLowerCase().replace(/\s+/g, '-');
+        statusElement.className = 'rounded-full px-3 py-1 text-xs font-medium text-white ' + statusClass;
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -1224,6 +1316,23 @@
         const diningSubTabs = document.querySelectorAll('.dining-subtab');
         const diningSubPanels = document.querySelectorAll('[data-dining-subpanel]');
         const diningPanel = document.querySelector('[data-panel="dining"]');
+
+        if (diningPanel) {
+            diningPanel.querySelectorAll('[data-dining-subpanel] td:nth-last-child(2) span').forEach(function (statusElement) {
+                setDiningStatusColor(statusElement, statusElement.textContent.trim());
+            });
+
+            diningPanel.querySelectorAll('[data-dining-subpanel] td:last-child > div').forEach(function (actions) {
+                const statusButton = document.createElement('button');
+                statusButton.type = 'button';
+                statusButton.dataset.diningStatusId = actions.closest('tr').querySelector('input[type="checkbox"]').value;
+                statusButton.dataset.diningStatusType = actions.closest('[data-dining-subpanel]').getAttribute('data-dining-subpanel');
+                statusButton.className = 'inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 transition hover:bg-emerald-100';
+                statusButton.setAttribute('aria-label', 'Change dining status');
+                statusButton.innerHTML = '<i class="fas fa-exchange-alt"></i>';
+                actions.insertBefore(statusButton, actions.querySelector('.fa-trash')?.closest('button'));
+            });
+        }
 
         function activateDiningSubTab(targetName) {
             diningSubTabs.forEach(function(btn) {
@@ -1286,6 +1395,11 @@
                 }
 
                 if (button.querySelector('.fa-edit')) {
+                    editDiningRow(button);
+                    return;
+                }
+
+                if (button.querySelector('.fa-exchange-alt')) {
                     editDiningRow(button);
                     return;
                 }

@@ -7,6 +7,8 @@
     $reservations = $reservations ?? collect([]);
     $rooms = $rooms ?? collect([]);
     $inventoryItems = $inventoryItems ?? collect([]);
+    $amenities = $amenities ?? collect([]);
+    $eventPlaces = $eventPlaces ?? collect([]);
     $diningTables = $diningTables ?? collect([]);
     $dining = $dining ?? collect([]);
     $diningSchedules = $diningSchedules ?? collect([]);
@@ -26,18 +28,18 @@
             'maintenance' => $rooms->where('status', 'maintenance')->count(),
         ],
         'amenities' => [
-            'total' => $amenityReservations->count(),
-            'available' => $amenityReservations->where('status', 'pending')->count(),
-            'reserved' => $amenityReservations->where('status', 'confirmed')->count(),
-            'in_use' => $amenityReservations->where('status', 'completed')->count(),
-            'unavailable' => $amenityReservations->where('status', 'cancelled')->count(),
+            'total' => $amenities->count(),
+            'available' => $amenities->where('status', 'available')->count(),
+            'reserved' => $amenities->where('status', 'reserved')->count(),
+            'in_use' => $amenities->where('status', 'occupied')->count(),
+            'unavailable' => $amenities->whereIn('status', ['unavailable', 'maintenance'])->count(),
         ],
         'event_place' => [
-            'total' => $eventPlaceReservations->count(),
-            'available' => $eventPlaceReservations->where('status', 'pending')->count(),
-            'reserved' => $eventPlaceReservations->where('status', 'confirmed')->count(),
-            'ongoing' => $eventPlaceReservations->where('status', 'completed')->count(),
-            'unavailable' => $eventPlaceReservations->where('status', 'cancelled')->count(),
+            'total' => $eventPlaces->count(),
+            'available' => $eventPlaces->where('status', 'available')->count(),
+            'reserved' => $eventPlaces->where('status', 'reserved')->count(),
+            'ongoing' => $eventPlaces->where('status', 'occupied')->count(),
+            'unavailable' => $eventPlaces->whereIn('status', ['unavailable', 'maintenance'])->count(),
         ],
         'dining' => [
             'total' => $diningTables->count(),
@@ -223,10 +225,10 @@
                     <table class="room-table">
                         <thead><tr><th>Amenity</th><th>Type</th><th>Location</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
                         <tbody>
-                            @foreach($inventoryItems->where('category', 'amenities') as $item)
-                                <tr data-amenity-row data-amenity-name="{{ $item->name }}" data-amenity-type="{{ $item->type ?: 'Amenity' }}" data-amenity-location="{{ $item->location ?: '—' }}" data-amenity-capacity="{{ $item->capacity ?: '—' }}" data-amenity-status="{{ $item->status }}" data-amenity-hours="—" data-amenity-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>{{ $item->type ?: 'Amenity' }}</td><td>{{ $item->location ?: '—' }}</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
+                            @foreach($amenities as $item)
+                                <tr data-amenity-row data-amenity-name="{{ $item->name }}" data-amenity-type="Amenity" data-amenity-location="—" data-amenity-capacity="{{ $item->capacity ?: '—' }}" data-amenity-status="{{ $item->status }}" data-amenity-hours="—" data-amenity-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>Amenity</td><td>—</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
                             @endforeach
-                            @if($inventoryItems->where('category', 'amenities')->isEmpty())
+                            @if($amenities->isEmpty())
                                 <tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No amenities added by the admin.</td></tr>
                             @endif
                             @if(false)
@@ -274,10 +276,10 @@
             <div class="table-card">
                 <div class="table-scroll-hint">Tap the Details button for complete event place information</div>
                 <div class="table-scroll"><table class="room-table"><thead><tr><th>Event Place</th><th>Type</th><th>Location</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead><tbody>
-                    @foreach($inventoryItems->where('category', 'event_place') as $item)
-                        <tr data-event-row data-event-name="{{ $item->name }}" data-event-type="{{ $item->type ?: 'Event Place' }}" data-event-location="{{ $item->location ?: '—' }}" data-event-capacity="{{ $item->capacity ?: '—' }}" data-event-status="{{ $item->status }}" data-event-size="—" data-event-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="—" data-cleaning-status="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>{{ $item->type ?: 'Event Place' }}</td><td>{{ $item->location ?: '—' }}</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
+                    @foreach($eventPlaces as $item)
+                        <tr data-event-row data-event-name="{{ $item->name }}" data-event-type="{{ $item->event_type ?: 'Event Place' }}" data-event-location="{{ $item->location ?: '—' }}" data-event-capacity="{{ $item->capacity ?: '—' }}" data-event-status="{{ $item->status }}" data-event-size="—" data-event-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="—" data-cleaning-status="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>{{ $item->event_type ?: 'Event Place' }}</td><td>{{ $item->location ?: '—' }}</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
                     @endforeach
-                    @if($inventoryItems->where('category', 'event_place')->isEmpty())<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No event places added by the admin.</td></tr>@endif
+                    @if($eventPlaces->isEmpty())<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No event places added by the admin.</td></tr>@endif
                     @if(false)
                     <tr data-event-row data-event-name="Grand Ballroom" data-event-type="Ballroom" data-event-location="Ground Floor" data-event-capacity="300" data-event-status="available" data-event-size="500 sq m" data-event-description="Large formal event venue." data-reservation-status="—" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="Ready" data-cleaning-status="Complete" data-maintenance-status="Operational" data-notes="—"><td>Grand Ballroom</td><td>Ballroom</td><td>Ground Floor</td><td>300</td><td><span class="status-badge available">Available</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
                     <tr data-event-row data-event-name="Garden Pavilion" data-event-type="Outdoor" data-event-location="Garden" data-event-capacity="150" data-event-status="reserved" data-event-size="350 sq m" data-event-description="Open-air venue surrounded by gardens." data-reservation-status="Reserved" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="Scheduled" data-cleaning-status="Complete" data-maintenance-status="Operational" data-notes="—"><td>Garden Pavilion</td><td>Outdoor</td><td>Garden</td><td>150</td><td><span class="status-badge reserved">Reserved</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
@@ -568,8 +570,6 @@
         <div class="modal-head"><h4 class="modal-title" id="amenity-modal-title">Amenity Details</h4><button class="close-btn" type="button" data-close-modal="amenity-details-modal" aria-label="Close dialog">×</button></div>
         <div class="modal-body"><div class="modal-section-title">Amenity Information</div><div class="modal-grid">
             <div class="modal-item"><strong>Amenity Name</strong><span id="amenity-detail-name">—</span></div><div class="modal-item"><strong>Amenity Type</strong><span id="amenity-detail-type">—</span></div><div class="modal-item"><strong>Location</strong><span id="amenity-detail-location">—</span></div><div class="modal-item"><strong>Capacity</strong><span id="amenity-detail-capacity">—</span></div><div class="modal-item"><strong>Current Status</strong><span id="amenity-detail-status">—</span></div><div class="modal-item"><strong>Operating Hours</strong><span id="amenity-detail-hours">—</span></div><div class="modal-item modal-notes"><strong>Description</strong><span id="amenity-detail-description">—</span></div>
-        </div><div class="modal-section-title">Reservation Information</div><div class="modal-grid">
-            <div class="modal-item"><strong>Reservation Status</strong><span id="amenity-detail-reservation-status">—</span></div><div class="modal-item"><strong>Guest Name</strong><span id="amenity-detail-guest">—</span></div><div class="modal-item"><strong>Reservation ID</strong><span id="amenity-detail-reservation-id">—</span></div><div class="modal-item"><strong>Reservation Date</strong><span id="amenity-detail-reservation-date">—</span></div><div class="modal-item"><strong>Start Time</strong><span id="amenity-detail-start-time">—</span></div><div class="modal-item"><strong>End Time</strong><span id="amenity-detail-end-time">—</span></div><div class="modal-item"><strong>Number of Guests</strong><span id="amenity-detail-guests">—</span></div>
         </div><div class="modal-section-title">Management Information</div><div class="modal-grid">
             <div class="modal-item"><strong>Last Cleaned</strong><span id="amenity-detail-last-cleaned">—</span></div><div class="modal-item"><strong>Maintenance Status</strong><span id="amenity-detail-maintenance">—</span></div><div class="modal-item modal-notes"><strong>Notes</strong><span id="amenity-detail-notes">—</span></div>
         </div></div><div class="modal-actions"><button class="secondary-btn" type="button" data-close-modal="amenity-details-modal">Close</button></div>
@@ -581,8 +581,6 @@
         <div class="modal-head"><h4 class="modal-title" id="event-modal-title">Event Place Details</h4><button class="close-btn" type="button" data-close-modal="event-details-modal" aria-label="Close dialog">×</button></div>
         <div class="modal-body"><div class="modal-section-title">Venue Information</div><div class="modal-grid">
             <div class="modal-item"><strong>Event Place Name</strong><span id="event-detail-name">—</span></div><div class="modal-item"><strong>Event Place Type</strong><span id="event-detail-type">—</span></div><div class="modal-item"><strong>Location</strong><span id="event-detail-location">—</span></div><div class="modal-item"><strong>Capacity</strong><span id="event-detail-capacity">—</span></div><div class="modal-item"><strong>Size</strong><span id="event-detail-size">—</span></div><div class="modal-item"><strong>Current Status</strong><span id="event-detail-status">—</span></div><div class="modal-item modal-notes"><strong>Description</strong><span id="event-detail-description">—</span></div>
-        </div><div class="modal-section-title">Reservation Information</div><div class="modal-grid">
-            <div class="modal-item"><strong>Reservation Status</strong><span id="event-detail-reservation-status">—</span></div><div class="modal-item"><strong>Guest/Organizer Name</strong><span id="event-detail-guest">—</span></div><div class="modal-item"><strong>Reservation ID</strong><span id="event-detail-reservation-id">—</span></div><div class="modal-item"><strong>Event Date</strong><span id="event-detail-date">—</span></div><div class="modal-item"><strong>Start Time</strong><span id="event-detail-start-time">—</span></div><div class="modal-item"><strong>End Time</strong><span id="event-detail-end-time">—</span></div><div class="modal-item"><strong>Expected Number of Guests</strong><span id="event-detail-guests">—</span></div>
         </div><div class="modal-section-title">Management Information</div><div class="modal-grid">
             <div class="modal-item"><strong>Setup Status</strong><span id="event-detail-setup">—</span></div><div class="modal-item"><strong>Cleaning Status</strong><span id="event-detail-cleaning">—</span></div><div class="modal-item"><strong>Maintenance Status</strong><span id="event-detail-maintenance">—</span></div><div class="modal-item modal-notes"><strong>Notes</strong><span id="event-detail-notes">—</span></div>
         </div></div><div class="modal-actions"><button class="secondary-btn" type="button" data-close-modal="event-details-modal">Close</button></div>

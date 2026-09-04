@@ -160,6 +160,51 @@ class AdminReservationTest extends TestCase
         ]);
     }
 
+    public function test_public_booking_rejects_overlapping_room_reservation(): void
+    {
+        $room = Room::create([
+            'room_number' => '204',
+            'room_type' => 'Deluxe',
+            'price' => 2500.00,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'description' => 'Deluxe room',
+            'status' => 'available',
+        ]);
+
+        $booking = [
+            'room_id' => $room->id,
+            'guest_name' => 'First Guest',
+            'guest_email' => 'first@example.com',
+            'guest_phone' => '09191234570',
+            'check_in' => now()->addDay()->format('Y-m-d'),
+            'check_out' => now()->addDays(3)->format('Y-m-d'),
+            'total_amount' => 5000.00,
+            'payment_method' => 'Cash / Pay at Hotel',
+        ];
+
+        $this->post(route('reservation.store'), $booking)->assertRedirect(route('reservation'));
+
+        $response = $this->post(route('reservation.store'), [
+            ...$booking,
+            'guest_name' => 'Second Guest',
+            'guest_email' => 'second@example.com',
+            'guest_phone' => '09191234571',
+        ]);
+
+        $response->assertSessionHasErrors([
+            'room_id' => 'Sorry, this room is no longer available for your selected dates. Please choose another room.',
+        ]);
+        $this->assertDatabaseCount('room_reservations', 1);
+        $this->assertDatabaseHas('room_reservations', [
+            'guest_email' => 'first@example.com',
+            'room_id' => $room->id,
+        ]);
+        $this->assertDatabaseMissing('room_reservations', [
+            'guest_email' => 'second@example.com',
+        ]);
+    }
+
     public function test_public_booking_can_create_an_event_place_reservation(): void
     {
         $eventPlace = \App\Models\EventPlace::create([

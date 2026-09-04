@@ -19,6 +19,8 @@ use App\Models\DiningReservation;
 use App\Models\GuestRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class HomeController extends Controller
 {
@@ -92,9 +94,11 @@ class HomeController extends Controller
             ->get();
 
         $diningSchedules = DiningSchedule::where('status', 'Active')->orderBy('available_from')->get();
-        $diningTables = DiningTable::where('status', 'Available')->orderBy('table_no')->get();
+        $diningTables = DiningTable::whereIn('status', ['Available', 'Reserved'])->orderBy('table_no')->get();
+        $diningReservations = DiningReservation::whereNotIn('status', ['cancelled', 'completed'])
+            ->get(['dining_area', 'dining_schedule', 'check_in']);
 
-        return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningSchedules', 'diningTables'));
+        return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningSchedules', 'diningTables', 'diningReservations'));
     }
 
     private function normalizeIdList($value): ?string
@@ -317,10 +321,6 @@ class HomeController extends Controller
             return redirect()->route('reservation');
         }
 
-        if ($submissionToken) {
-            $request->session()->put('reservation_submission_' . $submissionToken, true);
-        }
-
         if (empty($validated['check_out_time']) && !empty($validated['check_in_time'])) {
             $validated['check_out_time'] = $validated['check_in_time'];
         }
@@ -333,12 +333,38 @@ class HomeController extends Controller
         if ($category === 'rooms') {
             $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
             $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
-                $reservation = RoomReservation::create(collect($validated)->only([
-                'room_id', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
-                'room_check_in_time', 'check_out', 'room_check_out_time',
-                'number_of_guests', 'status', 'total_amount', 'payment_method',
-                'payment_details', 'amount_paid', 'special_requests',
-            ])->all());
+            $reservation = DB::transaction(function () use ($validated) {
+                Room::query()->whereKey($validated['room_id'])->lockForUpdate()->firstOrFail();
+
+                $hasConflict = RoomReservation::query()
+                    ->where('room_id', $validated['room_id'])
+                    ->whereNotIn('status', ['cancelled', 'completed'])
+                    ->whereDate('check_in', '<', $validated['check_out'])
+                    ->whereDate('check_out', '>', $validated['check_in'])
+                    ->exists();
+
+                if (!$hasConflict) {
+                    $hasConflict = Reservation::query()
+                        ->where('room_id', $validated['room_id'])
+                        ->whereNotIn('status', ['cancelled', 'completed'])
+                        ->whereDate('check_in', '<', $validated['check_out'])
+                        ->whereDate('check_out', '>', $validated['check_in'])
+                        ->exists();
+                }
+
+                if ($hasConflict) {
+                    throw ValidationException::withMessages([
+                        'room_id' => 'Sorry, this room is no longer available for your selected dates. Please choose another room.',
+                    ]);
+                }
+
+                return RoomReservation::create(collect($validated)->only([
+                    'room_id', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
+                    'room_check_in_time', 'check_out', 'room_check_out_time',
+                    'number_of_guests', 'status', 'total_amount', 'payment_method',
+                    'payment_details', 'amount_paid', 'special_requests',
+                ])->all());
+            });
         } elseif ($category === 'event_place') {
             $validated['event_start_time'] = $validated['check_in_time'] ?? null;
             $validated['event_end_time'] = $validated['check_out_time'] ?? null;
@@ -385,6 +411,17 @@ class HomeController extends Controller
                 ]);
             }
         } else {
+            $tableNumber = (string) ($validated['dining_area'] ?? '');
+            $hasDiningConflict = DiningReservation::query()
+                ->activeForTableAndSchedule($tableNumber, $validated['check_in'], $validated['dining_schedule'])
+                ->exists();
+
+            if ($hasDiningConflict) {
+                throw ValidationException::withMessages([
+                    'dining_area' => 'This table is already reserved for the selected dining schedule. Please choose another table or schedule.',
+                ]);
+            }
+
             $reservation = DiningReservation::create(collect($validated)->only([
                 'guest_name', 'guest_email', 'guest_phone', 'dining_area',
                 'dining_schedule', 'check_in', 'check_out', 'quantity',
@@ -395,6 +432,10 @@ class HomeController extends Controller
 
         if (!empty($diningSelections)) {
             $reservation->diningItems()->createMany($diningSelections);
+        }
+
+        if ($submissionToken) {
+            $request->session()->put('reservation_submission_' . $submissionToken, true);
         }
 
         return redirect()->route('reservation')->with('success', 'Your reservation request has been submitted. We will contact you soon.');

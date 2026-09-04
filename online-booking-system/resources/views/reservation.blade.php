@@ -456,6 +456,12 @@
         </div>
     @endif
 
+    @if($errors->any())
+        <div class="reservation-alert" role="alert">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
     <div class="reservation-shell">
         <div class="reservation-left">
             <div class="reservation-tabs">
@@ -625,7 +631,7 @@
                         <select id="diningTable" class="field-input">
                             <option value="">Select available table</option>
                             @foreach($diningTables as $table)
-                                <option value="{{ $table->table_no }}">{{ $table->table_no }} - {{ $table->type }} ({{ $table->capacity }} seats{{ $table->location ? ', ' . $table->location : '' }})</option>
+                                <option value="{{ $table->table_no }}" data-base-status="{{ strtolower($table->status) }}">{{ $table->table_no }} - {{ $table->type }} ({{ $table->capacity }} seats{{ $table->location ? ', ' . $table->location : '' }})</option>
                             @endforeach
                         </select>
                     </div>
@@ -1040,6 +1046,7 @@
         const diningSchedule = document.getElementById('diningSchedule');
         const diningTable = document.getElementById('diningTable');
         const diningDate = document.getElementById('diningDate');
+        const diningReservations = @json($diningReservations ?? []);
         const paymentMethodChoices = document.querySelectorAll('.payment-method-option');
         const confirmationModal = document.getElementById('confirmationModal');
         const receiptModal = document.getElementById('receiptModal');
@@ -1508,6 +1515,7 @@
         });
 
         diningSchedule.addEventListener('change', function () {
+            syncDiningTableAvailability();
             selectedDining.forEach(item => {
                 item.schedule = this.value;
             });
@@ -1519,6 +1527,38 @@
             });
             updateSummary();
         });
+        diningDate.addEventListener('change', syncDiningTableAvailability);
+
+        function syncDiningTableAvailability() {
+            const selectedDate = diningDate.value;
+            const selectedSchedule = diningSchedule.value;
+
+            [...diningTable.options].forEach(option => {
+                if (!option.value) {
+                    return;
+                }
+
+                const isReserved = diningReservations.some(reservation => {
+                    const tables = String(reservation.dining_area || '').split(',').map(value => value.trim());
+                    const schedules = String(reservation.dining_schedule || '').split(',').map(value => value.trim());
+                    return reservation.check_in === selectedDate
+                        && tables.includes(option.value)
+                        && schedules.includes(selectedSchedule);
+                });
+
+                option.disabled = isReserved;
+                option.textContent = option.textContent.replace(/ \(Reserved\)$/, '');
+                if (isReserved) {
+                    option.textContent += ' (Reserved)';
+                }
+            });
+
+            if (diningTable.selectedOptions[0]?.disabled) {
+                diningTable.value = '';
+            }
+        }
+
+        syncDiningTableAvailability();
 
         document.querySelectorAll('.amenity-quantity, .amenity-date, .amenity-time').forEach(input => {
             input.addEventListener('change', function () {

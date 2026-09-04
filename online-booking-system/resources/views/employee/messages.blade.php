@@ -2,6 +2,33 @@
 
 @section('pageTitle', 'Message Management')
 @section('content')
+<style>
+    .employee-template-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+    }
+
+    .employee-template-btn {
+        overflow: hidden;
+        border: 1px solid #e5eaf0;
+        border-radius: 0.375rem;
+        background: #f8fafc;
+        padding: 0.5rem 0.625rem;
+        color: #475569;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        transition: 0.2s;
+    }
+
+    .employee-template-btn:hover {
+        border-color: #ff6b35;
+        background: #fff1eb;
+        color: #ff6b35;
+    }
+</style>
 <div class="space-y-6">
     <!-- Stats Cards -->
     <div class="grid grid-cols-3 gap-4">
@@ -125,7 +152,7 @@
                         <select name="recipient" required class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <option value="">Select a guest...</option>
                             @forelse($messages as $message)
-                                <option value="{{ $message->id }}">{{ $message->customer_name }}</option>
+                                <option value="{{ $message->id }}">{{ $message->customer_name }} ({{ $message->customer_email }})</option>
                             @empty
                                 <option disabled>No guests available</option>
                             @endforelse
@@ -135,17 +162,17 @@
 
                 <div>
                     <label class="mb-2 block text-xs font-semibold text-gray-600 uppercase">Quick Templates</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" onclick="document.querySelector('textarea[name=message]').value = 'Assisting Soon'" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50">Assisting Soon</button>
-                        <button type="button" onclick="document.querySelector('textarea[name=message]').value = 'Completed'" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50">Completed</button>
-                        <button type="button" onclick="document.querySelector('textarea[name=message]').value = 'Front Desk'" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50">Front Desk</button>
-                        <button type="button" onclick="document.querySelector('textarea[name=message]').value = 'Thank You'" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50">Thank You</button>
+                    <div class="employee-template-buttons">
+                        <button type="button" class="employee-template-btn" onclick="insertEmployeeTemplate('We will assist you shortly.')">Assisting Soon</button>
+                        <button type="button" class="employee-template-btn" onclick="insertEmployeeTemplate('Your request has been completed.')">Completed</button>
+                        <button type="button" class="employee-template-btn" onclick="insertEmployeeTemplate('Please contact front desk for assistance.')">Front Desk</button>
+                        <button type="button" class="employee-template-btn" onclick="insertEmployeeTemplate('Thank you for your message.')">Thank You</button>
                     </div>
                 </div>
 
                 <div>
                     <label class="mb-2 block text-xs font-semibold text-gray-600 uppercase">Message</label>
-                    <textarea name="message" rows="6" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Type your message here..."></textarea>
+                    <textarea id="employeeReplyMessage" name="message" rows="6" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Type your message here..."></textarea>
                 </div>
 
                 <div class="flex gap-2">
@@ -158,4 +185,11 @@
         </div>
     </div>
 </div>
+<script>
+    function insertEmployeeTemplate(text) {
+        const textarea = document.getElementById('employeeReplyMessage');
+        textarea.value = textarea.value ? textarea.value + '\n\n' + text : text;
+        textarea.focus();
+    }
+</script>
 @endsection

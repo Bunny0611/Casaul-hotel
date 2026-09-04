@@ -40,4 +40,42 @@ class DiningReservation extends Model
     {
         return $this->hasMany(DiningReservationItem::class);
     }
+
+    public function scopeActiveForTableAndSchedule($query, string $tableNumber, $date, string $schedule)
+    {
+        $tableNumbers = collect(explode(',', $tableNumber))
+            ->map(fn ($value) => trim($value))
+            ->filter()
+            ->unique()
+            ->values();
+        $schedules = collect(explode(',', $schedule))
+            ->map(fn ($value) => trim($value))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $query
+            ->where(function ($tableQuery) use ($tableNumbers) {
+                $tableNumbers->each(function ($number) use ($tableQuery) {
+                    $tableQuery->orWhere(function ($numberQuery) use ($number) {
+                        $numberQuery->where('dining_area', $number)
+                            ->orWhere('dining_area', 'like', $number . ',%')
+                            ->orWhere('dining_area', 'like', '%,' . $number)
+                            ->orWhere('dining_area', 'like', '%,' . $number . ',%');
+                    });
+                });
+            })
+            ->whereDate('check_in', $date)
+            ->where(function ($scheduleQuery) use ($schedules) {
+                $schedules->each(function ($period) use ($scheduleQuery) {
+                    $scheduleQuery->orWhere(function ($periodQuery) use ($period) {
+                        $periodQuery->where('dining_schedule', $period)
+                            ->orWhere('dining_schedule', 'like', $period . ',%')
+                            ->orWhere('dining_schedule', 'like', '%,' . $period)
+                            ->orWhere('dining_schedule', 'like', '%,' . $period . ',%');
+                    });
+                });
+            })
+            ->whereNotIn('status', ['cancelled', 'completed']);
+    }
 }
