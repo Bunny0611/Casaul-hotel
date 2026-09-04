@@ -518,19 +518,15 @@ class AdminController extends Controller
 
     public function reservations()
     {
-        $allReservations = Reservation::with('room', 'amenity', 'eventPlace', 'diningMenu')->latest()->get();
-        
-        // Separate reservations by category
-        $roomReservations = $allReservations->where('category', 'room')->values();
-        $amenityReservations = $allReservations->where('category', 'amenity')->values();
-        $eventPlaceReservations = $allReservations->where('category', 'event_place')->values();
-        $diningReservations = $allReservations->where('category', 'dining')->values();
+        $roomReservations = RoomReservation::with('room')->latest()->get();
+        $amenityReservations = AmenityReservation::with('amenity')->latest()->get();
+        $eventPlaceReservations = EventReservation::with('eventPlace')->latest()->get();
+        $diningReservations = DiningReservation::latest()->get();
         
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
         $amenities = Amenity::orderBy('name')->get();
         $eventPlaces = EventPlace::orderBy('name')->get();
-        $diningTables = DiningTable::orderBy('table_no')->get();
         $diningMenus = DiningMenu::orderBy('name')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $diningTables = DiningTable::orderBy('table_no')->get();
@@ -539,7 +535,7 @@ class AdminController extends Controller
         $reservations = $roomReservations;
 
         return request()->routeIs('employee.reservation')
-            ? view('employee.reservation', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'))
+            ? view('employee.reservation', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningTables', 'diningMenus', 'diningSchedules'))
             : view('admin.reservations', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'));
     }
 
@@ -838,7 +834,6 @@ class AdminController extends Controller
 
     public function updateReservation(Request $request, $id)
     {
-        $reservation = Reservation::findOrFail($id);
         $diningSelections = $this->normalizeDiningSelections($request);
 
         $diningIds = $request->input('dining_id');
@@ -883,6 +878,13 @@ class AdminController extends Controller
             'dining_id' => ['nullable', 'string'],
         ]);
 
+        $reservation = match ($validated['category']) {
+            'rooms' => RoomReservation::findOrFail($id),
+            'event_place' => EventReservation::findOrFail($id),
+            'amenities' => AmenityReservation::findOrFail($id),
+            'dining' => DiningReservation::findOrFail($id),
+        };
+
         if (!empty($validated['dining_id'])) {
             $diningIdList = collect(explode(',', $validated['dining_id']))
                 ->map(fn ($id) => trim((string) $id))
@@ -894,7 +896,19 @@ class AdminController extends Controller
             $validated['dining_id'] = implode(',', $diningIdList);
         }
 
-        $reservation->update($validated);
+        $attributes = collect($validated)->except('category')->all();
+        if ($validated['category'] === 'rooms') {
+            $attributes['room_check_in_time'] = $validated['check_in_time'] ?? null;
+            $attributes['room_check_out_time'] = $validated['check_out_time'] ?? null;
+        } elseif ($validated['category'] === 'event_place') {
+            $attributes['event_start_time'] = $validated['check_in_time'] ?? null;
+            $attributes['event_end_time'] = $validated['check_out_time'] ?? null;
+        } elseif ($validated['category'] === 'amenities') {
+            $attributes['amenity_start_time'] = $validated['check_in_time'] ?? null;
+            $attributes['amenity_end_time'] = $validated['check_out_time'] ?? null;
+        }
+
+        $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
 
         if (!empty($diningSelections)) {
             $reservation->diningItems()->delete();

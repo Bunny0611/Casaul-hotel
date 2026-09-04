@@ -40,4 +40,14 @@ class RoomReservation extends Model
     {
         return $this->morphMany(Payment::class, 'paymentable');
     }
+
+    public function getCheckInTimeAttribute($value)
+    {
+        return $this->attributes['room_check_in_time'] ?? $value;
+    }
+
+    public function getCheckOutTimeAttribute($value)
+    {
+        return $this->attributes['room_check_out_time'] ?? $value;
+    }
 }

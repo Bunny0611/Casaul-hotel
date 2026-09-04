@@ -485,7 +485,8 @@
                 <div class="reservation-card-grid">
                     @foreach($rooms as $room)
                         @php($extraGuestPrice = str_contains(strtolower($room->room_type), 'standard') ? 500 : 650)
-                        <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-extra-guest-price="{{ $extraGuestPrice }}">
+                        @php($roomCapacity = max(1, (int) ($room->capacity ?? 2)))
+                        <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}">
                             <img src="{{ $room->image ? asset(str_starts_with($room->image, 'rooms/') ? 'storage/' . $room->image : $room->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $room->room_type }}</h4>
@@ -497,10 +498,9 @@
                                 <label class="field-label" for="extraGuests-{{ $room->id }}">Add a Person</label>
                                 <select id="extraGuests-{{ $room->id }}" class="field-input room-extra-guests">
                                     <option value="0" selected>No extra persons</option>
-                                    <option value="1">1 Person (₱{{ number_format($extraGuestPrice, 0) }})</option>
-                                    <option value="2">2 Persons (₱{{ number_format($extraGuestPrice * 2, 0) }})</option>
-                                    <option value="3">3 Persons (₱{{ number_format($extraGuestPrice * 3, 0) }})</option>
-                                    <option value="4">4 Persons (₱{{ number_format($extraGuestPrice * 4, 0) }})</option>
+                                    @for($extraGuests = 1; $extraGuests <= max(0, $roomCapacity - 2); $extraGuests++)
+                                        <option value="{{ $extraGuests }}">{{ $extraGuests }} {{ $extraGuests === 1 ? 'Person' : 'Persons' }} (₱{{ number_format($extraGuestPrice * $extraGuests, 0) }})</option>
+                                    @endfor
                                 </select>
                                 <div class="reservation-card-footer">
                                     <span class="price">₱{{ number_format($room->price, 0) }}/night</span>
@@ -1892,7 +1892,7 @@
             const amountPaidInput = document.createElement('input');
             amountPaidInput.type = 'hidden';
             amountPaidInput.name = 'amount_paid';
-            amountPaidInput.value = selectedPaymentMethod === 'Cash / Pay at Hotel' ? Number(reservationTotalAmount.value || 0) : (
+            amountPaidInput.value = selectedPaymentMethod === 'Cash / Pay at Hotel' ? 0 : (
                 selectedPaymentMethod === 'GCash' ? getPaymentAmountValue('gcashPaymentAmount') :
                 selectedPaymentMethod === 'Maya' ? getPaymentAmountValue('mayaPaymentAmount') :
                 selectedPaymentMethod === 'Credit / Debit Card' ? getPaymentAmountValue('cardPaymentAmount') :

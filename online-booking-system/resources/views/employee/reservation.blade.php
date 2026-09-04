@@ -1446,7 +1446,10 @@
         const form = document.getElementById('addReservationForm');
         const fields = form.elements;
         const timeValue = value => value ? String(value).slice(0, 5) : '';
-        const category = reservation.category || 'rooms';
+        const category = reservation.category
+            || (reservation.event_place_id ? 'event_place'
+            : (reservation.amenity_id ? 'amenities'
+            : (reservation.dining_area || reservation.dining_id ? 'dining' : 'rooms')));
 
         fields.guest_name.value = reservation.guest_name || '';
         fields.guest_email.value = reservation.guest_email || '';
@@ -1463,27 +1466,26 @@
             document.getElementById('eventDate').value = reservation.check_in || '';
             document.querySelector('[data-event-date-end]').value = reservation.check_out || reservation.check_in || '';
             fields.check_in.value = reservation.check_in || '';
-            fields.check_in_time.value = timeValue(reservation.check_in_time);
+            fields.check_in_time.value = timeValue(reservation.event_start_time || reservation.check_in_time);
             fields.check_out.value = reservation.check_out || '';
-            fields.check_out_time.value = timeValue(reservation.check_out_time);
+            fields.check_out_time.value = timeValue(reservation.event_end_time || reservation.check_out_time);
         } else if (category === 'dining') {
             document.getElementById('diningDate').value = reservation.check_in || '';
-            document.getElementById('diningTime').value = timeValue(reservation.check_in_time);
-            document.querySelector('[data-dining-date-end]').value = reservation.check_out || reservation.check_in || '';
             document.querySelector('[data-dining-time-end]').value = timeValue(reservation.check_out_time || reservation.check_in_time);
+            document.querySelector('[data-dining-date-end]').value = reservation.check_out || reservation.check_in || '';
             fields.check_in.value = reservation.check_in || '';
             fields.check_in_time.value = timeValue(reservation.check_in_time);
             fields.check_out.value = reservation.check_out || '';
             fields.check_out_time.value = timeValue(reservation.check_out_time);
         } else if (category === 'amenities') {
             document.getElementById('amenityDate').value = reservation.check_in || '';
-            document.getElementById('amenityStartTime').value = timeValue(reservation.check_in_time);
-            document.getElementById('amenityEndTime').value = timeValue(reservation.check_out_time);
+            document.getElementById('amenityStartTime').value = timeValue(reservation.amenity_start_time || reservation.check_in_time);
+            document.getElementById('amenityEndTime').value = timeValue(reservation.amenity_end_time || reservation.check_out_time);
             document.getElementById('amenityEndDate').value = reservation.check_out || reservation.check_in || '';
             fields.check_in.value = reservation.check_in || '';
-            fields.check_in_time.value = timeValue(reservation.check_in_time);
+            fields.check_in_time.value = timeValue(reservation.room_check_in_time || reservation.check_in_time);
             fields.check_out.value = reservation.check_out || '';
-            fields.check_out_time.value = timeValue(reservation.check_out_time);
+            fields.check_out_time.value = timeValue(reservation.room_check_out_time || reservation.check_out_time);
         } else {
             fields.check_in.value = reservation.check_in || '';
             fields.check_in_time.value = timeValue(reservation.check_in_time);
@@ -1492,7 +1494,6 @@
         }
 
         fields.total_amount.value = reservation.total_amount || 0;
-        fields.amount_paid.value = reservation.amount_paid ?? 0;
         fields.special_requests.value = reservation.special_requests || '';
         document.getElementById('reservationCategory').value = category;
         document.querySelector(`[data-reservation-tab="${category}"]`)?.click();

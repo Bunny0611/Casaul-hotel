@@ -127,4 +127,36 @@ class AdminReservationTest extends TestCase
         $this->assertNotNull($reservation);
         $this->assertSame(123.0, (float) $reservation->amount_paid);
     }
+
+    public function test_public_booking_marks_pay_at_hotel_as_unpaid(): void
+    {
+        $room = Room::create([
+            'room_number' => '203',
+            'room_type' => 'Deluxe',
+            'price' => 2500.00,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'description' => 'Deluxe room',
+            'status' => 'available',
+        ]);
+
+        $response = $this->post(route('reservation.store'), [
+            'room_id' => $room->id,
+            'guest_name' => 'Pay Later Guest',
+            'guest_email' => 'paylater@example.com',
+            'guest_phone' => '09191234568',
+            'check_in' => now()->addDay()->format('Y-m-d'),
+            'check_out' => now()->addDays(2)->format('Y-m-d'),
+            'total_amount' => 5000.00,
+            'payment_method' => 'Cash / Pay at Hotel',
+            'amount_paid' => 5000.00,
+        ]);
+
+        $response->assertRedirect(route('reservation'));
+        $this->assertDatabaseHas('room_reservations', [
+            'guest_email' => 'paylater@example.com',
+            'payment_method' => 'Cash / Pay at Hotel',
+            'amount_paid' => 0,
+        ]);
+    }
 }
