@@ -68,7 +68,7 @@
             <p style="margin: 0; color: #4f4f4f; line-height: 1.7;">Choose your room, amenities, event package, or dining plan in one seamless booking experience.</p>
         </div>
         <div style="margin-top: 1.75rem; display: flex; justify-content: flex-start;">
-            <a href="{{ auth()->check() ? route('reservation') : '#guest-auth-modal' }}" class="btn{{ auth()->check() ? '' : ' js-auth-trigger' }}"{{ auth()->check() ? '' : ' data-auth-trigger' }} style="padding: 0.95rem 1.8rem; border-radius: 999px; background: #3f51b5; color: #fff; text-decoration: none; box-shadow: 0 14px 30px rgba(63,81,181,0.18); transition: transform 0.2s ease;">
+            <a href="{{ auth('guest')->check() ? route('reservation') : '#guest-auth-modal' }}" class="btn{{ auth('guest')->check() ? '' : ' js-auth-trigger' }}"{{ auth('guest')->check() ? '' : ' data-auth-trigger' }} style="padding: 0.95rem 1.8rem; border-radius: 999px; background: #3f51b5; color: #fff; text-decoration: none; box-shadow: 0 14px 30px rgba(63,81,181,0.18); transition: transform 0.2s ease;">
                 <span>Make Reservation</span>
             </a>
         </div>

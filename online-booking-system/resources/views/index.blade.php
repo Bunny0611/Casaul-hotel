@@ -5,7 +5,7 @@
 @include('partials.section-hero', [
     'title' => 'CASAUL HOTEL',
     'subtitle' => 'Experience comfort, elegance, and unforgettable hospitality.',
-    'cta' => ['href' => route('reservation'), 'label' => 'Book Now'],
+    'cta' => ['href' => route('reservation'), 'label' => 'Book Now', 'requiresGuestAuth' => true],
     'backgroundImage' => 'image/HM.jpg',
 ])
 

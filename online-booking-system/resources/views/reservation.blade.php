@@ -966,7 +966,7 @@
     </div>
 </div>
 
-<form id="reservationForm" action="{{ route('reservation.store') }}" method="POST" style="display:none;">
+<form id="reservationForm" action="{{ route('reservation.store', [], false) }}" method="POST" style="display:none;">
     @csrf
     <input type="hidden" name="submission_token" value="{{ \Illuminate\Support\Str::uuid() }}">
     <input type="hidden" name="room_id" id="reservationRoomId">
@@ -1039,6 +1039,7 @@
         const reservationEventGuests = document.getElementById('reservationEventGuests');
         const diningSchedule = document.getElementById('diningSchedule');
         const diningTable = document.getElementById('diningTable');
+        const diningDate = document.getElementById('diningDate');
         const paymentMethodChoices = document.querySelectorAll('.payment-method-option');
         const confirmationModal = document.getElementById('confirmationModal');
         const receiptModal = document.getElementById('receiptModal');
@@ -1270,14 +1271,15 @@
             const selectedDiningTitles = selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ');
             const selectedDiningSchedule = [...new Set(selectedDining.map(item => item.schedule).filter(Boolean))].join(', ');
             const selectedDiningTable = [...new Set(selectedDining.map(item => item.table).filter(Boolean))].join(', ');
-            const selectedDiningDate = [...new Set(selectedDining.map(item => item.date).filter(Boolean).map(date => formatDisplayDate(date)))].join(', ');
+            const selectedDiningDateValue = diningDate?.value || selectedDining[0]?.date || '';
+            const selectedDiningDate = selectedDiningDateValue ? formatDisplayDate(selectedDiningDateValue) : '';
             const selectedEventGuests = selectedEvent.reduce((sum, item) => sum + (Number(item.guests || 0)), 0);
             const selectedDiningQuantity = selectedDining.reduce((sum, item) => sum + (Number(item.quantity || 1)), 0);
             const selectedEventDate = selectedEvent[0]?.date || '';
             const selectedEventStartTime = selectedEvent[0]?.startTime || '';
             const selectedEventEndTime = selectedEvent[0]?.endTime || '';
-            const bookingDate = selectedRoom ? checkIn.value : selectedEventDate;
-            const bookingEndDate = selectedRoom ? checkOut.value : selectedEventDate;
+            const bookingDate = selectedRoom ? checkIn.value : (selectedEventDate || selectedDiningDateValue);
+            const bookingEndDate = selectedRoom ? checkOut.value : (selectedEventDate || selectedDiningDateValue);
             const bookingStartTime = selectedRoom ? (arrivalTime.value || '') : selectedEventStartTime;
             const bookingEndTime = selectedRoom ? '' : selectedEventEndTime;
 
@@ -1411,7 +1413,7 @@
                 quantity: Number(item.quantity || 1),
                 dining_area: item.table || null,
                 dining_schedule: item.schedule || null,
-                dining_date: item.date || null,
+                dining_date: item.date || diningDate?.value || null,
             })));
             reservationDiningArea.value = selectedDining.map(item => item.table).filter(Boolean).join(',');
             reservationDiningSchedule.value = selectedDining.map(item => item.schedule).filter(Boolean).join(',');
@@ -1429,6 +1431,7 @@
 
         checkIn.addEventListener('change', updateSummary);
         checkOut.addEventListener('change', updateSummary);
+        [diningSchedule, diningTable, diningDate].forEach(field => field?.addEventListener('change', updateSummary));
         paymentMethodChoices.forEach(choice => choice.addEventListener('click', function () {
             selectedPaymentMethod = this.dataset.paymentMethod;
             paymentMethodChoices.forEach(button => button.classList.toggle('selected', button === this));
@@ -1769,6 +1772,10 @@
 
             if (selectedRoom && (!checkIn.value || !checkOut.value)) {
                 alert('Please select check-in and check-out dates.');
+                return;
+            }
+            if (selectedDining.length && !diningDate?.value && !selectedDining[0]?.date) {
+                alert('Please select a dining date.');
                 return;
             }
             openConfirmationModal();
