@@ -456,6 +456,12 @@
         </div>
     @endif
 
+    @if($errors->any())
+        <div class="reservation-alert" role="alert">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
     <div class="reservation-shell">
         <div class="reservation-left">
             <div class="reservation-tabs">

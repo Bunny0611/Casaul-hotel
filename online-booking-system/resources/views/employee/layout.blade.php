@@ -259,10 +259,13 @@
             </nav>
 
             <div class="mt-auto px-6 pb-6 pt-8">
-                <a href="{{ route('home') }}" class="flex items-center px-5 py-3 text-gray-300 transition-colors hover:text-white">
-                    <i class="fas fa-sign-out-alt w-6"></i>
-                    <span>Logout</span>
-                </a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="flex w-full items-center px-5 py-3 text-gray-300 transition-colors hover:text-white">
+                        <i class="fas fa-sign-out-alt w-6"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
             </div>
         </aside>
 

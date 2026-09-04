@@ -13,7 +13,6 @@ use App\Models\Room;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
 use App\Models\DiningMenu;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // --- Public Routes ---
@@ -47,9 +46,6 @@ Route::middleware(['auth:guest', 'role:guest'])->group(function () {
     Route::patch('/guest/reservations/{reservation}/cancel', [HomeController::class, 'cancelReservation'])->name('guest.reservations.cancel');
     Route::post('/guest/requests', [HomeController::class, 'storeGuestRequest'])->name('guest.requests.store');
 });
-
-// --- Admin Logout ---
-Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
 // --- Employee Portal ---
 Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
@@ -165,13 +161,8 @@ Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:
     Route::get('/cleaning-history', [HousekeepingController::class, 'cleaningHistory'])->name('cleaning-history');
 });
 
-// --- Logout (fallback route) ---
-Route::post('/logout', function () {
-    Auth::logout();
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
-    return redirect('/');
-})->name('logout');
+// --- Logout ---
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('auth:guest')->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');

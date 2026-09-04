@@ -19,6 +19,8 @@ use App\Models\DiningReservation;
 use App\Models\GuestRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class HomeController extends Controller
 {
@@ -317,10 +319,6 @@ class HomeController extends Controller
             return redirect()->route('reservation');
         }
 
-        if ($submissionToken) {
-            $request->session()->put('reservation_submission_' . $submissionToken, true);
-        }
-
         if (empty($validated['check_out_time']) && !empty($validated['check_in_time'])) {
             $validated['check_out_time'] = $validated['check_in_time'];
         }
@@ -333,12 +331,38 @@ class HomeController extends Controller
         if ($category === 'rooms') {
             $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
             $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
-                $reservation = RoomReservation::create(collect($validated)->only([
-                'room_id', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
-                'room_check_in_time', 'check_out', 'room_check_out_time',
-                'number_of_guests', 'status', 'total_amount', 'payment_method',
-                'payment_details', 'amount_paid', 'special_requests',
-            ])->all());
+            $reservation = DB::transaction(function () use ($validated) {
+                Room::query()->whereKey($validated['room_id'])->lockForUpdate()->firstOrFail();
+
+                $hasConflict = RoomReservation::query()
+                    ->where('room_id', $validated['room_id'])
+                    ->whereNotIn('status', ['cancelled', 'completed'])
+                    ->whereDate('check_in', '<', $validated['check_out'])
+                    ->whereDate('check_out', '>', $validated['check_in'])
+                    ->exists();
+
+                if (!$hasConflict) {
+                    $hasConflict = Reservation::query()
+                        ->where('room_id', $validated['room_id'])
+                        ->whereNotIn('status', ['cancelled', 'completed'])
+                        ->whereDate('check_in', '<', $validated['check_out'])
+                        ->whereDate('check_out', '>', $validated['check_in'])
+                        ->exists();
+                }
+
+                if ($hasConflict) {
+                    throw ValidationException::withMessages([
+                        'room_id' => 'Sorry, this room is no longer available for your selected dates. Please choose another room.',
+                    ]);
+                }
+
+                return RoomReservation::create(collect($validated)->only([
+                    'room_id', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
+                    'room_check_in_time', 'check_out', 'room_check_out_time',
+                    'number_of_guests', 'status', 'total_amount', 'payment_method',
+                    'payment_details', 'amount_paid', 'special_requests',
+                ])->all());
+            });
         } elseif ($category === 'event_place') {
             $validated['event_start_time'] = $validated['check_in_time'] ?? null;
             $validated['event_end_time'] = $validated['check_out_time'] ?? null;
@@ -395,6 +419,10 @@ class HomeController extends Controller
 
         if (!empty($diningSelections)) {
             $reservation->diningItems()->createMany($diningSelections);
+        }
+
+        if ($submissionToken) {
+            $request->session()->put('reservation_submission_' . $submissionToken, true);
         }
 
         return redirect()->route('reservation')->with('success', 'Your reservation request has been submitted. We will contact you soon.');
