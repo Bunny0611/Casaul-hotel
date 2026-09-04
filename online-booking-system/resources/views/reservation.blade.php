@@ -498,7 +498,7 @@
                                 <label class="field-label" for="extraGuests-{{ $room->id }}">Add a Person</label>
                                 <select id="extraGuests-{{ $room->id }}" class="field-input room-extra-guests">
                                     <option value="0" selected>No extra persons</option>
-                                    @for($extraGuests = 1; $extraGuests <= max(0, $roomCapacity - 2); $extraGuests++)
+                                    @for($extraGuests = 1; $extraGuests <= 4; $extraGuests++)
                                         <option value="{{ $extraGuests }}">{{ $extraGuests }} {{ $extraGuests === 1 ? 'Person' : 'Persons' }} (₱{{ number_format($extraGuestPrice * $extraGuests, 0) }})</option>
                                     @endfor
                                 </select>
@@ -894,7 +894,7 @@
             </div>
 
             <div class="confirmation-actions" style="display:flex; gap:12px; justify-content:flex-end;">
-                <button type="button" id="modalConfirmBtn" class="confirm-submit-btn" style="border-radius:999px; padding:14px 26px; font-weight:700; border:none; cursor:pointer; background:#dc2626; color:#ffffff;">Confirm Reservation</button>
+                <button type="button" id="modalConfirmBtn" class="confirm-submit-btn" style="border-radius:999px; padding:14px 26px; font-weight:700; border:none; cursor:pointer; background:#dc2626; color:#ffffff;">Continue to Submit</button>
                 <button type="button" id="modalCancelBtn" class="confirm-cancel-btn" style="border-radius:999px; padding:14px 26px; font-weight:700; border:none; cursor:pointer; background:#f3f4f6; color:#111827;">Back to Select</button>
             </div>
         </div>
@@ -1087,6 +1087,7 @@
 
         let selectedRoom = null;
         let roomPrice = 0;
+        let selectedRoomCapacity = 2;
         let selectedAmenities = [];
         let selectedEvent = [];
         let selectedDining = [];
@@ -1236,6 +1237,13 @@
             const selectedDiningDate = [...new Set(selectedDining.map(item => item.date).filter(Boolean).map(date => formatDisplayDate(date)))].join(', ');
             const selectedEventGuests = selectedEvent.reduce((sum, item) => sum + (Number(item.guests || 0)), 0);
             const selectedDiningQuantity = selectedDining.reduce((sum, item) => sum + (Number(item.quantity || 1)), 0);
+            const selectedEventDate = selectedEvent[0]?.date || '';
+            const selectedEventStartTime = selectedEvent[0]?.startTime || '';
+            const selectedEventEndTime = selectedEvent[0]?.endTime || '';
+            const bookingDate = selectedRoom ? checkIn.value : selectedEventDate;
+            const bookingEndDate = selectedRoom ? checkOut.value : selectedEventDate;
+            const bookingStartTime = selectedRoom ? (arrivalTime.value || '') : selectedEventStartTime;
+            const bookingEndTime = selectedRoom ? '' : selectedEventEndTime;
 
             summaryRoom.textContent = selectedRoom ? selectedRoom : 'None';
             summaryRoomDetails.textContent = selectedRoom ? `${formatDisplayDate(checkIn.value)} – ${formatDisplayDate(checkOut.value)}${selectedExtraGuests > 0 ? ` • ${selectedExtraGuests} Extra Person(s)` : ''}` : 'Choose a room and dates';
@@ -1255,7 +1263,7 @@
             detailsCheckIn.textContent = hasRoomSelection ? formatDisplayDate(checkIn.value) : '—';
             detailsArrivalTime.textContent = hasRoomSelection ? formatDisplayTime(arrivalTime.value) : '—';
             detailsCheckOut.textContent = hasRoomSelection ? formatDisplayDate(checkOut.value) : '—';
-            detailsRoomGuests.textContent = hasRoomSelection ? `${selectedExtraGuests + 2} Guests` : '—';
+            detailsRoomGuests.textContent = hasRoomSelection ? `${selectedRoomCapacity + selectedExtraGuests} Guests` : '—';
             detailsAmenitiesTitle.textContent = selectedAmenities.length ? selectedAmenities.map(item => item.title).join(', ') : 'None';
             detailsAmenitiesSummary.textContent = selectedAmenities.length
                 ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
@@ -1276,7 +1284,7 @@
             confirmArrivingOn.textContent = selectedRoom ? formatDisplayDate(checkIn.value) : '—';
             confirmArrivalTime.textContent = selectedRoom ? formatDisplayTime(arrivalTime.value) : '—';
             confirmCheckOut.textContent = selectedRoom ? formatDisplayDate(checkOut.value) : '—';
-            confirmGuests.textContent = selectedRoom ? `${selectedExtraGuests + 2} Guests` : '—';
+            confirmGuests.textContent = selectedRoom ? `${selectedRoomCapacity + selectedExtraGuests} Guests` : '—';
             confirmStatus.textContent = 'Reserved';
             confirmPaymentMethod.textContent = selectedPaymentMethod;
             const paymentDetailRows = getPaymentDetailRows();
@@ -1329,10 +1337,10 @@
 
             summaryTotal.textContent = `₱${total.toLocaleString()}`;
             reservationTotalAmount.value = total;
-            reservationCheckIn.value = checkIn.value;
-            reservationCheckOut.value = checkOut.value;
-            reservationCheckInTime.value = arrivalTime.value || '';
-            reservationCheckOutTime.value = '';
+            reservationCheckIn.value = bookingDate;
+            reservationCheckOut.value = bookingEndDate;
+            reservationCheckInTime.value = bookingStartTime;
+            reservationCheckOutTime.value = bookingEndTime;
             reservationDiningId.value = selectedDining.map(item => item.id).filter(Boolean).join(',');
             reservationDiningItems.value = JSON.stringify(selectedDining.map(item => ({
                 dining_id: item.id,
@@ -1348,11 +1356,11 @@
             reservationEventPlaceId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
             reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
             reservationEventGuests.value = selectedRoom
-                ? selectedExtraGuests + 2
+                ? selectedRoomCapacity + selectedExtraGuests
                 : (selectedEventGuests || '');
             reservationTotalAmount.value = total;
-            reservationCheckIn.value = checkIn.value;
-            reservationCheckOut.value = checkOut.value;
+            reservationCheckIn.value = bookingDate;
+            reservationCheckOut.value = bookingEndDate;
         }
 
         checkIn.addEventListener('change', updateSummary);
@@ -1503,6 +1511,7 @@
                     if (isSameRoomSelected) {
                         selectedRoom = null;
                         roomPrice = 0;
+                        selectedRoomCapacity = 2;
                         selectedAmenities = [];
                         reservationRoomId.value = '';
                         selectedExtraGuests = 0;
@@ -1520,6 +1529,7 @@
                     } else {
                         selectedRoom = title;
                         roomPrice = price;
+                        selectedRoomCapacity = Number(card.dataset.roomCapacity || 2);
                         selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice || 650);
                         selectedExtraGuests = Number(card.querySelector('.room-extra-guests')?.value || 0);
                         reservationRoomId.value = card.dataset.roomId || '';
@@ -1682,6 +1692,7 @@
             if (reservationPage.classList.contains('confirm-step')) {
                 reservationPage.classList.remove('confirm-step');
                 modalConfirmBtn.textContent = 'Confirm Reservation';
+                modalConfirmBtn.disabled = false;
                 modalCancelBtn.textContent = 'Back to Select';
                 confirmBtn.hidden = false;
                 seeReceiptBtn.hidden = true;

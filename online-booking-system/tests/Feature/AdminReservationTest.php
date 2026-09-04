@@ -159,4 +159,42 @@ class AdminReservationTest extends TestCase
             'amount_paid' => 0,
         ]);
     }
+
+    public function test_public_booking_can_create_an_event_place_reservation(): void
+    {
+        $eventPlace = \App\Models\EventPlace::create([
+            'name' => 'Garden Hall',
+            'event_type' => 'Wedding',
+            'description' => 'Outdoor venue',
+            'price' => 25000,
+            'pricing_basis' => 'Per Event',
+            'capacity' => 80,
+            'location' => 'Garden',
+            'status' => 'available',
+        ]);
+
+        $eventDate = now()->addDay()->format('Y-m-d');
+        $response = $this->post(route('reservation.store'), [
+            'category' => 'event_place',
+            'event_place_id' => $eventPlace->id,
+            'event_type' => 'Wedding',
+            'guest_name' => 'Event Guest',
+            'guest_email' => 'event@example.com',
+            'guest_phone' => '09191234569',
+            'check_in' => $eventDate,
+            'check_out' => $eventDate,
+            'check_in_time' => '10:00',
+            'check_out_time' => '18:00',
+            'number_of_guests' => 50,
+            'total_amount' => 25000,
+            'payment_method' => 'Cash / Pay at Hotel',
+        ]);
+
+        $response->assertRedirect(route('reservation'));
+        $this->assertDatabaseHas('event_reservations', [
+            'event_place_id' => $eventPlace->id,
+            'guest_email' => 'event@example.com',
+            'number_of_guests' => 50,
+        ]);
+    }
 }

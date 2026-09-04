@@ -1336,7 +1336,7 @@
         const serviceList = services.map((name) => `<li class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">${escapeHtml(name)}</li>`).join('');
         detailsSections.push(`
             <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                <h4 class="mb-3 text-base font-semibold text-gray-800">Menu / Meals</h4>
+                <h4 class="mb-3 text-base font-semibold text-gray-800">Selected Services</h4>
                 <ul class="space-y-2">${serviceList}</ul>
             </div>
         `);
@@ -1344,7 +1344,7 @@
         const paymentEntries = [
             { label: 'Payment Method', value: reservation.payment_method || 'N/A' },
             { label: 'Payment Details', value: reservation.payment_details || 'No payment details recorded' },
-            { label: 'Amount Paid', value: Number(reservation.amount_paid || 0) > 0 ? formatMoney(reservation.amount_paid) : 'N/A' },
+            { label: 'Amount Paid', value: formatMoney(reservation.amount_paid || 0) },
             { label: 'Total Amount', value: reservation.total_amount ? formatMoney(reservation.total_amount) : 'N/A' },
             { label: 'Status', value: status },
         ];
