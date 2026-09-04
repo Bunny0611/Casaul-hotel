@@ -522,6 +522,28 @@ class AdminController extends Controller
         $amenityReservations = AmenityReservation::with('amenity')->latest()->get();
         $eventPlaceReservations = EventReservation::with('eventPlace')->latest()->get();
         $diningReservations = DiningReservation::latest()->get();
+
+        $legacyReservations = Reservation::with(['room', 'amenity', 'eventPlace', 'diningItems'])->latest()->get();
+        $legacyReservations->each(function ($reservation) use (&$roomReservations, &$amenityReservations, &$eventPlaceReservations, &$diningReservations) {
+            $category = $reservation->category;
+            if ($category === 'rooms' || $reservation->room_id) {
+                $roomReservations->push($reservation);
+            }
+            if ($category === 'amenities' || $reservation->amenity_id) {
+                $amenityReservations->push($reservation);
+            }
+            if ($category === 'event_place' || $reservation->event_place_id) {
+                $eventPlaceReservations->push($reservation);
+            }
+            if ($category === 'dining' || $reservation->dining_id || $reservation->dining_area || $reservation->dining_schedule) {
+                $diningReservations->push($reservation);
+            }
+        });
+
+        $roomReservations = $roomReservations->sortByDesc('created_at')->values();
+        $amenityReservations = $amenityReservations->sortByDesc('created_at')->values();
+        $eventPlaceReservations = $eventPlaceReservations->sortByDesc('created_at')->values();
+        $diningReservations = $diningReservations->sortByDesc('created_at')->values();
         
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
@@ -781,6 +803,14 @@ class AdminController extends Controller
                 $legacyReservation?->update(['status' => $validated['status']]);
             }
 
+            if ($reservation instanceof RoomReservation) {
+                AmenityReservation::query()
+                    ->where('guest_email', $reservation->guest_email)
+                    ->whereDate('check_in', $reservation->check_in)
+                    ->whereNotIn('status', ['cancelled', 'completed'])
+                    ->update(['status' => $validated['status']]);
+            }
+
             // Only update room status for room reservations
             if ($reservationType === 'room' && $reservation->room) {
                 if ($validated['status'] === 'checked-in') {
@@ -953,17 +983,25 @@ class AdminController extends Controller
             default => null,
         };
         $reservation = match ($category) {
-            'rooms' => RoomReservation::with('room')->find($id),
-            'event_place' => EventReservation::find($id),
-            'amenities' => AmenityReservation::find($id),
-            'dining' => DiningReservation::find($id),
+            'rooms' => RoomReservation::with('room')->find($id) ?? Reservation::with('room')->find($id),
+            'event_place' => EventReservation::find($id) ?? Reservation::with('eventPlace')->find($id),
+            'amenities' => AmenityReservation::find($id) ?? Reservation::with('amenity')->find($id),
+            'dining' => DiningReservation::find($id) ?? Reservation::find($id),
             default => RoomReservation::with('room')->find($id)
                 ?? EventReservation::find($id)
                 ?? AmenityReservation::find($id)
-                ?? DiningReservation::find($id),
+                ?? DiningReservation::find($id)
+                ?? Reservation::find($id),
         };
 
-        if (!$reservationType) {
+        if (!$reservationType && $reservation instanceof Reservation) {
+            $reservationType = match ($reservation->category) {
+                'event_place' => 'event',
+                'amenities' => 'amenity',
+                'dining' => 'dining',
+                default => 'room',
+            };
+        } elseif (!$reservationType) {
             $reservationType = $reservation instanceof EventReservation ? 'event'
                 : ($reservation instanceof AmenityReservation ? 'amenity'
                 : ($reservation instanceof DiningReservation ? 'dining' : 'room'));

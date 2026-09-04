@@ -18,6 +18,7 @@ use App\Models\AmenityReservation;
 use App\Models\DiningReservation;
 use App\Models\ReservationDiningItem;
 use App\Models\GuestRequest;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
@@ -231,6 +232,7 @@ class HomeController extends Controller
             'dining_area' => 'nullable|string|max:100',
             'dining_schedule' => 'nullable|string|max:100',
             'quantity' => 'nullable|integer|min:1',
+            'duration_hours' => 'nullable|integer|min:1',
             'amenity_id' => 'nullable|string',
             'event_place_id' => 'nullable|string',
             'event_type' => 'nullable|string|max:100',
@@ -326,6 +328,7 @@ class HomeController extends Controller
 
         $validated['status'] = 'pending';
         $validated['number_of_guests'] = max(1, (int) ($validated['number_of_guests'] ?? 1));
+        $submittedTotalAmount = (float) $validated['total_amount'];
         $category = $validated['category'];
 
         if ($category === 'rooms') {
@@ -348,18 +351,40 @@ class HomeController extends Controller
             ])->all());
         } elseif ($category === 'amenities') {
             $amenity = Amenity::findOrFail($validated['amenity_id']);
-            $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $validated['check_in_time'])
-                ->addHours((int) $validated['duration_hours']);
+            $durationHours = max(1, (int) ($validated['duration_hours'] ?? 1));
+            $amenityStartTime = $validated['check_in_time'] ?? '00:00';
+            $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $amenityStartTime)
+                ->addHours($durationHours);
             $validated['check_out'] = $endTime->toDateString();
-            $validated['amenity_start_time'] = $validated['check_in_time'];
+            $validated['amenity_start_time'] = $amenityStartTime;
             $validated['amenity_end_time'] = $endTime->format('H:i');
-            $validated['total_amount'] = (float) $amenity->price * (int) $validated['duration_hours'];
+            $validated['total_amount'] = (float) $amenity->price * $durationHours;
             $reservation = AmenityReservation::create(collect($validated)->only([
                 'amenity_id', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
                 'amenity_start_time', 'check_out', 'amenity_end_time',
                 'number_of_guests', 'status', 'total_amount', 'payment_method',
                 'payment_details', 'amount_paid', 'special_requests',
             ])->all());
+
+            if (!empty($validated['room_id'])) {
+                RoomReservation::create([
+                    'room_id' => $validated['room_id'],
+                    'guest_name' => $validated['guest_name'],
+                    'guest_email' => $validated['guest_email'],
+                    'guest_phone' => $validated['guest_phone'],
+                    'check_in' => $validated['check_in'],
+                    'room_check_in_time' => $validated['check_in_time'] ?? null,
+                    'check_out' => $validated['check_out'],
+                    'room_check_out_time' => $validated['check_out_time'] ?? null,
+                    'number_of_guests' => $validated['number_of_guests'],
+                    'status' => 'pending',
+                    'total_amount' => max(0, $submittedTotalAmount - (float) $validated['total_amount']),
+                    'payment_method' => $validated['payment_method'],
+                    'payment_details' => $validated['payment_details'],
+                    'amount_paid' => 0,
+                    'special_requests' => $validated['special_requests'] ?? null,
+                ]);
+            }
         } else {
             $reservation = DiningReservation::create(collect($validated)->only([
                 'guest_name', 'guest_email', 'guest_phone', 'dining_area',

@@ -64,11 +64,13 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/checkin', function () {
         $checkIns = RoomReservation::with('room')
             ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
+            ->whereDate('check_in', today())
             ->latest()
             ->get();
 
         $checkOuts = RoomReservation::with(['room', 'payments'])
             ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+            ->whereDate('check_out', today())
             ->latest()
             ->get();
 

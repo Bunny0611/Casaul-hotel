@@ -434,7 +434,8 @@
                     </thead>
                     <tbody>
                         @forelse($checkIns as $reservation)
-                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_in?->format('F j, Y') }}" data-time="{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-guests="{{ $reservation->number_of_guests ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-balance="₱{{ number_format($reservation->total_amount, 2) }}" data-payment-status="{{ $reservation->payment_method ? 'Paid' : 'Unpaid' }}">
+                            @php($checkInPaid = max((float) ($reservation->amount_paid ?? 0), (float) $reservation->payments->sum('amount')))
+                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-time="{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-guests="{{ $reservation->number_of_guests ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-total="{{ number_format($reservation->total_amount, 2, '.', '') }}" data-paid="{{ number_format($checkInPaid, 2, '.', '') }}" data-payment-status="{{ $checkInPaid >= (float) $reservation->total_amount && (float) $reservation->total_amount > 0 ? 'Paid' : 'Unpaid' }}">
                                 <td class="py-3 pr-3 whitespace-nowrap text-sm font-semibold text-slate-800">RES-{{ $reservation->id }}</td>
                                 <td class="py-3 pr-3 text-sm text-slate-700">{{ $reservation->guest_name }}</td>
                                 <td class="py-3 pr-3 whitespace-nowrap">
@@ -541,6 +542,7 @@
                 <span class="modal-detail-label">Payment Status:</span>
                 <span class="modal-detail-value" id="checkInPaymentStatus"></span>
             </div>
+            <button type="button" id="checkInRecordPaymentButton" class="modal-btn modal-btn-secondary mt-4" onclick="openPaymentModal()">Record Payment</button>
             </div>
         </div>
 
@@ -684,6 +686,7 @@
 
     function openCheckInModal(row) {
         currentCheckInRow = row;
+        window.currentPaymentRow = row;
         const reservation = row.dataset.reservation;
         const reservationId = reservation.replace('RES-', '');
         const date = row.dataset.date ? new Date(`${row.dataset.date}T00:00:00`).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A';
@@ -696,7 +699,11 @@
         document.getElementById('checkInGuests').textContent = row.dataset.guests || 'N/A';
         document.getElementById('checkInDate').textContent = date;
         document.getElementById('checkInTime').textContent = row.dataset.time || 'N/A';
-        document.getElementById('checkInPaymentStatus').textContent = row.dataset.paymentStatus || 'Unpaid';
+        const total = Number(row.dataset.total || 0);
+        const paid = Number(row.dataset.paid || 0);
+        const paymentStatus = document.getElementById('checkInPaymentStatus');
+        paymentStatus.textContent = paid >= total && total > 0 ? 'Paid' : 'Unpaid';
+        document.getElementById('checkInRecordPaymentButton').classList.toggle('hidden', paid >= total && total > 0);
         
         const submitBtn = document.querySelector('#checkInForm button[type="submit"]');
         if (isConfirmed) {
@@ -739,6 +746,7 @@
 
     function openCheckOutModal(row) {
         window.currentCheckOutRow = row;
+        window.currentPaymentRow = row;
         const reservation = row.dataset.reservation;
         const reservationId = reservation.replace('RES-', '');
         const isCompleted = row.dataset.status.toLowerCase() === 'completed';
@@ -820,7 +828,7 @@
     }
 
     function openPaymentModal() {
-        const row = window.currentCheckOutRow;
+        const row = window.currentPaymentRow || window.currentCheckOutRow;
         const total = Number(row.dataset.total || 0);
         const paid = Number(row.dataset.paid || 0);
         const balance = Math.max(total - paid, 0);
@@ -848,11 +856,16 @@
             alert(data.message || 'Unable to record payment.');
             return;
         }
-        const row = window.currentCheckOutRow;
+        const row = window.currentPaymentRow || window.currentCheckOutRow;
         row.dataset.paid = data.paid.toFixed(2);
-        document.getElementById('checkOutPaid').textContent = formatCurrency(data.paid);
-        document.getElementById('checkOutBalance').textContent = formatCurrency(data.balance);
-        updateCheckoutPaymentState(data.total, data.paid);
+        if (row === window.currentCheckInRow) {
+            document.getElementById('checkInPaymentStatus').textContent = data.balance === 0 ? 'Paid' : 'Unpaid';
+            document.getElementById('checkInRecordPaymentButton').classList.toggle('hidden', data.balance === 0);
+        } else {
+            document.getElementById('checkOutPaid').textContent = formatCurrency(data.paid);
+            document.getElementById('checkOutBalance').textContent = formatCurrency(data.balance);
+            updateCheckoutPaymentState(data.total, data.paid);
+        }
         closeModal('paymentModal');
     });
 
