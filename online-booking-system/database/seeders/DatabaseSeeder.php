@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Staff;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Create default admin user
-        User::updateOrCreate([
+        Staff::updateOrCreate([
             'email' => 'admin@casaul.com',
         ], [
             'name' => 'Admin',
@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Create default housekeeping user
-        User::updateOrCreate([
+        Staff::updateOrCreate([
             'email' => 'housekeeping@casaul.com',
         ], [
             'name' => 'Housekeeping',
@@ -40,7 +40,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Create default employee user
-        User::updateOrCreate([
+        Staff::updateOrCreate([
             'email' => 'employee@casaul.com',
         ], [
             'name' => 'Employee',

@@ -15,7 +15,7 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        $user = $request->user();
+        $user = $request->user($role === 'guest' ? 'guest' : 'web');
 
         if (!$user || $user->role !== $role) {
             abort(403, 'Unauthorized access. You do not have permission to view this page.');

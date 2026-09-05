@@ -268,7 +268,7 @@
 	.progress-bar span {
 		display: block;
 		height: 100%;
-		width: 0;
+		width: {{ $cleaningPercentage }}%;
 		background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
 		border-radius: inherit;
 	}
@@ -348,6 +348,7 @@
 	.task-icon.high { background: #fee2e2; color: #dc2626; }
 	.task-icon.medium { background: #fef3c7; color: #d97706; }
 	.task-icon.low { background: #ede9fe; color: #7c3aed; }
+	.task-icon.urgent { background: #fee2e2; color: #991b1b; }
 
 	.task-copy {
 		flex: 1;
@@ -488,6 +489,64 @@
 		color: #374151;
 	}
 
+	.room-status-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 5px 9px;
+		border-radius: 999px;
+		font-size: 0.68rem;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
+	.room-status-badge.clean { background: #ecfdf5; color: #047857; }
+	.room-status-badge.dirty { background: #fef2f2; color: #b91c1c; }
+	.room-status-badge.in_progress { background: #fffbeb; color: #b45309; }
+
+	.cleaning-update-form {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.cleaning-update-form select {
+		min-width: 120px;
+		padding: 7px 8px;
+		border: 1px solid #dbe3ea;
+		border-radius: 7px;
+		background: #fff;
+		color: #374151;
+		font-size: 0.72rem;
+	}
+
+	.cleaning-update-form button {
+		border: 0;
+		border-radius: 7px;
+		background: #8d1010;
+		padding: 7px 10px;
+		color: #fff;
+		font-size: 0.7rem;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.cleaning-update-form button:hover { background: #620808; }
+
+	.cleaning-view-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		border-radius: 7px;
+		background: #f9ecec;
+		padding: 7px 10px;
+		color: #8d1010;
+		font-size: 0.7rem;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.cleaning-view-link:hover { background: #f4dada; }
+
 	.empty-state {
 		text-align: center;
 		padding: 44px 20px;
@@ -564,25 +623,25 @@
 			<div class="mini-header">
 				<h3>Today's Cleaning Progress</h3>
 				<div class="mini-status"><span class="live-dot"></span>Live</div>
-				<div class="update-time">Updated 2:53 PM</div>
+				<div class="update-time">Updated {{ now()->format('g:i A') }}</div>
 			</div>
 
 			<div class="progress-main">
 				<div class="donut-wrap">
 					<div class="donut-chart">
-						<div class="donut-inner">0%</div>
+						<div class="donut-inner">{{ $cleaningPercentage }}%</div>
 					</div>
 				</div>
 
 				<div class="progress-copy">
-					<div class="progress-label"><strong>0 / 0</strong> rooms cleaned</div>
+					<div class="progress-label"><strong>{{ $cleanRooms }} / {{ $totalRooms }}</strong> rooms cleaned</div>
 					<div class="progress-bar"><span></span></div>
 
 					<div class="progress-legend">
-						<div class="legend-block"><span class="dot clean"></span><strong>0</strong><span>Clean</span></div>
-						<div class="legend-block"><span class="dot progress"></span><strong>0</strong><span>In Progress</span></div>
-						<div class="legend-block"><span class="dot dirty"></span><strong>0</strong><span>Dirty</span></div>
-						<div class="legend-block"><span class="dot pending"></span><strong>0</strong><span>Pending</span></div>
+						<div class="legend-block"><span class="dot clean"></span><strong>{{ $cleanRooms }}</strong><span>Clean</span></div>
+						<div class="legend-block"><span class="dot progress"></span><strong>{{ $inProgress }}</strong><span>In Progress</span></div>
+						<div class="legend-block"><span class="dot dirty"></span><strong>{{ $dirtyRooms }}</strong><span>Dirty</span></div>
+						<div class="legend-block"><span class="dot pending"></span><strong>{{ $pendingTasks->where('status', 'pending')->count() }}</strong><span>Pending</span></div>
 					</div>
 				</div>
 			</div>
@@ -591,15 +650,23 @@
 		<div class="panel">
 			<div class="card-head">
 				<h3>Priority Tasks</h3>
-				<a href="#">View all</a>
+				<a href="{{ route('housekeeping.assigned-rooms') }}" aria-label="View assigned housekeeping tasks">View</a>
 			</div>
 
 			<div class="task-list">
+				@forelse($priorityTasks as $priorityTask)
+				<div class="task-item">
+					<div class="task-icon {{ $priorityTask->priority }}"><i class="fas fa-broom"></i></div>
+					<div class="task-copy"><strong>{{ $priorityTask->task }}</strong><span>Room {{ $priorityTask->room->room_number }} · {{ $priorityTask->assignedStaff?->name ?? 'Unassigned' }}</span></div>
+					<div class="task-meta"><span class="tag {{ $priorityTask->priority }}">{{ ucfirst($priorityTask->priority) }}</span><time>{{ $priorityTask->scheduled_date->format('M d') }}</time></div>
+				</div>
+				@empty
 				<div class="empty-state">
 					<div class="empty-icon"><i class="fas fa-clipboard-check"></i></div>
 					<h3>No priority tasks</h3>
 					<p>Priority housekeeping tasks will appear here when assigned.</p>
 				</div>
+				@endforelse
 			</div>
 		</div>
 	</div>
@@ -608,7 +675,7 @@
 		<div class="rooms-header">
 			<div class="rooms-title">
 				<h2>Room Cleaning Status</h2>
-				<p>Room information will appear here once rooms are assigned.</p>
+				<p>Current room readiness and cleaning status from the room register.</p>
 			</div>
 
 			<div class="status-legend">
@@ -627,19 +694,23 @@
 						<th>Room Status</th>
 						<th>Cleaning Status</th>
 						<th>Last Updated</th>
-						<th>Update Cleaning</th>
+						<th>Action</th>
 					</tr>
 				</thead>
 				<tbody>
-					<tr>
-						<td colspan="6">
-							<div class="empty-state">
-								<div class="empty-icon"><i class="fas fa-bed"></i></div>
-								<h3>No rooms assigned yet</h3>
-								<p>Rooms will appear here once they are assigned to housekeeping staff.</p>
-							</div>
-						</td>
-					</tr>
+					@forelse($rooms as $room)
+						@php($cleaningStatus = strtolower($room->cleaning_status ?: 'dirty'))
+						<tr>
+							<td><strong>{{ $room->room_number }}</strong></td>
+							<td>{{ $room->floor ?: 'N/A' }}</td>
+							<td>{{ ucfirst($room->status ?: 'N/A') }}</td>
+							<td><span class="room-status-badge {{ $cleaningStatus }}">{{ ucfirst(str_replace('_', ' ', $cleaningStatus)) }}</span></td>
+							<td>{{ $room->updated_at?->format('M d, Y g:i A') ?? 'N/A' }}</td>
+							<td><a href="{{ route('housekeeping.room-status-update') }}" class="cleaning-view-link" aria-label="View room {{ $room->room_number }} status actions"><i class="fas fa-eye"></i> View</a></td>
+						</tr>
+					@empty
+						<tr><td colspan="6"><div class="empty-state"><div class="empty-icon"><i class="fas fa-bed"></i></div><h3>No rooms assigned yet</h3><p>No rooms are currently available in the room register.</p></div></td></tr>
+					@endforelse
 				</tbody>
 			</table>
 		</div>

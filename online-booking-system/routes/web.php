@@ -9,6 +9,9 @@ use App\Models\Message;
 use App\Models\InventoryItem;
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\DiningTable;
+use App\Models\DiningSchedule;
+use App\Models\DiningMenu;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -35,9 +38,10 @@ Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.
 Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
 
 // --- Guest Profile ---
-Route::middleware(['auth', 'role:guest'])->group(function () {
+Route::middleware(['auth:guest', 'role:guest'])->group(function () {
     Route::get('/guest/profile', [HomeController::class, 'profile'])->name('guest.profile');
     Route::get('/guest/records', [HomeController::class, 'records'])->name('guest.records');
+    Route::post('/guest/requests', [HomeController::class, 'storeGuestRequest'])->name('guest.requests.store');
 });
 
 // --- Admin Logout ---
@@ -47,16 +51,7 @@ Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
     Route::redirect('/', '/employee/dashboard')->name('index');
     Route::get('/dashboard', [AdminController::class, 'employeeDashboard'])->name('dashboard');
-    Route::get('/reservation', function () {
-        $reservations = Reservation::with('room')->latest()->get();
-        $rooms = Room::orderBy('room_number')->get();
-        $inventoryItems = InventoryItem::whereIn('category', ['amenities', 'event_place', 'dining'])
-            ->whereIn('status', ['available', 'limited'])
-            ->orderBy('name')
-            ->get();
-
-        return view('employee.reservation', compact('reservations', 'rooms', 'inventoryItems'));
-    })->name('reservation');
+    Route::get('/reservation', [AdminController::class, 'reservations'])->name('reservation');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
@@ -85,41 +80,15 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();
+        $diningTables = DiningTable::orderBy('table_no')->get();
+        $dining = DiningMenu::orderBy('name')->get();
+        $diningSchedules = DiningSchedule::orderBy('available_from')->get();
 
-        return view('employee.room-status', compact('rooms', 'inventoryItems'));
+        return view('employee.room-status', compact('rooms', 'inventoryItems', 'diningTables', 'dining', 'diningSchedules'));
     })->name('room-status');
-    Route::get('/guest-requests', function () {
-        if (!session()->has('employee_guest_requests')) {
-            session()->put('employee_guest_requests', [
-                [
-                    'id' => 1,
-                    'title' => 'Room 305 - Extra Towels',
-                    'requested_at' => '10:15 AM',
-                    'status' => 'Pending',
-                ],
-                [
-                    'id' => 2,
-                    'title' => 'Room 208 - Late Checkout',
-                    'requested_at' => '9:40 AM',
-                    'status' => 'Approved',
-                ],
-                [
-                    'id' => 3,
-                    'title' => 'Room 101 - Wake-up Call',
-                    'requested_at' => '7:30 AM',
-                    'status' => 'Done',
-                ],
-            ]);
-        }
-
-        $requests = session('employee_guest_requests');
-
-        return view('employee.guest-requests', compact('requests'));
-    })->name('guest-requests');
-    Route::post('/guest-requests/{id}/resolve', [
-        AdminController::class,
-        'resolveGuestRequest',
-    ])->name('guest-requests.resolve');
+    Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
+    Route::get('/guest-requests/{id}', [AdminController::class, 'employeeGuestRequest'])->name('guest-requests.show');
+    Route::patch('/guest-requests/{id}', [AdminController::class, 'updateEmployeeGuestRequest'])->name('guest-requests.update');
     Route::get('/messages', function () {
         $messages = Message::latest()->get();
 
@@ -137,6 +106,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/dining/tables', [AdminController::class, 'diningTables'])->name('dining.tables');
     Route::get('/dining/menu', [AdminController::class, 'diningMenu'])->name('dining.menu');
     Route::get('/dining/schedule', [AdminController::class, 'diningSchedule'])->name('dining.schedule');
+    Route::post('/dining', [AdminController::class, 'storeDiningItem'])->name('dining.store');
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
     Route::post('/inventory', [AdminController::class, 'storeInventoryItem'])->name('inventory.store');
     Route::put('/inventory/{id}', [AdminController::class, 'updateInventoryItem'])->name('inventory.update');
@@ -146,6 +116,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::put('/rooms/{id}', [AdminController::class, 'updateRoom'])->name('rooms.update');
     Route::patch('/rooms/{id}/status', [AdminController::class, 'updateRoomStatus'])->name('rooms.status');
     Route::match(['post', 'delete'], '/rooms/bulk-delete', [AdminController::class, 'bulkDestroyRooms'])->name('rooms.bulkDestroy');
+    Route::match(['post', 'delete'], '/dining/bulk-delete', [AdminController::class, 'bulkDestroyDining'])->name('dining.bulkDestroy');
     Route::delete('/rooms/{id}', [AdminController::class, 'destroyRoom'])->name('rooms.destroy');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
@@ -156,6 +127,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/messages', [AdminController::class, 'messages'])->name('messages');
     Route::post('/messages/{id}/reply', [AdminController::class, 'replyMessage'])->name('messages.reply');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
+    Route::patch('/maintenance-reports/{maintenanceReport}/status', [AdminController::class, 'updateMaintenanceReportStatus'])->name('maintenance-reports.status');
     Route::get('/reports/export-csv', [AdminController::class, 'exportReportsCsv'])->name('reports.export.csv');
     Route::get('/reports/print', [AdminController::class, 'printReports'])->name('reports.print');
     Route::get('/notifications', [AdminController::class, 'notifications'])->name('notifications');
@@ -174,8 +146,16 @@ Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:
     Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
     Route::patch('/rooms/{id}/cleaning', [HousekeepingController::class, 'updateStatus'])->name('rooms.cleaning');
     Route::get('/assigned-rooms', [HousekeepingController::class, 'assignedRooms'])->name('assigned-rooms');
+    Route::post('/tasks', [HousekeepingController::class, 'storeTask'])->name('tasks.store');
+    Route::patch('/tasks/{housekeepingTask}/start', [HousekeepingController::class, 'startTask'])->name('tasks.start');
+    Route::patch('/tasks/{housekeepingTask}/complete', [HousekeepingController::class, 'completeTask'])->name('tasks.complete');
+    Route::delete('/tasks/{housekeepingTask}', [HousekeepingController::class, 'destroyTask'])->name('tasks.destroy');
     Route::get('/room-status-update', [HousekeepingController::class, 'roomStatusUpdate'])->name('room-status-update');
     Route::get('/guest-requests', [HousekeepingController::class, 'guestRequests'])->name('guest-requests');
+    Route::get('/guest-requests/{id}', [HousekeepingController::class, 'guestRequestDetails'])->name('guest-requests.show');
+    Route::patch('/guest-requests/{id}', [HousekeepingController::class, 'updateGuestRequest'])->name('guest-requests.update');
+    Route::post('/guest-requests/{id}/mark-delivered', [HousekeepingController::class, 'markGuestRequestDelivered'])->name('guest-requests.mark-delivered');
+    Route::get('/messages', [HousekeepingController::class, 'messages'])->name('messages');
     Route::get('/maintenance-report', [HousekeepingController::class, 'maintenanceReport'])->name('maintenance-report');
     Route::post('/maintenance-report', [HousekeepingController::class, 'storeMaintenanceReport'])->name('maintenance-report.store');
     Route::put('/maintenance-report/{maintenanceReport}', [HousekeepingController::class, 'updateMaintenanceReport'])->name('maintenance-report.update');
@@ -191,7 +171,7 @@ Route::post('/logout', function () {
     return redirect('/');
 })->name('logout');
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:guest')->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });

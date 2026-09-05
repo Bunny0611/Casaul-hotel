@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Reservation;
 use App\Models\Room;
+use App\Models\MaintenanceReport;
+use App\Models\Staff;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,6 +15,7 @@ class AdminReportsTest extends TestCase
 
     public function test_admin_reports_page_loads(): void
     {
+        $admin = Staff::factory()->create(['role' => 'admin']);
         $room = Room::create([
             'room_number' => '201',
             'room_type' => 'Deluxe',
@@ -35,10 +38,90 @@ class AdminReportsTest extends TestCase
             'special_requests' => 'Late check-in',
         ]);
 
-        $response = $this->get(route('admin.reports'));
+        $response = $this->actingAs($admin)->get(route('admin.reports'));
 
         $response->assertOk();
         $response->assertSee('Comprehensive Reporting System');
         $response->assertSee('Total Revenue');
+    }
+
+    public function test_maintenance_report_is_shared_between_admin_and_housekeeping(): void
+    {
+        $admin = Staff::factory()->create(['role' => 'admin']);
+        $housekeeping = Staff::factory()->create(['role' => 'housekeeping']);
+        $room = Room::create([
+            'room_number' => '301',
+            'room_type' => 'Suite',
+            'price' => 2500.00,
+            'floor' => '3rd',
+            'capacity' => 2,
+            'description' => 'Suite room',
+            'status' => 'available',
+        ]);
+
+        $report = MaintenanceReport::create([
+            'room_number' => $room->room_number,
+            'room_type' => $room->room_type,
+            'reported_by' => 'Housekeeping User',
+            'category' => 'Plumbing',
+            'priority' => 'High',
+            'problem' => 'Leaking faucet',
+            'description' => 'The bathroom faucet is leaking.',
+            'date_reported' => now(),
+            'technician' => 'Unassigned',
+            'status' => 'Pending',
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.reports'))
+            ->assertOk()
+            ->assertSee($report->description);
+
+        $this->actingAs($housekeeping)->get(route('housekeeping.maintenance-report'))
+            ->assertOk()
+            ->assertSee($report->description);
+
+        $this->actingAs($admin)->patch(route('admin.maintenance-reports.status', $report), [
+            'status' => 'Completed',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('maintenance_reports', [
+            'id' => $report->id,
+            'status' => 'Completed',
+        ]);
+    }
+
+    public function test_housekeeping_submitted_report_is_visible_to_admin(): void
+    {
+        $admin = Staff::factory()->create(['role' => 'admin']);
+        $housekeeping = Staff::factory()->create(['role' => 'housekeeping']);
+        $room = Room::create([
+            'room_number' => '401',
+            'room_type' => 'Deluxe',
+            'price' => 1800.00,
+            'floor' => '4th',
+            'capacity' => 2,
+            'description' => 'Deluxe room',
+            'status' => 'available',
+        ]);
+
+        $this->actingAs($housekeeping)->post(route('housekeeping.maintenance-report.store'), [
+            'room_number' => $room->room_number,
+            'category' => 'Electrical',
+            'priority' => 'High',
+            'description' => 'The bedside lamp is not working.',
+        ])->assertRedirect(route('housekeeping.maintenance-report'));
+
+        $this->assertDatabaseHas('maintenance_reports', [
+            'room_number' => $room->room_number,
+            'reported_by' => $housekeeping->name,
+            'category' => 'Electrical',
+            'priority' => 'High',
+            'description' => 'The bedside lamp is not working.',
+            'status' => 'Pending',
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.reports'))
+            ->assertOk()
+            ->assertSee('The bedside lamp is not working.');
     }
 }

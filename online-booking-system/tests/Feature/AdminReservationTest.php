@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Room;
 use App\Models\Reservation;
+use App\Models\Staff;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -14,6 +15,9 @@ class AdminReservationTest extends TestCase
 
     public function test_admin_can_create_a_reservation(): void
     {
+        $admin = Staff::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin, 'web');
+
         $room = Room::create([
             'room_number' => '101',
             'room_type' => 'Deluxe',
@@ -34,6 +38,8 @@ class AdminReservationTest extends TestCase
             'status' => 'pending',
             'total_amount' => 3000.00,
             'special_requests' => 'Late check-in',
+            'category' => 'rooms',
+            'payment_method' => 'Cash / Pay at Hotel',
         ]);
 
         $response->assertRedirect(route('admin.reservations'));
@@ -48,5 +54,77 @@ class AdminReservationTest extends TestCase
         $this->assertInstanceOf(Carbon::class, $reservation->check_in);
         $this->assertInstanceOf(Carbon::class, $reservation->check_out);
         $this->assertCount(1, Reservation::all());
+    }
+
+    public function test_admin_can_create_a_dining_reservation_with_upon_arriving_menu_option(): void
+    {
+        $admin = Staff::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin, 'web');
+
+        $response = $this->post(route('admin.reservations.store'), [
+            'category' => 'dining',
+            'guest_name' => 'John Smith',
+            'guest_email' => 'john@example.com',
+            'guest_phone' => '09181234567',
+            'dining_area' => 'Table 1',
+            'dining_schedule' => 'Dinner',
+            'dining_id' => 'upon_arriving',
+            'check_in' => '2026-08-05',
+            'check_out' => '2026-08-05',
+            'payment_method' => 'Cash / Pay at Hotel',
+            'total_amount' => 450.00,
+            'special_requests' => 'No preference',
+        ]);
+
+        $response->assertRedirect(route('admin.reservations'));
+        $this->assertDatabaseHas('reservations', [
+            'guest_email' => 'john@example.com',
+            'dining_area' => 'Table 1',
+            'dining_schedule' => 'Dinner',
+            'dining_id' => null,
+        ]);
+    }
+
+    public function test_public_booking_saves_the_selected_payment_method_and_details(): void
+    {
+        $room = Room::create([
+            'room_number' => '202',
+            'room_type' => 'Suite',
+            'price' => 3200.00,
+            'floor' => '2nd',
+            'capacity' => 4,
+            'description' => 'Suite room',
+            'status' => 'available',
+        ]);
+
+        $tomorrow = now()->addDay()->format('Y-m-d');
+        $dayAfter = now()->addDays(2)->format('Y-m-d');
+
+        $response = $this->post(route('reservation.store'), [
+            'room_id' => $room->id,
+            'guest_name' => 'Guest User',
+            'guest_email' => 'guest@example.com',
+            'guest_phone' => '09191234567',
+            'check_in' => $tomorrow,
+            'check_out' => $dayAfter,
+            'total_amount' => 6400.00,
+            'payment_method' => 'GCash',
+            'amount_paid' => 123.00,
+            'payment_details' => 'Account: Guest User • Number: 09191234567 • Amount: ₱123.00 • Reference: G-REF-1001',
+            'special_requests' => 'Late arrival',
+        ]);
+
+        $response->assertRedirect(route('reservation'));
+        $this->assertDatabaseHas('reservations', [
+            'guest_email' => 'guest@example.com',
+            'room_id' => $room->id,
+            'payment_method' => 'GCash',
+            'payment_details' => 'Account: Guest User • Number: 09191234567 • Amount: ₱123.00 • Reference: G-REF-1001',
+            'amount_paid' => 123.00,
+        ]);
+
+        $reservation = Reservation::where('guest_email', 'guest@example.com')->first();
+        $this->assertNotNull($reservation);
+        $this->assertSame(123.0, (float) $reservation->amount_paid);
     }
 }

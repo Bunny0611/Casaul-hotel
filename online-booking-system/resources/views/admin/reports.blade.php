@@ -35,7 +35,7 @@
     
     <!-- Report Tabs -->
     <div class="bg-white rounded-xl shadow-lg mb-6">
-        <div class="grid grid-cols-2 md:grid-cols-4 text-center">
+        <div class="grid grid-cols-2 md:grid-cols-5 text-center">
             <button type="button" data-tab="financial" class="tab-btn py-4 border-b-2 border-orange-500 font-semibold text-orange-600 transition-all duration-200">
                 <i class="fas fa-coins mr-2"></i>
                 Financial
@@ -54,6 +54,11 @@
             <button type="button" data-tab="guests" class="tab-btn py-4 text-gray-600 transition-all duration-200">
                 <i class="fas fa-users mr-2"></i>
                 Guests
+            </button>
+
+            <button type="button" data-tab="maintenance" class="tab-btn py-4 text-gray-600 transition-all duration-200">
+                <i class="fas fa-tools mr-2"></i>
+                Maintenance
             </button>
         </div>
     </div>
@@ -106,45 +111,6 @@
                         <i class="fas fa-calculator text-orange-600 text-xl"></i>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between mb-5">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800">Recent Payment Transactions</h3>
-                    <p class="text-sm text-gray-500">Latest completed reservations and revenue movement</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                            <th class="px-4 py-3">Guest</th>
-                            <th class="px-4 py-3">Room</th>
-                            <th class="px-4 py-3">Amount</th>
-                            <th class="px-4 py-3">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse($recentPayments as $reservation)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->guest_name }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</td>
-                            <td class="px-4 py-3 font-medium text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
-                            <td class="px-4 py-3">
-                                <span class="px-3 py-1 rounded-full text-xs font-medium text-white status-{{ $reservation->status }}">
-                                    {{ ucfirst($reservation->status) }}
-                                </span>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-gray-500">No payment transactions found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
             </div>
         </div>
 
@@ -215,49 +181,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between mb-5">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800">Recent Reservations</h3>
-                    <p class="text-sm text-gray-500">Latest booking activity from the system</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                            <th class="px-4 py-3">Guest</th>
-                            <th class="px-4 py-3">Room</th>
-                            <th class="px-4 py-3">Dates</th>
-                            <th class="px-4 py-3">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse($reservations->take(8) as $reservation)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->guest_name }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</td>
-                            <td class="px-4 py-3 text-gray-900">
-                                {{ optional($reservation->check_in)->format('M d') ?? 'N/A' }}
-                                -
-                                {{ optional($reservation->check_out)->format('M d') ?? 'N/A' }}
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="px-3 py-1 rounded-full text-xs font-medium text-white status-{{ $reservation->status }}">
-                                    {{ ucfirst($reservation->status) }}
-                                </span>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-gray-500">No reservations found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
     </div>
 
     <div data-panel="occupancy" class="hidden space-y-6">
@@ -292,41 +215,6 @@
                 <div class="flex items-center justify-center h-[320px]">
                     <canvas id="roomStatusChart" class="max-w-[320px] max-h-[320px] w-full h-full"></canvas>
                 </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between mb-5">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800">Current Room Status</h3>
-                    <p class="text-sm text-gray-500">Live room availability snapshot</p>
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                            <th class="px-4 py-3">Room</th>
-                            <th class="px-4 py-3">Type</th>
-                            <th class="px-4 py-3">Status</th>
-                            <th class="px-4 py-3">Capacity</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse($rooms->take(10) as $room)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 text-gray-900">{{ $room->room_number }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $room->room_type }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ ucfirst($room->status) }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $room->capacity }}</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-gray-500">No room data found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
@@ -372,45 +260,53 @@
                 <canvas id="stayDurationChart" class="w-full h-full"></canvas>
             </div>
         </div>
+    </div>
+
+    <div data-panel="maintenance" class="hidden space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <p class="text-gray-500 text-sm">Total Reports</p>
+                <h2 class="text-3xl font-bold text-gray-800">{{ $maintenanceReports->count() }}</h2>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <p class="text-gray-500 text-sm">Pending Issues</p>
+                <h2 class="text-3xl font-bold text-yellow-500">{{ $maintenancePending }}</h2>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <p class="text-gray-500 text-sm">Under Repair</p>
+                <h2 class="text-3xl font-bold text-orange-500">{{ $maintenanceRepairing }}</h2>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <p class="text-gray-500 text-sm">Completed</p>
+                <h2 class="text-3xl font-bold text-green-600">{{ $maintenanceCompleted }}</h2>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h3 class="text-lg font-semibold text-gray-800 mb-4">Report Status</h3><div class="relative h-[280px]"><canvas id="maintenanceStatusChart" class="w-full h-full"></canvas></div></div>
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h3 class="text-lg font-semibold text-gray-800 mb-4">Priority Breakdown</h3><div class="relative h-[280px]"><canvas id="maintenancePriorityChart" class="w-full h-full"></canvas></div></div>
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h3 class="text-lg font-semibold text-gray-800 mb-4">Issues by Category</h3><div class="relative h-[280px]"><canvas id="maintenanceCategoryChart" class="w-full h-full"></canvas></div></div>
+        </div>
 
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div class="flex items-center justify-between mb-5">
+            <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-800">Recent Guest Activity</h3>
-                    <p class="text-sm text-gray-500">Latest guest booking behavior</p>
+                    <h3 class="text-lg font-semibold text-gray-800">Maintenance Reports</h3>
+                    <p class="mt-1 text-sm text-gray-500">Review and manage reported room issues.</p>
                 </div>
+                <span class="rounded-full bg-orange-100 px-3 py-1 text-sm font-semibold text-orange-700">{{ $maintenanceReports->count() }} reports</span>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                            <th class="px-4 py-3">Guest</th>
-                            <th class="px-4 py-3">Email</th>
-                            <th class="px-4 py-3">Room</th>
-                            <th class="px-4 py-3">Stay</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @forelse($recentGuestActivity as $reservation)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->guest_name }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->guest_email }}</td>
-                            <td class="px-4 py-3 text-gray-900">{{ $reservation->room ? $reservation->room->room_number : 'N/A' }}</td>
-                            <td class="px-4 py-3 text-gray-900">
-                                @if($reservation->check_in && $reservation->check_out)
-                                    {{ $reservation->check_in->diffInDays($reservation->check_out) }} days
-                                @else
-                                    N/A
-                                @endif
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-gray-500">No guest activity found.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="w-full min-w-[900px] text-left text-sm">
+                <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500"><tr><th class="px-4 py-3 font-semibold">Room</th><th class="px-4 py-3 font-semibold">Issue</th><th class="px-4 py-3 font-semibold">Priority</th><th class="px-4 py-3 font-semibold">Reported By</th><th class="px-4 py-3 font-semibold">Date &amp; Time</th><th class="px-4 py-3 font-semibold">Status</th><th class="px-4 py-3 font-semibold">Action</th></tr></thead>
+                <tbody>
+                    @forelse($maintenanceReports as $report)
+                        <tr class="border-b border-gray-100 align-top"><td class="py-3 pr-4 font-medium">{{ $report->room_number }}</td><td class="py-3 pr-4">{{ $report->problem ?: $report->category }}</td><td class="py-3 pr-4">{{ $report->priority }}</td><td class="py-3 pr-4">{{ $report->reported_by }}</td><td class="whitespace-nowrap py-3 pr-4">{{ optional($report->date_reported)->format('d/m/Y h:i A') }}</td><td class="py-3 pr-4">{{ $report->status }}</td><td class="py-3"><details class="group"><summary class="cursor-pointer font-medium text-blue-600 hover:text-blue-800">View</summary><div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onclick="if (event.target === this) this.querySelector('button[aria-label=\'Close report\']').click()"><div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl" onclick="event.stopPropagation()"><div class="flex items-start justify-between bg-[#800000] px-6 py-5 text-white"><div><p class="text-xs font-semibold uppercase tracking-[0.2em] text-orange-200">Admin review</p><h4 class="mt-1 text-xl font-bold">Maintenance Report</h4></div><button type="button" class="rounded-lg p-2 text-2xl leading-none text-white/80 transition hover:bg-white/15 hover:text-white" aria-label="Close report" onclick="this.closest('details').removeAttribute('open')">&times;</button></div><div class="space-y-6 p-6 text-gray-700"><div class="grid grid-cols-1 gap-5 sm:grid-cols-2"><div><p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Room Number</p><p class="mt-1 text-lg font-bold text-gray-900">{{ $report->room_number }}</p></div><div><p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Issue Category</p><p class="mt-1 font-semibold text-gray-900">{{ $report->category }}</p></div><div><p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Priority</p><p class="mt-1 font-semibold text-gray-900">{{ $report->priority }}</p></div><div><p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Reported By</p><p class="mt-1 font-semibold text-gray-900">{{ $report->reported_by }}</p></div><div class="sm:col-span-2"><p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Problem Description</p><p class="mt-1 rounded-lg bg-gray-50 p-3 leading-relaxed text-gray-800">{{ $report->description }}</p></div><div class="sm:col-span-2"><p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Date &amp; Time Reported</p><p class="mt-1 font-semibold text-gray-900">{{ optional($report->date_reported)->format('d / m / Y   h : i A') }}</p></div><div class="sm:col-span-2"><p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Photo / Evidence</p>@if($report->photo_path)<div class="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-2"><img src="{{ asset('storage/' . $report->photo_path) }}" alt="Maintenance evidence for room {{ $report->room_number }}" class="max-h-64 w-full rounded-lg object-contain"> </div>@else<p class="mt-2 rounded-lg bg-gray-50 p-3 font-medium text-gray-500">No photo uploaded</p>@endif</div><div class="sm:col-span-2"><p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Status</p><p class="mt-1 inline-flex rounded-full bg-orange-100 px-3 py-1 text-sm font-semibold text-orange-800">{{ $report->status }}</p></div></div><div class="flex flex-wrap gap-3 border-t border-gray-200 pt-5">@if($report->status !== 'In Progress' && $report->status !== 'Completed')<form method="POST" action="{{ route('admin.maintenance-reports.status', $report) }}">@csrf @method('PATCH')<input type="hidden" name="status" value="In Progress"><button type="submit" class="rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white shadow-sm transition hover:bg-blue-700">Mark as In Progress</button></form>@endif @if($report->status !== 'Completed')<form method="POST" action="{{ route('admin.maintenance-reports.status', $report) }}">@csrf @method('PATCH')<input type="hidden" name="status" value="Completed"><button type="submit" class="rounded-lg bg-green-600 px-4 py-2.5 font-medium text-white shadow-sm transition hover:bg-green-700">Mark as Resolved</button></form>@endif</div></div></div></div></details></td></tr>
+                    @empty
+                        <tr><td colspan="7" class="py-8 text-center text-gray-500">No maintenance reports found for this date range.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
             </div>
         </div>
     </div>
@@ -428,7 +324,6 @@
                     btn.classList.remove('border-orange-500', 'font-semibold', 'text-orange-600');
                     btn.classList.add('text-gray-600');
                 });
-
                 this.classList.remove('text-gray-600');
                 this.classList.add('border-orange-500', 'font-semibold', 'text-orange-600');
 
@@ -473,6 +368,47 @@
             });
         }
     });
+
+    const AUTO_REFRESH_MS = 15000;
+    setInterval(function () {
+        if (!document.hidden) {
+            window.location.reload();
+        }
+    }, AUTO_REFRESH_MS);
+
+    const maintenanceStatusCtx = document.getElementById('maintenanceStatusChart')?.getContext('2d');
+    const maintenancePriorityCtx = document.getElementById('maintenancePriorityChart')?.getContext('2d');
+    const maintenanceCategoryCtx = document.getElementById('maintenanceCategoryChart')?.getContext('2d');
+    const maintenanceStatusLabels = @json($maintenanceStatusLabels);
+    const maintenanceStatusData = @json($maintenanceStatusData);
+    const maintenancePriorityLabels = @json($maintenancePriorityLabels);
+    const maintenancePriorityData = @json($maintenancePriorityData);
+    const maintenanceCategoryLabels = @json($maintenanceCategoryLabels);
+    const maintenanceCategoryCounts = @json($maintenanceCategoryCounts);
+
+    if (maintenanceStatusCtx) {
+        new Chart(maintenanceStatusCtx, {
+            type: 'doughnut',
+            data: { labels: maintenanceStatusLabels, datasets: [{ data: maintenanceStatusData, backgroundColor: ['#f59e0b', '#f97316', '#3b82f6', '#10b981'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    if (maintenancePriorityCtx) {
+        new Chart(maintenancePriorityCtx, {
+            type: 'bar',
+            data: { labels: maintenancePriorityLabels, datasets: [{ label: 'Reports', data: maintenancePriorityData, backgroundColor: ['#22c55e', '#eab308', '#f97316', '#dc2626'], borderColor: ['#15803d', '#a16207', '#c2410c', '#b91c1c'], borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } }
+        });
+    }
+
+    if (maintenanceCategoryCtx) {
+        new Chart(maintenanceCategoryCtx, {
+            type: 'bar',
+            data: { labels: maintenanceCategoryLabels, datasets: [{ label: 'Reports', data: maintenanceCategoryCounts, backgroundColor: ['#3b82f6', '#14b8a6', '#f97316', '#eab308', '#8b5cf6', '#ef4444'], borderColor: ['#2563eb', '#0f766e', '#c2410c', '#a16207', '#6d28d9', '#b91c1c'], borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } }
+        });
+    }
 
     const paymentCtx = document.getElementById('paymentMethodChart')?.getContext('2d');
     const paymentMethodLabels = @json($paymentMethodLabels);

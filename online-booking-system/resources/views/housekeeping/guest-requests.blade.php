@@ -3,11 +3,44 @@
 @section('content')
 
 @php
-    $stats = [
+    $pendingStatuses = ['New', 'In Progress'];
+    $stats = $stats ?? [
         'pending' => 0,
         'resolved' => 0,
         'total' => 0,
     ];
+
+    $requestData = ($groupedRequests ?? ($requests ?? collect()))->map(function ($request) {
+        $items = is_array($request->items ?? null) ? $request->items : [[
+            'request_type' => $request->request_type,
+            'quantity' => (int) ($request->quantity ?? 1),
+            'status' => $request->status,
+            'guest_note' => $request->description ?: 'No note provided',
+        ]];
+
+        return [
+            'id' => $request->id,
+            'requestId' => 'REQ-' . str_pad($request->id, 4, '0', STR_PAD_LEFT),
+            'reservation' => $request->reservation ? 'RES-' . str_pad($request->reservation->id, 4, '0', STR_PAD_LEFT) : 'N/A',
+            'guest' => $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest',
+            'room' => $request->room ? ($request->room->room_type ? $request->room->room_type . ' - ' . $request->room->room_number : $request->room->room_number) : 'Room info unavailable',
+            'checkIn' => $request->reservation?->check_in ? $request->reservation->check_in->format('M d, Y') : '—',
+            'checkOut' => $request->reservation?->check_out ? $request->reservation->check_out->format('M d, Y') : '—',
+            'nights' => $request->reservation ? (($request->reservation->nights ?? '1') . ' Nights') : '—',
+            'status' => $request->status,
+            'requestType' => $request->request_type,
+            'description' => $request->description,
+            'preferredTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : 'Not specified',
+            'priority' => $request->priority,
+            'submitted' => $request->submitted_at ? $request->submitted_at->format('M d, Y \a\t g:i A') : '—',
+            'submittedShort' => $request->submitted_at ? $request->submitted_at->format('M d, Y') : '—',
+            'quantity' => (int) ($request->quantity ?? 1),
+            'guestNote' => $request->description ?: 'No note provided',
+            'specialRequest' => $request->description ?: 'No special request.',
+            'estimatedArrivalTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : '—',
+            'items' => $items,
+        ];
+    })->values()->all();
 @endphp
 
 <style>
@@ -230,9 +263,250 @@
 
     .request-content-grid {
         display: grid;
-        grid-template-columns: 1.25fr 0.75fr;
+        grid-template-columns: 1fr;
         gap: 20px;
     }
+
+    .request-table-panel {
+        min-width: 0;
+    }
+
+    .request-table-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #edf0f2;
+    }
+
+    .request-table-toolbar .panel-title {
+        gap: 10px;
+    }
+
+    .request-table-toolbar .panel-title-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        font-size: 12px;
+    }
+
+    .request-table-toolbar .panel-title h3 {
+        font-size: 14px;
+    }
+
+    .request-table-toolbar p {
+        margin: 2px 0 0;
+        color: #8a94a6;
+        font-size: 12px;
+    }
+
+    .view-all-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        color: #64748b;
+        background: #f8fafc;
+        border: 1px solid #e5eaf0;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .request-table-wrap {
+        overflow-x: auto;
+    }
+
+    .request-table {
+        width: 100%;
+        min-width: 720px;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .request-table th {
+        padding: 13px 15px;
+        color: #718096;
+        background: #fbfcfd;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .2px;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .request-table td {
+        padding: 14px 15px;
+        color: #516074;
+        border-top: 1px solid #edf0f2;
+        font-size: 12px;
+        vertical-align: middle;
+    }
+
+    .request-table th:nth-child(1), .request-table td:nth-child(1) { width: 16%; }
+    .request-table th:nth-child(2), .request-table td:nth-child(2) { width: 25%; }
+    .request-table th:nth-child(3), .request-table td:nth-child(3) { width: 20%; }
+    .request-table th:nth-child(4), .request-table td:nth-child(4) { width: 12%; }
+    .request-table th:nth-child(5), .request-table td:nth-child(5) { width: 15%; }
+    .request-table th:nth-child(6), .request-table td:nth-child(6) { width: 12%; }
+
+    .request-id {
+        display: block;
+        color: #dc2626;
+        font-weight: 700;
+    }
+
+    .new-badge, .addon-badge, .status-badge {
+        display: inline-block;
+        border-radius: 5px;
+        padding: 3px 7px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .new-badge { margin-top: 5px; color: #2563eb; background: #dbeafe; }
+    .addon-badge { color: #dc2626; background: #fee2e2; }
+    .status-badge { display: inline-block; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+    .status-badge::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #f59e0b; }
+    .status-badge { color: #92400e; background: #fef3c7; }
+    .status-badge.new { color: #2563eb; background: #dbeafe; }
+    .status-badge.new::before { background: #2563eb; }
+    .status-badge.in-progress { color: #1d4ed8; background: #eff6ff; }
+    .status-badge.in-progress::before { background: #2563eb; }
+    .status-badge.delivered { color: #047857; background: #ecfdf5; }
+    .status-badge.delivered::before { background: #10b981; }
+    .status-badge.completed { color: #047857; background: #ecfdf5; }
+    .status-badge.completed::before { background: #10b981; }
+
+    .guest-name, .room-name { display: block; color: #273449; font-weight: 600; }
+    .room-detail, .date-detail { display: block; margin-top: 3px; color: #718096; font-size: 11px; }
+
+    .view-request {
+        width: 64px;
+        height: 30px;
+        padding: 0;
+        color: #dc2626;
+        background: #fff;
+        border: 1px solid #f08a8a;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .request-details-page { display: none; }
+    .request-details-page.show { display: block; }
+    .details-breadcrumb { display: none; }
+    .details-breadcrumb span { margin: 0 8px; color: #c0c7d1; }
+    .details-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 16px; }
+    .details-heading h2 { margin: 0; color: #273449; font-size: 22px; }
+    .details-heading p { margin: 4px 0 0; color: #718096; font-size: 12px; }
+    .details-status { padding: 8px 13px; color: #c2410c; background: #fff7ed; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+    .details-grid { display: grid; grid-template-columns: minmax(0, 1fr) 245px; gap: 20px; }
+    .details-grid.all-requests-mode { grid-template-columns: 1fr; }
+    .details-grid.all-requests-mode .summary-card { display: none; }
+    .details-main { display: grid; gap: 12px; min-width: 0; }
+    .specific-request-content { display: none; }
+    .specific-request-content.is-visible { display: block; }
+    .details-lower.specific-request-content.is-visible { display: grid; }
+    .details-actions.specific-request-content.is-visible { display: flex; }
+    .details-card { padding: 16px 18px; background: #fff; border: 1px solid #e7e9ed; border-radius: 8px; box-shadow: 0 4px 14px rgba(15,23,42,.04); }
+    .details-card h3 { margin: 0 0 14px; color: #991b1b; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .all-requests-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; }
+    .all-requests-table th { padding: 0 8px 10px; color: #718096; font-size: 10px; text-align: left; text-transform: uppercase; }
+    .all-requests-table td { padding: 11px 8px; border-top: 1px solid #edf0f2; color: #475569; font-size: 13px; vertical-align: middle; }
+    .all-requests-table th:nth-child(1), .all-requests-table td:nth-child(1) { width: 8%; }
+    .all-requests-table th:nth-child(2), .all-requests-table td:nth-child(2) { width: 10%; }
+    .all-requests-table th:nth-child(3), .all-requests-table td:nth-child(3) { width: 8%; }
+    .all-requests-table th:nth-child(4), .all-requests-table td:nth-child(4) { width: 10%; }
+    .all-requests-table th:nth-child(5), .all-requests-table td:nth-child(5) { width: 16%; }
+    .all-requests-table th:nth-child(6), .all-requests-table td:nth-child(6) { width: 10%; }
+    .all-requests-table th:nth-child(7), .all-requests-table td:nth-child(7) { width: 7%; }
+    .all-requests-table th:nth-child(8), .all-requests-table td:nth-child(8) { width: 12%; }
+    .all-requests-table th:nth-child(9), .all-requests-table td:nth-child(9) { width: 10%; }
+    .all-requests-table th:nth-child(10), .all-requests-table td:nth-child(10) { width: 9%; }
+    .all-requests-table td:first-child { color: #dc2626; font-weight: 700; }
+    .all-requests-table small { color: #718096; font-size: 10px; font-weight: 400; }
+    .all-requests-table td:nth-child(5), .all-requests-table td:nth-child(6), .all-requests-table td:nth-child(8) { overflow-wrap: anywhere; }
+    .all-request-status { display: inline-block; min-width: 76px; padding: 5px 8px; border-radius: 6px; color: #92400e; background: #fff7ed; font-size: 10px; font-weight: 600; }
+    .all-request-status.progress { color: #1d4ed8; background: #eff6ff; }
+    .all-request-status.delivered { color: #047857; background: #ecfdf5; }
+    .all-request-status.completed { color: #047857; background: #ecfdf5; }
+    .priority-high, .priority-medium, .priority-low { display: inline-block; padding: 4px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; }
+    .priority-high { color: #b91c1c; background: #fee2e2; }
+    .priority-medium { color: #b45309; background: #fef3c7; }
+    .priority-low { color: #047857; background: #d1fae5; }
+    .reservation-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .reservation-grid + .reservation-grid { margin-top: 14px; padding-top: 14px; border-top: 1px solid #edf0f2; }
+    .detail-label { display: block; color: #8a94a6; font-size: 11px; text-transform: uppercase; }
+    .detail-value { display: block; margin-top: 4px; color: #273449; font-size: 14px; font-weight: 600; }
+    .addon-table { width: 100%; border-collapse: collapse; }
+    .addon-table th { padding: 0 8px 10px; color: #718096; font-size: 10px; text-align: left; text-transform: uppercase; }
+    .addon-table td { padding: 9px 8px; border-top: 1px solid #edf0f2; color: #475569; font-size: 13px; }
+    .addon-table td:first-child { color: #7f1d1d; font-weight: 600; }
+    .addon-status { display: inline-block; min-width: 72px; padding: 5px 8px; color: #475569; background: #fff7ed; border-radius: 6px; font-size: 10px; }
+    .addon-status.delivered { color: #047857; background: #ecfdf5; }
+    .details-lower { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .details-note { min-height: 54px; color: #475569; font-size: 14px; line-height: 1.5; }
+    #housekeepingNotes {
+        display: block;
+        width: 100%;
+        min-height: 110px;
+        box-sizing: border-box;
+        padding: 12px;
+        border: 1px solid #dfe3e8;
+        border-radius: 8px;
+        resize: vertical;
+    }
+    #housekeepingNotes:focus {
+        border-color: #ff6b35;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(255,107,53,0.12);
+    }
+    .details-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
+    .details-action { height: 36px; padding: 0 14px; border: 1px solid #ff6b35; border-radius: 6px; color: #dc2626; background: #fff; font-family: inherit; font-size: 13px; font-weight: 600; }
+    .details-action.primary { color: #fff; border-color: #dc2626; background: linear-gradient(90deg, #dc2626, #ff7a00); }
+    .summary-card { height: fit-content; }
+    .summary-total { display: flex; align-items: center; gap: 12px; padding: 15px; margin-bottom: 15px; background: #f8fafc; border-radius: 10px; }
+    .summary-total i { color: #2563eb; font-size: 24px; }
+    .summary-total strong { display: block; color: #273449; font-size: 20px; }
+    .summary-total span { color: #475569; font-size: 10px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #edf0f2; color: #475569; font-size: 11px; }
+    .summary-row b { color: #273449; }
+    .summary-info { padding: 12px 0; border-bottom: 1px solid #edf0f2; }
+    .summary-info label { display: block; color: #8a94a6; font-size: 10px; text-transform: uppercase; }
+    .summary-info strong { display: block; margin-top: 5px; color: #273449; font-size: 11px; }
+    .details-back { display: inline-block; margin-bottom: 14px; padding: 0; color: #718096; background: none; border: 0; font-family: inherit; font-size: 12px; cursor: pointer; }
+
+    .request-table-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 15px;
+        color: #718096;
+        font-size: 10px;
+        border-top: 1px solid #edf0f2;
+    }
+
+    .pagination { display: flex; align-items: center; gap: 8px; }
+    .pagination button { width: 27px; height: 27px; color: #718096; background: #fff; border: 1px solid #e5eaf0; border-radius: 6px; }
+    .pagination .current { color: #fff; background: #dc2626; border-color: #dc2626; }
+
+    .request-side-stack { display: grid; gap: 14px; align-content: stretch; }
+    .request-side-stack .request-panel { height: 100%; display: flex; flex-direction: column; border-radius: 15px; }
+    .request-side-stack .panel-header { padding: 13px 15px; }
+    .request-side-stack .panel-body { flex: 1; display: flex; padding: 12px 15px; }
+    .request-side-stack .panel-title-icon { width: 29px; height: 29px; border-radius: 9px; font-size: 12px; }
+    .request-side-stack .panel-title { gap: 9px; }
+    .request-side-stack .panel-title h3 { font-size: 13px; }
+    .request-side-stack .empty-state { flex: 1; min-height: 0; padding: 14px; }
+    .request-side-stack .empty-icon { width: 30px; height: 30px; margin-bottom: 7px; font-size: 13px; }
+    .request-side-stack .empty-state h4 { font-size: 11px; }
+    .request-side-stack .empty-state p { margin-top: 3px; font-size: 10px; }
 
     .request-panel {
         background: #fff;
@@ -317,11 +591,6 @@
         font-size: 24px;
     }
 
-    .notification-panel .empty-icon {
-        background: #eef4ff;
-        color: #3b82f6;
-    }
-
     .empty-state h4 {
         margin: 0;
         color: #374151;
@@ -332,7 +601,7 @@
     .empty-state p {
         margin: 7px auto 0;
         color: #9ca3af;
-        font-size: 13px;
+        font-size: 15px;
         line-height: 1.6;
     }
 
@@ -426,7 +695,7 @@
         display: block;
         margin-bottom: 7px;
         color: #4b5563;
-        font-size: 13px;
+        font-size: 15px;
         font-weight: 600;
     }
 
@@ -441,7 +710,7 @@
         color: #374151;
         background: #fff;
         font-family: inherit;
-        font-size: 13px;
+        font-size: 15px;
         outline: none;
         transition: 0.2s;
     }
@@ -504,6 +773,8 @@
         .request-content-grid {
             grid-template-columns: 1fr;
         }
+
+        .details-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 850px) {
@@ -556,6 +827,14 @@
             padding: 17px;
         }
 
+        .request-table-toolbar { align-items: flex-start; flex-direction: column; }
+
+        .request-table-footer { align-items: flex-start; flex-direction: column; gap: 10px; }
+
+        .details-heading { align-items: flex-start; flex-direction: column; }
+        .reservation-grid, .details-lower { grid-template-columns: 1fr; }
+        .addon-table { min-width: 620px; }
+
         .form-grid {
             grid-template-columns: 1fr;
             gap: 0;
@@ -591,7 +870,7 @@
                     <h2>Guest Requests</h2>
 
                     <p class="request-hero-description">
-                        A clear view of guest messages and service needs for the day.
+                        A clear view of guest requests and service needs for the day.
                     </p>
                 </div>
 
@@ -611,7 +890,7 @@
                 <div class="stat-top">
 
                     <div>
-                        <p class="stat-label">Pending Messages</p>
+                        <p class="stat-label">Pending Requests</p>
 
                         <h2 class="stat-number">
                             {{ $stats['pending'] }}
@@ -635,7 +914,7 @@
                 <div class="stat-top">
 
                     <div>
-                        <p class="stat-label">Resolved Messages</p>
+                        <p class="stat-label">Resolved Requests</p>
 
                         <h2 class="stat-number">
                             {{ $stats['resolved'] }}
@@ -659,7 +938,7 @@
                 <div class="stat-top">
 
                     <div>
-                        <p class="stat-label">Total Messages</p>
+                        <p class="stat-label">Total Requests</p>
 
                         <h2 class="stat-number">
                             {{ $stats['total'] }}
@@ -681,100 +960,74 @@
         </section>
 
         <section class="request-content-grid">
-
-
-            <div class="request-panel">
-
-                <div class="panel-header">
-
+            <div class="request-panel request-table-panel">
+                <div class="request-table-toolbar">
                     <div class="panel-title">
-
-                        <div class="panel-title-icon">
-                            <i class="fas fa-comment-dots"></i>
+                        <div class="panel-title-icon"><i class="fas fa-inbox"></i></div>
+                        <div>
+                            <h3>Housekeeping Add-On Requests</h3>
+                            <p>View and manage guest requested add-ons and amenities.</p>
                         </div>
-
-                        <h3>Guest Message Box</h3>
-
                     </div>
-
-                    <span class="panel-date">
-                        <i class="far fa-calendar-alt"></i>
-                        Today
-                    </span>
-
+                    <button type="button" class="view-all-button" onclick="openRequestDetails()">
+                        <i class="fas fa-list"></i> View All Requests
+                    </button>
                 </div>
 
-
-                <div class="panel-body">
-
-                    <div class="empty-state">
-
-                        <div class="empty-state-content">
-
-                            <div class="empty-icon">
-                                <i class="fas fa-inbox"></i>
-                            </div>
-
-                            <h4>No Guest Messages Yet</h4>
-
-                            <p>
-                                Requests from guests will appear here once they arrive.
-                                New service requests can be reviewed and managed from this section.
-                            </p>
-
-                        </div>
-
-                    </div>
-
+                <div class="request-table-wrap">
+                    <table class="request-table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Guest &amp; Room</th>
+                                <th>Date</th>
+                                <th>Add-Ons</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($groupedRequests ?? ($requests ?? collect()) as $request)
+                                <tr>
+                                    <td><strong>REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</strong></td>
+                                    <td>
+                                        <div><strong>{{ $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest' }}</strong></div>
+                                        <small>{{ $request->room?->room_number ?? 'Room info unavailable' }}</small>
+                                    </td>
+                                    <td>{{ $request->submitted_at ? $request->submitted_at->format('M d, Y') : '—' }}</td>
+                                    <td>{{ $request->request_type }}</td>
+                                    <td>
+                                        @php
+                                            $statusClass = strtolower(str_replace(' ', '-', $request->status));
+                                        @endphp
+                                        <span class="status-badge {{ $statusClass }}">{{ $request->status }}</span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="view-request-btn" onclick="openGuestRequest('REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}')">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="empty-state">
+                                            <div class="empty-state-content">
+                                                <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                                                <h4>No guest requests</h4>
+                                                <p>There are no housekeeping requests to display.</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
-
-            </div>
-
-
-            <div class="request-panel notification-panel">
-
-                <div class="panel-header">
-
-                    <div class="panel-title">
-
-                        <div class="panel-title-icon">
-                            <i class="fas fa-bell"></i>
-                        </div>
-
-                        <h3>Notification Center</h3>
-
-                    </div>
-
-                    <span class="panel-date">
-                        <i class="fas fa-circle" style="font-size:7px;color:#22c55e;"></i>
-                        Live
-                    </span>
-
+                <div class="request-table-footer">
+                    <span>Showing {{ $requests->count() ? 1 : 0 }} to {{ $requests->count() }} of {{ $requests->count() }} requests</span>
+                    <div class="pagination"><button type="button" disabled aria-label="Previous page"><i class="fas fa-chevron-left"></i></button><button type="button" disabled aria-label="Current page">{{ $requests->count() ?: 0 }}</button><button type="button" disabled aria-label="Next page"><i class="fas fa-chevron-right"></i></button></div>
                 </div>
-
-
-                <div class="panel-body">
-
-                    <div class="empty-state">
-
-                        <div class="empty-state-content">
-
-                            <div class="empty-icon">
-                                <i class="fas fa-bell-slash"></i>
-                            </div>
-
-                            <h4>No Notifications Yet</h4>
-
-                            <p>
-                                Housekeeping notifications will appear here when action is required.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
             </div>
 
 
@@ -783,6 +1036,116 @@
     </div>
 
 </main>
+
+<section id="requestDetails" class="guest-request-page request-details-page" aria-hidden="true">
+    <div class="guest-request-container">
+        <button type="button" class="details-back" onclick="closeRequestDetails()"><i class="fas fa-chevron-left"></i> Back to Guest Requests</button>
+        <p class="details-breadcrumb">Guest Requests <span>&gt;</span> <strong>Add-On Request Details</strong></p>
+
+        <div class="details-heading">
+            <div>
+                <h2 id="detailsPageTitle">All Housekeeping Add-On Requests</h2>
+                <p id="detailsPageDescription">View and manage all guest requested add-ons and amenities.</p>
+            </div>
+            <span id="detailsPageStatus" class="details-status"><i class="far fa-clock"></i> All Requests</span>
+        </div>
+
+        <div id="detailsGrid" class="details-grid">
+            <div class="details-main">
+                <div id="allRequestsCard" class="details-card">
+                    <h3><i class="fas fa-list"></i> All Requests <small style="color:#718096;font-size:10px;font-weight:400;text-transform:none;">{{ $requests->count() }} total requests</small></h3>
+                    <div class="request-table-wrap">
+                        <table class="all-requests-table">
+                            <thead><tr><th>Request ID</th><th>Guest Name</th><th>Room Number</th><th>Request Type</th><th>Description / Preview</th><th>Preferred Time</th><th>Priority</th><th>Submitted Date / Time</th><th>Status</th><th>Action</th></tr></thead>
+                            <tbody>
+                                @forelse($groupedRequests ?? ($requests ?? collect()) as $request)
+                                    <tr>
+                                        <td>REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</td>
+                                        <td>{{ $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest' }}</td>
+                                        <td>{{ $request->room?->room_number ?? '—' }}</td>
+                                        <td>{{ $request->request_type }}</td>
+                                        <td>{{ Str::limit($request->description, 55) }}</td>
+                                        <td>{{ $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : 'Not specified' }}</td>
+                                        <td>{{ $request->priority }}</td>
+                                        <td>{{ $request->submitted_at ? $request->submitted_at->format('M d, Y \a\t g:i A') : '—' }}</td>
+                                        <td><span class="status-badge {{ strtolower(str_replace(' ', '-', $request->status)) }}">{{ $request->status }}</span></td>
+                                        <td><button type="button" class="view-request-btn" onclick="openGuestRequest({{ $request->id }})">View</button></td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="10">
+                                            <div class="empty-state">
+                                                <div class="empty-state-content">
+                                                    <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                                                    <h4>No guest requests</h4>
+                                                    <p>There are no requests to display.</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="details-card specific-request-content">
+                    <h3><i class="far fa-calendar-alt"></i> Reservation Information</h3>
+                    <div class="reservation-grid">
+                        <div><span class="detail-label">Reservation ID</span><span id="detailReservationId" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Guest Name</span><span id="detailGuestName" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Room</span><span id="detailRoom" class="detail-value">—</span></div>
+                    </div>
+                    <div class="reservation-grid">
+                        <div><span class="detail-label">Check-in</span><span id="detailCheckIn" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Check-out</span><span id="detailCheckOut" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Nights / Guests</span><span id="detailNights" class="detail-value">—</span></div>
+                    </div>
+                </div>
+
+                <div class="details-card specific-request-content">
+                    <h3><i class="fas fa-concierge-bell"></i> Requested Add-Ons</h3>
+                    <div class="request-table-wrap">
+                        <table class="addon-table">
+                            <thead><tr><th>Add-On Item</th><th>Quantity</th><th>Guest Note</th><th>Status</th></tr></thead>
+                            <tbody id="requestedAddOnsTableBody">
+                                <tr>
+                                    <td colspan="4">
+                                        <div class="empty-state">
+                                            <div class="empty-state-content">
+                                                <div class="empty-icon"><i class="fas fa-box-open"></i></div>
+                                                <h4>No requested add-ons</h4>
+                                                <p>There are no add-on items to display.</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="details-lower specific-request-content">
+                    <div class="details-card"><h3><i class="far fa-comment"></i> Special Request</h3><div id="specialRequestText" class="details-note">No request selected.</div></div>
+                    <div class="details-card"><h3><i class="far fa-clock"></i> Estimated Arrival Time</h3><div class="details-note"><strong id="estimatedArrivalTimeText">—</strong> </div></div>
+                </div>
+                <div class="details-card specific-request-content"><h3><i class="far fa-edit"></i> Housekeeping Notes</h3><textarea id="housekeepingNotes" class="details-note" placeholder="Enter notes about request fulfillment, delivery time, or any issues..."></textarea></div>
+                <div class="details-actions specific-request-content"><button type="button" class="details-action" onclick="saveRequestProgress()">Save Progress</button><button type="button" class="details-action primary" onclick="markAllDelivered()">Mark All as Delivered</button></div>
+            </div>
+
+            <aside id="summaryCard" class="details-card summary-card">
+                <h3><i class="fas fa-clipboard-list"></i> Requests Summary</h3>
+                <div class="summary-total"><i class="far fa-clipboard"></i><div><span>All Requests</span><strong>{{ $stats['total'] }}</strong><span>{{ $stats['total'] }} Total Requests</span></div></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#f59e0b;font-size:7px"></i> Pending</span><b>{{ $stats['pending'] }}</b></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#3b82f6;font-size:7px"></i> In Progress</span><b>{{ $requests->where('status', 'In Progress')->count() }}</b></div>
+                <div class="summary-row"><span><i class="fas fa-circle" style="color:#10b981;font-size:7px"></i> Completed</span><b>{{ $stats['resolved'] }}</b></div>
+                <div class="summary-info"><label>Requested On</label><strong id="summaryRequestedOn">—</strong></div>
+                <div class="summary-info"><label>Requested By</label><strong id="summaryGuestName">Guest<br><small>(Guest)</small></strong></div>
+                <div class="summary-info"><label>Related Booking</label><strong id="summaryBooking">—</strong></div>
+                <button type="button" class="details-action" style="width:100%;margin-top:15px" onclick="openRequestDetails()">View Reservation Details <i class="fas fa-arrow-right"></i></button>
+            </aside>
+        </div>
+    </div>
+</section>
 
 
 <div id="requestModal">
@@ -808,7 +1171,7 @@
         </div>
 
 
-        <form class="request-form">
+        <form class="request-form" onsubmit="sendGuestMessage(event)">
 
             <div class="form-grid">
 
@@ -819,7 +1182,9 @@
 
                     <input
                         type="text"
-                        placeholder="Enter guest name">
+                        name="guest_name"
+                        placeholder="Enter guest name"
+                        required>
                 </div>
 
 
@@ -830,7 +1195,9 @@
 
                     <input
                         type="text"
-                        placeholder="e.g. 101">
+                        name="room_number"
+                        placeholder="e.g. 101"
+                        required>
                 </div>
 
             </div>
@@ -842,7 +1209,7 @@
                     Request Type
                 </label>
 
-                <select>
+                <select name="request_type">
 
                     <option>Extra Pillows</option>
                     <option>Towels</option>
@@ -861,7 +1228,9 @@
                 </label>
 
                 <textarea
-                    placeholder="Write the guest's message here..."></textarea>
+                    name="message"
+                    placeholder="Write the guest's message here..."
+                    required></textarea>
 
             </div>
 
@@ -897,6 +1266,262 @@
 
 
 <script>
+const requestData = @json($requestData ?? []);
+const guestRequestDetailRoute = "{{ route('housekeeping.guest-requests.show', ['id' => '__ID__']) }}";
+
+function renderAllRequestsTable() {
+    const tbody = document.getElementById('allRequestsTableBody');
+    if (!tbody) return;
+
+    if (!requestData.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10">
+                    <div class="empty-state">
+                        <div class="empty-state-content">
+                            <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                            <h4>No guest requests</h4>
+                            <p>There are no requests to display.</p>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = requestData.map((request) => `
+        <tr>
+            <td>${request.requestId}</td>
+            <td>${request.guest}</td>
+            <td>${request.room}</td>
+            <td>${request.requestType}</td>
+            <td>${request.description ? request.description.slice(0, 55) : 'No description'}</td>
+            <td>${request.preferredTime}</td>
+            <td>${request.priority}</td>
+            <td>${request.submitted}</td>
+            <td><span class="status-badge ${String(request.status).toLowerCase().replace(/\s+/g, '-')}">${request.status}</span></td>
+            <td><button type="button" class="view-request-btn" onclick="openGuestRequest(${request.id})">View</button></td>
+        </tr>
+    `).join('');
+}
+
+function openRequestDetails() {
+    const overview = document.querySelector('.guest-request-page:not(.request-details-page)');
+    const details = document.getElementById('requestDetails');
+    const detailsGrid = document.getElementById('detailsGrid');
+    const allRequests = document.getElementById('allRequestsCard');
+    const specificContent = document.querySelectorAll('.specific-request-content');
+    const title = document.getElementById('detailsPageTitle');
+    const description = document.getElementById('detailsPageDescription');
+    const status = document.getElementById('detailsPageStatus');
+
+    if (overview && details) {
+        overview.style.display = 'none';
+        details.classList.add('show');
+        detailsGrid.classList.add('all-requests-mode');
+        details.setAttribute('aria-hidden', 'false');
+        allRequests.style.display = '';
+        specificContent.forEach((element) => {
+            element.classList.remove('is-visible');
+            element.style.display = '';
+        });
+        title.textContent = 'All Housekeeping Add-On Requests';
+        description.textContent = 'View and manage all guest requested add-ons and amenities.';
+        status.innerHTML = '<i class="fas fa-list"></i> All Requests';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function openGuestRequest(requestId) {
+    const overview = document.querySelector('.guest-request-page:not(.request-details-page)');
+    const details = document.getElementById('requestDetails');
+    const detailsGrid = document.getElementById('detailsGrid');
+    const allRequests = document.getElementById('allRequestsCard');
+    const specificContent = document.querySelectorAll('.specific-request-content');
+    const title = document.getElementById('detailsPageTitle');
+    const description = document.getElementById('detailsPageDescription');
+    const status = document.getElementById('detailsPageStatus');
+    const normalizedId = String(requestId).replace(/^REQ-/, '').trim();
+    const request = requestData.find((item) => String(item.id) === normalizedId || item.requestId === String(requestId));
+
+    if (overview && details && request) {
+        currentGuestRequestId = request.requestId;
+        overview.style.display = 'none';
+        details.classList.add('show');
+        detailsGrid.classList.remove('all-requests-mode');
+        details.setAttribute('aria-hidden', 'false');
+        allRequests.style.display = 'none';
+        specificContent.forEach((element) => element.classList.add('is-visible'));
+        title.textContent = 'Housekeeping Add-On Request';
+        description.textContent = 'View and manage this guest\'s requested add-ons and amenities.';
+        status.innerHTML = '<i class="far fa-clock"></i> Status: ' + (localStorage.getItem('housekeeping-request-status-' + request.requestId) || request.status);
+
+        document.getElementById('detailReservationId').textContent = request.reservation;
+        document.getElementById('detailGuestName').textContent = request.guest;
+        document.getElementById('detailRoom').textContent = request.room;
+        document.getElementById('detailCheckIn').textContent = request.checkIn;
+        document.getElementById('detailCheckOut').textContent = request.checkOut;
+        document.getElementById('detailNights').innerHTML = request.nights;
+
+        const addOnBody = document.getElementById('requestedAddOnsTableBody');
+        if (addOnBody) {
+            const items = Array.isArray(request.items) && request.items.length ? request.items : [{
+                request_type: request.requestType,
+                quantity: request.quantity ?? 1,
+                guest_note: request.guestNote || 'No note provided',
+                status: request.status,
+            }];
+
+            addOnBody.innerHTML = items.map((item) => `
+                <tr>
+                    <td>${item.request_type || request.requestType}</td>
+                    <td>${item.quantity ?? request.quantity ?? 1}</td>
+                    <td>${item.guest_note || request.guestNote || 'No note provided'}</td>
+                    <td><span class="status-badge ${String(item.status || request.status).toLowerCase().replace(/\s+/g, '-')}">${item.status || request.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        const specialRequestText = document.getElementById('specialRequestText');
+        if (specialRequestText) {
+            specialRequestText.textContent = request.specialRequest || 'No special request.';
+        }
+
+        const arrivalText = document.getElementById('estimatedArrivalTimeText');
+        if (arrivalText) {
+            arrivalText.textContent = request.estimatedArrivalTime || '—';
+        }
+
+        document.getElementById('summaryRequestedOn').textContent = request.submittedShort || '—';
+        document.getElementById('summaryGuestName').innerHTML = request.guest + '<br><small>(Guest)</small>';
+        document.getElementById('summaryBooking').innerHTML = request.room + '<br>' + request.checkIn + ' - ' + request.checkOut;
+        document.getElementById('housekeepingNotes').value = '';
+        const summaryRow = document.querySelector('.details-card.summary-card');
+        if (summaryRow) {
+            const before = summaryRow.querySelector('.summary-total strong');
+            if (before) before.textContent = requestData.length;
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function closeRequestDetails() {
+    const overview = document.querySelector('.guest-request-page:not(.request-details-page)');
+    const details = document.getElementById('requestDetails');
+
+    if (overview && details) {
+        overview.style.display = '';
+        details.classList.remove('show');
+        details.setAttribute('aria-hidden', 'true');
+    }
+}
+
+renderAllRequestsTable();
+
+let currentGuestRequestId = null;
+
+function saveRequestProgress() {
+    if (!currentGuestRequestId) {
+        alert('Please select a request first.');
+        return;
+    }
+
+    const notes = document.getElementById('housekeepingNotes').value;
+    const requestId = String(currentGuestRequestId).replace(/^REQ-/, '').trim();
+
+    fetch(`/housekeeping/guest-requests/${requestId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+        },
+        body: JSON.stringify({
+            notes: notes,
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Housekeeping progress saved successfully.');
+            localStorage.setItem('housekeeping-request-notes-' + currentGuestRequestId, notes);
+        } else {
+            alert('Error saving progress: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving progress: ' + error.message);
+    });
+}
+
+function markAllDelivered() {
+    if (!currentGuestRequestId) {
+        alert('Please select a request first.');
+        return;
+    }
+
+    const requestId = String(currentGuestRequestId).replace(/^REQ-/, '').trim();
+
+    fetch(`/housekeeping/guest-requests/${requestId}/mark-delivered`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+        },
+        body: JSON.stringify({}),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelectorAll('.addon-status').forEach((element) => {
+                element.classList.add('delivered');
+                element.textContent = 'Delivered';
+            });
+            document.getElementById('detailsPageStatus').innerHTML = '<i class="fas fa-check-circle"></i> Status: Delivered';
+            localStorage.setItem('housekeeping-request-status-' + currentGuestRequestId, 'Delivered');
+            alert('All requested add-ons marked as delivered.');
+            
+            // Reload the page to refresh the data
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            alert('Error marking as delivered: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error marking as delivered: ' + error.message);
+    });
+}
+
+function restoreRequestList() {
+    const tbody = document.querySelector('.all-requests-table tbody');
+    if (!tbody || !requestData.length) return;
+
+    tbody.innerHTML = requestData.map((request) => `
+        <tr>
+            <td>${request.requestId}</td>
+            <td>${request.guest}</td>
+            <td>${request.room}</td>
+            <td>${request.requestType}</td>
+            <td>${request.description ? request.description.slice(0, 55) : 'No description'}</td>
+            <td>${request.preferredTime}</td>
+            <td>${request.priority}</td>
+            <td>${request.submitted}</td>
+            <td><span class="status-badge ${request.status.toLowerCase().replace(/\s+/g, '-')}">${request.status}</span></td>
+            <td><button type="button" class="view-request-btn" onclick="openGuestRequest(${request.id})">View</button></td>
+        </tr>
+    `).join('');
+}
+
+function sendGuestMessage(event) {
+    event.preventDefault();
+    const form = event.target;
+    if (!form.reportValidity()) return;
+    closeRequestModal();
+    form.reset();
+    alert('Guest message sent successfully.');
+}
 
 function openRequestModal() {
 

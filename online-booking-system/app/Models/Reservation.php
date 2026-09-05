@@ -11,6 +11,11 @@ class Reservation extends Model
         'check_out' => 'date',
     ];
 
+    public function diningItems()
+    {
+        return $this->hasMany(ReservationDiningItem::class);
+    }
+
     protected $fillable = [
         'category',
         'room_id',
@@ -20,9 +25,17 @@ class Reservation extends Model
         'event_type',
         'number_of_guests',
         'dining_area',
+        'dining_schedule',
         'quantity',
         'check_in',
         'check_in_time',
+        'room_check_in_time',
+        'room_check_out_time',
+        'event_start_time',
+        'event_end_time',
+        'amenity_start_time',
+        'amenity_end_time',
+        'dining_time',
         'check_out',
         'check_out_time',
         'status',
@@ -32,6 +45,7 @@ class Reservation extends Model
         'event_place_id',
         'dining_id',
         'payment_method',
+        'payment_details',
         'special_requests',
     ];
 
@@ -40,8 +54,28 @@ class Reservation extends Model
         return $this->belongsTo(Room::class);
     }
 
+    public function amenity()
+    {
+        return $this->belongsTo(Amenity::class);
+    }
+
+    public function eventPlace()
+    {
+        return $this->belongsTo(EventPlace::class);
+    }
+
+    public function diningMenu()
+    {
+        return $this->belongsTo(DiningMenu::class, 'dining_id');
+    }
+
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function housekeepingTasks()
+    {
+        return $this->hasMany(HousekeepingTask::class);
     }
 }

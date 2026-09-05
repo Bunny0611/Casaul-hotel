@@ -3,8 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\GuestRequest;
+use App\Models\HousekeepingTask;
 use App\Models\Room;
+use App\Models\Reservation;
+use App\Models\Staff;
 use App\Models\MaintenanceReport;
+use App\Models\Message;
 
 class HousekeepingController extends Controller
 {
@@ -18,6 +23,12 @@ class HousekeepingController extends Controller
         $dirtyRooms = $rooms->where('cleaning_status', 'dirty')->count();
         $inProgress = $rooms->where('cleaning_status', 'in_progress')->count();
         $occupiedRooms = $rooms->where('status', 'occupied')->count();
+        $pendingTasks = HousekeepingTask::with(['room', 'assignedStaff'])
+            ->whereIn('status', ['pending', 'in_progress'])->get();
+        $priorityTasks = $pendingTasks->sortBy(function (HousekeepingTask $task) {
+            return ['urgent' => 1, 'high' => 2, 'medium' => 3, 'low' => 4][$task->priority] ?? 5;
+        })->take(4);
+        $cleaningPercentage = $totalRooms > 0 ? (int) round(($cleanRooms / $totalRooms) * 100) : 0;
 
         return view('housekeeping.dashboard', compact(
             'rooms',
@@ -25,16 +36,78 @@ class HousekeepingController extends Controller
             'cleanRooms',
             'dirtyRooms',
             'inProgress',
-            'occupiedRooms'
+            'occupiedRooms',
+            'pendingTasks',
+            'priorityTasks',
+            'cleaningPercentage'
         ));
     }
 
 
     public function assignedRooms()
     {
+        $tasks = HousekeepingTask::with(['room', 'assignedStaff', 'reservation'])
+            ->whereIn('status', ['pending', 'in_progress'])
+            ->orderBy('scheduled_date')
+            ->orderBy('scheduled_time')
+            ->get();
         $rooms = Room::orderBy('room_number')->get();
+        $reservations = Reservation::whereIn('status', ['pending', 'confirmed', 'checked-in'])
+            ->with('room')->latest()->get();
+        $staff = Staff::where('role', 'housekeeping')->where('is_active', true)
+            ->orderBy('name')->get();
 
-        return view('housekeeping.assigned-rooms', compact('rooms'));
+        return view('housekeeping.assigned-rooms', compact('tasks', 'rooms', 'reservations', 'staff'));
+    }
+
+    public function storeTask(Request $request)
+    {
+        $validated = $request->validate([
+            'room_id' => ['required', 'exists:rooms,id'],
+            'reservation_id' => ['nullable', 'exists:reservations,id'],
+            'assigned_staff_id' => ['nullable', 'exists:staff_users,id'],
+            'task' => ['required', 'string', 'max:255'],
+            'priority' => ['required', 'in:low,medium,high,urgent'],
+            'scheduled_date' => ['required', 'date'],
+            'scheduled_time' => ['nullable', 'date_format:H:i'],
+            'estimated_duration' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        if (!empty($validated['assigned_staff_id'])) {
+            abort_unless(Staff::whereKey($validated['assigned_staff_id'])
+                ->where('role', 'housekeeping')->exists(), 422, 'Invalid housekeeping staff.');
+        }
+
+        HousekeepingTask::create($validated);
+
+        return redirect()->route('housekeeping.assigned-rooms')->with('success', 'Cleaning task assigned.');
+    }
+
+    public function startTask(HousekeepingTask $housekeepingTask)
+    {
+        abort_unless($housekeepingTask->status === 'pending', 422, 'Only pending tasks can be started.');
+        $housekeepingTask->update(['status' => 'in_progress', 'started_at' => now()]);
+        $housekeepingTask->room()->update(['cleaning_status' => 'in_progress']);
+
+        return back()->with('success', 'Cleaning started.');
+    }
+
+    public function completeTask(HousekeepingTask $housekeepingTask)
+    {
+        abort_unless($housekeepingTask->status === 'in_progress', 422, 'Only active tasks can be completed.');
+        $housekeepingTask->update(['status' => 'completed', 'finished_at' => now()]);
+        $housekeepingTask->room()->update(['cleaning_status' => 'clean']);
+
+        return back()->with('success', 'Cleaning completed.');
+    }
+
+    public function destroyTask(HousekeepingTask $housekeepingTask)
+    {
+        abort_unless($housekeepingTask->status === 'pending', 422, 'Only pending tasks can be deleted.');
+        $housekeepingTask->delete();
+
+        return back()->with('success', 'Pending task deleted.');
     }
 
 
@@ -47,31 +120,174 @@ class HousekeepingController extends Controller
 
     public function guestRequests()
     {
-        return view('housekeeping.guest-requests');
+        $requests = GuestRequest::with(['guest', 'room', 'reservation'])
+            ->where('department', 'Housekeeping')
+            ->latest('submitted_at')
+            ->get();
+
+        $groupedRequests = $requests->groupBy(function ($request) {
+            $signature = [
+                $request->guest_id ?? 'guest',
+                $request->reservation_id ?? 'reservation',
+                $request->room_id ?? 'room',
+                trim((string) ($request->description ?? '')),
+                trim((string) ($request->preferred_time ?? '')),
+                trim((string) ($request->priority ?? '')),
+                trim((string) ($request->status ?? '')),
+                $request->submitted_at ? $request->submitted_at->toDateTimeString() : now()->toDateTimeString(),
+            ];
+
+            return md5(implode('|', $signature));
+        })->map(function ($group) {
+            $first = $group->first();
+
+            return (object) [
+                'id' => $first->id,
+                'guest_id' => $first->guest_id,
+                'reservation_id' => $first->reservation_id,
+                'room_id' => $first->room_id,
+                'guest' => $first->guest,
+                'room' => $first->room,
+                'reservation' => $first->reservation,
+                'request_type' => $group->pluck('request_type')->unique()->implode(', '),
+                'description' => $first->description,
+                'department' => $first->department,
+                'priority' => $first->priority,
+                'preferred_time' => $first->preferred_time,
+                'status' => $first->status,
+                'quantity' => $group->sum(fn ($item) => (int) ($item->quantity ?? 1)),
+                'submitted_at' => $first->submitted_at,
+                'items' => $group->map(fn ($item) => [
+                    'request_type' => $item->request_type,
+                    'quantity' => (int) ($item->quantity ?? 1),
+                    'status' => $item->status,
+                    'guest_note' => $item->description ?: 'No note provided',
+                ])->values()->all(),
+            ];
+        })->values();
+
+        $requests = $groupedRequests;
+
+        $stats = [
+            'pending' => $groupedRequests->whereIn('status', ['New', 'In Progress'])->count(),
+            'resolved' => $groupedRequests->where('status', 'Completed')->count(),
+            'total' => $groupedRequests->count(),
+        ];
+
+        return view('housekeeping.guest-requests', compact('requests', 'groupedRequests', 'stats'));
+    }
+
+    public function guestRequestDetails($id)
+    {
+        $request = GuestRequest::with(['guest', 'room', 'reservation'])
+            ->where('department', 'Housekeeping')
+            ->findOrFail($id);
+
+        $requestData = [
+            'id' => $request->id,
+            'requestId' => 'REQ-' . str_pad($request->id, 4, '0', STR_PAD_LEFT),
+            'reservation' => $request->reservation ? 'RES-' . str_pad($request->reservation->id, 4, '0', STR_PAD_LEFT) : 'N/A',
+            'guest' => $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest',
+            'room' => $request->room ? ($request->room->room_type ? $request->room->room_type . ' - ' . $request->room->room_number : $request->room->room_number) : 'Room info unavailable',
+            'checkIn' => $request->reservation?->check_in ? $request->reservation->check_in->format('M d, Y') : '—',
+            'checkOut' => $request->reservation?->check_out ? $request->reservation->check_out->format('M d, Y') : '—',
+            'nights' => $request->reservation ? (($request->reservation->nights ?? '1') . ' Nights') : '—',
+            'status' => $request->status,
+            'requestType' => $request->request_type,
+            'description' => $request->description,
+            'preferredTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : 'Not specified',
+            'priority' => $request->priority,
+            'submitted' => $request->submitted_at ? $request->submitted_at->format('M d, Y \a\t g:i A') : '—',
+            'submittedShort' => $request->submitted_at ? $request->submitted_at->format('M d, Y') : '—',
+            'quantity' => (int) ($request->quantity ?? 1),
+            'guestNote' => $request->description ?: 'No note provided',
+            'specialRequest' => $request->description ?: 'No special request.',
+            'estimatedArrivalTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : '—',
+            'items' => [[
+                'request_type' => $request->request_type,
+                'quantity' => (int) ($request->quantity ?? 1),
+                'status' => $request->status,
+                'guest_note' => $request->description ?: 'No note provided',
+            ]],
+        ];
+
+        return view('housekeeping.guest-request-details', compact('request', 'requestData'));
+    }
+
+    public function updateGuestRequest(Request $request, $id)
+    {
+        $guestRequest = GuestRequest::findOrFail($id);
+        
+        $validated = $request->validate([
+            'notes' => 'nullable|string',
+            'status' => 'nullable|string|in:New,In Progress,Delivered,Completed',
+        ]);
+
+        if (isset($validated['notes'])) {
+            $guestRequest->employee_notes = $validated['notes'];
+        }
+
+        if (isset($validated['status'])) {
+            $guestRequest->status = $validated['status'];
+        }
+
+        $guestRequest->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Guest request updated successfully',
+            'data' => $guestRequest,
+        ]);
+    }
+
+    public function markGuestRequestDelivered(Request $request, $id)
+    {
+        $guestRequest = GuestRequest::findOrFail($id);
+        $guestRequest->status = 'Delivered';
+        $guestRequest->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Guest request marked as delivered',
+            'data' => $guestRequest,
+        ]);
     }
 
     public function maintenanceReport()
     {
         $reports = MaintenanceReport::latest('date_reported')->get();
+        $rooms = Room::orderBy('room_number')->get();
+        $reportCounts = [
+            'total' => $reports->count(),
+            'pending' => $reports->where('status', 'Pending')->count(),
+            'repairing' => $reports->whereIn('status', ['Repairing', 'In Progress'])->count(),
+            'completed' => $reports->where('status', 'Completed')->count(),
+        ];
 
-        return view('housekeeping.maintenance-report', compact('reports'));
+        return view('housekeeping.maintenance-report', compact('reports', 'rooms', 'reportCounts'));
     }
 
     public function storeMaintenanceReport(Request $request)
     {
         $validated = $request->validate([
-            'room_number' => ['required', 'string', 'max:255'],
-            'room_type' => ['required', 'string', 'max:255'],
-            'reported_by' => ['required', 'string', 'max:255'],
-            'category' => ['required', 'string', 'max:255'],
-            'priority' => ['required', 'string', 'max:50'],
-            'problem' => ['required', 'string', 'max:255'],
+            'room_number' => ['required', 'exists:rooms,room_number'],
+            'category' => ['required', 'in:Electrical,Plumbing,Furniture,Air Conditioning,Bathroom,Other'],
+            'priority' => ['required', 'in:Low,Medium,High,Urgent'],
             'description' => ['required', 'string'],
-            'date_reported' => ['required', 'date'],
-            'expected_date' => ['nullable', 'date', 'after_or_equal:date_reported'],
-            'technician' => ['required', 'string', 'max:255'],
-            'status' => ['required', 'string', 'max:50'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
         ]);
+
+        $room = Room::where('room_number', $validated['room_number'])->firstOrFail();
+        $validated['room_type'] = $room->room_type;
+        $validated['problem'] = $validated['category'];
+        $validated['reported_by'] = $request->user('web')->name;
+        $validated['date_reported'] = now();
+        $validated['technician'] = 'Unassigned';
+        $validated['status'] = 'Pending';
+        $validated['photo_path'] = $request->hasFile('photo')
+            ? $request->file('photo')->store('maintenance-reports', 'public')
+            : null;
+        unset($validated['photo']);
 
         MaintenanceReport::create($validated);
 
@@ -95,6 +311,8 @@ class HousekeepingController extends Controller
             'status' => ['required', 'string', 'max:50'],
         ]);
 
+        $validated['reported_by'] = $request->user('web')->name;
+
         $maintenanceReport->update($validated);
 
         return redirect()->route('housekeeping.maintenance-report')
@@ -111,7 +329,25 @@ class HousekeepingController extends Controller
 
     public function cleaningHistory()
     {
-        return view('housekeeping.cleaning-history');
+        $tasks = HousekeepingTask::with(['room', 'assignedStaff', 'reservation'])
+            ->where('status', 'completed')->latest('finished_at')->get();
+
+        return view('housekeeping.cleaning-history', compact('tasks'));
+    }
+
+    public function messages()
+    {
+        $messages = Message::latest()->get();
+        
+        $stats = [
+            'unread' => $messages->where('is_replied', false)->count(),
+            'replied' => $messages->where('is_replied', true)->count(),
+            'total' => $messages->count(),
+        ];
+        
+        $dateFilter = 'today';
+
+        return view('housekeeping.messages', compact('messages', 'stats', 'dateFilter'));
     }
 
     public function updateStatus(Request $request, $id)

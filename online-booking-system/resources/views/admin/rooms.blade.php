@@ -37,8 +37,40 @@
         min-width: 112px;
     }
 
+    .room-management-page .dining-form-column {
+        display: contents;
+    }
+
+    @media (max-width: 1023px) {
+        .room-management-page #diningFieldsGrid > [id$="Field"] {
+            grid-column: span 1;
+        }
+    }
+
     .room-management-page [data-dining-subpanel="overview"] {
         display: none !important;
+    }
+
+    .room-management-page [data-dining-subpanel="tables"] .dining-card-header h3,
+    .room-management-page [data-dining-subpanel="menu"] .dining-card-header h3,
+    .room-management-page [data-dining-subpanel="schedule"] .dining-card-header h3 {
+        display: none;
+    }
+
+    .room-management-page [data-dining-subpanel="tables"] .dining-card-header,
+    .room-management-page [data-dining-subpanel="menu"] .dining-card-header,
+    .room-management-page [data-dining-subpanel="schedule"] .dining-card-header {
+        justify-content: flex-end;
+    }
+
+    .room-management-page .dining-card-header button[onclick^="confirmBulkDiningDelete"] {
+        display: none;
+    }
+
+    .room-management-page [data-panel="rooms"] button[onclick="confirmBulkDelete()"],
+    .room-management-page [data-panel="amenities"] button[onclick^="confirmBulkInventoryDelete"],
+    .room-management-page [data-panel="event-place"] button[onclick^="confirmBulkInventoryDelete"] {
+        display: none;
     }
 
     @media (max-width: 640px) {
@@ -73,9 +105,6 @@
             <button id="add-event-place-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
                 <i class="fas fa-plus mr-2"></i>Add Event Place
             </button>
-            <button id="add-dining-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
-                <i class="fas fa-plus mr-2"></i>Add Dining
-            </button>
         </div>
     </div>
 
@@ -88,7 +117,7 @@
 
     <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-none">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
-            <div></div>
+            <div class="text-sm text-gray-500">{{ $rooms->total() }} room{{ $rooms->total() === 1 ? '' : 's' }}</div>
             <div class="flex items-center gap-3">
                 <span id="bulkSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span>
                 <button type="button" onclick="confirmBulkDelete()" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected rooms">
@@ -101,14 +130,11 @@
             @method('DELETE')
             <input type="hidden" name="room_ids" id="bulkRoomIds">
         </form>
-        <div class="px-6 py-6">
-            <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
-                <div class="flex items-center gap-2 text-sm text-gray-700">
-                    <input id="selectAllRooms" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" onclick="toggleAllRoomCheckboxes(this)">
-                    <label for="selectAllRooms">Select all rooms</label>
-                </div>
+        <div class="px-6 py-2">
+            <div class="flex flex-wrap items-center justify-between gap-4">
                 {{-- total() = full room count across all pages (count() would only show the current page's 5 rows once paginated) --}}
-                <div class="text-sm text-gray-500">{{ $rooms->total() }} room{{ $rooms->total() === 1 ? '' : 's' }}</div>
+                <div></div>
+                <div></div>
             </div>
             <div class="room-table-shell overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -175,12 +201,8 @@
 
     <div data-panel="amenities" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
-            <div class="flex items-center gap-2 text-sm text-gray-700"><input id="selectAllAmenities" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="amenities" onclick="toggleAllInventoryCheckboxes('amenities', this)"><label for="selectAllAmenities">Select all amenities</label></div>
+            <div></div>
             <div class="flex items-center gap-3"><span id="amenitiesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('amenities')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected amenities"><i class="fas fa-trash"></i></button></div>
-        </div>
-        <div class="border-b border-gray-200 px-6 py-5">
-            <h3 class="text-lg font-semibold text-gray-800">Amenities</h3>
-            <p class="mt-1 text-sm text-gray-500">Add premium guest amenities and service upgrades for each room package.</p>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full">
@@ -195,7 +217,7 @@
                 </thead>
                 <tbody id="amenities-list" class="divide-y divide-gray-200">
                     @foreach($amenities as $item)
-                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-amenities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('amenities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item))' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit amenity"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status))' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change amenity status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete this amenity?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete amenity"><i class="fas fa-trash"></i></button></form></div></td></tr>
+                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-amenities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('amenities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">—</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "amenities")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit amenity"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "amenities")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change amenity status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=amenities" method="POST" onsubmit="return confirm('Delete this amenity?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete amenity"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @endforeach
                 </tbody>
             </table>
@@ -204,11 +226,7 @@
     </div>
 
     <div data-panel="event-place" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4"><div class="flex items-center gap-2 text-sm text-gray-700"><input id="selectAllEventPlace" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="event_place" onclick="toggleAllInventoryCheckboxes('event_place', this)"><label for="selectAllEventPlace">Select all event places</label></div><div class="flex items-center gap-3"><span id="event_placeSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('event_place')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white" aria-label="Delete selected event places"><i class="fas fa-trash"></i></button></div></div>
-        <div class="border-b border-gray-200 px-6 py-5">
-            <h3 class="text-lg font-semibold text-gray-800">Event Place</h3>
-            <p class="mt-1 text-sm text-gray-500">Manage wedding, corporate, and celebration offerings for your event venue.</p>
-        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4"><div></div><div class="flex items-center gap-3"><span id="event_placeSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('event_place')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white" aria-label="Delete selected event places"><i class="fas fa-trash"></i></button></div></div>
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
@@ -222,7 +240,7 @@
                 </thead>
                 <tbody id="event-place-list" class="divide-y divide-gray-200">
                     @foreach($eventPlaces as $item)
-                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event_place h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event_place')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item))' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event place"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status))' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event place status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete this event place?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event place"><i class="fas fa-trash"></i></button></form></div></td></tr>
+                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event_place h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event_place')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "event_place")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event place"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "event_place")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event place status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=event_place" method="POST" onsubmit="return confirm('Delete this event place?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event place"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @endforeach
                 </tbody>
             </table>
@@ -259,6 +277,7 @@
                         <table class="min-w-full text-left">
                             <thead class="bg-gray-50">
                                 <tr>
+                                    <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600"></th>
                                     <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Table No.</th>
                                     <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Type</th>
                                     <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Capacity</th>
@@ -267,13 +286,6 @@
                                     <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">T01</td><td class="px-4 py-3 text-sm text-gray-700">Indoor</td><td class="px-4 py-3 text-sm text-gray-700">2</td><td class="px-4 py-3 text-sm text-gray-700">Window</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">T02</td><td class="px-4 py-3 text-sm text-gray-700">Indoor</td><td class="px-4 py-3 text-sm text-gray-700">4</td><td class="px-4 py-3 text-sm text-gray-700">Main Area</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-yellow-200 bg-yellow-100 px-2.5 py-1 text-[11px] font-medium text-yellow-700">Reserved</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">T03</td><td class="px-4 py-3 text-sm text-gray-700">Outdoor</td><td class="px-4 py-3 text-sm text-gray-700">6</td><td class="px-4 py-3 text-sm text-gray-700">Garden</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">T04</td><td class="px-4 py-3 text-sm text-gray-700">Private</td><td class="px-4 py-3 text-sm text-gray-700">8</td><td class="px-4 py-3 text-sm text-gray-700">Private Room</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-700">Unavailable</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">T05</td><td class="px-4 py-3 text-sm text-gray-700">Indoor</td><td class="px-4 py-3 text-sm text-gray-700">4</td><td class="px-4 py-3 text-sm text-gray-700">Main Area</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            </tbody>
                         </table>
                     </div>
                     <div class="border-t border-gray-200 px-4 py-4"><button type="button" class="inline-flex items-center justify-center rounded-xl border border-orange-300 bg-white px-4 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50">View All Tables</button></div>
@@ -283,13 +295,13 @@
                     <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Menu / Meals</h3><button type="button" data-dining-add="menu" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Menu</button></div>
                     <div class="dining-table-scroll">
                         <table class="min-w-full text-left">
-                            <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                            <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600"></th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                             <tbody class="divide-y divide-gray-200">
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Filipino Breakfast</td><td class="px-4 py-3 text-sm text-gray-700">Breakfast</td><td class="px-4 py-3 text-sm text-gray-700">₱250</td><td class="px-4 py-3 text-sm text-gray-700">7:00 AM - 10:00 AM</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Club Sandwich</td><td class="px-4 py-3 text-sm text-gray-700">Lunch</td><td class="px-4 py-3 text-sm text-gray-700">₱320</td><td class="px-4 py-3 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Grilled Chicken</td><td class="px-4 py-3 text-sm text-gray-700">Lunch</td><td class="px-4 py-3 text-sm text-gray-700">₱350</td><td class="px-4 py-3 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Steak</td><td class="px-4 py-3 text-sm text-gray-700">Dinner</td><td class="px-4 py-3 text-sm text-gray-700">₱650</td><td class="px-4 py-3 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-700">Unavailable</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Pasta Carbonara</td><td class="px-4 py-3 text-sm text-gray-700">Dinner</td><td class="px-4 py-3 text-sm text-gray-700">₱380</td><td class="px-4 py-3 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                @forelse($dining as $menu)
+                                    <tr class="bg-white"><td class="px-4 py-3 text-sm"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $menu->id }}"></td><td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $menu->name }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ $menu->category ?: 'Menu / Meal' }}</td><td class="px-4 py-3 text-sm text-gray-700">₱{{ number_format((float) $menu->price, 2) }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-4 py-3"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower($menu->status) === 'available' ? 'border-green-200 bg-green-100 text-green-700' : 'border-red-200 bg-red-100 text-red-700' }}">{{ ucfirst($menu->status) }}</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                @empty
+                                    <tr><td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500">No menu items found.</td></tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -299,15 +311,7 @@
                 <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                     <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Dining Schedule</h3><button type="button" data-dining-add="schedule" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Schedule</button></div>
                     <div class="dining-table-scroll">
-                        <table class="min-w-full text-left">
-                            <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Period</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Time</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Max Guests</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
-                            <tbody class="divide-y divide-gray-200">
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Breakfast</td><td class="px-4 py-3 text-sm text-gray-700">7:00 AM - 10:00 AM</td><td class="px-4 py-3 text-sm text-gray-700">30</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Lunch</td><td class="px-4 py-3 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-4 py-3 text-sm text-gray-700">40</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Afternoon Snacks</td><td class="px-4 py-3 text-sm text-gray-700">2:00 PM - 5:00 PM</td><td class="px-4 py-3 text-sm text-gray-700">20</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                                <tr class="bg-white"><td class="px-4 py-3 text-sm font-medium text-gray-900">Dinner</td><td class="px-4 py-3 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-4 py-3 text-sm text-gray-700">40</td><td class="px-4 py-3"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            </tbody>
-                        </table>
+                        
                     </div>
                     <div class="border-t border-gray-200 px-4 py-4"><button type="button" class="inline-flex items-center justify-center rounded-xl border border-orange-300 bg-white px-4 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50">View All Schedules</button></div>
                 </div>
@@ -316,16 +320,16 @@
 
         <div data-dining-subpanel="tables" class="hidden p-5 lg:p-6">
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Tables / Seating</h3><button type="button" data-dining-add="table" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Table</button></div>
+                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Tables / Seating</h3><div class="flex items-center gap-3"><span id="diningTablesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkDiningDelete('tables')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected tables"><i class="fas fa-trash"></i></button><button type="button" data-dining-add="table" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Table</button></div></div>
                 <div class="dining-table-scroll">
                     <table class="min-w-full text-left">
-                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Table No.</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Type</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Capacity</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Location</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="dining-table-select-all h-4 w-4 rounded border-gray-300 text-orange-600" onclick="toggleAllDiningCheckboxes('tables', this)"></th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Table No.</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Type</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Capacity</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Location</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                         <tbody class="divide-y divide-gray-200">
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">T01</td><td class="px-6 py-4 text-sm text-gray-700">Indoor</td><td class="px-6 py-4 text-sm text-gray-700">2</td><td class="px-6 py-4 text-sm text-gray-700">Window</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">T02</td><td class="px-6 py-4 text-sm text-gray-700">Indoor</td><td class="px-6 py-4 text-sm text-gray-700">4</td><td class="px-6 py-4 text-sm text-gray-700">Main Area</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-yellow-200 bg-yellow-100 px-2.5 py-1 text-[11px] font-medium text-yellow-700">Reserved</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">T03</td><td class="px-6 py-4 text-sm text-gray-700">Outdoor</td><td class="px-6 py-4 text-sm text-gray-700">6</td><td class="px-6 py-4 text-sm text-gray-700">Garden</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">T04</td><td class="px-6 py-4 text-sm text-gray-700">Private</td><td class="px-6 py-4 text-sm text-gray-700">8</td><td class="px-6 py-4 text-sm text-gray-700">Private Room</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-700">Unavailable</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">T05</td><td class="px-6 py-4 text-sm text-gray-700">Indoor</td><td class="px-6 py-4 text-sm text-gray-700">4</td><td class="px-6 py-4 text-sm text-gray-700">Main Area</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            @forelse($diningTables as $table)
+                                <tr class="bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-table-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $table->id }}" onclick="updateDiningSelectCount('tables')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $table->table_no }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->type }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->capacity }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->location ?: '—' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium">{{ ucfirst($table->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            @empty
+                                <tr><td colspan="7" class="px-6 py-6 !text-center text-sm text-gray-500">No tables found.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -334,16 +338,16 @@
 
         <div data-dining-subpanel="menu" class="hidden p-5 lg:p-6">
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-2"><h3 class="text-xl font-semibold text-gray-800">Menu / Meals</h3><button type="button" data-dining-add="menu" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Menu</button></div>
+                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-2"><h3 class="text-xl font-semibold text-gray-800">Menu / Meals</h3><div class="flex items-center gap-3"><span id="diningMenusSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkDiningDelete('menus')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected menus"><i class="fas fa-trash"></i></button><button type="button" data-dining-add="menu" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Menu</button></div></div>
                 <div class="dining-table-scroll">
                     <table class="min-w-full text-left">
-                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="dining-menu-select-all h-4 w-4 rounded border-gray-300 text-orange-600" onclick="toggleAllDiningCheckboxes('menus', this)"></th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                         <tbody class="divide-y divide-gray-200">
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Filipino Breakfast</td><td class="px-6 py-4 text-sm text-gray-700">Breakfast</td><td class="px-6 py-4 text-sm text-gray-700">₱250</td><td class="px-6 py-4 text-sm text-gray-700">7:00 AM - 10:00 AM</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Club Sandwich</td><td class="px-6 py-4 text-sm text-gray-700">Lunch</td><td class="px-6 py-4 text-sm text-gray-700">₱320</td><td class="px-6 py-4 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Grilled Chicken</td><td class="px-6 py-4 text-sm text-gray-700">Lunch</td><td class="px-6 py-4 text-sm text-gray-700">₱350</td><td class="px-6 py-4 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Steak</td><td class="px-6 py-4 text-sm text-gray-700">Dinner</td><td class="px-6 py-4 text-sm text-gray-700">₱650</td><td class="px-6 py-4 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-red-200 bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-700">Unavailable</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Pasta Carbonara</td><td class="px-6 py-4 text-sm text-gray-700">Dinner</td><td class="px-6 py-4 text-sm text-gray-700">₱380</td><td class="px-6 py-4 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Available</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            @forelse($dining as $menu)
+                                <tr class="bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-menu-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $menu->id }}" onclick="updateDiningSelectCount('menus')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $menu->name }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $menu->category ?: 'Menu / Meal' }}</td><td class="px-6 py-4 text-sm text-gray-700">₱{{ number_format((float) $menu->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower($menu->status) === 'available' ? 'border-green-200 bg-green-100 text-green-700' : 'border-red-200 bg-red-100 text-red-700' }}">{{ ucfirst($menu->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            @empty
+                                <tr><td colspan="7" class="px-6 py-6 !text-center text-sm text-gray-500">No menu items found.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -352,15 +356,16 @@
 
         <div data-dining-subpanel="schedule" class="hidden p-5 lg:p-6">
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Dining Schedule</h3><button type="button" data-dining-add="schedule" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Schedule</button></div>
+                <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-4"><h3 class="text-xl font-semibold text-gray-800">Dining Schedule</h3><div class="flex items-center gap-3"><span id="diningSchedulesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkDiningDelete('schedules')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected schedules"><i class="fas fa-trash"></i></button><button type="button" data-dining-add="schedule" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Schedule</button></div></div>
                 <div class="dining-table-scroll">
                     <table class="min-w-full text-left">
-                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Period</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Max Guests</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
+                        <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="dining-schedule-select-all h-4 w-4 rounded border-gray-300 text-orange-600" onclick="toggleAllDiningCheckboxes('schedules', this)"></th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Period</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Max Guests</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                         <tbody class="divide-y divide-gray-200">
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Breakfast</td><td class="px-6 py-4 text-sm text-gray-700">7:00 AM - 10:00 AM</td><td class="px-6 py-4 text-sm text-gray-700">30</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Lunch</td><td class="px-6 py-4 text-sm text-gray-700">11:00 AM - 2:00 PM</td><td class="px-6 py-4 text-sm text-gray-700">40</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Afternoon Snacks</td><td class="px-6 py-4 text-sm text-gray-700">2:00 PM - 5:00 PM</td><td class="px-6 py-4 text-sm text-gray-700">20</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
-                            <tr class="bg-white"><td class="px-6 py-4 text-sm font-medium text-gray-900">Dinner</td><td class="px-6 py-4 text-sm text-gray-700">5:00 PM - 9:00 PM</td><td class="px-6 py-4 text-sm text-gray-700">40</td><td class="px-6 py-4"><span class="inline-flex rounded-full border border-green-200 bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700">Active</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            @forelse($diningSchedules as $schedule)
+                                <tr class="bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-schedule-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $schedule->id }}" onclick="updateDiningSelectCount('schedules')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $schedule->period }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ \Illuminate\Support\Carbon::parse($schedule->available_from)->format('g:i A') }} - {{ \Illuminate\Support\Carbon::parse($schedule->available_to)->format('g:i A') }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $schedule->max_guests ?: '—' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium">{{ ucfirst($schedule->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                            @empty
+                                <tr><td colspan="6" class="px-6 py-6 !text-center text-sm text-gray-500">No dining schedules found.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -376,6 +381,13 @@
     <input type="hidden" name="inventory_ids" id="bulkInventoryIds">
 </form>
 
+<form id="bulkDiningDeleteForm" method="POST" action="{{ route('admin.dining.bulkDestroy') }}">
+    @csrf
+    @method('DELETE')
+    <input type="hidden" name="type" id="bulkDiningType">
+    <input type="hidden" name="dining_ids" id="bulkDiningIds">
+</form>
+
 <div id="editInventoryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
     <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         <button type="button" onclick="closeEditInventoryModal()" class="absolute right-4 top-4 text-gray-500 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
@@ -385,10 +397,11 @@
             <input type="hidden" name="category" id="editInventoryCategory">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Name</label><input id="editInventoryName" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Type</label><input id="editInventoryType" name="type" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label><select id="editInventoryType" name="event_type" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Birthday</option><option>Wedding</option></select></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label><input id="editInventoryPrice" name="price" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Location / Category</label><input id="editInventoryLocation" name="location" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label><select id="editInventoryPricingBasis" name="pricing_basis" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option><option>Per Event</option></select></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Capacity / Maximum Guests</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Scheduling Requirement</label><select id="editInventoryScheduling" name="scheduling_requirement" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>No Additional Schedule</option><option>Date Required</option><option>Date &amp; Time Required</option></select></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label><input id="editInventoryQuantity" name="quantity" type="number" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Available From</label><input id="editInventoryFrom" name="available_from" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Available To</label><input id="editInventoryTo" name="available_to" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
@@ -439,11 +452,24 @@
                     <input type="number" name="price" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
-                    <select name="status" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="available">Available</option>
-                        <option value="limited">Limited</option>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label>
+                    <select name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option>
                     </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Capacity / Quantity</label>
+                    <input type="number" name="capacity" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Scheduling Requirement</label>
+                    <select name="scheduling_requirement" required class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <option>No Additional Schedule</option><option>Date Required</option><option>Date &amp; Time Required</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
+                    <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"><option value="available">Available</option><option value="unavailable">Unavailable</option></select>
                 </div>
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
@@ -461,8 +487,8 @@
         </button>
 
         <div class="mb-6">
-            <h3 class="text-2xl font-bold text-gray-800">Add Event Place</h3>
-            <p class="mt-1 text-sm text-gray-500">Create a new event package or venue option.</p>
+            <h3 class="text-2xl font-bold text-gray-800">Add Event &amp; Catering Service</h3>
+            <p class="mt-1 text-sm text-gray-500">Create a new event or catering package for guests.</p>
         </div>
         @if($errors->any() && old('category') === 'event_place')
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
@@ -471,10 +497,13 @@
         <form id="addEventPlaceForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <input type="hidden" name="category" value="event_place">
-            <input type="hidden" name="status" value="available">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Event Name</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label>
+                    <select name="event_type" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Birthday</option><option>Wedding</option></select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Package Name</label>
                     <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="md:col-span-2">
@@ -490,13 +519,21 @@
                     <input type="number" name="price" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label>
+                    <select name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option selected>Per Event</option><option>Per Person</option><option>Per Hour</option></select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Maximum Guests</label>
                     <input type="number" name="capacity" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
+                    <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option value="available">Available</option><option value="unavailable">Unavailable</option></select>
                 </div>
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeEventPlaceModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
-                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Event Place</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Event &amp; Catering Service</button>
             </div>
         </form>
     </div>
@@ -505,33 +542,23 @@
 <div id="addDiningModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
     <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
         <div class="mb-6">
-            <h3 class="text-3xl font-bold text-gray-800">Add Dining Item</h3>
-            <p class="mt-2 text-base text-gray-600">Add a new menu item, package, or dining service available for guests.</p>
+            <h3 id="addDiningTitle" class="text-3xl font-bold text-gray-800">Add Menu / Meal</h3>
+            <p class="mt-2 text-base text-gray-600">Add the details needed for this dining section.</p>
         </div>
         @if($errors->any() && old('category') === 'dining')
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
         @endif
 
-        <form id="addDiningForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-6">
+        <form id="addDiningForm" method="POST" action="{{ route('admin.dining.store') }}" enctype="multipart/form-data" class="space-y-6">
             @csrf
-            <input type="hidden" name="category" value="dining">
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div class="space-y-6">
-                    <div>
-                        <label class="mb-2 block text-base font-medium text-gray-700">Item Type <span class="text-red-500">*</span></label>
-                        <select name="type" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                            <option value="Menu / Meal">Menu / Meal</option>
-                            <option value="Package">Package</option>
-                            <option value="Dinner">Dinner</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="mb-2 block text-base font-medium text-gray-700">Item Name <span class="text-red-500">*</span></label>
+            <input type="hidden" name="dining_type" id="diningFormType" value="menus">
+            <div id="diningFieldsGrid" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div id="diningNameField">
+                        <label id="diningNameLabel" class="mb-2 block text-base font-medium text-gray-700">Meal Name <span class="text-red-500">*</span></label>
                         <input type="text" name="name" required class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. Grilled Salmon">
                     </div>
 
-                    <div>
+                    <div id="diningMenuCategoryField">
                         <label class="mb-2 block text-base font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
                         <select name="menu_category" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <option value="Dinner">Dinner</option>
@@ -541,34 +568,46 @@
                         </select>
                     </div>
 
-                    <div>
+                    <div id="diningTypeField">
+                        <label id="diningTypeLabel" class="mb-2 block text-base font-medium text-gray-700">Type</label>
+                        <input type="text" name="type" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. Indoor">
+                    </div>
+
+                    <div id="diningCapacityField" class="hidden">
+                        <label class="mb-2 block text-base font-medium text-gray-700">Capacity <span class="text-red-500">*</span></label>
+                        <input type="number" name="capacity" min="1" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 4">
+                    </div>
+
+                    <div id="diningLocationField" class="hidden">
+                        <label class="mb-2 block text-base font-medium text-gray-700">Location</label>
+                        <input type="text" name="location" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. Main Area">
+                    </div>
+
+                    <div id="diningPriceField">
                         <label class="mb-2 block text-base font-medium text-gray-700">Price (₱) <span class="text-red-500">*</span></label>
                         <input type="number" name="price" step="0.01" min="0" required class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 650.00">
                     </div>
 
-                    <div>
-                        <label class="mb-2 block text-base font-medium text-gray-700">Description</label>
-                        <textarea name="description" rows="5" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. Grilled salmon served with vegetables and mashed potatoes."></textarea>
+                    <div id="diningImageField">
+                        <label class="mb-2 block text-base font-medium text-gray-700">Image (Optional)</label>
+                        <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" class="block w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     </div>
-                </div>
 
-                <div class="space-y-6">
-                    <div>
+                    <div id="diningMaxGuestsField" class="hidden">
+                        <label class="mb-2 block text-base font-medium text-gray-700">Maximum Guests</label>
+                        <input type="number" name="max_guests" min="1" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 40">
+                    </div>
+
+                    <div id="diningScheduleTimeField" class="hidden">
                         <label class="mb-2 block text-base font-medium text-gray-700">Available Time <span class="text-red-500">*</span></label>
                         <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                            <input type="time" name="available_from" value="17:00" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="time" name="available_from" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <span class="text-lg text-gray-500">to</span>
-                            <input type="time" name="available_to" value="21:00" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="time" name="available_to" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                     </div>
 
-                    <div>
-                        <label class="mb-2 block text-base font-medium text-gray-700">Available Quantity</label>
-                        <input type="number" name="quantity" min="0" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 25">
-                        <p class="mt-2 text-sm text-gray-500">Optional. Leave blank if unlimited.</p>
-                    </div>
-
-                    <div>
+                    <div id="diningStatusField">
                         <label class="mb-2 block text-base font-medium text-gray-700">Status <span class="text-red-500">*</span></label>
                         <select name="status" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <option value="Available">Available</option>
@@ -577,17 +616,11 @@
                         </select>
                     </div>
 
-                    <div>
-                        <label class="mb-2 block text-base font-medium text-gray-700">Image (Optional)</label>
-                        <input type="file" name="image" accept="image/*" class="block w-full rounded-xl border border-gray-300 bg-gray-50 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <p class="mt-2 text-sm text-gray-500">PNG, JPG, GIF, or WEBP up to 2MB</p>
-                    </div>
-                </div>
             </div>
 
             <div class="flex items-center justify-end gap-4 border-t border-gray-200 pt-6">
                 <button type="button" onclick="closeDiningModal()" class="rounded-xl border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 transition hover:bg-gray-100">Cancel</button>
-                <button type="submit" class="rounded-xl bg-orange-500 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-orange-600">Save Dining Item</button>
+                <button id="addDiningSubmit" type="submit" class="rounded-xl bg-orange-500 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-orange-600">Save Menu / Meal</button>
             </div>
         </form>
     </div>
@@ -848,6 +881,9 @@
         if (label) {
             label.textContent = count + (count === 1 ? ' selected' : ' selected');
         }
+        const selectAll = document.getElementById('selectAllRoomsHeader');
+        const deleteButton = document.querySelector('[data-panel="rooms"] button[onclick="confirmBulkDelete()"]');
+        if (deleteButton) deleteButton.style.display = selectAll && selectAll.checked ? 'inline-flex' : 'none';
     }
 
     function toggleAllRoomCheckboxes(source) {
@@ -909,6 +945,10 @@
         const count = document.querySelectorAll('.inventory-checkbox-' + category + ':checked').length;
         const label = document.getElementById(category + 'SelectedCount');
         if (label) label.textContent = count + ' selected';
+        const panelName = category === 'event_place' ? 'event-place' : category;
+        const deleteButton = document.querySelector('[data-panel="' + panelName + '"] button[onclick^="confirmBulkInventoryDelete"]');
+        const selectAll = document.querySelector('.inventory-select-all[data-category="' + category + '"]');
+        if (deleteButton) deleteButton.style.display = selectAll && selectAll.checked ? 'inline-flex' : 'none';
     }
 
     function confirmBulkInventoryDelete(category) {
@@ -920,13 +960,64 @@
         document.getElementById('bulkInventoryDeleteForm').submit();
     }
 
-    function editInventory(id, item) {
-        document.getElementById('editInventoryCategory').value = item.category;
+    function diningCheckboxSelector(type) {
+        return type === 'tables' ? '.dining-table-checkbox' : type === 'menus' ? '.dining-menu-checkbox' : '.dining-schedule-checkbox';
+    }
+
+    function diningPanelName(type) {
+        return type === 'tables' ? 'tables' : type === 'menus' ? 'menu' : 'schedule';
+    }
+
+    function diningSelectAllClass(type) {
+        return type === 'tables' ? 'dining-table-select-all' : type === 'menus' ? 'dining-menu-select-all' : 'dining-schedule-select-all';
+    }
+
+    function updateDiningSelectCount(type) {
+        const selector = diningCheckboxSelector(type);
+        const count = document.querySelectorAll(selector + ':checked').length;
+        const label = document.getElementById('dining' + type.charAt(0).toUpperCase() + type.slice(1) + 'SelectedCount');
+        if (label) label.textContent = count + ' selected';
+
+        const panelName = diningPanelName(type);
+        const selectAll = document.querySelector('.' + diningSelectAllClass(type));
+        if (selectAll) {
+            selectAll.checked = count > 0 && count === document.querySelectorAll(selector).length;
+            const deleteButton = document.querySelector('[data-dining-subpanel="' + panelName + '"] button[onclick^="confirmBulkDiningDelete"]');
+            if (deleteButton) deleteButton.style.display = selectAll.checked ? 'inline-flex' : 'none';
+        }
+    }
+
+    function toggleAllDiningCheckboxes(type, source) {
+        document.querySelectorAll(diningCheckboxSelector(type)).forEach(function (checkbox) {
+            checkbox.checked = source.checked;
+        });
+        updateDiningSelectCount(type);
+    }
+
+    function confirmBulkDiningDelete(type) {
+        const selectedIds = Array.from(document.querySelectorAll(diningCheckboxSelector(type) + ':checked')).map(function (checkbox) {
+            return checkbox.value;
+        });
+        if (!selectedIds.length) {
+            alert('Please select at least one item to delete.');
+            return;
+        }
+        if (!confirm('Are you sure you want to delete the selected ' + selectedIds.length + ' item(s)?')) return;
+        document.getElementById('bulkDiningType').value = type;
+        document.getElementById('bulkDiningIds').value = selectedIds.join(',');
+        document.getElementById('bulkDiningDeleteForm').submit();
+    }
+
+    function editInventory(id, item, category) {
+        category = category || item.category || 'dining';
+        document.getElementById('editInventoryCategory').value = category;
         document.getElementById('editInventoryName').value = item.name || '';
-        document.getElementById('editInventoryType').value = item.type || '';
+        document.getElementById('editInventoryType').value = item.event_type || item.type || 'Birthday';
         document.getElementById('editInventoryPrice').value = item.price || 0;
         document.getElementById('editInventoryLocation').value = item.location || '';
         document.getElementById('editInventoryCapacity').value = item.capacity || '';
+        document.getElementById('editInventoryPricingBasis').value = item.pricing_basis || 'Per Stay';
+        document.getElementById('editInventoryScheduling').value = item.scheduling_requirement || 'No Additional Schedule';
         document.getElementById('editInventoryQuantity').value = item.quantity || '';
         document.getElementById('editInventoryFrom').value = item.available_from ? item.available_from.substring(0, 5) : '';
         document.getElementById('editInventoryTo').value = item.available_to ? item.available_to.substring(0, 5) : '';
@@ -943,9 +1034,9 @@
         document.getElementById('editInventoryModal').classList.remove('flex');
     }
 
-    function changeInventoryStatus(id, status) {
+    function changeInventoryStatus(id, status, category) {
         var route = "{{ route('admin.inventory.status', ['id' => '__ID__']) }}";
-        document.getElementById('inventoryStatusForm').action = route.replace('__ID__', id);
+        document.getElementById('inventoryStatusForm').action = route.replace('__ID__', id) + '?category=' + encodeURIComponent(category || 'dining');
         document.getElementById('inventoryStatusSelect').value = status || 'available';
         document.getElementById('inventoryStatusModal').classList.remove('hidden');
         document.getElementById('inventoryStatusModal').classList.add('flex');
@@ -994,22 +1085,58 @@
         document.getElementById('editDiningModal').classList.remove('flex');
     }
 
+    function configureDiningFieldLayout(type) {
+        const fields = ['diningNameField', 'diningMenuCategoryField', 'diningTypeField', 'diningCapacityField', 'diningLocationField', 'diningPriceField', 'diningImageField', 'diningScheduleTimeField', 'diningMaxGuestsField', 'diningStatusField'];
+        fields.forEach(function (id) {
+            const field = document.getElementById(id);
+            if (field) {
+                field.style.order = '';
+                field.style.gridColumn = '';
+            }
+        });
+
+        const layout = type === 'tables'
+            ? { diningNameField: 1, diningStatusField: 2, diningTypeField: 3, diningCapacityField: 4, diningLocationField: 5 }
+            : type === 'schedules'
+                ? { diningNameField: 1, diningStatusField: 2, diningScheduleTimeField: 3, diningMaxGuestsField: 4 }
+                : { diningNameField: 1, diningStatusField: 2, diningMenuCategoryField: 3, diningPriceField: 4, diningImageField: 5 };
+
+        Object.keys(layout).forEach(function (id) {
+            const field = document.getElementById(id);
+            if (field) field.style.order = layout[id];
+        });
+
+        const fullWidthField = document.getElementById(type === 'menus' ? 'diningImageField' : 'diningLocationField');
+        if (fullWidthField) fullWidthField.style.gridColumn = '1 / -1';
+    }
+
     function openDiningCreateModal(kind) {
         openDiningModal();
         const form = document.getElementById('addDiningForm');
-        const type = form.querySelector('[name="type"]');
         const category = form.querySelector('[name="menu_category"]');
-
-        if (kind === 'table') {
-            type.value = 'Package';
-            category.value = 'Dinner';
-        } else if (kind === 'schedule') {
-            type.value = 'Package';
-            category.value = 'Dinner';
-        } else {
-            type.value = 'Menu / Meal';
-            category.value = 'Dinner';
-        }
+        const type = kind === 'table' ? 'tables' : kind === 'schedule' ? 'schedules' : 'menus';
+        const isTable = type === 'tables';
+        const isSchedule = type === 'schedules';
+        const sectionTitle = isTable ? 'Table / Seating' : isSchedule ? 'Dining Schedule' : 'Menu / Meal';
+        configureDiningFieldLayout(type);
+        document.getElementById('addDiningTitle').textContent = 'Add ' + sectionTitle;
+        document.getElementById('addDiningSubmit').textContent = 'Save ' + sectionTitle;
+        document.getElementById('diningFormType').value = type;
+        document.getElementById('diningNameLabel').firstChild.textContent = isTable ? 'Table No. ' : isSchedule ? 'Meal Period ' : 'Meal Name ';
+        form.querySelector('[name="name"]').placeholder = isTable ? 'e.g. T01' : isSchedule ? 'e.g. Breakfast' : 'e.g. Grilled Salmon';
+        document.getElementById('diningMenuCategoryField').classList.toggle('hidden', isTable || isSchedule);
+        document.getElementById('diningTypeField').classList.toggle('hidden', !isTable);
+        document.getElementById('diningCapacityField').classList.toggle('hidden', !isTable);
+        document.getElementById('diningLocationField').classList.toggle('hidden', !isTable);
+        document.getElementById('diningPriceField').classList.toggle('hidden', isTable || isSchedule);
+        document.getElementById('diningImageField').classList.toggle('hidden', isTable || isSchedule);
+        document.getElementById('diningScheduleTimeField').classList.toggle('hidden', !isSchedule);
+        document.getElementById('diningMaxGuestsField').classList.toggle('hidden', !isSchedule);
+        form.querySelector('[name="price"]').required = !isTable && !isSchedule;
+        form.querySelector('[name="capacity"]').required = isTable;
+        form.querySelector('[name="available_from"]').required = isSchedule;
+        form.querySelector('[name="available_to"]').required = isSchedule;
+        if (category) category.value = 'Dinner';
     }
 
     function editDiningRow(button) {
@@ -1127,8 +1254,7 @@
                 const shouldShow =
                     (targetName === 'rooms' && button.id === 'add-room-button') ||
                     (targetName === 'amenities' && button.id === 'add-amenities-button') ||
-                    (targetName === 'event-place' && button.id === 'add-event-place-button') ||
-                    (targetName === 'dining' && button.id === 'add-dining-button');
+                    (targetName === 'event-place' && button.id === 'add-event-place-button');
                 button.classList.toggle('hidden', !shouldShow);
             });
             if (targetName === 'dining') {
@@ -1164,6 +1290,10 @@
                     return;
                 }
 
+                if (button.getAttribute('onclick')?.startsWith('confirmBulkDiningDelete')) {
+                    return;
+                }
+
                 if (button.querySelector('.fa-trash')) {
                     deleteDiningRow(button);
                 }
@@ -1174,7 +1304,6 @@
 
         document.getElementById('add-amenities-button').addEventListener('click', openAmenityModal);
         document.getElementById('add-event-place-button').addEventListener('click', openEventPlaceModal);
-        document.getElementById('add-dining-button').addEventListener('click', openDiningModal);
 
         updateSelectedCount();
         activateTab(@json($activeTab));

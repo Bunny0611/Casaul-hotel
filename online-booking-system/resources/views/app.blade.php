@@ -43,11 +43,13 @@
 
         <li><a href="{{ route('accommodation') }}">ACCOMMODATION</a></li>
 
-        <li><a href="{{ route('offers') }}">OFFERS</a></li>
-
         <li><a href="{{ route('dining') }}">DINING</a></li>
 
         <li><a href="{{ route('aboutus') }}">ABOUT US</a></li>
+
+        @auth('guest')
+            <li><a href="{{ route('guest.records') }}#guest-request-form">GUEST REQUEST</a></li>
+        @endauth
 
     </ul>
 
@@ -65,28 +67,36 @@
             </form>
         </div>
 
-@auth
+@auth('guest')
             <div class="profile-dropdown" id="profile-dropdown">
                 <button type="button" class="profile-trigger" id="profile-trigger" aria-label="My Account" aria-expanded="false" aria-controls="profile-menu">
                     <span class="profile-trigger-avatar">
                         <i class="fas fa-user-circle"></i>
                     </span>
+<<<<<<< HEAD
                     <span class="profile-trigger-name">
                         {{ trim((auth()->user()->first_name ?? '') . ' ' . (auth()->user()->middle_initial ?? '') . ' ' . (auth()->user()->last_name ?? '')) ?: auth()->user()->name }}
                     </span>
                     <i class="fas fa-chevron-down profile-trigger-caret"></i>
+=======
+>>>>>>> 3554ed5d73a3d344021a784871285d5478192087
                 </button>
                 <div class="profile-menu" id="profile-menu" role="menu" aria-labelledby="profile-trigger">
                     <div class="profile-menu-header">
                         <span class="profile-menu-avatar"><i class="fas fa-user-circle"></i></span>
                         <div>
+<<<<<<< HEAD
                             <p class="profile-menu-name">
                                 {{ trim((auth()->user()->first_name ?? '') . ' ' . (auth()->user()->middle_initial ?? '') . ' ' . (auth()->user()->last_name ?? '')) ?: auth()->user()->name }}
                             </p>
                             <p class="profile-menu-email">{{ auth()->user()->email }}</p>
+=======
+                            <p class="profile-menu-name">{{ auth('guest')->user()->name }}</p>
+                            <p class="profile-menu-email">{{ auth('guest')->user()->email }}</p>
+>>>>>>> 3554ed5d73a3d344021a784871285d5478192087
                         </div>
                     </div>
-                    @if(auth()->user()->role === 'guest')
+                    @if(auth('guest')->check())
                         <a href="{{ route('guest.records') }}" class="profile-menu-item" role="menuitem">
                             <i class="fas fa-list-alt"></i> My Reservations
                         </a>

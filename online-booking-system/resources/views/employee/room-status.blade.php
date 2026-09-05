@@ -7,6 +7,9 @@
     $reservations = $reservations ?? collect([]);
     $rooms = $rooms ?? collect([]);
     $inventoryItems = $inventoryItems ?? collect([]);
+    $diningTables = $diningTables ?? collect([]);
+    $dining = $dining ?? collect([]);
+    $diningSchedules = $diningSchedules ?? collect([]);
     $roomReservations = $reservations;
     $amenityReservations = $reservations->where('category', 'amenities');
     $eventPlaceReservations = $reservations->where('category', 'event_place');
@@ -37,15 +40,54 @@
             'unavailable' => $eventPlaceReservations->where('status', 'cancelled')->count(),
         ],
         'dining' => [
-            'total' => $diningReservations->count(),
-            'available' => $diningReservations->where('status', 'pending')->count(),
-            'reserved' => $diningReservations->where('status', 'confirmed')->count(),
-            'occupied' => $diningReservations->where('status', 'completed')->count(),
-            'unavailable' => $diningReservations->where('status', 'cancelled')->count(),
+            'total' => $diningTables->count(),
+            'available' => $diningTables->filter(fn ($table) => strtolower($table->status) === 'available')->count(),
+            'reserved' => $diningTables->filter(fn ($table) => strtolower($table->status) === 'reserved')->count(),
+            'occupied' => $diningTables->filter(fn ($table) => strtolower($table->status) === 'occupied')->count(),
+            'unavailable' => $diningTables->filter(fn ($table) => strtolower($table->status) === 'unavailable')->count(),
         ],
     ];
 @endphp
 <link rel="stylesheet" href="{{ asset('css/employee-room-status.css') }}">
+<style>
+    #diningTab:not(.hidden) {
+        display: flex;
+    }
+
+    #diningTab.hidden {
+        display: none;
+    }
+
+    #diningTab > .order-1 {
+        order: 1;
+    }
+
+    #diningTab > #dining-filter-form {
+        order: 3;
+    }
+
+    #diningTab > .order-2 {
+        order: 2;
+    }
+
+    #diningTab > .order-3 {
+        order: 3;
+    }
+
+    #diningTab > .dining-live-grid {
+        display: block;
+        order: 4;
+    }
+
+    #diningTab > .dining-live-grid > [data-dining-content] {
+        width: 100%;
+    }
+
+    #diningTab > .dining-live-grid .table-scroll,
+    #diningTab > .dining-live-grid .room-table {
+        width: 100%;
+    }
+</style>
 
 <div class="room-status-page">
     <section class="room-status-shell" aria-label="Room status overview">
@@ -246,8 +288,8 @@
             </div>
         </div>
 
-        <div id="diningTab" data-reservation-panel="dining" class="hidden space-y-4 pt-4 pb-3">
-            <div class="grid gap-4 md:grid-cols-5">
+        <div id="diningTab" data-reservation-panel="dining" class="hidden flex-col space-y-4 pt-4 pb-3">
+            <div class="order-1 grid gap-4 md:grid-cols-5">
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Total Tables</p>
                     <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['dining']['total'] }}</p>
@@ -269,14 +311,51 @@
                     <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['dining']['unavailable'] }}</p>
                 </div>
             </div>
-            <form class="filter-panel" id="dining-filter-form">
+            <div class="dining-live-grid order-4 grid gap-4 xl:grid-cols-3">
+                <div class="table-card" data-dining-content="tables">
+                    <div class="border-b border-gray-200 px-5 py-4"><h3 class="text-lg font-semibold text-gray-800">Tables / Seating</h3><p class="text-sm text-gray-500">Live availability from admin dining setup</p></div>
+                    <div class="table-scroll"><table class="room-table"><thead><tr><th>Table</th><th>Type</th><th>Capacity</th><th>Status</th></tr></thead><tbody>
+                        @forelse($diningTables as $table)
+                            <tr><td>{{ $table->table_no }}</td><td>{{ $table->type }}</td><td>{{ $table->capacity }}</td><td><span class="status-badge {{ strtolower($table->status) }}">{{ ucfirst($table->status) }}</span></td></tr>
+                        @empty
+                            <tr><td colspan="4" class="px-6 py-10 text-center text-gray-500">No dining tables found.</td></tr>
+                        @endforelse
+                    </tbody></table></div>
+                </div>
+                <div class="table-card" data-dining-content="menu">
+                    <div class="border-b border-gray-200 px-5 py-4"><h3 class="text-lg font-semibold text-gray-800">Menu / Meals</h3><p class="text-sm text-gray-500">Current menu items and availability</p></div>
+                    <div class="table-scroll"><table class="room-table"><thead><tr><th>Meal</th><th>Category</th><th>Price</th><th>Status</th></tr></thead><tbody>
+                        @forelse($dining as $menu)
+                            <tr><td>{{ $menu->name }}</td><td>{{ $menu->category ?: 'Menu / Meal' }}</td><td>₱{{ number_format((float) $menu->price, 2) }}</td><td><span class="status-badge {{ strtolower($menu->status) }}">{{ ucfirst($menu->status) }}</span></td></tr>
+                        @empty
+                            <tr><td colspan="4" class="px-6 py-10 text-center text-gray-500">No menu items found.</td></tr>
+                        @endforelse
+                    </tbody></table></div>
+                </div>
+                <div class="table-card" data-dining-content="schedule">
+                    <div class="border-b border-gray-200 px-5 py-4"><h3 class="text-lg font-semibold text-gray-800">Dining Schedule</h3><p class="text-sm text-gray-500">Service hours configured by admin</p></div>
+                    <div class="table-scroll"><table class="room-table"><thead><tr><th>Period</th><th>Hours</th><th>Max Guests</th><th>Status</th></tr></thead><tbody>
+                        @forelse($diningSchedules as $schedule)
+                            <tr><td>{{ $schedule->period }}</td><td>{{ \Illuminate\Support\Carbon::parse($schedule->available_from)->format('g:i A') }} - {{ \Illuminate\Support\Carbon::parse($schedule->available_to)->format('g:i A') }}</td><td>{{ $schedule->max_guests ?: '—' }}</td><td><span class="status-badge {{ strtolower($schedule->status) }}">{{ ucfirst($schedule->status) }}</span></td></tr>
+                        @empty
+                            <tr><td colspan="4" class="px-6 py-10 text-center text-gray-500">No dining schedules found.</td></tr>
+                        @endforelse
+                    </tbody></table></div>
+                </div>
+            </div>
+            <form class="order-3 filter-panel" id="dining-filter-form">
                 <div class="field-group"><label class="field-label" for="dining-search-name">Search Table / Area</label><input class="field-input" id="dining-search-name" type="text" placeholder="e.g. Table 01"></div>
                 <div class="field-group"><label class="field-label" for="dining-search-type">Search Dining Type</label><input class="field-input" id="dining-search-type" type="text" placeholder="e.g. Standard"></div>
                 <div class="field-group"><label class="field-label" for="dining-filter-status">Filter by Status</label><select class="field-select" id="dining-filter-status"><option value="">All Status</option><option value="available">Available</option><option value="reserved">Reserved</option><option value="occupied">Occupied</option></select></div>
                 <div class="field-group"><label class="field-label" for="dining-filter-location">Filter by Location</label><select class="field-select" id="dining-filter-location"><option value="">All Locations</option><option>Main Dining</option><option>Private Area</option></select></div>
                 <button class="secondary-btn" type="button">Reset Filters</button>
             </form>
-            <div class="table-card">
+            <div class="order-2 flex flex-wrap gap-2 border-b border-gray-200 pb-3" role="tablist" aria-label="Dining sections">
+                <button type="button" data-dining-tab="tables" class="dining-tab rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white">Tables / Seating</button>
+                <button type="button" data-dining-tab="menu" class="dining-tab rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700">Menu / Meals</button>
+                <button type="button" data-dining-tab="schedule" class="dining-tab rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700">Dining Schedule</button>
+            </div>
+            <div class="hidden table-card">
                 <div class="table-scroll-hint">Tap the Details button for complete dining information</div>
                 <div class="table-scroll"><table class="room-table"><thead><tr><th>Table / Area</th><th>Dining Type</th><th>Location</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead><tbody>
                     @foreach($inventoryItems->where('category', 'dining') as $item)
@@ -550,7 +629,26 @@
             button.addEventListener('click', () => setActiveReservationTab(button.dataset.reservationTab));
         });
 
+        function setActiveDiningTab(tabKey) {
+            document.querySelectorAll('[data-dining-tab]').forEach((button) => {
+                const isActive = button.dataset.diningTab === tabKey;
+                button.classList.toggle('bg-orange-500', isActive);
+                button.classList.toggle('text-white', isActive);
+                button.classList.toggle('bg-white', !isActive);
+                button.classList.toggle('text-gray-700', !isActive);
+            });
+
+            document.querySelectorAll('[data-dining-content]').forEach((panel) => {
+                panel.classList.toggle('hidden', panel.dataset.diningContent !== tabKey);
+            });
+        }
+
+        document.querySelectorAll('[data-dining-tab]').forEach((button) => {
+            button.addEventListener('click', () => setActiveDiningTab(button.dataset.diningTab));
+        });
+
         setActiveReservationTab('rooms');
+        setActiveDiningTab('tables');
     });
 </script>
 
