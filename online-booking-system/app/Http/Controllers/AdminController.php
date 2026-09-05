@@ -9,8 +9,13 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use App\Models\Room;
 use App\Models\Reservation;
+use App\Models\RoomReservation;
+use App\Models\EventReservation;
+use App\Models\AmenityReservation;
+use App\Models\DiningReservation;
 use App\Models\Message;
 use App\Models\MaintenanceReport;
 use App\Models\Staff;
@@ -90,12 +95,12 @@ class AdminController extends Controller
         $availableRooms = Room::where('status', 'available')->count();
         $occupiedRooms = Room::where('status', 'occupied')->count();
         $maintenanceRooms = Room::where('status', 'maintenance')->count();
-        $todayArrivals = Reservation::whereDate('check_in', today())->count();
-        $todayDepartures = Reservation::whereDate('check_out', today())->count();
-        $pendingRequests = Reservation::where('status', 'pending')->count();
+        $todayArrivals = RoomReservation::whereDate('check_in', today())->count();
+        $todayDepartures = RoomReservation::whereDate('check_out', today())->count();
+        $pendingRequests = RoomReservation::where('status', 'pending')->count();
         $occupancyRate = $totalRooms > 0 ? min(100, round(($occupiedRooms / $totalRooms) * 100)) : 0;
 
-        $recentActivity = Reservation::with('room')
+        $recentActivity = RoomReservation::with('room')
             ->latest()
             ->take(5)
             ->get()
@@ -367,6 +372,24 @@ class AdminController extends Controller
         return redirect()->route('admin.rooms')->with('success', 'Inventory status updated successfully.');
     }
 
+    public function updateDiningStatus(Request $request, $type, $id)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'max:50'],
+        ]);
+
+        $model = match ($type) {
+            'tables' => DiningTable::class,
+            'menus' => DiningMenu::class,
+            'schedules' => DiningSchedule::class,
+            default => abort(404),
+        };
+
+        $model::findOrFail($id)->update(['status' => strtolower($validated['status'])]);
+
+        return response()->json(['status' => strtolower($validated['status'])]);
+    }
+
     public function destroyInventoryItem($id)
     {
         $category = request()->input('category', 'dining');
@@ -513,29 +536,32 @@ class AdminController extends Controller
 
     public function reservations()
     {
-        $allReservations = Reservation::with('room', 'amenity', 'eventPlace', 'diningMenu')->latest()->get();
-        
-        // Separate reservations by category with fallback checks (like employee view)
-        // This handles both old data (using room_id, amenity_id fields) and new data (using category field)
-        $roomReservations = $allReservations->filter(function ($reservation) {
-            return $reservation->room_id || $reservation->category === 'room' || $reservation->category === 'rooms';
-        })->values();
-        
-        $amenityReservations = $allReservations->filter(function ($reservation) {
-            return $reservation->amenity_id || $reservation->category === 'amenity' || $reservation->category === 'amenities';
-        })->values();
-        
-        $eventPlaceReservations = $allReservations->filter(function ($reservation) {
-            return $reservation->event_place_id || $reservation->category === 'event_place';
-        })->values();
-        
-        $diningReservations = $allReservations->filter(function ($reservation) {
-            return $reservation->category === 'dining'
-                || !empty($reservation->dining_id)
-                || !empty($reservation->dining_area)
-                || !empty($reservation->dining_schedule)
-                || $reservation->diningItems()->exists();
-        })->values();
+        $roomReservations = RoomReservation::with('room')->latest()->get();
+        $amenityReservations = AmenityReservation::with('amenity')->latest()->get();
+        $eventPlaceReservations = EventReservation::with('eventPlace')->latest()->get();
+        $diningReservations = DiningReservation::latest()->get();
+
+        $legacyReservations = Reservation::with(['room', 'amenity', 'eventPlace', 'diningItems'])->latest()->get();
+        $legacyReservations->each(function ($reservation) use (&$roomReservations, &$amenityReservations, &$eventPlaceReservations, &$diningReservations) {
+            $category = $reservation->category;
+            if ($category === 'rooms' || $reservation->room_id) {
+                $roomReservations->push($reservation);
+            }
+            if ($category === 'amenities' || $reservation->amenity_id) {
+                $amenityReservations->push($reservation);
+            }
+            if ($category === 'event_place' || $reservation->event_place_id) {
+                $eventPlaceReservations->push($reservation);
+            }
+            if ($category === 'dining' || $reservation->dining_id || $reservation->dining_area || $reservation->dining_schedule) {
+                $diningReservations->push($reservation);
+            }
+        });
+
+        $roomReservations = $roomReservations->sortByDesc('created_at')->values();
+        $amenityReservations = $amenityReservations->sortByDesc('created_at')->values();
+        $eventPlaceReservations = $eventPlaceReservations->sortByDesc('created_at')->values();
+        $diningReservations = $diningReservations->sortByDesc('created_at')->values();
         
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
@@ -549,7 +575,7 @@ class AdminController extends Controller
         $reservations = $roomReservations;
 
         return request()->routeIs('employee.reservation')
-            ? view('employee.reservation', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules', 'diningTables'))
+            ? view('employee.reservation', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningTables', 'diningMenus', 'diningSchedules'))
             : view('admin.reservations', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'));
     }
 
@@ -653,7 +679,7 @@ class AdminController extends Controller
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:20'],
             'event_type' => ['nullable', 'required_if:category,event_place', 'string', 'max:100'],
-            'number_of_guests' => ['nullable', 'required_if:category,event_place', 'integer', 'min:1'],
+            'number_of_guests' => ['nullable', 'required_if:category,rooms|required_if:category,event_place', 'integer', 'min:1'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
             'quantity' => ['nullable', 'integer', 'min:1'],
@@ -700,36 +726,46 @@ class AdminController extends Controller
         unset($validated['submission_token']);
         $validated['status'] = 'pending';
 
-        if ($validated['category'] === 'amenities') {
+        // Process based on category
+        $category = $validated['category'];
+
+        if ($category === 'rooms') {
+            $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
+            $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
+            $reservation = RoomReservation::create($validated);
+        } elseif ($category === 'event_place') {
+            $validated['event_start_time'] = $validated['check_in_time'] ?? null;
+            $validated['event_end_time'] = $validated['check_out_time'] ?? null;
+            $reservation = EventReservation::create($validated);
+        } elseif ($category === 'amenities') {
             $amenity = Amenity::findOrFail($validated['amenity_id']);
             $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $validated['check_in_time'])
                 ->addHours((int) $validated['duration_hours']);
             $validated['check_out'] = $endTime->toDateString();
-            $validated['check_out_time'] = $endTime->format('H:i');
-            $validated['amenity_start_time'] = $validated['check_in_time'] ?? null;
             $validated['amenity_end_time'] = $endTime->format('H:i');
+            $validated['amenity_start_time'] = $validated['check_in_time'] ?? null;
             $validated['total_amount'] = (float) $amenity->price * (int) $validated['duration_hours'];
             unset($validated['duration_hours']);
-        }
+            $reservation = AmenityReservation::create($validated);
+        } elseif ($category === 'dining') {
+            $hasDiningConflict = DiningReservation::query()
+                ->activeForTableAndSchedule(
+                    (string) $validated['dining_area'],
+                    $validated['check_in'],
+                    $validated['dining_schedule']
+                )
+                ->exists();
 
-        if (($validated['category'] ?? null) === 'event_place') {
-            $validated['event_start_time'] = $validated['check_in_time'] ?? null;
-            $validated['event_end_time'] = $validated['check_out_time'] ?? null;
-        }
+            if ($hasDiningConflict) {
+                throw ValidationException::withMessages([
+                    'dining_area' => 'This table is already reserved for the selected dining schedule. Please choose another table or schedule.',
+                ]);
+            }
 
-        if (($validated['category'] ?? null) === 'dining') {
-            $validated['dining_time'] = $validated['dining_schedule'] ?? $validated['check_in_time'] ?? null;
-        }
-
-        if (($validated['category'] ?? null) === 'rooms') {
-            $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
-            $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
-        }
-
-        $reservation = Reservation::create($validated);
-
-        if (!empty($diningSelections)) {
-            $reservation->diningItems()->createMany($diningSelections);
+            $reservation = DiningReservation::create($validated);
+            if (!empty($diningSelections)) {
+                $reservation->diningItems()->createMany($diningSelections);
+            }
         }
 
         return $isEmployeeReservation
@@ -741,34 +777,108 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', 'in:pending,confirmed,checked-in,cancelled,completed'],
+            'category' => ['nullable', 'in:rooms,amenities,event_place,dining'],
         ]);
 
         DB::transaction(function () use ($id, $validated) {
-            $reservation = Reservation::with('room')->lockForUpdate()->findOrFail($id);
+            $reservationType = match ($validated['category'] ?? null) {
+                'rooms' => 'room',
+                'event_place' => 'event',
+                'amenities' => 'amenity',
+                'dining' => 'dining',
+                default => null,
+            };
+            $reservation = match ($validated['category'] ?? null) {
+                'rooms' => RoomReservation::with('room')->find($id),
+                'event_place' => EventReservation::find($id),
+                'amenities' => AmenityReservation::find($id),
+                'dining' => DiningReservation::find($id),
+                default => RoomReservation::with('room')->find($id)
+                    ?? EventReservation::find($id)
+                    ?? AmenityReservation::find($id)
+                    ?? DiningReservation::find($id),
+            };
+
+            if (!$reservationType) {
+                $reservationType = $reservation instanceof EventReservation ? 'event'
+                    : ($reservation instanceof AmenityReservation ? 'amenity'
+                    : ($reservation instanceof DiningReservation ? 'dining' : 'room'));
+            }
+
+            abort_if(!$reservation, 404, 'Reservation not found');
+
             if ($validated['status'] === 'completed') {
-                $paid = (float) $reservation->payments()->sum('amount');
+                $paid = max(
+                    (float) ($reservation->amount_paid ?? 0),
+                    (float) $reservation->payments()->sum('amount')
+                );
                 if (round((float) $reservation->total_amount - $paid, 2) > 0) {
-                    abort(422, 'The reservation must be paid in full before checkout.');
+                    throw ValidationException::withMessages([
+                        'status' => 'The reservation must be paid in full before checkout.',
+                    ]);
                 }
             }
+
             $reservation->update(['status' => $validated['status']]);
 
-            if (!$reservation->room) {
-                return;
+            if ($reservation instanceof RoomReservation && in_array($validated['status'], ['checked-in', 'completed'], true)) {
+                $legacyReservation = Reservation::query()
+                    ->where('guest_email', $reservation->guest_email)
+                    ->where('room_id', $reservation->room_id)
+                    ->whereDate('check_in', $reservation->check_in)
+                    ->whereDate('check_out', $reservation->check_out)
+                    ->where('total_amount', $reservation->total_amount)
+                    ->whereNotIn('status', ['cancelled', 'completed'])
+                    ->latest('id')
+                    ->first();
+
+                $legacyReservation?->update(['status' => $validated['status']]);
             }
 
-            if ($validated['status'] === 'checked-in') {
-                $reservation->room->update([
-                    'status' => 'occupied',
-                    'cleaning_status' => 'clean',
-                ]);
-            } elseif ($validated['status'] === 'completed') {
-                $reservation->room->update([
-                    'status' => 'available',
-                    'cleaning_status' => 'dirty',
-                ]);
+            if ($reservation instanceof RoomReservation) {
+                AmenityReservation::query()
+                    ->where('guest_email', $reservation->guest_email)
+                    ->whereDate('check_in', $reservation->check_in)
+                    ->whereNotIn('status', ['cancelled', 'completed'])
+                    ->update(['status' => $validated['status']]);
+            }
+
+            // Only update room status for room reservations
+            if ($reservationType === 'room' && $reservation->room) {
+                if ($validated['status'] === 'checked-in') {
+                    $reservation->room->update([
+                        'status' => 'occupied',
+                        'cleaning_status' => 'clean',
+                    ]);
+                } elseif ($validated['status'] === 'completed') {
+                    $reservation->room->update([
+                        'status' => 'available',
+                        'cleaning_status' => 'dirty',
+                    ]);
+                }
+            }
+
+            if ($reservation instanceof DiningReservation && $validated['status'] === 'confirmed') {
+                $tableNumbers = collect(explode(',', (string) $reservation->dining_area))
+                    ->map(fn ($tableNumber) => trim($tableNumber))
+                    ->filter()
+                    ->values();
+
+                if ($tableNumbers->isNotEmpty()) {
+                    DiningTable::whereIn('table_no', $tableNumbers)->update(['status' => 'reserved']);
+                }
+            }
+
+            if ($reservation instanceof EventReservation && $validated['status'] === 'confirmed' && $reservation->eventPlace) {
+                $reservation->eventPlace->update(['status' => 'reserved']);
             }
         });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Reservation status updated successfully.',
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Reservation status updated successfully!');
     }
@@ -784,17 +894,24 @@ class AdminController extends Controller
         ]);
 
         $result = DB::transaction(function () use ($request, $id, $validated) {
-            $reservation = Reservation::lockForUpdate()->findOrFail($id);
+            // Find reservation in all tables
+            $reservation = RoomReservation::find($id) ?? EventReservation::find($id) ?? 
+                          AmenityReservation::find($id) ?? DiningReservation::find($id);
+            
+            abort_if(!$reservation, 404, 'Reservation not found');
+            
             $paid = (float) $reservation->payments()->sum('amount');
             $balance = round((float) $reservation->total_amount - $paid, 2);
             if ((float) $validated['amount'] > $balance) {
                 abort(422, 'Payment amount cannot exceed the balance due.');
             }
 
-            $payment = $reservation->payments()->create([
+            $payment = new Payment([
                 ...$validated,
                 'recorded_by' => $request->user()->id,
             ]);
+            $reservation->payments()->save($payment);
+            
             $newPaid = round($paid + (float) $payment->amount, 2);
             $newBalance = max(round((float) $reservation->total_amount - $newPaid, 2), 0);
             $reservation->update([
@@ -814,7 +931,6 @@ class AdminController extends Controller
 
     public function updateReservation(Request $request, $id)
     {
-        $reservation = Reservation::findOrFail($id);
         $diningSelections = $this->normalizeDiningSelections($request);
 
         $diningIds = $request->input('dining_id');
@@ -859,6 +975,13 @@ class AdminController extends Controller
             'dining_id' => ['nullable', 'string'],
         ]);
 
+        $reservation = match ($validated['category']) {
+            'rooms' => RoomReservation::findOrFail($id),
+            'event_place' => EventReservation::findOrFail($id),
+            'amenities' => AmenityReservation::findOrFail($id),
+            'dining' => DiningReservation::findOrFail($id),
+        };
+
         if (!empty($validated['dining_id'])) {
             $diningIdList = collect(explode(',', $validated['dining_id']))
                 ->map(fn ($id) => trim((string) $id))
@@ -870,7 +993,19 @@ class AdminController extends Controller
             $validated['dining_id'] = implode(',', $diningIdList);
         }
 
-        $reservation->update($validated);
+        $attributes = collect($validated)->except('category')->all();
+        if ($validated['category'] === 'rooms') {
+            $attributes['room_check_in_time'] = $validated['check_in_time'] ?? null;
+            $attributes['room_check_out_time'] = $validated['check_out_time'] ?? null;
+        } elseif ($validated['category'] === 'event_place') {
+            $attributes['event_start_time'] = $validated['check_in_time'] ?? null;
+            $attributes['event_end_time'] = $validated['check_out_time'] ?? null;
+        } elseif ($validated['category'] === 'amenities') {
+            $attributes['amenity_start_time'] = $validated['check_in_time'] ?? null;
+            $attributes['amenity_end_time'] = $validated['check_out_time'] ?? null;
+        }
+
+        $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
 
         if (!empty($diningSelections)) {
             $reservation->diningItems()->delete();
@@ -884,7 +1019,52 @@ class AdminController extends Controller
 
     public function destroyReservation(Request $request, $id)
     {
-        Reservation::findOrFail($id)->delete();
+        $category = $request->validate([
+            'category' => ['nullable', 'in:rooms,amenities,event_place,dining'],
+        ])['category'] ?? null;
+        $reservationType = match ($category) {
+            'rooms' => 'room',
+            'event_place' => 'event',
+            'amenities' => 'amenity',
+            'dining' => 'dining',
+            default => null,
+        };
+        $reservation = match ($category) {
+            'rooms' => RoomReservation::with('room')->find($id) ?? Reservation::with('room')->find($id),
+            'event_place' => EventReservation::find($id) ?? Reservation::with('eventPlace')->find($id),
+            'amenities' => AmenityReservation::find($id) ?? Reservation::with('amenity')->find($id),
+            'dining' => DiningReservation::find($id) ?? Reservation::find($id),
+            default => RoomReservation::with('room')->find($id)
+                ?? EventReservation::find($id)
+                ?? AmenityReservation::find($id)
+                ?? DiningReservation::find($id)
+                ?? Reservation::find($id),
+        };
+
+        if (!$reservationType && $reservation instanceof Reservation) {
+            $reservationType = match ($reservation->category) {
+                'event_place' => 'event',
+                'amenities' => 'amenity',
+                'dining' => 'dining',
+                default => 'room',
+            };
+        } elseif (!$reservationType) {
+            $reservationType = $reservation instanceof EventReservation ? 'event'
+                : ($reservation instanceof AmenityReservation ? 'amenity'
+                : ($reservation instanceof DiningReservation ? 'dining' : 'room'));
+        }
+
+        abort_if(!$reservation, 404, 'Reservation not found');
+
+        // If this is a room reservation that's occupied, reset the room status to available
+        if ($reservationType === 'room' && $reservation->room_id && $reservation->room && $reservation->room->status === 'occupied') {
+            $reservation->room->update([
+                'status' => 'available',
+                'cleaning_status' => 'dirty',
+            ]);
+        }
+
+        $reservation->delete();
 
         return $request->routeIs('employee.reservations.destroy')
             ? redirect()->route('employee.reservation')->with('success', 'Reservation deleted successfully!')

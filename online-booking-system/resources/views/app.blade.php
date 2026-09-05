@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
 
 </head>
 <body>
@@ -44,6 +45,8 @@
         <li><a href="{{ route('accommodation') }}">ACCOMMODATION</a></li>
 
         <li><a href="{{ route('dining') }}">DINING</a></li>
+
+        <li><a href="{{ route('events') }}">EVENTS</a></li>
 
         <li><a href="{{ route('aboutus') }}">ABOUT US</a></li>
 
@@ -100,6 +103,16 @@
                         <a href="{{ route('guest.records') }}" class="profile-menu-item" role="menuitem">
                             <i class="fas fa-list-alt"></i> My Reservations
                         </a>
+                        @php
+                            $guestHasReceiptAccess = \App\Models\Reservation::where('guest_email', auth('guest')->user()->email)
+                                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                                ->exists();
+                        @endphp
+                        @if($guestHasReceiptAccess)
+                            <a href="{{ route('guest.receipts') }}" class="profile-menu-item" role="menuitem">
+                                <i class="fas fa-receipt"></i> My Receipts
+                            </a>
+                        @endif
                         <a href="{{ route('guest.profile') }}" class="profile-menu-item" role="menuitem">
                             <i class="fas fa-user-circle"></i> My Profile
                         </a>
@@ -120,8 +133,9 @@
 
 </nav>
 
-@php($signupHasErrors = $errors->any() && old('first_name') !== null)
-<div class="auth-modal-backdrop{{ $errors->any() ? ' open' : '' }}" id="guest-auth-modal" aria-hidden="{{ $errors->any() ? 'false' : 'true' }}">
+@php($signupHasErrors = $errors->hasAny(['first_name', 'last_name', 'middle_initial', 'contact_no', 'password_confirmation']))
+@php($authHasErrors = $errors->has('email') || $signupHasErrors)
+<div class="auth-modal-backdrop{{ $authHasErrors ? ' open' : '' }}" id="guest-auth-modal" aria-hidden="{{ $authHasErrors ? 'false' : 'true' }}">
     <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="guest-auth-title">
         <button type="button" class="auth-close-btn" id="guest-auth-close" aria-label="Close">×</button>
 
@@ -131,7 +145,7 @@
             <p>Sign in to continue or create a guest account.</p>
         </div>
 
-        @if($errors->any())
+        @if($authHasErrors)
             <div id="auth-message" class="auth-message" role="alert">
                 {{ $errors->first() }}
             </div>

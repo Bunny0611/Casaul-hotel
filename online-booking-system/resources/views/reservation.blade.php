@@ -60,7 +60,7 @@
 
     .confirmation-modal{ position:fixed; inset:0; display:none; align-items:flex-start; justify-content:center; background:rgba(2,6,23,0.55); z-index:9999; padding:20px; overflow-y:auto; }
     .confirmation-modal.open{ display:flex; }
-    .confirmation-card{ width:min(760px,100%); max-height:calc(100vh - 40px); overflow-y:auto; box-sizing:border-box; border-radius:20px; padding:28px; background:linear-gradient(180deg,#fff,#fbfdff); box-shadow: 0 32px 80px rgba(2,6,23,0.18); border:1px solid rgba(15,23,42,0.06); }
+    .confirmation-card{ position:relative; width:min(760px,100%); max-height:calc(100vh - 40px); overflow-y:auto; box-sizing:border-box; border-radius:20px; padding:28px; background:linear-gradient(180deg,#fff,#fbfdff); box-shadow: 0 32px 80px rgba(2,6,23,0.18); border:1px solid rgba(15,23,42,0.06); }
     .confirmation-item{ border-radius:12px; padding:12px; background:#f8fafc; color:#0f172a; }
     .confirmation-total-amount{ font-size:1.6rem; color:#0f172a; }
 
@@ -72,6 +72,13 @@
 
     .confirm-submit-btn{ background: var(--accent); color:white; border-radius:999px; padding:12px 22px; }
     .confirm-cancel-btn{ background: #f3f4f6; border-radius:999px; padding:12px 22px; }
+
+    .notification-toast { position:absolute; top:14px; left:50%; transform:translateX(-50%); display:none; align-items:center; gap:10px; max-width:calc(100% - 32px); padding:12px 18px; border-radius:10px; border:2px solid #d92d2d; background:#fff; color:#c33; box-shadow:0 10px 22px rgba(15,23,42,0.12); font-size:14px; font-weight:700; line-height:1.4; z-index:10; pointer-events:none; animation:slideDown 0.3s ease-out; }
+    .notification-toast.show { display:flex; }
+    .notification-toast i { font-size:16px; }
+    @keyframes slideDown { from { opacity:0; transform:translateX(-50%) translateY(-10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+    @keyframes slideUp { from { opacity:1; transform:translateX(-50%) translateY(0); } to { opacity:0; transform:translateX(-50%) translateY(-10px); } }
+    .notification-toast.hide { animation:slideUp 0.3s ease-out forwards; }
 
     @media (max-width: 640px){
         .confirmation-modal{ padding:12px; }
@@ -121,6 +128,8 @@
     .reservation-card h4 { font-size:11px; }
     .reservation-card-meta { gap:8px; font-size:9px; }
     .reservation-card-body > p { margin:0; color:#788398; font-size:9px; line-height:1.45; }
+    .event-time-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .event-time-row .field-input { padding-left:4px; padding-right:2px; }
     .reservation-card-footer { display:block; }
     .reservation-card .price { display:block; margin-bottom:7px; color:#d20b26; font-size:11px; font-weight:800; }
     .select-option-btn { width:100%; padding:7px 8px; border:1px solid #ff9aa7; border-radius:7px; color:#d20b26; background:#fff; font-size:10px; }
@@ -160,7 +169,11 @@
     .receipt-booking { min-width:220px; }
     .receipt-booking-details { margin:0 0 18px; }
     .receipt-booking p { display:flex; justify-content:space-between; gap:18px; }
+    .receipt-booking [hidden] { display:none !important; }
     .receipt-booking strong { color:#4b5563; font-weight:600; }
+    .receipt-reservation-details { margin-top:8px; }
+    .receipt-reservation-detail { display:flex; justify-content:space-between; gap:18px; margin:3px 0; }
+    .receipt-reservation-detail strong { text-align:right; }
     .receipt-close { position:absolute; top:-8px; right:-8px; border:0; background:transparent; color:#64748b; font-size:22px; cursor:pointer; }
     .receipt-content { color:#566176; font-size:12px; line-height:1.5; }
     .receipt-table { width:100%; border:1px solid #7fa9d0; border-radius:4px; border-spacing:0; overflow:hidden; }
@@ -233,9 +246,14 @@
     .details-service-item.dining-service .details-service-label { color:#f28c18; }
     .details-service-value { display:block; color:#172033; font-size:14px; font-weight:700; line-height:1.4; overflow-wrap:anywhere; }
     .details-service-meta { display:block; margin-top:4px; color:#566176; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+    .details-service-detail-row { display:flex; align-items:center; gap:10px; padding:5px 0; color:#566176; font-size:12px; line-height:1.4; }
+    .details-service-detail-row i { width:16px; flex:0 0 16px; color:inherit; text-align:center; }
+    .details-service-detail-row strong { margin-left:auto; color:#172033; font-weight:600; text-align:right; }
     .details-guest-info { grid-column:1 / -1; width:100%; box-sizing:border-box; }
     .details-secondary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:10px 0 12px; }
     .details-secondary-grid .details-form-section { min-width:0; }
+    .details-mode .details-secondary-grid [hidden] { display:none !important; }
+    .details-secondary-grid.details-only-services .details-services-summary { grid-column:1 / -1; }
     .details-guest-info .guest-info-fields { gap:12px 16px; }
     .guest-info-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
     .guest-request-field { grid-column:1 / -1; }
@@ -438,6 +456,12 @@
         </div>
     @endif
 
+    @if($errors->any())
+        <div class="reservation-alert" role="alert">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
     <div class="reservation-shell">
         <div class="reservation-left">
             <div class="reservation-tabs">
@@ -478,7 +502,8 @@
                 <div class="reservation-card-grid">
                     @foreach($rooms as $room)
                         @php($extraGuestPrice = str_contains(strtolower($room->room_type), 'standard') ? 500 : 650)
-                        <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-extra-guest-price="{{ $extraGuestPrice }}">
+                        @php($roomCapacity = max(1, (int) ($room->capacity ?? 2)))
+                        <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}">
                             <img src="{{ $room->image ? asset(str_starts_with($room->image, 'rooms/') ? 'storage/' . $room->image : $room->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $room->room_type }}</h4>
@@ -490,10 +515,9 @@
                                 <label class="field-label" for="extraGuests-{{ $room->id }}">Add a Person</label>
                                 <select id="extraGuests-{{ $room->id }}" class="field-input room-extra-guests">
                                     <option value="0" selected>No extra persons</option>
-                                    <option value="1">1 Person (₱{{ number_format($extraGuestPrice, 0) }})</option>
-                                    <option value="2">2 Persons (₱{{ number_format($extraGuestPrice * 2, 0) }})</option>
-                                    <option value="3">3 Persons (₱{{ number_format($extraGuestPrice * 3, 0) }})</option>
-                                    <option value="4">4 Persons (₱{{ number_format($extraGuestPrice * 4, 0) }})</option>
+                                    @for($extraGuests = 1; $extraGuests <= 4; $extraGuests++)
+                                        <option value="{{ $extraGuests }}">{{ $extraGuests }} {{ $extraGuests === 1 ? 'Person' : 'Persons' }} (₱{{ number_format($extraGuestPrice * $extraGuests, 0) }})</option>
+                                    @endfor
                                 </select>
                                 <div class="reservation-card-footer">
                                     <span class="price">₱{{ number_format($room->price, 0) }}/night</span>
@@ -562,14 +586,20 @@
                                 <div class="event-options">
                                     <label class="field-label" for="eventDate-{{ $event->id }}">Event Date</label>
                                     <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date">
-                                    <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
-                                    <input id="eventStart-{{ $event->id }}" class="field-input event-start-time" type="time">
-                                    <label class="field-label" for="eventEnd-{{ $event->id }}">End Time</label>
-                                    <input id="eventEnd-{{ $event->id }}" class="field-input event-end-time" type="time">
-                                    <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests</label>
-                                    <select id="eventGuests-{{ $event->id }}" class="field-input event-guests">
-                                        @for($guests = 1; $guests <= $event->capacity; $guests++)<option value="{{ $guests }}">{{ $guests }}</option>@endfor
-                                    </select>
+                                    <div class="event-time-row">
+                                        <div>
+                                            <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
+                                            <input id="eventStart-{{ $event->id }}" class="field-input event-start-time" type="time" lang="en-US">
+                                        </div>
+                                        <div>
+                                            <label class="field-label" for="eventEnd-{{ $event->id }}">End Time</label>
+                                            <input id="eventEnd-{{ $event->id }}" class="field-input event-end-time" type="time" lang="en-US" readonly aria-readonly="true">
+                                        </div>
+                                    </div>
+                                    <label class="field-label" for="eventDuration-{{ $event->id }}">How Many Hours?</label>
+                                    <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="24" step="1" value="1">
+                                    <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests (max {{ $event->capacity }})</label>
+                                    <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric">
                                 </div>
                                 <div class="reservation-card-footer">
                                     <span class="price">₱{{ number_format($event->price, 0) }}</span>
@@ -601,7 +631,7 @@
                         <select id="diningTable" class="field-input">
                             <option value="">Select available table</option>
                             @foreach($diningTables as $table)
-                                <option value="{{ $table->table_no }}">{{ $table->table_no }} - {{ $table->type }} ({{ $table->capacity }} seats{{ $table->location ? ', ' . $table->location : '' }})</option>
+                                <option value="{{ $table->table_no }}" data-base-status="{{ strtolower($table->status) }}">{{ $table->table_no }} - {{ $table->type }} ({{ $table->capacity }} seats{{ $table->location ? ', ' . $table->location : '' }})</option>
                             @endforeach
                         </select>
                     </div>
@@ -725,6 +755,10 @@
                 <h3 style="margin:0; font-size:1.5rem; color:#111827;">Confirm Your Reservation</h3>
                 <button type="button" class="confirmation-close" id="confirmationCloseBtn" style="border:none; background:transparent; color:#334155; font-size:1.5rem; cursor:pointer; line-height:1;">×</button>
             </div>
+            <div class="notification-toast" id="notificationToast" style="position:relative; top:auto; left:auto; transform:none; margin-bottom:20px;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="notificationMessage"></span>
+            </div>
             <p class="confirmation-text" style="margin:0 0 24px; color:#4b5563; font-size:0.98rem; line-height:1.6;">Review all reservation details before submitting.</p>
             <div class="confirmation-review">
                 <section class="review-section">
@@ -789,28 +823,30 @@
                     </div>
                 </section>
             </div>
-            <div class="details-secondary-grid">
-                <section class="details-form-section details-summary-room">
+            <div class="details-secondary-grid" id="detailsSecondaryGrid">
+                <section class="details-form-section details-summary-room" id="detailsRoomSummary">
                     <h4 class="details-summary-title"><i class="fas fa-bed"></i> Room Summary</h4>
-                    <strong class="details-summary-room-name" id="detailsRoomName">None selected</strong>
+                    <strong class="details-summary-room-name" id="detailsRoomName"></strong>
                     <div class="details-summary-row"><i class="fas fa-calendar-check"></i><span class="details-summary-label">Check-in</span><span class="details-summary-value" id="detailsCheckIn">—</span></div>
                     <div class="details-summary-row"><i class="fas fa-clock"></i><span class="details-summary-label">Arrival time</span><span class="details-summary-value" id="detailsArrivalTime">—</span></div>
                     <div class="details-summary-row"><i class="fas fa-calendar-check"></i><span class="details-summary-label">Check-out</span><span class="details-summary-value" id="detailsCheckOut">—</span></div>
                     <div class="details-summary-row"><i class="fas fa-users"></i><span class="details-summary-label">Guests</span><span class="details-summary-value" id="detailsRoomGuests">2 Guests</span></div>
+                    <div class="details-summary-row"><i class="fas fa-peso-sign"></i><span class="details-summary-label">Amount</span><span class="details-summary-value" id="detailsRoomAmount"></span></div>
+                    <div class="details-summary-row"><i class="fas fa-circle-check"></i><span class="details-summary-label">Status</span><span class="details-summary-value" id="detailsRoomStatus"></span></div>
                 </section>
-                <section class="details-form-section details-services-summary">
-                    <h4 class="details-summary-title"><i class="fas fa-list-check"></i> Selected Services</h4>
-                    <div class="details-service-item amenity-service">
+                <section class="details-form-section details-services-summary" id="detailsServicesSummary">
+                    <h4 class="details-summary-title"><i class="fas fa-list-check"></i> <span id="detailsServicesTitle">Selected Services</span></h4>
+                    <div class="details-service-item amenity-service" id="detailsAmenityService">
                         <div class="details-service-icon"><i class="fas fa-square-parking"></i></div>
-                        <div><p class="details-service-label">Amenity</p><strong class="details-service-value" id="detailsAmenitiesTitle">None</strong><span class="details-service-meta" id="detailsAmenitiesSummary"></span></div>
+                        <div><p class="details-service-label">Amenity</p><strong class="details-service-value" id="detailsAmenitiesTitle"></strong><span class="details-service-meta" id="detailsAmenitiesSummary"></span><span class="details-service-meta" id="detailsAmenitiesAmount"></span><span class="details-service-meta" id="detailsAmenitiesStatus"></span></div>
                     </div>
-                    <div class="details-service-item event-service">
+                    <div class="details-service-item event-service" id="detailsEventService">
                         <div class="details-service-icon"><i class="fas fa-ring"></i></div>
-                        <div><p class="details-service-label">Event</p><strong class="details-service-value" id="detailsEventTitle">None</strong><span class="details-service-meta" id="detailsEventSummary"></span></div>
+                        <div><p class="details-service-label">Event</p><strong class="details-service-value" id="detailsEventTitle"></strong><div class="details-service-meta" id="detailsEventSummary"></div><span class="details-service-meta" id="detailsEventAmount"></span><span class="details-service-meta" id="detailsEventStatus"></span></div>
                     </div>
-                    <div class="details-service-item dining-service">
+                    <div class="details-service-item dining-service" id="detailsDiningService">
                         <div class="details-service-icon"><i class="fas fa-utensils"></i></div>
-                        <div><p class="details-service-label">Dining</p><strong class="details-service-value" id="detailsDiningTitle">None</strong><span class="details-service-meta" id="detailsDiningSummary"></span></div>
+                        <div><p class="details-service-label">Dining</p><strong class="details-service-value" id="detailsDiningTitle"></strong><span class="details-service-meta" id="detailsDiningSummary"></span><span class="details-service-meta" id="detailsDiningAmount"></span><span class="details-service-meta" id="detailsDiningStatus"></span></div>
                     </div>
                 </section>
             </div>
@@ -883,7 +919,7 @@
             </div>
 
             <div class="confirmation-actions" style="display:flex; gap:12px; justify-content:flex-end;">
-                <button type="button" id="modalConfirmBtn" class="confirm-submit-btn" style="border-radius:999px; padding:14px 26px; font-weight:700; border:none; cursor:pointer; background:#dc2626; color:#ffffff;">Confirm Reservation</button>
+                <button type="button" id="modalConfirmBtn" class="confirm-submit-btn" style="border-radius:999px; padding:14px 26px; font-weight:700; border:none; cursor:pointer; background:#dc2626; color:#ffffff;">Continue to Submit</button>
                 <button type="button" id="modalCancelBtn" class="confirm-cancel-btn" style="border-radius:999px; padding:14px 26px; font-weight:700; border:none; cursor:pointer; background:#f3f4f6; color:#111827;">Back to Select</button>
             </div>
         </div>
@@ -917,10 +953,11 @@
             </div>
             <div class="receipt-booking receipt-booking-details">
                 <h4>Booking Details</h4>
-                <p><span>Check-in</span><strong id="receiptCheckIn">—</strong></p>
-                <p><span>Check-out</span><strong id="receiptCheckOut">—</strong></p>
-                <p><span>Guests</span><strong id="receiptGuests">2 Guests</strong></p>
-                <p><span>Room</span><strong id="receiptRoom">None</strong></p>
+                <p id="receiptCheckInRow"><span id="receiptCheckInLabel">Check-in</span><strong id="receiptCheckIn">—</strong></p>
+                <p id="receiptCheckOutRow"><span id="receiptCheckOutLabel">Check-out</span><strong id="receiptCheckOut">—</strong></p>
+                <p id="receiptGuestsRow"><span>Guests</span><strong id="receiptGuests">2 Guests</strong></p>
+                <p id="receiptRoomRow"><span>Room</span><strong id="receiptRoom"></strong></p>
+                <div class="receipt-reservation-details" id="receiptReservationDetails"></div>
             </div>
             <div class="receipt-content" id="receiptContent"></div>
             <div class="receipt-notes">
@@ -935,7 +972,7 @@
     </div>
 </div>
 
-<form id="reservationForm" action="{{ route('reservation.store') }}" method="POST" style="display:none;">
+<form id="reservationForm" action="{{ route('reservation.store', [], false) }}" method="POST" style="display:none;">
     @csrf
     <input type="hidden" name="submission_token" value="{{ \Illuminate\Support\Str::uuid() }}">
     <input type="hidden" name="room_id" id="reservationRoomId">
@@ -966,6 +1003,8 @@
         const reservationLeft = document.querySelector('.reservation-left');
         const tabs = document.querySelectorAll('.tab-btn');
         const panels = document.querySelectorAll('.reservation-panel');
+        const notificationToast = document.getElementById('notificationToast');
+        const notificationMessage = document.getElementById('notificationMessage');
         const checkIn = document.getElementById('checkIn');
         const checkOut = document.getElementById('checkOut');
         const summaryRoom = document.getElementById('summaryRoom');
@@ -1006,6 +1045,8 @@
         const reservationEventGuests = document.getElementById('reservationEventGuests');
         const diningSchedule = document.getElementById('diningSchedule');
         const diningTable = document.getElementById('diningTable');
+        const diningDate = document.getElementById('diningDate');
+        const diningReservations = @json($diningReservations ?? []);
         const paymentMethodChoices = document.querySelectorAll('.payment-method-option');
         const confirmationModal = document.getElementById('confirmationModal');
         const receiptModal = document.getElementById('receiptModal');
@@ -1016,8 +1057,15 @@
         const receiptDate = document.getElementById('receiptDate');
         const receiptCheckIn = document.getElementById('receiptCheckIn');
         const receiptCheckOut = document.getElementById('receiptCheckOut');
+        const receiptCheckInLabel = document.getElementById('receiptCheckInLabel');
+        const receiptCheckOutLabel = document.getElementById('receiptCheckOutLabel');
         const receiptGuests = document.getElementById('receiptGuests');
+        const receiptGuestsRow = document.getElementById('receiptGuestsRow');
         const receiptRoom = document.getElementById('receiptRoom');
+        const receiptReservationDetails = document.getElementById('receiptReservationDetails');
+        const receiptCheckInRow = document.getElementById('receiptCheckInRow');
+        const receiptCheckOutRow = document.getElementById('receiptCheckOutRow');
+        const receiptRoomRow = document.getElementById('receiptRoomRow');
         const receiptCloseBtn = document.getElementById('receiptCloseBtn');
         const receiptDownloadBtn = document.getElementById('receiptDownloadBtn');
         const receiptPrintBtn = document.getElementById('receiptPrintBtn');
@@ -1059,10 +1107,25 @@
         const detailsRoomGuests = document.getElementById('detailsRoomGuests');
         const detailsAmenitiesTitle = document.getElementById('detailsAmenitiesTitle');
         const detailsAmenitiesSummary = document.getElementById('detailsAmenitiesSummary');
+        const detailsAmenitiesAmount = document.getElementById('detailsAmenitiesAmount');
+        const detailsAmenitiesStatus = document.getElementById('detailsAmenitiesStatus');
         const detailsEventTitle = document.getElementById('detailsEventTitle');
         const detailsEventSummary = document.getElementById('detailsEventSummary');
+        const detailsEventAmount = document.getElementById('detailsEventAmount');
+        const detailsEventStatus = document.getElementById('detailsEventStatus');
         const detailsDiningTitle = document.getElementById('detailsDiningTitle');
         const detailsDiningSummary = document.getElementById('detailsDiningSummary');
+        const detailsDiningAmount = document.getElementById('detailsDiningAmount');
+        const detailsDiningStatus = document.getElementById('detailsDiningStatus');
+        const detailsRoomAmount = document.getElementById('detailsRoomAmount');
+        const detailsRoomStatus = document.getElementById('detailsRoomStatus');
+        const detailsRoomSummary = document.getElementById('detailsRoomSummary');
+        const detailsSecondaryGrid = document.getElementById('detailsSecondaryGrid');
+        const detailsServicesSummary = document.getElementById('detailsServicesSummary');
+        const detailsServicesTitle = document.getElementById('detailsServicesTitle');
+        const detailsAmenityService = document.getElementById('detailsAmenityService');
+        const detailsEventService = document.getElementById('detailsEventService');
+        const detailsDiningService = document.getElementById('detailsDiningService');
         const detailsGuestName = document.getElementById('detailsGuestName');
         const detailsGuestEmail = document.getElementById('detailsGuestEmail');
         const detailsGuestPhone = document.getElementById('detailsGuestPhone');
@@ -1074,6 +1137,7 @@
 
         let selectedRoom = null;
         let roomPrice = 0;
+        let selectedRoomCapacity = 2;
         let selectedAmenities = [];
         let selectedEvent = [];
         let selectedDining = [];
@@ -1167,6 +1231,10 @@
             return 'Pay at hotel';
         };
 
+        const showNotification = (message) => {
+            alert(message);
+        };
+
         const getPaymentDetailRows = () => {
             const value = id => document.getElementById(id)?.value?.trim() || '';
             const file = id => document.getElementById(id)?.files?.[0] || null;
@@ -1186,6 +1254,17 @@
             return [];
         };
 
+        const normalizeEventGuestCount = (input, card) => {
+            const maximum = Math.max(1, Number(card?.dataset.capacity) || Number(input?.max) || 1);
+            const enteredValue = Number(input?.value);
+            const guestCount = Number.isFinite(enteredValue) ? Math.round(enteredValue) : 1;
+            const normalizedValue = Math.min(maximum, Math.max(1, guestCount));
+            if (input) {
+                input.value = normalizedValue;
+            }
+            return normalizedValue;
+        };
+
         tabs.forEach(tab => {
             tab.addEventListener('click', function () {
                 tabs.forEach(btn => btn.classList.remove('active'));
@@ -1194,15 +1273,22 @@
                 document.getElementById(this.dataset.tab).classList.add('active');
             });
         });
-
         const updateSummary = () => {
             const selectedEventTitles = selectedEvent.map(item => item.title).join(', ');
             const selectedDiningTitles = selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ');
             const selectedDiningSchedule = [...new Set(selectedDining.map(item => item.schedule).filter(Boolean))].join(', ');
             const selectedDiningTable = [...new Set(selectedDining.map(item => item.table).filter(Boolean))].join(', ');
-            const selectedDiningDate = [...new Set(selectedDining.map(item => item.date).filter(Boolean).map(date => formatDisplayDate(date)))].join(', ');
+            const selectedDiningDateValue = diningDate?.value || selectedDining[0]?.date || '';
+            const selectedDiningDate = selectedDiningDateValue ? formatDisplayDate(selectedDiningDateValue) : '';
             const selectedEventGuests = selectedEvent.reduce((sum, item) => sum + (Number(item.guests || 0)), 0);
             const selectedDiningQuantity = selectedDining.reduce((sum, item) => sum + (Number(item.quantity || 1)), 0);
+            const selectedEventDate = selectedEvent[0]?.date || '';
+            const selectedEventStartTime = selectedEvent[0]?.startTime || '';
+            const selectedEventEndTime = selectedEvent[0]?.endTime || '';
+            const bookingDate = selectedRoom ? checkIn.value : (selectedEventDate || selectedDiningDateValue);
+            const bookingEndDate = selectedRoom ? checkOut.value : (selectedEventDate || selectedDiningDateValue);
+            const bookingStartTime = selectedRoom ? (arrivalTime.value || '') : selectedEventStartTime;
+            const bookingEndTime = selectedRoom ? '' : selectedEventEndTime;
 
             summaryRoom.textContent = selectedRoom ? selectedRoom : 'None';
             summaryRoomDetails.textContent = selectedRoom ? `${formatDisplayDate(checkIn.value)} – ${formatDisplayDate(checkOut.value)}${selectedExtraGuests > 0 ? ` • ${selectedExtraGuests} Extra Person(s)` : ''}` : 'Choose a room and dates';
@@ -1218,32 +1304,60 @@
 
             const total = calculateTotal();
             const hasRoomSelection = Boolean(selectedRoom);
-            detailsRoomName.textContent = hasRoomSelection ? selectedRoom : 'None selected';
+            const hasAmenitySelection = selectedAmenities.length > 0;
+            const hasEventSelection = selectedEvent.length > 0;
+            const hasDiningSelection = selectedDining.length > 0;
+            const selectedServiceCount = Number(hasAmenitySelection) + Number(hasEventSelection) + Number(hasDiningSelection);
+            detailsRoomSummary.hidden = !hasRoomSelection;
+            detailsSecondaryGrid.classList.toggle('details-only-services', !hasRoomSelection);
+            detailsAmenityService.hidden = !hasAmenitySelection;
+            detailsEventService.hidden = !hasEventSelection;
+            detailsDiningService.hidden = !hasDiningSelection;
+            detailsServicesSummary.hidden = selectedServiceCount === 0;
+            detailsServicesTitle.textContent = selectedServiceCount === 1
+                ? (hasAmenitySelection ? 'Amenity Summary' : hasEventSelection ? 'Event Summary' : 'Dining Summary')
+                : 'Selected Services';
+            detailsRoomName.textContent = hasRoomSelection ? selectedRoom : '';
             detailsCheckIn.textContent = hasRoomSelection ? formatDisplayDate(checkIn.value) : '—';
             detailsArrivalTime.textContent = hasRoomSelection ? formatDisplayTime(arrivalTime.value) : '—';
             detailsCheckOut.textContent = hasRoomSelection ? formatDisplayDate(checkOut.value) : '—';
-            detailsRoomGuests.textContent = hasRoomSelection ? `${selectedExtraGuests + 2} Guests` : '—';
-            detailsAmenitiesTitle.textContent = selectedAmenities.length ? selectedAmenities.map(item => item.title).join(', ') : 'None';
-            detailsAmenitiesSummary.textContent = selectedAmenities.length
-                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
+            detailsRoomGuests.textContent = hasRoomSelection ? `${selectedRoomCapacity + selectedExtraGuests} Guests` : '—';
+            detailsRoomAmount.textContent = hasRoomSelection ? `Amount: ${formatCurrencyValue(roomPrice + (selectedExtraGuests * selectedExtraGuestPrice))}` : '';
+            detailsRoomStatus.textContent = hasRoomSelection ? 'Status: Reserved' : '';
+            detailsAmenitiesTitle.textContent = hasAmenitySelection ? selectedAmenities.map(item => item.title).join(', ') : '';
+            detailsAmenitiesSummary.textContent = hasAmenitySelection
+                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''}`).join(', ')
                 : '';
-            detailsEventTitle.textContent = selectedEvent.length ? selectedEvent.map(item => item.title).join(', ') : 'None';
-            detailsEventSummary.textContent = selectedEvent.length
-                ? selectedEvent.map(item => `${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}`).join(', ')
+            detailsAmenitiesAmount.textContent = hasAmenitySelection ? `Amount: ${formatCurrencyValue(sumItemTotal(selectedAmenities))}` : '';
+            detailsAmenitiesStatus.textContent = hasAmenitySelection ? 'Status: Reserved' : '';
+            detailsEventTitle.textContent = hasEventSelection ? selectedEvent.map(item => item.title).join(', ') : '';
+            detailsEventSummary.innerHTML = hasEventSelection
+                ? selectedEvent.map(item => [
+                    ['fa-map-marker-alt', 'Event Place', item.title],
+                    ['fa-star', 'Event Type', item.type],
+                    ['fa-calendar-check', 'Event Date', item.date ? formatDisplayDate(item.date) : ''],
+                    ['fa-clock', 'Start Time', item.startTime ? formatDisplayTime(item.startTime) : ''],
+                    ['fa-clock', 'End Time', item.endTime ? formatDisplayTime(item.endTime) : ''],
+                    ['fa-users', 'Guests', item.guests ? `${item.guests} guests` : ''],
+                ].filter(([, , value]) => value).map(([icon, label, value]) => `<div class="details-service-detail-row"><i class="fas ${icon}"></i><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join(''))
                 : '';
-            detailsDiningTitle.textContent = selectedDining.length
+            detailsEventAmount.textContent = hasEventSelection ? `Amount: ${formatCurrencyValue(selectedEvent.reduce((sum, item) => sum + Number(item.price || 0), 0))}` : '';
+            detailsEventStatus.textContent = hasEventSelection ? 'Status: Reserved' : '';
+            detailsDiningTitle.textContent = hasDiningSelection
                 ? selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ')
-                : 'None';
-            detailsDiningSummary.textContent = selectedDining.length
+                : '';
+            detailsDiningSummary.textContent = hasDiningSelection
                 ? [selectedDiningTable ? `Table ${selectedDiningTable}` : null, selectedDiningSchedule || null, selectedDiningDate || null].filter(Boolean).join(' • ') || 'No table selected'
                 : '';
+            detailsDiningAmount.textContent = hasDiningSelection ? `Amount: ${formatCurrencyValue(selectedDining.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0))}` : '';
+            detailsDiningStatus.textContent = hasDiningSelection ? 'Status: Reserved' : '';
 
             confirmReservationId.textContent = selectedRoom ? `RES-${Math.floor(Math.random() * 9000) + 1000}` : 'RES-0000';
             confirmRoom.textContent = selectedRoom ? selectedRoom : 'None';
             confirmArrivingOn.textContent = selectedRoom ? formatDisplayDate(checkIn.value) : '—';
             confirmArrivalTime.textContent = selectedRoom ? formatDisplayTime(arrivalTime.value) : '—';
             confirmCheckOut.textContent = selectedRoom ? formatDisplayDate(checkOut.value) : '—';
-            confirmGuests.textContent = selectedRoom ? `${selectedExtraGuests + 2} Guests` : '—';
+            confirmGuests.textContent = selectedRoom ? `${selectedRoomCapacity + selectedExtraGuests} Guests` : '—';
             confirmStatus.textContent = 'Reserved';
             confirmPaymentMethod.textContent = selectedPaymentMethod;
             const paymentDetailRows = getPaymentDetailRows();
@@ -1296,17 +1410,17 @@
 
             summaryTotal.textContent = `₱${total.toLocaleString()}`;
             reservationTotalAmount.value = total;
-            reservationCheckIn.value = checkIn.value;
-            reservationCheckOut.value = checkOut.value;
-            reservationCheckInTime.value = arrivalTime.value || '';
-            reservationCheckOutTime.value = '';
+            reservationCheckIn.value = bookingDate;
+            reservationCheckOut.value = bookingEndDate;
+            reservationCheckInTime.value = bookingStartTime;
+            reservationCheckOutTime.value = bookingEndTime;
             reservationDiningId.value = selectedDining.map(item => item.id).filter(Boolean).join(',');
             reservationDiningItems.value = JSON.stringify(selectedDining.map(item => ({
                 dining_id: item.id,
                 quantity: Number(item.quantity || 1),
                 dining_area: item.table || null,
                 dining_schedule: item.schedule || null,
-                dining_date: item.date || null,
+                dining_date: item.date || diningDate?.value || null,
             })));
             reservationDiningArea.value = selectedDining.map(item => item.table).filter(Boolean).join(',');
             reservationDiningSchedule.value = selectedDining.map(item => item.schedule).filter(Boolean).join(',');
@@ -1314,14 +1428,17 @@
             reservationAmenityId.value = selectedAmenities.map(item => item.id).filter(Boolean).join(',');
             reservationEventPlaceId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
             reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
-            reservationEventGuests.value = selectedEventGuests || '';
+            reservationEventGuests.value = selectedRoom
+                ? selectedRoomCapacity + selectedExtraGuests
+                : (selectedEventGuests || '');
             reservationTotalAmount.value = total;
-            reservationCheckIn.value = checkIn.value;
-            reservationCheckOut.value = checkOut.value;
-        }
+            reservationCheckIn.value = bookingDate;
+            reservationCheckOut.value = bookingEndDate;
+        };
 
         checkIn.addEventListener('change', updateSummary);
         checkOut.addEventListener('change', updateSummary);
+        [diningSchedule, diningTable, diningDate].forEach(field => field?.addEventListener('change', updateSummary));
         paymentMethodChoices.forEach(choice => choice.addEventListener('click', function () {
             selectedPaymentMethod = this.dataset.paymentMethod;
             paymentMethodChoices.forEach(button => button.classList.toggle('selected', button === this));
@@ -1398,6 +1515,7 @@
         });
 
         diningSchedule.addEventListener('change', function () {
+            syncDiningTableAvailability();
             selectedDining.forEach(item => {
                 item.schedule = this.value;
             });
@@ -1409,6 +1527,38 @@
             });
             updateSummary();
         });
+        diningDate.addEventListener('change', syncDiningTableAvailability);
+
+        function syncDiningTableAvailability() {
+            const selectedDate = diningDate.value;
+            const selectedSchedule = diningSchedule.value;
+
+            [...diningTable.options].forEach(option => {
+                if (!option.value) {
+                    return;
+                }
+
+                const isReserved = diningReservations.some(reservation => {
+                    const tables = String(reservation.dining_area || '').split(',').map(value => value.trim());
+                    const schedules = String(reservation.dining_schedule || '').split(',').map(value => value.trim());
+                    return reservation.check_in === selectedDate
+                        && tables.includes(option.value)
+                        && schedules.includes(selectedSchedule);
+                });
+
+                option.disabled = isReserved;
+                option.textContent = option.textContent.replace(/ \(Reserved\)$/, '');
+                if (isReserved) {
+                    option.textContent += ' (Reserved)';
+                }
+            });
+
+            if (diningTable.selectedOptions[0]?.disabled) {
+                diningTable.value = '';
+            }
+        }
+
+        syncDiningTableAvailability();
 
         document.querySelectorAll('.amenity-quantity, .amenity-date, .amenity-time').forEach(input => {
             input.addEventListener('change', function () {
@@ -1423,15 +1573,38 @@
             });
         });
 
-        document.querySelectorAll('.event-date, .event-start-time, .event-end-time, .event-guests').forEach(input => {
+        const updateEventEndTime = (card) => {
+            const startTime = card.querySelector('.event-start-time')?.value || '';
+            const durationHours = Math.max(1, Math.min(24, Number(card.querySelector('.event-duration')?.value || 1)));
+            const endTimeInput = card.querySelector('.event-end-time');
+            if (!endTimeInput) {
+                return '';
+            }
+
+            if (!startTime) {
+                endTimeInput.value = '';
+                return '';
+            }
+
+            const [hours, minutes] = startTime.split(':').map(Number);
+            const endMinutes = (hours * 60) + minutes + (durationHours * 60);
+            const normalizedMinutes = endMinutes % (24 * 60);
+            const endTime = `${String(Math.floor(normalizedMinutes / 60)).padStart(2, '0')}:${String(normalizedMinutes % 60).padStart(2, '0')}`;
+            endTimeInput.value = endTime;
+            return endTime;
+        };
+
+        document.querySelectorAll('.event-date, .event-start-time, .event-duration, .event-guests').forEach(input => {
             input.addEventListener('change', function () {
                 const card = this.closest('.reservation-card');
                 const eventItem = selectedEvent.find(item => item.id === card.dataset.eventId);
+                const endTime = updateEventEndTime(card);
                 if (eventItem) {
-                    eventItem.guests = Number(card.querySelector('.event-guests')?.value || 1);
+                    eventItem.guests = normalizeEventGuestCount(card.querySelector('.event-guests'), card);
                     eventItem.date = card.querySelector('.event-date')?.value || '';
                     eventItem.startTime = card.querySelector('.event-start-time')?.value || '';
-                    eventItem.endTime = card.querySelector('.event-end-time')?.value || '';
+                    eventItem.endTime = endTime;
+                    eventItem.durationHours = Number(card.querySelector('.event-duration')?.value || 1);
                     updateSummary();
                 }
             });
@@ -1468,6 +1641,7 @@
                     if (isSameRoomSelected) {
                         selectedRoom = null;
                         roomPrice = 0;
+                        selectedRoomCapacity = 2;
                         selectedAmenities = [];
                         reservationRoomId.value = '';
                         selectedExtraGuests = 0;
@@ -1485,6 +1659,7 @@
                     } else {
                         selectedRoom = title;
                         roomPrice = price;
+                        selectedRoomCapacity = Number(card.dataset.roomCapacity || 2);
                         selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice || 650);
                         selectedExtraGuests = Number(card.querySelector('.room-extra-guests')?.value || 0);
                         reservationRoomId.value = card.dataset.roomId || '';
@@ -1533,7 +1708,7 @@
                             type: card.dataset.eventType,
                             title,
                             price,
-                            guests: Number(card.querySelector('.event-guests')?.value || 1),
+                            guests: normalizeEventGuestCount(card.querySelector('.event-guests'), card),
                             date: card.querySelector('.event-date')?.value || '',
                             startTime: card.querySelector('.event-start-time')?.value || '',
                             endTime: card.querySelector('.event-end-time')?.value || '',
@@ -1595,6 +1770,8 @@
             confirmationModal.classList.add('open');
             confirmationModal.style.display = 'flex';
             confirmationModal.setAttribute('aria-hidden', 'false');
+            notificationToast.classList.remove('show', 'hide');
+            notificationToast.style.display = 'none';
         };
 
         const closeConfirmationModal = () => {
@@ -1607,6 +1784,8 @@
             confirmationModal.classList.remove('open');
             confirmationModal.style.display = 'none';
             confirmationModal.setAttribute('aria-hidden', 'true');
+            notificationToast.classList.remove('show', 'hide');
+            notificationToast.style.display = 'none';
         };
 
         confirmBtn.addEventListener('click', function () {
@@ -1635,6 +1814,10 @@
                 alert('Please select check-in and check-out dates.');
                 return;
             }
+            if (selectedDining.length && !diningDate?.value && !selectedDining[0]?.date) {
+                alert('Please select a dining date.');
+                return;
+            }
             openConfirmationModal();
         });
 
@@ -1643,6 +1826,7 @@
             if (reservationPage.classList.contains('confirm-step')) {
                 reservationPage.classList.remove('confirm-step');
                 modalConfirmBtn.textContent = 'Confirm Reservation';
+                modalConfirmBtn.disabled = false;
                 modalCancelBtn.textContent = 'Back to Select';
                 confirmBtn.hidden = false;
                 seeReceiptBtn.hidden = true;
@@ -1658,21 +1842,70 @@
         });
 
         seeReceiptBtn.addEventListener('click', function () {
-            const receiptItems = [
-                ['1', 'Room - ' + confirmRoom.textContent, confirmRoomCharge.textContent, confirmRoomCharge.textContent],
-                ['1', 'Amenities - ' + confirmAmenitiesTitle.textContent, confirmAmenitiesCharge.textContent, confirmAmenitiesCharge.textContent],
-                ['1', 'Event - ' + confirmEventTitle.textContent, confirmEventCharge.textContent, confirmEventCharge.textContent],
-                ['1', 'Dining - ' + confirmDiningTitle.textContent, confirmDiningCharge.textContent, confirmDiningCharge.textContent],
-                [String(selectedExtraGuests), 'Extra person', `₱${selectedExtraGuests * selectedExtraGuestPrice}`, confirmExtraGuestCharge.textContent],
-            ];
+            const receiptItems = [];
+            if (selectedRoom) {
+                receiptItems.push(['1', `Room - ${selectedRoom}`, formatCurrencyValue(roomPrice), formatCurrencyValue(roomPrice)]);
+            }
+            if (selectedAmenities.length) {
+                selectedAmenities.forEach(item => {
+                    const quantity = Number(item.quantity || 1);
+                    const unitPrice = Number(item.price || 0);
+                    receiptItems.push([String(quantity), `Amenity - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(unitPrice * quantity)]);
+                });
+            }
+            if (selectedEvent.length) {
+                selectedEvent.forEach(item => {
+                    const amount = Number(item.price || 0);
+                    receiptItems.push(['1', 'Event Reservation', formatCurrencyValue(amount), formatCurrencyValue(amount)]);
+                });
+            }
+            if (selectedDining.length) {
+                selectedDining.forEach(item => {
+                    const quantity = Number(item.quantity || 1);
+                    const unitPrice = Number(item.price || 0);
+                    receiptItems.push([String(quantity), `Dining - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(unitPrice * quantity)]);
+                });
+            }
+            if (selectedExtraGuests > 0) {
+                receiptItems.push([String(selectedExtraGuests), 'Extra person', formatCurrencyValue(selectedExtraGuestPrice), formatCurrencyValue(selectedExtraGuests * selectedExtraGuestPrice)]);
+            }
             receiptGuestName.textContent = detailsGuestName.value || 'Guest';
             receiptGuestEmail.textContent = detailsGuestEmail.value || 'guest@example.com';
             receiptNumber.textContent = confirmReservationId.textContent;
             receiptDate.textContent = new Date().toLocaleDateString('en-US');
             receiptCheckIn.textContent = confirmArrivingOn.textContent;
             receiptCheckOut.textContent = confirmCheckOut.textContent;
-            receiptGuests.textContent = confirmGuests.textContent;
-            receiptRoom.textContent = confirmRoom.textContent;
+            receiptGuests.textContent = selectedRoom
+                ? `${selectedRoomCapacity + selectedExtraGuests} Guests`
+                : selectedEvent.length
+                    ? `${selectedEvent.reduce((sum, item) => sum + Number(item.guests || 0), 0)} Guests`
+                    : '—';
+            receiptRoom.textContent = selectedRoom ? selectedRoom : '';
+            const firstReservation = selectedEvent[0] || selectedDining[0] || selectedAmenities[0];
+            const hasDateOrTime = Boolean(firstReservation?.date || firstReservation?.startTime || firstReservation?.time || firstReservation?.schedule);
+            receiptCheckInLabel.textContent = selectedRoom ? 'Check-in' : 'Date';
+            receiptCheckOutLabel.textContent = selectedRoom ? 'Check-out' : 'Time';
+            receiptCheckIn.textContent = selectedRoom
+                ? confirmArrivingOn.textContent
+                : firstReservation?.date ? formatDisplayDate(firstReservation.date) : '—';
+            receiptCheckOut.textContent = selectedRoom
+                ? confirmCheckOut.textContent
+                : selectedEvent.length && firstReservation.startTime
+                    ? `${formatDisplayTime(firstReservation.startTime)} - ${formatDisplayTime(firstReservation.endTime)}`
+                    : firstReservation?.time || firstReservation?.schedule || '—';
+            receiptCheckInRow.hidden = !selectedRoom && !hasDateOrTime;
+            receiptCheckOutRow.hidden = !selectedRoom && !hasDateOrTime;
+            receiptGuestsRow.hidden = !selectedRoom && !selectedEvent.length;
+            receiptRoomRow.hidden = !selectedRoom;
+            const reservationDetails = [];
+            selectedAmenities.forEach(item => {
+                reservationDetails.push(['Amenity', item.title]);
+            });
+            selectedDining.forEach(item => {
+                reservationDetails.push(['Dining', `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`]);
+                if (item.table) reservationDetails.push(['Dining Table', item.table]);
+            });
+            receiptReservationDetails.innerHTML = reservationDetails.map(([label, value]) => `<p class="receipt-reservation-detail"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></p>`).join('');
             receiptContent.innerHTML = `<table class="receipt-table"><thead><tr><th>Quantity</th><th>Description</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>${receiptItems.map(([quantity, description, unitPrice, amount]) => `<tr><td>${escapeHtml(quantity)}</td><td>${escapeHtml(description)}</td><td>${escapeHtml(unitPrice)}</td><td>${escapeHtml(amount)}</td></tr>`).join('')}<tr class="receipt-total-row"><td colspan="3">Total</td><td>${escapeHtml(confirmTotalAmount.textContent)}</td></tr></tbody></table>`;
             receiptModal.classList.add('open');
             receiptModal.setAttribute('aria-hidden', 'false');
@@ -1687,6 +1920,13 @@
         receiptModal.addEventListener('click', function (event) {
             if (event.target === receiptModal) {
                 closeReceiptModal();
+            }
+        });
+
+        detailsTerms.addEventListener('change', function () {
+            if (this.checked) {
+                notificationToast.classList.remove('show', 'hide');
+                notificationToast.style.display = 'none';
             }
         });
 
@@ -1787,6 +2027,10 @@
             }
 
             if (!reservationPage.classList.contains('confirm-step')) {
+                if (!detailsTerms.checked) {
+                    showNotification('Please check Terms & Conditions before proceeding.');
+                    return;
+                }
                 reservationPage.classList.add('confirm-step');
                 modalConfirmBtn.textContent = 'Submit Reservation';
                 modalCancelBtn.textContent = 'Back to Details';
@@ -1797,12 +2041,6 @@
 
             modalConfirmBtn.disabled = true;
             modalConfirmBtn.textContent = 'Submitting...';
-            if (!detailsTerms.checked) {
-                modalConfirmBtn.disabled = false;
-                modalConfirmBtn.textContent = 'Confirm Reservation';
-                alert('Please agree to the Terms & Conditions before submitting.');
-                return;
-            }
 
             reservationGuestName.value = detailsGuestName.value || 'Guest';
             reservationGuestEmail.value = detailsGuestEmail.value || 'guest@example.com';
@@ -1848,7 +2086,7 @@
             const amountPaidInput = document.createElement('input');
             amountPaidInput.type = 'hidden';
             amountPaidInput.name = 'amount_paid';
-            amountPaidInput.value = selectedPaymentMethod === 'Cash / Pay at Hotel' ? Number(reservationTotalAmount.value || 0) : (
+            amountPaidInput.value = selectedPaymentMethod === 'Cash / Pay at Hotel' ? 0 : (
                 selectedPaymentMethod === 'GCash' ? getPaymentAmountValue('gcashPaymentAmount') :
                 selectedPaymentMethod === 'Maya' ? getPaymentAmountValue('mayaPaymentAmount') :
                 selectedPaymentMethod === 'Credit / Debit Card' ? getPaymentAmountValue('cardPaymentAmount') :

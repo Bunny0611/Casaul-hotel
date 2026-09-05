@@ -175,8 +175,9 @@ body{
 }
 
 .home-page-shell {
-    width: min(100%, 1360px);
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     padding: 0 0 30px;
     background: #f3efe9;
 }
@@ -3284,89 +3285,6 @@ footer::before{
     nav a{ padding: 8px 12px; font-size: 13px; }
     .logo{ font-size: 20px; }
     .logo-img{ height: 36px; }
-}
-
-@media (max-width: 768px) {
-    body {
-        overflow-x: hidden;
-    }
-
-    nav {
-        min-width: 0;
-        padding: 10px 14px;
-        gap: 8px;
-    }
-
-    nav ul {
-        display: none;
-    }
-
-    .logo {
-        min-width: 0;
-        flex: 1 1 auto;
-        gap: 7px;
-        overflow: hidden;
-    }
-
-    .logo-img {
-        height: 32px;
-    }
-
-    .logo-text span {
-        font-size: 0.82rem;
-    }
-
-    .logo-text small {
-        font-size: 0.42rem;
-    }
-
-    .nav-actions {
-        margin-left: 0;
-        gap: 6px;
-    }
-
-    .home-page-shell {
-        width: 100%;
-        margin: 0;
-        padding-bottom: 24px;
-    }
-
-    .home-hero-layout {
-        grid-template-columns: 1fr;
-        min-height: auto;
-    }
-
-    .home-hero-copy {
-        padding: 112px 20px 32px;
-    }
-
-    .home-hero-copy::before {
-        top: 88px;
-        bottom: 0;
-    }
-
-    .home-hero-copy h1 {
-        font-size: clamp(2.6rem, 12vw, 4rem);
-    }
-
-    .home-hero-visual {
-        min-height: 300px;
-        border-left: 0;
-    }
-
-    .booking-strip {
-        width: calc(100% - 24px);
-        margin: -10px 12px 0;
-        grid-template-columns: 1fr;
-    }
-
-    .home-rooms-section,
-    .offers-section,
-    .benefits-row {
-        width: 100%;
-        padding-left: 16px;
-        padding-right: 16px;
-    }
 }
 
 

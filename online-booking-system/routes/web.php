@@ -8,11 +8,14 @@ use App\Http\Controllers\ProfileController;
 use App\Models\Message;
 use App\Models\InventoryItem;
 use App\Models\Reservation;
+use App\Models\RoomReservation;
 use App\Models\Room;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
 use App\Models\DiningMenu;
-use Illuminate\Support\Facades\Auth;
+use App\Models\DiningReservation;
+use App\Models\EventReservation;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
 
 // --- Public Routes ---
@@ -41,11 +44,11 @@ Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('
 Route::middleware(['auth:guest', 'role:guest'])->group(function () {
     Route::get('/guest/profile', [HomeController::class, 'profile'])->name('guest.profile');
     Route::get('/guest/records', [HomeController::class, 'records'])->name('guest.records');
+    Route::get('/guest/receipts', [HomeController::class, 'receipts'])->name('guest.receipts');
+    Route::delete('/guest/reservations/{reservation}', [HomeController::class, 'deleteReservation'])->name('guest.reservations.delete');
+    Route::patch('/guest/reservations/{reservation}/cancel', [HomeController::class, 'cancelReservation'])->name('guest.reservations.cancel');
     Route::post('/guest/requests', [HomeController::class, 'storeGuestRequest'])->name('guest.requests.store');
 });
-
-// --- Admin Logout ---
-Route::post('/admin/logout', [AuthController::class, 'logout'])->name('logout');
 
 // --- Employee Portal ---
 Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
@@ -58,17 +61,15 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::post('/reservations/{id}/payments', [AdminController::class, 'storePayment'])->name('reservations.payments.store');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::get('/checkin', function () {
-        $today = now()->toDateString();
-
-        $checkIns = Reservation::with('room')
-            ->whereDate('check_in', $today)
+        $checkIns = RoomReservation::with('room')
             ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
+            ->whereDate('check_in', today())
             ->latest()
             ->get();
 
-        $checkOuts = Reservation::with(['room', 'payments'])
-            ->whereDate('check_out', $today)
-            ->whereIn('status', ['confirmed', 'checked-in'])
+        $checkOuts = RoomReservation::with(['room', 'payments'])
+            ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+            ->whereDate('check_out', today())
             ->latest()
             ->get();
 
@@ -80,11 +81,50 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();
+        $amenities = \App\Models\Amenity::orderBy('name')->get();
+        $eventPlaces = \App\Models\EventPlace::orderBy('name')->get();
+        $confirmedEventPlaceIds = EventReservation::query()
+            ->where('status', 'confirmed')
+            ->whereDate('check_out', '>=', today())
+            ->pluck('event_place_id')
+            ->filter()
+            ->unique();
+        $eventPlaces->each(function ($eventPlace) use ($confirmedEventPlaceIds) {
+            if ($confirmedEventPlaceIds->contains($eventPlace->id)
+                && !in_array(strtolower((string) $eventPlace->status), ['unavailable', 'maintenance'], true)) {
+                $eventPlace->status = 'reserved';
+            }
+        });
         $diningTables = DiningTable::orderBy('table_no')->get();
         $dining = DiningMenu::orderBy('name')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
+        $currentTime = Carbon::now()->format('H:i:s');
+        $currentSchedule = $diningSchedules->first(function ($schedule) use ($currentTime) {
+            return strtolower($schedule->status) === 'active'
+                && $currentTime >= $schedule->available_from
+                && $currentTime < $schedule->available_to;
+        });
+        $activeDiningReservations = DiningReservation::whereDate('check_in', today())
+            ->whereNotIn('status', ['cancelled', 'completed'])
+            ->get(['dining_area', 'dining_schedule']);
 
-        return view('employee.room-status', compact('rooms', 'inventoryItems', 'diningTables', 'dining', 'diningSchedules'));
+        $diningTables->each(function ($table) use ($currentSchedule, $activeDiningReservations) {
+            $baseStatus = strtolower((string) $table->status);
+            if (in_array($baseStatus, ['unavailable', 'maintenance', 'reserved'], true)) {
+                return;
+            }
+
+            $isReservedNow = $currentSchedule && $activeDiningReservations->contains(function ($reservation) use ($table, $currentSchedule) {
+                $tables = collect(explode(',', (string) $reservation->dining_area))->map(fn ($value) => trim($value));
+                $schedules = collect(explode(',', (string) $reservation->dining_schedule))->map(fn ($value) => trim($value));
+
+                return $tables->contains($table->table_no) && $schedules->contains($currentSchedule->period);
+            });
+
+            $table->status = $isReservedNow ? 'Reserved' : 'Available';
+        });
+
+        return view('employee.room-status', compact('rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningTables', 'dining', 'diningSchedules'));
     })->name('room-status');
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
     Route::get('/guest-requests/{id}', [AdminController::class, 'employeeGuestRequest'])->name('guest-requests.show');
@@ -107,6 +147,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/dining/menu', [AdminController::class, 'diningMenu'])->name('dining.menu');
     Route::get('/dining/schedule', [AdminController::class, 'diningSchedule'])->name('dining.schedule');
     Route::post('/dining', [AdminController::class, 'storeDiningItem'])->name('dining.store');
+    Route::patch('/dining/{type}/{id}/status', [AdminController::class, 'updateDiningStatus'])->name('dining.status');
     Route::post('/rooms', [AdminController::class, 'storeRoom'])->name('rooms.store');
     Route::post('/inventory', [AdminController::class, 'storeInventoryItem'])->name('inventory.store');
     Route::put('/inventory/{id}', [AdminController::class, 'updateInventoryItem'])->name('inventory.update');
@@ -163,13 +204,8 @@ Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:
     Route::get('/cleaning-history', [HousekeepingController::class, 'cleaningHistory'])->name('cleaning-history');
 });
 
-// --- Logout (fallback route) ---
-Route::post('/logout', function () {
-    Auth::logout();
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
-    return redirect('/');
-})->name('logout');
+// --- Logout ---
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('auth:guest')->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');

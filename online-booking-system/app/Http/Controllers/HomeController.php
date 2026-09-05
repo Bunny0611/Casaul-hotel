@@ -12,9 +12,15 @@ use App\Models\DiningSchedule;
 use App\Models\DiningTable;
 use App\Models\Message;
 use App\Models\Reservation;
-use App\Models\ReservationDiningItem;
+use App\Models\RoomReservation;
+use App\Models\EventReservation;
+use App\Models\AmenityReservation;
+use App\Models\DiningReservation;
 use App\Models\GuestRequest;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class HomeController extends Controller
 {
@@ -88,9 +94,11 @@ class HomeController extends Controller
             ->get();
 
         $diningSchedules = DiningSchedule::where('status', 'Active')->orderBy('available_from')->get();
-        $diningTables = DiningTable::where('status', 'Available')->orderBy('table_no')->get();
+        $diningTables = DiningTable::whereIn('status', ['Available', 'Reserved'])->orderBy('table_no')->get();
+        $diningReservations = DiningReservation::whereNotIn('status', ['cancelled', 'completed'])
+            ->get(['dining_area', 'dining_schedule', 'check_in']);
 
-        return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningSchedules', 'diningTables'));
+        return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningSchedules', 'diningTables', 'diningReservations'));
     }
 
     private function normalizeIdList($value): ?string
@@ -189,6 +197,7 @@ class HomeController extends Controller
             'amenity_id' => $this->normalizeIdList($request->input('amenity_id')),
             'event_place_id' => $this->normalizeIdList($request->input('event_place_id')),
             'dining_id' => empty($diningSelections) ? $this->normalizeIdList($request->input('dining_id')) : null,
+            'category' => $request->input('category', 'rooms'),
         ]);
 
         // Determine reservation category based on what's selected (priority order matters)
@@ -199,19 +208,20 @@ class HomeController extends Controller
         if (!empty($eventPlaceId)) {
             $request->merge(['category' => 'event_place']);
         } elseif (!empty($amenityId)) {
-            $request->merge(['category' => 'amenity']);
+            $request->merge(['category' => 'amenities']);
         } elseif ($hasDining) {
             $request->merge(['category' => 'dining']);
         } else {
             // Default to room if no amenities, events, or dining selected
-            $request->merge(['category' => 'room']);
+            $request->merge(['category' => 'rooms']);
         }
 
         $validated = $request->validate([
-            'room_id' => 'required|exists:rooms,id',
+            'category' => ['required', 'in:rooms,amenities,event_place,dining'],
+            'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'check_in' => 'required|date|after_or_equal:today',
             'check_in_time' => 'nullable|date_format:H:i',
-            'check_out' => 'required|date|after:check_in',
+            'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => 'nullable|date_format:H:i',
             'guest_name' => 'required|string|max:255',
             'guest_email' => 'required|email|max:255',
@@ -225,6 +235,7 @@ class HomeController extends Controller
             'dining_area' => 'nullable|string|max:100',
             'dining_schedule' => 'nullable|string|max:100',
             'quantity' => 'nullable|integer|min:1',
+            'duration_hours' => 'nullable|integer|min:1',
             'amenity_id' => 'nullable|string',
             'event_place_id' => 'nullable|string',
             'event_type' => 'nullable|string|max:100',
@@ -249,6 +260,10 @@ class HomeController extends Controller
             if (!empty($matches[2])) {
                 $validated['amount_paid'] = (float) str_replace(',', '', $matches[2]);
             }
+        }
+
+        if ($validated['payment_method'] === 'Cash / Pay at Hotel') {
+            $validated['amount_paid'] = 0;
         }
 
         if (!empty($validated['amenity_id'])) {
@@ -306,28 +321,121 @@ class HomeController extends Controller
             return redirect()->route('reservation');
         }
 
-        if ($submissionToken) {
-            $request->session()->put('reservation_submission_' . $submissionToken, true);
-        }
-
-        unset($validated['submission_token']);
-
         if (empty($validated['check_out_time']) && !empty($validated['check_in_time'])) {
             $validated['check_out_time'] = $validated['check_in_time'];
         }
 
-        $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
-        $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
-        $validated['event_start_time'] = $validated['event_start_time'] ?? null;
-        $validated['event_end_time'] = $validated['event_end_time'] ?? null;
-        $validated['amenity_start_time'] = $validated['amenity_start_time'] ?? null;
-        $validated['amenity_end_time'] = $validated['amenity_end_time'] ?? null;
-        $validated['dining_time'] = $validated['dining_time'] ?? null;
+        $validated['status'] = 'pending';
+        $validated['number_of_guests'] = max(1, (int) ($validated['number_of_guests'] ?? 1));
+        $submittedTotalAmount = (float) $validated['total_amount'];
+        $category = $validated['category'];
 
-        $reservation = Reservation::create(array_merge($validated, ['status' => 'pending']));
+        if ($category === 'rooms') {
+            $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
+            $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
+            $reservation = DB::transaction(function () use ($validated) {
+                Room::query()->whereKey($validated['room_id'])->lockForUpdate()->firstOrFail();
+
+                $hasConflict = RoomReservation::query()
+                    ->where('room_id', $validated['room_id'])
+                    ->whereNotIn('status', ['cancelled', 'completed'])
+                    ->whereDate('check_in', '<', $validated['check_out'])
+                    ->whereDate('check_out', '>', $validated['check_in'])
+                    ->exists();
+
+                if (!$hasConflict) {
+                    $hasConflict = Reservation::query()
+                        ->where('room_id', $validated['room_id'])
+                        ->whereNotIn('status', ['cancelled', 'completed'])
+                        ->whereDate('check_in', '<', $validated['check_out'])
+                        ->whereDate('check_out', '>', $validated['check_in'])
+                        ->exists();
+                }
+
+                if ($hasConflict) {
+                    throw ValidationException::withMessages([
+                        'room_id' => 'Sorry, this room is no longer available for your selected dates. Please choose another room.',
+                    ]);
+                }
+
+                return RoomReservation::create(collect($validated)->only([
+                    'room_id', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
+                    'room_check_in_time', 'check_out', 'room_check_out_time',
+                    'number_of_guests', 'status', 'total_amount', 'payment_method',
+                    'payment_details', 'amount_paid', 'special_requests',
+                ])->all());
+            });
+        } elseif ($category === 'event_place') {
+            $validated['event_start_time'] = $validated['check_in_time'] ?? null;
+            $validated['event_end_time'] = $validated['check_out_time'] ?? null;
+            $reservation = EventReservation::create(collect($validated)->only([
+                'event_place_id', 'guest_name', 'guest_email', 'guest_phone',
+                'event_type', 'check_in', 'event_start_time', 'check_out',
+                'event_end_time', 'number_of_guests', 'status', 'total_amount',
+                'payment_method', 'payment_details', 'amount_paid', 'special_requests',
+            ])->all());
+        } elseif ($category === 'amenities') {
+            $amenity = Amenity::findOrFail($validated['amenity_id']);
+            $durationHours = max(1, (int) ($validated['duration_hours'] ?? 1));
+            $amenityStartTime = $validated['check_in_time'] ?? '00:00';
+            $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $amenityStartTime)
+                ->addHours($durationHours);
+            $validated['check_out'] = $endTime->toDateString();
+            $validated['amenity_start_time'] = $amenityStartTime;
+            $validated['amenity_end_time'] = $endTime->format('H:i');
+            $validated['total_amount'] = (float) $amenity->price * $durationHours;
+            $reservation = AmenityReservation::create(collect($validated)->only([
+                'amenity_id', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
+                'amenity_start_time', 'check_out', 'amenity_end_time',
+                'number_of_guests', 'status', 'total_amount', 'payment_method',
+                'payment_details', 'amount_paid', 'special_requests',
+            ])->all());
+
+            if (!empty($validated['room_id'])) {
+                RoomReservation::create([
+                    'room_id' => $validated['room_id'],
+                    'guest_name' => $validated['guest_name'],
+                    'guest_email' => $validated['guest_email'],
+                    'guest_phone' => $validated['guest_phone'],
+                    'check_in' => $validated['check_in'],
+                    'room_check_in_time' => $validated['check_in_time'] ?? null,
+                    'check_out' => $validated['check_out'],
+                    'room_check_out_time' => $validated['check_out_time'] ?? null,
+                    'number_of_guests' => $validated['number_of_guests'],
+                    'status' => 'pending',
+                    'total_amount' => max(0, $submittedTotalAmount - (float) $validated['total_amount']),
+                    'payment_method' => $validated['payment_method'],
+                    'payment_details' => $validated['payment_details'],
+                    'amount_paid' => 0,
+                    'special_requests' => $validated['special_requests'] ?? null,
+                ]);
+            }
+        } else {
+            $tableNumber = (string) ($validated['dining_area'] ?? '');
+            $hasDiningConflict = DiningReservation::query()
+                ->activeForTableAndSchedule($tableNumber, $validated['check_in'], $validated['dining_schedule'])
+                ->exists();
+
+            if ($hasDiningConflict) {
+                throw ValidationException::withMessages([
+                    'dining_area' => 'This table is already reserved for the selected dining schedule. Please choose another table or schedule.',
+                ]);
+            }
+
+            $reservation = DiningReservation::create(collect($validated)->only([
+                'guest_name', 'guest_email', 'guest_phone', 'dining_area',
+                'dining_schedule', 'check_in', 'check_out', 'quantity',
+                'dining_id', 'status', 'total_amount', 'payment_method',
+                'payment_details', 'amount_paid', 'special_requests',
+            ])->all());
+        }
 
         if (!empty($diningSelections)) {
             $reservation->diningItems()->createMany($diningSelections);
+        }
+
+        if ($submissionToken) {
+            $request->session()->put('reservation_submission_' . $submissionToken, true);
         }
 
         return redirect()->route('reservation')->with('success', 'Your reservation request has been submitted. We will contact you soon.');
@@ -351,10 +459,48 @@ class HomeController extends Controller
         $guest = Auth::guard('guest')->user();
         abort_unless($guest, 403);
 
-        $reservations = Reservation::with('room')
+        $reservations = Reservation::with(['room', 'diningItems.diningMenu', 'payments'])
             ->where('guest_email', $guest->email)
             ->orderBy('created_at', 'desc')
             ->get();
+
+        $categoryReservations = collect([
+            RoomReservation::with(['room', 'payments'])
+                ->where('guest_email', $guest->email)->get()
+                ->each(fn ($reservation) => $reservation->category = 'rooms'),
+            EventReservation::with(['eventPlace', 'payments'])
+                ->where('guest_email', $guest->email)->get()
+                ->each(fn ($reservation) => $reservation->category = 'event_place'),
+            AmenityReservation::with(['amenity', 'payments'])
+                ->where('guest_email', $guest->email)->get()
+                ->each(fn ($reservation) => $reservation->category = 'amenities'),
+            DiningReservation::with(['diningItems.diningMenu', 'payments'])
+                ->where('guest_email', $guest->email)->get()
+                ->each(fn ($reservation) => $reservation->category = 'dining'),
+        ])->flatten(1)->map(function ($source) {
+            $reservation = new Reservation();
+            $reservation->forceFill($source->getAttributes());
+            $reservation->setAttribute('category', $source->category);
+            $reservation->setRelation('room', $source->relationLoaded('room') ? $source->getRelation('room') : null);
+            $reservation->setRelation('amenities', $source->relationLoaded('amenity') && $source->amenity ? collect([$source->amenity]) : collect());
+            $reservation->setRelation('eventPlaces', $source->relationLoaded('eventPlace') && $source->eventPlace ? collect([$source->eventPlace]) : collect());
+            $reservation->setRelation('diningItems', $source->relationLoaded('diningItems') ? $source->getRelation('diningItems') : collect());
+            $reservation->setRelation('payments', $source->relationLoaded('payments') ? $source->getRelation('payments') : collect());
+
+            return $reservation;
+        });
+
+        $reservations = $reservations->concat($categoryReservations)
+            ->sortByDesc('created_at')
+            ->values();
+
+        $reservations->each(function (Reservation $reservation) {
+            $amenityIds = array_values(array_filter(array_map('trim', explode(',', (string) $reservation->amenity_id))));
+            $eventPlaceIds = array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_place_id))));
+
+            $reservation->setRelation('amenities', Amenity::whereIn('id', $amenityIds)->get());
+            $reservation->setRelation('eventPlaces', EventPlace::whereIn('id', $eventPlaceIds)->get());
+        });
 
         $activeReservation = $this->activeReservationFor($guest);
         $guestRequests = GuestRequest::with('room')
@@ -363,6 +509,97 @@ class HomeController extends Controller
             ->get();
 
         return view('profile-records', compact('reservations', 'activeReservation', 'guestRequests'));
+    }
+
+    public function receipts()
+    {
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
+
+        $receipts = Reservation::with('room')
+            ->where('guest_email', $guest->email)
+            ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('profile-receipts', compact('receipts'));
+    }
+
+    public function deleteReservation(Request $request, $reservation)
+    {
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
+
+        $reservation = match ($request->input('category')) {
+            'rooms' => RoomReservation::find($reservation),
+            'event_place' => EventReservation::find($reservation),
+            'amenities' => AmenityReservation::find($reservation),
+            'dining' => DiningReservation::find($reservation),
+            default => Reservation::find($reservation),
+        };
+
+        abort_if(!$reservation, 404, 'Reservation not found.');
+
+        if ($reservation->guest_email !== $guest->email) {
+            abort(403, 'You can only delete your own reservations.');
+        }
+
+        if (!in_array($reservation->status, ['cancelled', 'confirmed', 'checked-in', 'completed'], true)) {
+            return redirect()->route('guest.records')->withErrors([
+                'reservation' => 'Only cancelled, confirmed, checked-in, or checked-out reservations can be deleted.',
+            ]);
+        }
+
+        if ($reservation->status === 'checked-in') {
+            $reservation->loadMissing('room');
+            $reservation->room?->update([
+                'status' => 'available',
+                'cleaning_status' => 'dirty',
+            ]);
+        }
+
+        if (method_exists($reservation, 'diningItems')) {
+            $reservation->diningItems()->delete();
+        }
+        $reservation->delete();
+
+        return redirect()->route('guest.records')->with('success', 'Your reservation has been deleted.');
+    }
+
+    public function cancelReservation(Request $request, $reservation)
+    {
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
+
+        $reservation = match ($request->input('category')) {
+            'rooms' => RoomReservation::find($reservation),
+            'event_place' => EventReservation::find($reservation),
+            'amenities' => AmenityReservation::find($reservation),
+            'dining' => DiningReservation::find($reservation),
+            default => Reservation::find($reservation),
+        };
+
+        abort_if(!$reservation, 404, 'Reservation not found.');
+
+        if ($reservation->guest_email !== $guest->email) {
+            abort(403, 'You can only cancel your own reservations.');
+        }
+
+        if (in_array($reservation->status, ['cancelled', 'completed'], true)) {
+            return redirect()->route('guest.records')->withErrors(['reservation' => 'This reservation cannot be cancelled.']);
+        }
+
+        $reservation->update(['status' => 'cancelled']);
+
+        if ($reservation->status === 'checked-in') {
+            $reservation->loadMissing('room');
+            $reservation->room?->update([
+                'status' => 'available',
+                'cleaning_status' => 'dirty',
+            ]);
+        }
+
+        return redirect()->route('guest.records')->with('success', 'Your reservation has been cancelled successfully.');
     }
 
     public function storeGuestRequest(Request $request)

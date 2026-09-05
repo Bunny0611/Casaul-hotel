@@ -39,7 +39,7 @@ nav{
     display:flex;
     align-items:center;
     gap:16px;
-    padding:14px 8%;
+    padding:14px 2%;
     z-index:1000;
     box-shadow: 0 10px 25px rgba(0,0,0,.10);
     border-bottom: 1px solid rgba(255,255,255,.15);
@@ -1175,6 +1175,106 @@ nav a:hover{
 .hero .overlay{
     position:relative;
     z-index:1;
+}
+
+/* About page */
+.about-page {
+    padding: 96px 20px 86px;
+    background: linear-gradient(135deg, #fbfaf7 0%, #f4f1ec 100%);
+    font-family: 'DM Sans', Poppins, sans-serif;
+}
+
+.dining-page { padding: 74px 20px 76px; background: linear-gradient(135deg, #fbfaf7, #f4f1ec); font-family: 'DM Sans', Poppins, sans-serif; }
+.dining-container { width: min(1100px, 100%); margin: 0 auto; }
+.dining-hero { position: relative; display: grid; grid-template-columns: 40% 60%; aspect-ratio: 4.65 / 1; overflow: hidden; border: 1px solid #e5a72a; border-radius: 15px; background: #fffdf9; box-shadow: 0 12px 26px rgba(66, 43, 28, .1); }
+.dining-hero-copy { position: relative; z-index: 2; padding: 24px 42px; display: flex; flex-direction: column; justify-content: center; }
+.dining-eyebrow { margin: 0 0 9px; color: #d69a25; font-family: Poppins, sans-serif; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.dining-eyebrow span { margin-left: 8px; }
+.dining-hero h1 { margin: 0; color: #4d2a18; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.12; }
+.dining-hero h1 strong { color: var(--brand); }
+.dining-rule { width: 29px; height: 2px; margin: 10px 0 12px; background: #e4a51d; }
+.dining-hero-text { max-width: 345px; margin: 0; color: #645850; font-size: .82rem; line-height: 1.65; }
+.dining-hero-image { position: relative; min-width: 0; overflow: hidden; }
+.dining-hero-image::before { position: absolute; z-index: 1; inset: 0 auto 0 -1px; width: 32%; content: ''; background: linear-gradient(90deg, #fffdf9 0%, rgba(255, 253, 249, .82) 22%, rgba(255, 253, 249, 0) 100%); pointer-events: none; }
+.dining-hero-image img, .dining-experience-image { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dining-menu { padding: 22px 0 20px; }
+.dining-section-heading { text-align: center; }
+.dining-section-heading h2 { margin: 0; color: #4d2a18; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.55rem; }
+.dining-section-heading .dining-rule { margin: 7px auto 12px; }
+.dining-heading-mark { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 5px; color: #dfa126; }
+.dining-heading-mark span { width: 38px; height: 1px; background: #e2bd70; }
+.dining-dishes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.dining-dish-card { display: grid; grid-template-columns: 1.1fr 1fr; overflow: hidden; min-height: 145px; border-radius: 12px; background: #fff; box-shadow: 0 7px 18px rgba(66, 43, 28, .09); }
+.dining-dish-card img { width: 100%; height: 100%; min-height: 145px; object-fit: cover; }
+.dining-dish-copy { padding: 17px 13px; display: flex; flex-direction: column; }
+.dining-dish-copy h3 { margin: 0 0 7px; color: #4d2a18; font-family: 'Libre Baskerville', Georgia, serif; font-size: .88rem; }
+.dining-dish-copy p { margin: 0; color: #665c56; font-size: .7rem; line-height: 1.55; }
+.dining-dish-copy a { margin-top: auto; color: var(--brand); font-family: Poppins, sans-serif; font-size: .6rem; font-weight: 700; text-decoration: none; text-transform: uppercase; }
+.dining-dish-copy a span, .dining-booking a span { margin-left: 7px; font-size: .95rem; }
+.dining-experience { display: grid; grid-template-columns: 1.95fr .95fr; overflow: hidden; border: 1px solid #f0e5d3; border-radius: 13px; background: #fffaf1; box-shadow: 0 8px 20px rgba(66, 43, 28, .06); }
+.dining-experience-copy { padding: 15px 44px 16px; }
+.dining-benefits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.dining-benefits article { display: flex; gap: 10px; padding-right: 12px; border-right: 1px solid #eadfce; }
+.dining-benefits article:last-child { border-right: 0; }
+.dining-benefits article > i { color: #e3a11d; font-size: 1.25rem; }
+.dining-benefits h3 { margin: 0 0 5px; color: #4d2a18; font-family: 'Libre Baskerville', Georgia, serif; font-size: .68rem; }
+.dining-benefits p { margin: 0; color: #685d55; font-size: .65rem; line-height: 1.5; }
+.dining-booking { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 10px 14px; border: 1px solid #efc878; border-radius: 10px; background: #fffdf9; }
+.dining-booking > i { color: var(--brand); font-size: 1.25rem; }
+.dining-booking div { display: flex; flex-direction: column; flex: 1; }
+.dining-booking strong, .dining-booking span { color: #4d2a18; font-size: .68rem; }
+.dining-booking span { color: #675c55; margin-top: 2px; }
+.dining-booking a { padding: 9px 15px; border-radius: 5px; background: var(--brand); color: #fff; font-family: Poppins, sans-serif; font-size: .62rem; font-weight: 700; text-decoration: none; text-transform: uppercase; white-space: nowrap; }
+.dining-experience-image { min-height: 205px; }
+
+@media (max-width: 760px) {
+    .dining-page { padding: 94px 14px 48px; }
+    .dining-hero { display: flex; flex-direction: column; aspect-ratio: auto; }
+    .dining-experience { grid-template-columns: 1fr; }
+    .dining-hero-copy { flex: 0 0 auto; min-height: 0; padding: 27px 25px 42px; }
+    .dining-hero-image { flex: 0 0 190px; min-height: 190px; }
+    .dining-hero-image::before { display: none; }
+    .dining-dishes, .dining-benefits { grid-template-columns: 1fr; }
+    .dining-benefits article { border-right: 0; border-bottom: 1px solid #eadfce; padding: 0 0 11px; }
+    .dining-benefits article:last-child { border-bottom: 0; }
+    .dining-experience-copy { padding: 20px; }
+    .dining-booking { align-items: flex-start; flex-wrap: wrap; }
+    .dining-booking a { margin-left: 38px; }
+}
+
+.about-container { width: min(1095px, 100%); margin: 0 auto; }
+.about-heading { text-align: center; margin-bottom: 16px; }
+.about-kicker { color: #a8751a; font-family: Poppins, sans-serif; font-size: .72rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; margin: 0 0 7px; }
+.about-heading h1 { color: #542d18; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(2.1rem, 4vw, 3.25rem); line-height: 1.1; margin: 0; }
+.about-heading h1 strong { color: var(--brand); }
+.about-lead { color: #5d514b; font-size: 1rem; margin: 8px 0 0; }
+.about-ornament { align-items: center; color: #d99a21; display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; }
+.about-ornament span { background: #ddb15d; height: 1px; width: 62px; }
+.about-ornament i { font-size: 1rem; }
+.about-feature-image { border: 8px solid #fff; border-radius: 14px; box-shadow: 0 14px 30px rgba(66, 43, 28, .14); height: 282px; margin: 14px 0 20px; overflow: hidden; }
+.about-feature-image img { display: block; height: 100%; object-fit: cover; object-position: center 58%; width: 100%; }
+.about-purpose-grid { display: grid; gap: 15px; grid-template-columns: 1.65fr 1fr 1fr; }
+.about-card, .about-value-card { background: rgba(255, 255, 255, .92); border-radius: 11px; box-shadow: 0 8px 22px rgba(66, 43, 28, .09); }
+.about-card { align-items: flex-start; display: flex; gap: 18px; min-height: 175px; padding: 20px 19px; }
+.about-story-card { min-height: 175px; }
+.about-purpose-card { border-top: 3px solid #e4a51d; padding-left: 16px; }
+.vision-card { border-top-color: var(--brand); }
+.about-card-icon, .about-value-icon { align-items: center; background: #fffaf0; border: 1px solid #f2e4c7; border-radius: 50%; color: #9a6914; display: flex; flex: 0 0 53px; font-size: 1.35rem; height: 53px; justify-content: center; }
+.vision-card .about-card-icon { background: #fff7f7; border-color: #f0dddd; color: var(--brand); }
+.about-card h2 { color: #5b321d; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.35rem; margin: 1px 0 5px; }
+.about-rule { background: #e4a51d; height: 2px; margin: 0 0 11px; width: 29px; }
+.about-card p, .about-value-card p { color: #625b56; font-size: .93rem; line-height: 1.45; margin: 0 0 8px; }
+.about-values-grid { display: grid; gap: 15px; grid-template-columns: repeat(3, 1fr); margin-top: 15px; }
+.about-value-card { align-items: flex-start; display: flex; gap: 15px; min-height: 108px; padding: 17px 18px; }
+.about-value-icon { background: var(--brand); border: 0; color: #fff; flex-basis: 47px; height: 47px; font-size: 1.1rem; }
+.about-value-card h3 { color: #5b321d; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.05rem; margin: 1px 0 5px; }
+.about-value-card .about-rule { margin-bottom: 8px; }
+
+@media (max-width: 760px) {
+    .about-page { padding: 112px 14px 54px; }
+    .about-feature-image { height: 220px; }
+    .about-purpose-grid, .about-values-grid { grid-template-columns: 1fr; }
+    .about-card { min-height: 0; }
 }
 
 .overlay{

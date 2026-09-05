@@ -123,4 +123,44 @@ class GuestLoginTest extends TestCase
         $response->assertSessionHasErrors(['email', 'password']);
         $response->assertSessionHasInput('first_name', 'Maria');
     }
+
+    public function test_guest_can_cancel_their_reservation_from_the_records_page(): void
+    {
+        $guest = \App\Models\Guest::factory()->create([
+            'name' => 'Guest User',
+            'email' => 'guest-records@example.com',
+        ]);
+
+        $room = \App\Models\Room::create([
+            'room_number' => '102',
+            'room_type' => 'Deluxe',
+            'price' => 2500,
+            'floor' => '1',
+            'status' => 'available',
+            'capacity' => 2,
+        ]);
+
+        $reservation = \App\Models\Reservation::create([
+            'category' => 'rooms',
+            'room_id' => $room->id,
+            'guest_name' => $guest->name,
+            'guest_email' => $guest->email,
+            'guest_phone' => '09123456789',
+            'check_in' => now()->toDateString(),
+            'check_out' => now()->addDay()->toDateString(),
+            'status' => 'pending',
+            'total_amount' => 2500,
+            'amount_paid' => 0,
+        ]);
+
+        $this->actingAs($guest, 'guest')
+            ->patch(route('guest.reservations.cancel', $reservation))
+            ->assertRedirect(route('guest.records'))
+            ->assertSessionHas('success', 'Your reservation has been cancelled successfully.');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'cancelled',
+        ]);
+    }
 }

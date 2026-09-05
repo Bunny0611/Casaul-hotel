@@ -211,15 +211,16 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .status-available { background: #10b981; }
-        .status-occupied { background: #ef4444; }
-        .status-maintenance { background: #f59e0b; }
-        .status-pending { background: #f59e0b; }
-        .status-confirmed { background: #10b981; }
-        .status-cancelled { background: #ef4444; }
-        .status-completed { background: #3b82f6; }
-        .status-cleaning { background: #8b5cf6; }
-        .status-dirty { background: #64748b; }
+        .status-available { background: #10b981; color: #fff; }
+        .status-occupied { background: #ef4444; color: #fff; }
+        .status-maintenance { background: #f59e0b; color: #fff; }
+        .status-pending { background: #f59e0b; color: #fff; }
+        .status-confirmed { background: #10b981; color: #fff; }
+        .status-checked-in { background: #06b6d4; color: #fff; }
+        .status-cancelled { background: #ef4444; color: #fff; }
+        .status-completed { background: #3b82f6; color: #fff; }
+        .status-cleaning { background: #8b5cf6; color: #fff; }
+        .status-dirty { background: #64748b; color: #fff; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -258,10 +259,13 @@
             </nav>
 
             <div class="mt-auto px-6 pb-6 pt-8">
-                <a href="{{ route('home') }}" class="flex items-center px-5 py-3 text-gray-300 transition-colors hover:text-white">
-                    <i class="fas fa-sign-out-alt w-6"></i>
-                    <span>Logout</span>
-                </a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="flex w-full items-center px-5 py-3 text-gray-300 transition-colors hover:text-white">
+                        <i class="fas fa-sign-out-alt w-6"></i>
+                        <span>Logout</span>
+                    </button>
+                </form>
             </div>
         </aside>
 
