@@ -41,4 +41,9 @@ class EventReservation extends Model
     {
         return $this->morphMany(Payment::class, 'paymentable');
     }
+
+    public function diningItems()
+    {
+        return $this->hasMany(EventReservationDiningItem::class);
+    }
 }

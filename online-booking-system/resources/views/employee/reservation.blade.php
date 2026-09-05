@@ -39,6 +39,23 @@
             || !empty($reservation->dining_schedule)
             || (method_exists($reservation, 'diningItems') && $reservation->diningItems()->exists());
     });
+    $roomSelectedServices = function ($roomReservation) use ($amenityReservations) {
+        $roomDate = $roomReservation->check_in ? \Carbon\Carbon::parse($roomReservation->check_in)->toDateString() : null;
+
+        return $amenityReservations
+            ->filter(function ($amenityReservation) use ($roomReservation, $roomDate) {
+                $amenityDate = $amenityReservation->check_in ? \Carbon\Carbon::parse($amenityReservation->check_in)->toDateString() : null;
+                return $amenityReservation->guest_email === $roomReservation->guest_email && $amenityDate === $roomDate;
+            })
+            ->map(function ($amenityReservation) {
+                $name = $amenityReservation->amenity?->name ?? 'Amenity';
+                $quantity = $amenityReservation->amenity_quantity ?? $amenityReservation->quantity ?? 1;
+                return 'Amenity: ' . $name . ' (x' . $quantity . ')';
+            })
+            ->unique()
+            ->values()
+            ->all();
+    };
 
     $stats = [
         'rooms' => [
@@ -92,6 +109,24 @@
         </div>
     </div>
 
+    <div class="grid gap-4 md:grid-cols-2">
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500" for="reservationSearch">Search</label>
+            <input id="reservationSearch" type="search" placeholder="Search by guest, email, or item" class="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+        </div>
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500" for="reservationStatusFilter">Status filter</label>
+            <select id="reservationStatusFilter" class="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                <option value="">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="checked-in">Checked-in</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+    </div>
+
     <div id="roomsTab" data-reservation-panel="rooms" class="space-y-4">
         <div class="grid gap-4 md:grid-cols-5">
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -132,7 +167,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($roomReservations as $reservation)
-                            <tr class="transition-colors hover:bg-gray-50">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -170,7 +205,7 @@
                                             'room_check_out_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
                                             'room_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
                                             'room_rate' => $reservation->room?->price ?? 'N/A',
-                                            'selected_services' => [],
+                                            'selected_services' => $roomSelectedServices($reservation),
                                             'amount_paid' => $reservation->amount_paid ?? $latestPayment?->amount ?? 0,
                                             'payment_method' => $paymentMethod,
                                             'payment_details' => $paymentDetails,
@@ -243,7 +278,7 @@
                                 'room_check_out_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
                                 'room_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
                                 'room_rate' => $reservation->room?->price ?? 'N/A',
-                                'selected_services' => [],
+                                'selected_services' => $roomSelectedServices($reservation),
                                 'amount_paid' => $reservation->amount_paid ?? 0,
                                 'payment_method' => $paymentMethod,
                                 'payment_details' => $paymentDetails,
@@ -306,7 +341,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($amenityReservations as $reservation)
-                            <tr class="transition-colors hover:bg-gray-50">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->amenity?->name ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -465,7 +500,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($eventPlaceReservations as $reservation)
-                            <tr class="transition-colors hover:bg-gray-50">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->eventPlace?->name ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -639,7 +674,7 @@
                                 $qty = $item->quantity ?? 1;
                                 return $mealName . ' (x' . $qty . ')';
                             })->values()->all())
-                            <tr class="transition-colors hover:bg-gray-50">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->dining_area ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -853,11 +888,15 @@
                 </div>
                 <div class="hidden" data-reservation-fields="event_place">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Start Time</label>
-                    <input type="time" name="check_in_time" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="time" name="event_start_time" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="hidden" data-reservation-fields="event_place">
                     <label class="mb-1 block text-sm font-medium text-gray-700">End Time</label>
-                    <input type="time" name="check_out_time" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="time" id="employeeEventEndTime" name="event_end_time" data-reservation-input="event_place" required readonly class="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-gray-600 focus:outline-none">
+                </div>
+                <div class="hidden" data-reservation-fields="event_place">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">How Many Hours?</label>
+                    <input type="number" id="employeeEventDuration" name="event_duration_hours" data-reservation-input="event_place" min="1" max="12" step="1" value="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="hidden" data-reservation-fields="event_place">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Number of Guests</label>
@@ -881,12 +920,14 @@
                         </div>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">Menu</label>
-                            <div class="rounded-lg border border-gray-300 bg-white p-2">
-                                <div class="mb-2 flex items-center gap-2">
-                                    <input id="diningMenuSearch" type="text" placeholder="Search menu..." class="w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                    <button type="button" id="diningSelectAllBtn" class="rounded border border-orange-200 bg-orange-50 px-2 py-1 text-xs font-medium text-orange-600 hover:bg-orange-100">Select All</button>
+                            <div id="diningMenuPicker" class="relative rounded-lg border border-gray-300 bg-white p-2">
+                                <div id="selectedDiningMenuItems" class="flex min-h-10 flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white p-1.5"></div>
+                                <div class="mt-2 flex items-center gap-2 rounded-md border border-gray-200 px-2">
+                                    <input id="diningMenuSearch" type="text" placeholder="Select menu items" class="w-full border-0 px-1 py-2 text-sm outline-none focus:ring-0">
+                                    <button type="button" id="diningMenuToggle" class="px-2 text-slate-600" aria-label="Show dining menu" aria-expanded="false"><i class="fas fa-chevron-down"></i></button>
                                 </div>
-                                <div id="diningMenuSelect" class="max-h-72 space-y-2 overflow-y-auto rounded-lg bg-gray-50 p-2">
+                                <div id="diningMenuSelect" class="mt-2 hidden max-h-72 space-y-2 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-2">
+                                    <button type="button" id="diningSelectAllBtn" class="mb-1 rounded border border-orange-200 bg-orange-50 px-2 py-1 text-xs font-medium text-orange-600 hover:bg-orange-100">Select All</button>
                                     <label class="flex w-full cursor-pointer items-center justify-between gap-2 rounded border border-gray-200 bg-white p-2 shadow-sm transition hover:border-orange-300 hover:bg-orange-50">
                                         <span class="flex items-center gap-2">
                                             <input type="checkbox" value="upon_arriving" data-price="0" data-name="Upon Arriving" class="dining-menu-checkbox h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
@@ -907,7 +948,6 @@
                             </div>
                             <input type="hidden" name="dining_id" id="diningSelectedMenuIds" value="">
                             <input type="hidden" name="quantity" id="diningSelectedMenuQuantity" value="">
-                            <div id="selectedDiningMenuItems" class="mt-3 space-y-2"></div>
                         </div>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">Dining Schedule</label>
@@ -956,6 +996,10 @@
                 </div>
                 <div class="hidden md:col-span-2" data-amenity-reservation-field>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label>
+                            <input type="number" id="employeeAmenityQuantity" name="amenity_quantity" min="1" value="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">Amenity Date</label>
                             <input type="date" id="amenityDate" name="check_in" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
@@ -1142,9 +1186,25 @@
 
         const diningMenuSearch = document.getElementById('diningMenuSearch');
         const diningSelectAllBtn = document.getElementById('diningSelectAllBtn');
+        const diningMenuSelect = document.getElementById('diningMenuSelect');
+        const diningMenuToggle = document.getElementById('diningMenuToggle');
+
+        const setDiningMenuOpen = (isOpen) => {
+            diningMenuSelect?.classList.toggle('hidden', !isOpen);
+            diningMenuToggle?.setAttribute('aria-expanded', String(isOpen));
+        };
+
+        diningMenuToggle?.addEventListener('click', () => {
+            setDiningMenuOpen(diningMenuSelect?.classList.contains('hidden'));
+            diningMenuSearch?.focus();
+        });
 
         if (diningMenuSearch) {
+            diningMenuSearch.addEventListener('focus', function () {
+                setDiningMenuOpen(true);
+            });
             diningMenuSearch.addEventListener('input', function () {
+                setDiningMenuOpen(true);
                 const query = this.value.trim().toLowerCase();
                 document.querySelectorAll('.dining-menu-item').forEach((item) => {
                     const name = (item.dataset.menuName || '').toLowerCase();
@@ -1165,6 +1225,12 @@
                 renderSelectedDiningMenuItems();
             });
         }
+
+        document.addEventListener('click', function (event) {
+            if (!event.target.closest('#diningMenuPicker')) {
+                setDiningMenuOpen(false);
+            }
+        });
 
         function updateAmenityReservationTotal() {
             const amenitySelect = document.querySelector('[data-reservation-input="amenities"]');
@@ -1204,6 +1270,20 @@
         document.getElementById('amenityDate')?.addEventListener('input', updateAmenityReservationTotal);
         document.getElementById('amenityStartTime')?.addEventListener('input', updateAmenityReservationTotal);
         document.getElementById('amenityDurationHours')?.addEventListener('input', updateAmenityReservationTotal);
+        const updateEmployeeEventEndTime = () => {
+            const startInput = document.querySelector('[name="event_start_time"]');
+            const durationInput = document.getElementById('employeeEventDuration');
+            const endInput = document.getElementById('employeeEventEndTime');
+            if (!startInput || !durationInput || !endInput || !startInput.value) {
+                return;
+            }
+
+            const [hours, minutes] = startInput.value.split(':').map(Number);
+            const endMinutes = (hours * 60) + minutes + (Number(durationInput.value || 1) * 60);
+            endInput.value = `${String(Math.floor((endMinutes % 1440) / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+        };
+        document.querySelector('[name="event_start_time"]')?.addEventListener('input', updateEmployeeEventEndTime);
+        document.getElementById('employeeEventDuration')?.addEventListener('input', updateEmployeeEventEndTime);
         document.querySelector('[data-event-date]')?.addEventListener('input', (event) => {
             document.querySelector('[data-event-date-end]').value = event.target.value;
         });
@@ -1234,6 +1314,20 @@
         });
         menu.classList.toggle('hidden');
     }
+
+    function filterEmployeeReservations() {
+        const searchTerm = (document.getElementById('reservationSearch')?.value || '').toLowerCase().trim();
+        const statusFilter = document.getElementById('reservationStatusFilter')?.value || '';
+
+        document.querySelectorAll('.reservation-item').forEach((row) => {
+            const matchesSearch = (row.dataset.search || '').includes(searchTerm);
+            const matchesStatus = !statusFilter || row.dataset.status === statusFilter;
+            row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+        });
+    }
+
+    document.getElementById('reservationSearch')?.addEventListener('input', filterEmployeeReservations);
+    document.getElementById('reservationStatusFilter')?.addEventListener('change', filterEmployeeReservations);
 
     function formatMoney(value) {
         const amount = Number(value || 0);
@@ -1345,9 +1439,10 @@
         }
 
         const serviceList = services.map((name) => `<li class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">${escapeHtml(name)}</li>`).join('');
+        const servicesTitle = category === 'dining' ? 'Menu/Meals' : 'Selected Services';
         detailsSections.push(`
             <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                <h4 class="mb-3 text-base font-semibold text-gray-800">Selected Services</h4>
+                <h4 class="mb-3 text-base font-semibold text-gray-800">${servicesTitle}</h4>
                 <ul class="space-y-2">${serviceList}</ul>
             </div>
         `);
@@ -1420,8 +1515,13 @@
         if (!modal) return;
 
         const activeTab = document.querySelector('[data-reservation-tab].bg-orange-500')?.dataset.reservationTab || 'rooms';
-        document.getElementById('reservationCategory').value = activeTab;
         const isEditing = !document.getElementById('reservationFormMethod').disabled;
+
+        if (!isEditing) {
+            resetAddReservationForm();
+            document.getElementById('reservationCategory').value = activeTab;
+            document.getElementById('reservationModalTitle').textContent = 'Add Reservation';
+        }
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -1455,59 +1555,68 @@
 
     function editReservation(reservation) {
         const form = document.getElementById('addReservationForm');
-        const fields = form.elements;
         const timeValue = value => value ? String(value).slice(0, 5) : '';
+        const dateValue = value => value ? String(value).slice(0, 10) : '';
+        const setValue = (selector, value) => {
+            const input = form.querySelector(selector);
+            if (input) input.value = value ?? '';
+        };
         const category = reservation.category
             || (reservation.event_place_id ? 'event_place'
             : (reservation.amenity_id ? 'amenities'
             : (reservation.dining_area || reservation.dining_id ? 'dining' : 'rooms')));
 
-        fields.guest_name.value = reservation.guest_name || '';
-        fields.guest_email.value = reservation.guest_email || '';
-        fields.guest_phone.value = reservation.guest_phone || '';
-        fields.room_id.value = reservation.room_id || '';
-        fields.event_place_id.value = reservation.event_place_id || '';
-        fields.event_type.value = reservation.event_type || '';
-        fields.number_of_guests.value = reservation.number_of_guests || '';
-        fields.dining_area.value = reservation.dining_area || '';
-        fields.dining_id.value = reservation.dining_id || '';
-        fields.quantity.value = reservation.quantity || '';
+        document.querySelector(`[data-reservation-tab="${category}"]`)?.click();
+        setValue('[name="guest_name"]', reservation.guest_name);
+        setValue('[name="guest_email"]', reservation.guest_email);
+        setValue('[name="guest_phone"]', reservation.guest_phone);
+        setValue(`[data-reservation-fields="${category}"] [name="room_id"], [data-reservation-fields="${category}"] [name="event_place_id"], [data-reservation-fields="${category}"] [name="amenity_id"], [data-reservation-fields="${category}"] [name="dining_area"]`, reservation.room_id || reservation.event_place_id || reservation.amenity_id || reservation.dining_area);
 
         if (category === 'event_place') {
-            document.getElementById('eventDate').value = reservation.check_in || '';
-            document.querySelector('[data-event-date-end]').value = reservation.check_out || reservation.check_in || '';
-            fields.check_in.value = reservation.check_in || '';
-            fields.check_in_time.value = timeValue(reservation.event_start_time || reservation.check_in_time);
-            fields.check_out.value = reservation.check_out || '';
-            fields.check_out_time.value = timeValue(reservation.event_end_time || reservation.check_out_time);
+            setValue('#eventDate', dateValue(reservation.check_in));
+            setValue('[data-event-date-end]', dateValue(reservation.check_out || reservation.check_in));
+            setValue('[name="event_type"]', reservation.event_type);
+            const eventStart = timeValue(reservation.event_start_time || reservation.check_in_time);
+            const eventEnd = timeValue(reservation.event_end_time || reservation.check_out_time);
+            setValue('[name="event_start_time"]', eventStart);
+            setValue('[name="event_end_time"]', eventEnd);
+            const startMinutes = eventStart ? (Number(eventStart.slice(0, 2)) * 60 + Number(eventStart.slice(3, 5))) : 0;
+            const endMinutes = eventEnd ? (Number(eventEnd.slice(0, 2)) * 60 + Number(eventEnd.slice(3, 5))) : 0;
+            const eventDuration = eventStart && eventEnd ? Math.max(1, Math.round(((endMinutes - startMinutes + 1440) % 1440) / 60)) : 1;
+            setValue('#employeeEventDuration', eventDuration);
+            setValue('[data-reservation-fields="event_place"] [name="number_of_guests"]', reservation.number_of_guests);
         } else if (category === 'dining') {
-            document.getElementById('diningDate').value = reservation.check_in || '';
-            document.querySelector('[data-dining-time-end]').value = timeValue(reservation.check_out_time || reservation.check_in_time);
-            document.querySelector('[data-dining-date-end]').value = reservation.check_out || reservation.check_in || '';
-            fields.check_in.value = reservation.check_in || '';
-            fields.check_in_time.value = timeValue(reservation.check_in_time);
-            fields.check_out.value = reservation.check_out || '';
-            fields.check_out_time.value = timeValue(reservation.check_out_time);
+            setValue('#diningDate', dateValue(reservation.check_in));
+            setValue('[data-dining-time-end]', timeValue(reservation.check_out_time || reservation.check_in_time));
+            setValue('[data-dining-date-end]', dateValue(reservation.check_out || reservation.check_in));
+            setValue('[name="dining_schedule"]', reservation.dining_schedule);
+            setValue('[name="quantity"]', reservation.quantity);
+            const diningIds = String(reservation.dining_id || '').split(',').filter(Boolean);
+            (reservation.dining_items || []).forEach((item) => {
+                if (item.dining_id) diningIds.push(String(item.dining_id));
+            });
+            document.querySelectorAll('.dining-menu-checkbox').forEach((checkbox) => {
+                checkbox.checked = diningIds.includes(checkbox.value);
+                checkbox.dispatchEvent(new Event('change'));
+            });
         } else if (category === 'amenities') {
-            document.getElementById('amenityDate').value = reservation.check_in || '';
-            document.getElementById('amenityStartTime').value = timeValue(reservation.amenity_start_time || reservation.check_in_time);
-            document.getElementById('amenityEndTime').value = timeValue(reservation.amenity_end_time || reservation.check_out_time);
-            document.getElementById('amenityEndDate').value = reservation.check_out || reservation.check_in || '';
-            fields.check_in.value = reservation.check_in || '';
-            fields.check_in_time.value = timeValue(reservation.room_check_in_time || reservation.check_in_time);
-            fields.check_out.value = reservation.check_out || '';
-            fields.check_out_time.value = timeValue(reservation.room_check_out_time || reservation.check_out_time);
+            setValue('#amenityDate', dateValue(reservation.check_in));
+            setValue('#amenityStartTime', timeValue(reservation.amenity_start_time || reservation.check_in_time));
+            setValue('#amenityEndTime', timeValue(reservation.amenity_end_time || reservation.check_out_time));
+            setValue('#amenityEndDate', dateValue(reservation.check_out || reservation.check_in));
+            setValue('#amenityDurationHours', reservation.duration_hours || '');
+            setValue('#employeeAmenityQuantity', reservation.amenity_quantity || reservation.quantity || '1');
         } else {
-            fields.check_in.value = reservation.check_in || '';
-            fields.check_in_time.value = timeValue(reservation.check_in_time);
-            fields.check_out.value = reservation.check_out || '';
-            fields.check_out_time.value = timeValue(reservation.check_out_time);
+            setValue('[data-standard-reservation-field] [name="check_in"]', dateValue(reservation.check_in));
+            setValue('[data-standard-reservation-field] [name="check_in_time"]', timeValue(reservation.room_check_in_time || reservation.check_in_time));
+            setValue('[data-standard-reservation-field] [name="check_out"]', dateValue(reservation.check_out));
+            setValue('[data-standard-reservation-field] [name="check_out_time"]', timeValue(reservation.room_check_out_time || reservation.check_out_time));
+            setValue('[data-standard-reservation-field] [name="number_of_guests"]', reservation.number_of_guests);
         }
 
-        fields.total_amount.value = reservation.total_amount || 0;
-        fields.special_requests.value = reservation.special_requests || '';
+        setValue('[name="total_amount"]', reservation.total_amount || 0);
+        setValue('[name="special_requests"]', reservation.special_requests);
         document.getElementById('reservationCategory').value = category;
-        document.querySelector(`[data-reservation-tab="${category}"]`)?.click();
         document.getElementById('reservationFormMethod').disabled = false;
         form.action = "{{ route('employee.reservations.update', ['id' => '__ID__']) }}".replace('__ID__', reservation.id);
         document.getElementById('reservationModalTitle').textContent = 'Edit Reservation';

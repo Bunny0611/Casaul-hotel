@@ -536,7 +536,7 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($amenities as $amenity)
-                        <article class="reservation-card" data-category="amenities" data-price="{{ $amenity->price }}" data-title="{{ $amenity->name }}" data-amenity-id="{{ $amenity->id }}" data-capacity="{{ $amenity->capacity ?? '' }}" data-scheduling="{{ $amenity->scheduling_requirement ?? 'No Additional Schedule' }}">
+                        <article class="reservation-card" data-category="amenities" data-price="{{ $amenity->price }}" data-pricing-basis="{{ $amenity->pricing_basis ?? 'Per Stay' }}" data-title="{{ $amenity->name }}" data-amenity-id="{{ $amenity->id }}" data-capacity="{{ $amenity->capacity ?? '' }}" data-scheduling="{{ $amenity->scheduling_requirement ?? 'No Additional Schedule' }}">
                             <img src="{{ $amenity->image ? asset('storage/' . $amenity->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $amenity->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $amenity->name }}</h4>
@@ -545,7 +545,7 @@
                                 @if(($amenity->capacity ?? null) || ($amenity->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
                                     <div class="amenity-options">
                                         @if($amenity->capacity)
-                                            <label class="field-label" for="amenityQuantity-{{ $amenity->id }}">Quantity</label>
+                                            <label class="field-label" for="amenityQuantity-{{ $amenity->id }}">{{ ($amenity->pricing_basis ?? '') === 'Per Vehicle' ? 'Number of Vehicles' : 'Quantity' }}</label>
                                             <select id="amenityQuantity-{{ $amenity->id }}" class="field-input amenity-quantity" max="{{ $amenity->capacity }}">
                                                 @for($quantity = 1; $quantity <= $amenity->capacity; $quantity++)<option value="{{ $quantity }}">{{ $quantity }}</option>@endfor
                                             </select>
@@ -577,7 +577,7 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
-                        <article class="reservation-card" data-category="event_place" data-price="{{ $event->price }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}">
+                        <article class="reservation-card" data-category="event_place" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}">
                             <img src="{{ $event->image ? asset('storage/' . $event->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $event->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $event->name }}</h4>
@@ -597,7 +597,7 @@
                                         </div>
                                     </div>
                                     <label class="field-label" for="eventDuration-{{ $event->id }}">How Many Hours?</label>
-                                    <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="24" step="1" value="1">
+                                    <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="12" step="1" value="1">
                                     <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests (max {{ $event->capacity }})</label>
                                     <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric">
                                 </div>
@@ -980,6 +980,8 @@
     <input type="hidden" name="check_in_time" id="reservationCheckInTime">
     <input type="hidden" name="check_out" id="reservationCheckOut">
     <input type="hidden" name="check_out_time" id="reservationCheckOutTime">
+    <input type="hidden" name="event_start_time" id="reservationEventStartTime">
+    <input type="hidden" name="event_end_time" id="reservationEventEndTime">
     <input type="hidden" name="guest_name" id="reservationGuestName" value="{{ $guest?->name ?? 'Guest' }}">
     <input type="hidden" name="guest_email" id="reservationGuestEmail" value="{{ $guest?->email ?? 'guest@example.com' }}">
     <input type="hidden" name="guest_phone" id="reservationGuestPhone" value="{{ $guest?->contact_no ?? '0000000000' }}">
@@ -992,6 +994,7 @@
     <input type="hidden" name="dining_schedule" id="reservationDiningSchedule">
     <input type="hidden" name="quantity" id="reservationDiningQuantity">
     <input type="hidden" name="amenity_id" id="reservationAmenityId">
+    <input type="hidden" name="amenity_quantity" id="reservationAmenityQuantity">
     <input type="hidden" name="event_place_id" id="reservationEventPlaceId">
     <input type="hidden" name="event_type" id="reservationEventType">
     <input type="hidden" name="number_of_guests" id="reservationEventGuests">
@@ -1029,6 +1032,8 @@
         const reservationCheckInTime = document.getElementById('reservationCheckInTime');
         const reservationCheckOut = document.getElementById('reservationCheckOut');
         const reservationCheckOutTime = document.getElementById('reservationCheckOutTime');
+        const reservationEventStartTime = document.getElementById('reservationEventStartTime');
+        const reservationEventEndTime = document.getElementById('reservationEventEndTime');
         const reservationGuestName = document.getElementById('reservationGuestName');
         const reservationGuestEmail = document.getElementById('reservationGuestEmail');
         const reservationGuestPhone = document.getElementById('reservationGuestPhone');
@@ -1040,6 +1045,7 @@
         const reservationDiningSchedule = document.getElementById('reservationDiningSchedule');
         const reservationDiningQuantity = document.getElementById('reservationDiningQuantity');
         const reservationAmenityId = document.getElementById('reservationAmenityId');
+        const reservationAmenityQuantity = document.getElementById('reservationAmenityQuantity');
         const reservationEventPlaceId = document.getElementById('reservationEventPlaceId');
         const reservationEventType = document.getElementById('reservationEventType');
         const reservationEventGuests = document.getElementById('reservationEventGuests');
@@ -1148,6 +1154,35 @@
 
         const items = document.querySelectorAll('.select-option-btn');
         const sumItemTotal = (itemsList) => itemsList.reduce((sum, item) => sum + (Number(item.price || 0) * (Number(item.quantity || 1))), 0);
+        const getAmenityCharge = (amenity) => {
+            const price = Number(amenity.price || 0);
+            const pricingBasis = String(amenity.pricingBasis || '').trim().toLowerCase();
+            const vehicleCharge = price * Math.max(1, Number(amenity.quantity) || 1);
+
+            if (pricingBasis === 'per stay + per vehicle') {
+                return (price * getStayNights()) + vehicleCharge;
+            }
+
+            if (pricingBasis === 'per vehicle') {
+                return vehicleCharge;
+            }
+
+            return price;
+        };
+        const getEventCharge = (event) => {
+            const price = Number(event.price || 0);
+            const pricingBasis = String(event.pricingBasis || '').toLowerCase();
+
+            if (pricingBasis === 'per person') {
+                return price * Math.max(1, Number(event.guests) || 1);
+            }
+
+            if (pricingBasis === 'per hour') {
+                return price * Math.max(1, Number(event.durationHours) || 1);
+            }
+
+            return price;
+        };
         const getSelectedEventCount = () => selectedEvent.length;
         const getSelectedDiningCount = () => selectedDining.length;
 
@@ -1175,6 +1210,20 @@
             const period = hours >= 12 ? 'PM' : 'AM';
             const displayHours = hours % 12 || 12;
             return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+        };
+
+        const getStayNights = () => {
+            if (!checkIn.value || !checkOut.value) {
+                return 1;
+            }
+
+            const [checkInYear, checkInMonth, checkInDay] = checkIn.value.split('-').map(Number);
+            const [checkOutYear, checkOutMonth, checkOutDay] = checkOut.value.split('-').map(Number);
+            const checkInDate = Date.UTC(checkInYear, checkInMonth - 1, checkInDay);
+            const checkOutDate = Date.UTC(checkOutYear, checkOutMonth - 1, checkOutDay);
+            const nights = Math.round((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+
+            return Math.max(1, nights);
         };
 
         const escapeHtml = value => String(value).replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
@@ -1274,6 +1323,9 @@
             });
         });
         const updateSummary = () => {
+            const stayNights = getStayNights();
+            const roomTotal = roomPrice * stayNights;
+            const extraGuestsTotal = selectedExtraGuests * selectedExtraGuestPrice * stayNights;
             const selectedEventTitles = selectedEvent.map(item => item.title).join(', ');
             const selectedDiningTitles = selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ');
             const selectedDiningSchedule = [...new Set(selectedDining.map(item => item.schedule).filter(Boolean))].join(', ');
@@ -1291,15 +1343,15 @@
             const bookingEndTime = selectedRoom ? '' : selectedEventEndTime;
 
             summaryRoom.textContent = selectedRoom ? selectedRoom : 'None';
-            summaryRoomDetails.textContent = selectedRoom ? `${formatDisplayDate(checkIn.value)} – ${formatDisplayDate(checkOut.value)}${selectedExtraGuests > 0 ? ` • ${selectedExtraGuests} Extra Person(s)` : ''}` : 'Choose a room and dates';
-            summaryRoomPrice.textContent = `₱${roomPrice.toLocaleString()}`;
+            summaryRoomDetails.textContent = selectedRoom ? `${formatDisplayDate(checkIn.value)} – ${formatDisplayDate(checkOut.value)} • ${stayNights} night${stayNights === 1 ? '' : 's'}${selectedExtraGuests > 0 ? ` • ${selectedExtraGuests} Extra Person(s)` : ''}` : 'Choose a room and dates';
+            summaryRoomPrice.textContent = `₱${roomTotal.toLocaleString()}`;
             summaryItems.textContent = selectedAmenities.length > 0 ? `${selectedAmenities.length} selected` : '0 selected';
             summaryAdditionalGuests.textContent = selectedExtraGuests > 0 ? `${selectedExtraGuests} added` : 'None';
             summaryEvent.textContent = selectedEvent.length ? `${selectedEvent.length} selected${selectedEventTitles ? ` • ${selectedEventTitles}` : ''}` : 'None';
             summaryDining.textContent = selectedDining.length ? `${selectedDining.length} selected${selectedDiningTitles ? ` • ${selectedDiningTitles}` : ''}${selectedDiningSchedule ? ` / ${selectedDiningSchedule}` : ''}${selectedDiningTable ? ` / ${selectedDiningTable}` : ''}` : 'None';
-            summaryAmenitiesPrice.textContent = `₱${sumItemTotal(selectedAmenities).toLocaleString()}`;
-            summaryAdditionalGuestsPrice.textContent = `₱${(selectedExtraGuests * selectedExtraGuestPrice).toLocaleString()}`;
-            summaryEventPrice.textContent = `₱${selectedEvent.reduce((sum, item) => sum + (Number(item.price || 0)), 0).toLocaleString()}`;
+            summaryAmenitiesPrice.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0).toLocaleString()}`;
+            summaryAdditionalGuestsPrice.textContent = `₱${extraGuestsTotal.toLocaleString()}`;
+            summaryEventPrice.textContent = `₱${selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0).toLocaleString()}`;
             summaryDiningPrice.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
 
             const total = calculateTotal();
@@ -1322,13 +1374,13 @@
             detailsArrivalTime.textContent = hasRoomSelection ? formatDisplayTime(arrivalTime.value) : '—';
             detailsCheckOut.textContent = hasRoomSelection ? formatDisplayDate(checkOut.value) : '—';
             detailsRoomGuests.textContent = hasRoomSelection ? `${selectedRoomCapacity + selectedExtraGuests} Guests` : '—';
-            detailsRoomAmount.textContent = hasRoomSelection ? `Amount: ${formatCurrencyValue(roomPrice + (selectedExtraGuests * selectedExtraGuestPrice))}` : '';
+            detailsRoomAmount.textContent = hasRoomSelection ? `Amount: ${formatCurrencyValue(roomTotal)}` : '';
             detailsRoomStatus.textContent = hasRoomSelection ? 'Status: Reserved' : '';
             detailsAmenitiesTitle.textContent = hasAmenitySelection ? selectedAmenities.map(item => item.title).join(', ') : '';
             detailsAmenitiesSummary.textContent = hasAmenitySelection
                 ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''}`).join(', ')
                 : '';
-            detailsAmenitiesAmount.textContent = hasAmenitySelection ? `Amount: ${formatCurrencyValue(sumItemTotal(selectedAmenities))}` : '';
+            detailsAmenitiesAmount.textContent = hasAmenitySelection ? `Amount: ${formatCurrencyValue(selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0))}` : '';
             detailsAmenitiesStatus.textContent = hasAmenitySelection ? 'Status: Reserved' : '';
             detailsEventTitle.textContent = hasEventSelection ? selectedEvent.map(item => item.title).join(', ') : '';
             detailsEventSummary.innerHTML = hasEventSelection
@@ -1379,7 +1431,7 @@
             }
             confirmAmenitiesTitle.textContent = selectedAmenities.length ? selectedAmenities.map(item => item.title).join(', ') : 'None';
             confirmAmenities.textContent = selectedAmenities.length
-                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
+                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'} • ₱${getAmenityCharge(item).toLocaleString()}`).join(', ')
                 : 'No amenities selected';
             confirmEventTitle.textContent = selectedEvent.length ? selectedEvent.map(item => item.title).join(', ') : 'None';
             confirmEventDining.textContent = selectedEvent.length
@@ -1395,11 +1447,11 @@
             confirmGuestEmail.textContent = detailsGuestEmail.value || 'guest@example.com';
             confirmGuestPhone.textContent = detailsGuestPhone.value || '0000000000';
             confirmSpecialRequest.textContent = detailsSpecialRequest.value || 'None';
-            confirmRoomCharge.textContent = `₱${roomPrice.toLocaleString()}`;
-            confirmAmenitiesCharge.textContent = `₱${sumItemTotal(selectedAmenities).toLocaleString()}`;
-            confirmEventCharge.textContent = `₱${selectedEvent.reduce((sum, item) => sum + (Number(item.price || 0)), 0).toLocaleString()}`;
+            confirmRoomCharge.textContent = `₱${roomTotal.toLocaleString()}`;
+            confirmAmenitiesCharge.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0).toLocaleString()}`;
+            confirmEventCharge.textContent = `₱${selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0).toLocaleString()}`;
             confirmDiningCharge.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
-            confirmExtraGuestCharge.textContent = `₱${(selectedExtraGuests * selectedExtraGuestPrice).toLocaleString()}`;
+            confirmExtraGuestCharge.textContent = `₱${extraGuestsTotal.toLocaleString()}`;
             confirmTotalAmount.textContent = `₱${calculateTotal().toLocaleString()}`;
             methodPaymentAmounts.forEach(input => {
                 input.placeholder = 'Enter amount';
@@ -1414,6 +1466,8 @@
             reservationCheckOut.value = bookingEndDate;
             reservationCheckInTime.value = bookingStartTime;
             reservationCheckOutTime.value = bookingEndTime;
+            reservationEventStartTime.value = selectedEventStartTime;
+            reservationEventEndTime.value = selectedEventEndTime;
             reservationDiningId.value = selectedDining.map(item => item.id).filter(Boolean).join(',');
             reservationDiningItems.value = JSON.stringify(selectedDining.map(item => ({
                 dining_id: item.id,
@@ -1426,6 +1480,7 @@
             reservationDiningSchedule.value = selectedDining.map(item => item.schedule).filter(Boolean).join(',');
             reservationDiningQuantity.value = selectedDiningQuantity || '';
             reservationAmenityId.value = selectedAmenities.map(item => item.id).filter(Boolean).join(',');
+            reservationAmenityQuantity.value = selectedAmenities[0]?.quantity || '';
             reservationEventPlaceId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
             reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
             reservationEventGuests.value = selectedRoom
@@ -1473,11 +1528,12 @@
         });
 
         const calculateTotal = () => {
-            const amenitiesTotal = sumItemTotal(selectedAmenities);
-            const eventTotal = selectedEvent.reduce((sum, item) => sum + (Number(item.price || 0)), 0);
+            const stayNights = getStayNights();
+            const amenitiesTotal = selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0);
+            const eventTotal = selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0);
             const diningTotal = selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0);
-            const extraGuestsTotal = selectedExtraGuests * selectedExtraGuestPrice;
-            return roomPrice + amenitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
+            const extraGuestsTotal = selectedExtraGuests * selectedExtraGuestPrice * stayNights;
+            return (roomPrice * stayNights) + amenitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
         };
 
         const syncDiningQuantity = (card, nextValue) => {
@@ -1575,10 +1631,15 @@
 
         const updateEventEndTime = (card) => {
             const startTime = card.querySelector('.event-start-time')?.value || '';
-            const durationHours = Math.max(1, Math.min(24, Number(card.querySelector('.event-duration')?.value || 1)));
+            const durationInput = card.querySelector('.event-duration');
+            const durationHours = Math.max(1, Math.min(12, Number(durationInput?.value || 1)));
             const endTimeInput = card.querySelector('.event-end-time');
             if (!endTimeInput) {
                 return '';
+            }
+
+            if (durationInput) {
+                durationInput.value = durationHours;
             }
 
             if (!startTime) {
@@ -1604,7 +1665,7 @@
                     eventItem.date = card.querySelector('.event-date')?.value || '';
                     eventItem.startTime = card.querySelector('.event-start-time')?.value || '';
                     eventItem.endTime = endTime;
-                    eventItem.durationHours = Number(card.querySelector('.event-duration')?.value || 1);
+                    eventItem.durationHours = Math.max(1, Math.min(12, Number(card.querySelector('.event-duration')?.value || 1)));
                     updateSummary();
                 }
             });
@@ -1691,6 +1752,7 @@
                             id: card.dataset.amenityId,
                             title,
                             price,
+                            pricingBasis: card.dataset.pricingBasis || 'Per Stay',
                             quantity,
                             date: card.querySelector('.amenity-date')?.value || '',
                             time: card.querySelector('.amenity-time')?.value || '',
@@ -1706,12 +1768,14 @@
                         selectedEvent.push({
                             id: card.dataset.eventId,
                             type: card.dataset.eventType,
+                            pricingBasis: card.dataset.pricingBasis || 'Per Event',
                             title,
                             price,
                             guests: normalizeEventGuestCount(card.querySelector('.event-guests'), card),
                             date: card.querySelector('.event-date')?.value || '',
                             startTime: card.querySelector('.event-start-time')?.value || '',
                             endTime: card.querySelector('.event-end-time')?.value || '',
+                            durationHours: Math.max(1, Math.min(12, Number(card.querySelector('.event-duration')?.value || 1))),
                         });
                         this.textContent = 'Selected';
                     } else {
@@ -1843,20 +1907,26 @@
 
         seeReceiptBtn.addEventListener('click', function () {
             const receiptItems = [];
+            const stayNights = getStayNights();
             if (selectedRoom) {
-                receiptItems.push(['1', `Room - ${selectedRoom}`, formatCurrencyValue(roomPrice), formatCurrencyValue(roomPrice)]);
+                receiptItems.push([String(stayNights), `Room - ${selectedRoom}`, formatCurrencyValue(roomPrice), formatCurrencyValue(roomPrice * stayNights)]);
             }
             if (selectedAmenities.length) {
                 selectedAmenities.forEach(item => {
                     const quantity = Number(item.quantity || 1);
                     const unitPrice = Number(item.price || 0);
-                    receiptItems.push([String(quantity), `Amenity - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(unitPrice * quantity)]);
+                    receiptItems.push([String(quantity), `Amenity - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(getAmenityCharge(item))]);
                 });
             }
             if (selectedEvent.length) {
                 selectedEvent.forEach(item => {
-                    const amount = Number(item.price || 0);
-                    receiptItems.push(['1', 'Event Reservation', formatCurrencyValue(amount), formatCurrencyValue(amount)]);
+                    const amount = getEventCharge(item);
+                    const quantity = item.pricingBasis === 'Per Person'
+                        ? Number(item.guests || 1)
+                        : item.pricingBasis === 'Per Hour'
+                            ? Number(item.durationHours || 1)
+                            : 1;
+                    receiptItems.push([String(quantity), `Event Reservation - ${item.pricingBasis || 'Per Event'}`, formatCurrencyValue(item.price), formatCurrencyValue(amount)]);
                 });
             }
             if (selectedDining.length) {
@@ -1867,7 +1937,7 @@
                 });
             }
             if (selectedExtraGuests > 0) {
-                receiptItems.push([String(selectedExtraGuests), 'Extra person', formatCurrencyValue(selectedExtraGuestPrice), formatCurrencyValue(selectedExtraGuests * selectedExtraGuestPrice)]);
+                receiptItems.push([String(selectedExtraGuests * stayNights), `Extra person (${stayNights} night${stayNights === 1 ? '' : 's'})`, formatCurrencyValue(selectedExtraGuestPrice), formatCurrencyValue(selectedExtraGuests * selectedExtraGuestPrice * stayNights)]);
             }
             receiptGuestName.textContent = detailsGuestName.value || 'Guest';
             receiptGuestEmail.textContent = detailsGuestEmail.value || 'guest@example.com';
@@ -2056,12 +2126,18 @@
             } else if (firstEventSelection) {
                 reservationCheckInTime.value = firstEventSelection.startTime || '';
                 reservationCheckOutTime.value = firstEventSelection.endTime || '';
+                reservationEventStartTime.value = firstEventSelection.startTime || '';
+                reservationEventEndTime.value = firstEventSelection.endTime || '';
             } else if (firstAmenitySelection) {
                 reservationCheckInTime.value = firstAmenitySelection.time || '';
                 reservationCheckOutTime.value = '';
+                reservationEventStartTime.value = '';
+                reservationEventEndTime.value = '';
             } else {
                 reservationCheckInTime.value = arrivalTime.value || '';
                 reservationCheckOutTime.value = '';
+                reservationEventStartTime.value = '';
+                reservationEventEndTime.value = '';
             }
 
             const existingPaymentMethodInput = reservationForm.querySelector('input[name="payment_method"]');

@@ -124,6 +124,7 @@
         
         .status-pending { background: #f59e0b; }
         .status-confirmed { background: #10b981; }
+        .status-checked-in { background: #06b6d4; color: #fff; }
         .status-cancelled { background: #ef4444; }
         .status-completed { background: #3b82f6; }
 
