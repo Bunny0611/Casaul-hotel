@@ -37,18 +37,18 @@
 
     <ul>
 
-        <li><a href="{{ route('home') }}">HOME</a></li>
+        <li><a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}" @if(request()->routeIs('home')) aria-current="page" @endif>HOME</a></li>
 
-        <li><a href="{{ route('accommodation') }}">ACCOMMODATION</a></li>
+        <li><a href="{{ route('accommodation') }}" class="{{ request()->routeIs('accommodation*') ? 'active' : '' }}" @if(request()->routeIs('accommodation*')) aria-current="page" @endif>ACCOMMODATION</a></li>
 
-        <li><a href="{{ route('dining') }}">DINING</a></li>
+        <li><a href="{{ route('dining') }}" class="{{ request()->routeIs('dining') ? 'active' : '' }}" @if(request()->routeIs('dining')) aria-current="page" @endif>DINING</a></li>
 
-        <li><a href="{{ route('events') }}">EVENTS</a></li>
+        <li><a href="{{ route('events') }}" class="{{ request()->routeIs('events') ? 'active' : '' }}" @if(request()->routeIs('events')) aria-current="page" @endif>EVENTS</a></li>
 
-        <li><a href="{{ route('aboutus') }}">ABOUT US</a></li>
+        <li><a href="{{ route('aboutus') }}" class="{{ request()->routeIs('aboutus') ? 'active' : '' }}" @if(request()->routeIs('aboutus')) aria-current="page" @endif>ABOUT US</a></li>
 
         @auth('guest')
-            <li><a href="{{ route('guest.records') }}#guest-request-form">GUEST REQUEST</a></li>
+            <li><a href="{{ route('guest.records') }}#guest-request-form" class="{{ request()->routeIs('guest.records') ? 'active' : '' }}" @if(request()->routeIs('guest.records')) aria-current="page" @endif>GUEST REQUEST</a></li>
         @endauth
 
     </ul>
@@ -211,7 +211,18 @@
                 <li>PROXY Plus by CASAUL Hotel Pangasinan</li>
             </ul>
         </div>
+
+        <div class="footer-col footer-col-inspiration">
+            <h4>Stay Inspired</h4>
+            <p class="footer-contact">Receive thoughtful ideas and updates from CASAUL Hotel.</p>
+            <form class="footer-newsletter-form" action="#" method="POST" onsubmit="return false;">
+                <label class="sr-only" for="footer-newsletter-email">Email address</label>
+                <input id="footer-newsletter-email" type="email" placeholder="Enter your email" aria-label="Enter your email">
+                <button type="submit" aria-label="Subscribe">-&gt;</button>
+            </form>
+        </div>
     </div>
+    <div class="footer-bottom"><span>&copy; {{ date('Y') }} CASAUL Hotel. All Rights Reserved.</span><span>Privacy Policy&nbsp;&nbsp; | &nbsp;&nbsp;Terms &amp; Conditions</span></div>
 </footer>
 
 

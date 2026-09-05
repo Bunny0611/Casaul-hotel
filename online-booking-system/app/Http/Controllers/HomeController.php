@@ -20,6 +20,7 @@ use App\Models\GuestRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class HomeController extends Controller
@@ -692,6 +693,21 @@ class HomeController extends Controller
     public function roomDetail($slug)
     {
         $room = collect($this->featuredRooms())->firstWhere('slug', $slug);
+
+        if (!$room) {
+            $databaseRoom = Room::query()->get()->first(fn ($candidate) => Str::slug($candidate->room_type) === $slug);
+
+            if ($databaseRoom) {
+                $room = [
+                    'name' => $databaseRoom->room_type,
+                    'price' => '₱' . number_format((float) $databaseRoom->price, 2),
+                    'tagline' => 'Comfortable accommodation for a restful stay.',
+                    'image' => $databaseRoom->image ? 'images/' . $databaseRoom->image : 'image/Royal-Suite-room.jpg',
+                    'description' => $databaseRoom->description ?? 'Enjoy a comfortable room with thoughtful amenities and a welcoming atmosphere.',
+                    'features' => ['Comfortable bedding', 'Private bath', 'High-speed Wi-Fi', 'Air conditioning'],
+                ];
+            }
+        }
 
         if (!$room) {
             abort(404);
