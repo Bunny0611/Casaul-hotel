@@ -468,7 +468,7 @@ class HomeController extends Controller
             RoomReservation::with(['room', 'payments'])
                 ->where('guest_email', $guest->email)->get()
                 ->each(fn ($reservation) => $reservation->category = 'rooms'),
-            EventReservation::with(['eventPlace', 'payments'])
+            EventReservation::with(['eventPlace', 'diningItems.diningMenu', 'payments'])
                 ->where('guest_email', $guest->email)->get()
                 ->each(fn ($reservation) => $reservation->category = 'event_place'),
             AmenityReservation::with(['amenity', 'payments'])

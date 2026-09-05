@@ -223,7 +223,7 @@ class AdminController extends Controller
             'price' => ['required', 'numeric', 'min:0'],
             'pricing_basis' => ['required_if:category,amenities,event_place', 'nullable', 'string', 'in:Per Stay,Per Person,Per Vehicle,Per Hour,Per Day,Fixed Price,Per Event'],
             'scheduling_requirement' => ['required_if:category,amenities', 'nullable', 'string', 'in:No Additional Schedule,Date Required,Date & Time Required'],
-            'event_type' => ['required_if:category,event_place', 'nullable', 'string', 'in:Birthday,Wedding'],
+            'event_type' => ['nullable', 'string', 'in:Birthday,Wedding'],
             'status' => ['required', 'string', 'max:50'],
             'location' => ['nullable', 'string', 'max:255'],
             'capacity' => ['nullable', 'integer', 'min:1'],
@@ -255,9 +255,10 @@ class AdminController extends Controller
                 'scheduling_requirement' => $validated['scheduling_requirement'] ?? 'No Additional Schedule',
             ]),
             'event_place' => EventPlace::create([
-                'event_type' => $validated['event_type'], 'name' => $validated['name'], 'description' => $validated['description'] ?? null,
+                'event_type' => $validated['event_type'] ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null,
                 'price' => $validated['price'], 'capacity' => $validated['capacity'] ?? null,
                 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'location' => $validated['location'] ?? null,
+                'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null,
                 'status' => $validated['status'], 'image' => $validated['image'] ?? null,
             ]),
             default => DiningMenu::create([
@@ -332,8 +333,8 @@ class AdminController extends Controller
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
             'pricing_basis' => ['required_if:category,amenities,event_place', 'nullable', 'string', 'in:Per Stay,Per Person,Per Vehicle,Per Hour,Per Day,Fixed Price,Per Event'],
-            'scheduling_requirement' => ['required_if:category,amenities', 'nullable', 'string', 'in:No Additional Schedule,Date Required,Date & Time Required'],
-            'event_type' => ['required_if:category,event_place', 'nullable', 'string', 'in:Birthday,Wedding'],
+            'scheduling_requirement' => ['nullable', 'string', 'in:No Additional Schedule,Date Required,Date & Time Required'],
+            'event_type' => ['nullable', 'string', 'in:Birthday,Wedding'],
             'status' => ['required', 'string', 'max:50'],
             'location' => ['nullable', 'string', 'max:255'],
             'capacity' => ['nullable', 'integer', 'min:1'],
@@ -354,9 +355,9 @@ class AdminController extends Controller
         }
 
         $item->update($category === 'amenities'
-            ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
+            ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? $item->scheduling_requirement ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
             : ($category === 'event_place'
-                ? ['event_type' => $validated['event_type'], 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
+                ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
                 : $validated));
 
         return redirect()->route('admin.rooms')->with('success', 'Inventory item updated successfully.');
@@ -538,7 +539,7 @@ class AdminController extends Controller
     {
         $roomReservations = RoomReservation::with('room')->latest()->get();
         $amenityReservations = AmenityReservation::with('amenity')->latest()->get();
-        $eventPlaceReservations = EventReservation::with('eventPlace')->latest()->get();
+        $eventPlaceReservations = EventReservation::with(['eventPlace', 'diningItems.diningMenu'])->latest()->get();
         $diningReservations = DiningReservation::latest()->get();
 
         $legacyReservations = Reservation::with(['room', 'amenity', 'eventPlace', 'diningItems'])->latest()->get();

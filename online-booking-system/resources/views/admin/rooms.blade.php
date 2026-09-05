@@ -286,16 +286,17 @@
             <table class="w-full">
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllEventPlaceHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="event_place" onclick="toggleAllInventoryCheckboxes('event_place', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllEventPlaceHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="event_place" onclick="toggleAllInventoryCheckboxes('event_place', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Package Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Maximum Guests</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Available Time</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
                     </tr>
                 </thead>
                 <tbody id="event-place-list" class="divide-y divide-gray-200">
                     @foreach($eventPlaces as $item)
-                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event_place h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event_place')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "event_place")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event place"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "event_place")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event place status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=event_place" method="POST" onsubmit="return confirm('Delete this event place?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event place"><i class="fas fa-trash"></i></button></form></div></td></tr>
+                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event_place h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event_place')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->available_from && $item->available_to ? \Illuminate\Support\Carbon::parse($item->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($item->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "event_place")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event place"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "event_place")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event place status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=event_place" method="POST" onsubmit="return confirm('Delete this event place?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event place"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @endforeach
                 </tbody>
             </table>
@@ -447,20 +448,26 @@
     <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
         <button type="button" onclick="closeEditInventoryModal()" class="absolute right-4 top-4 text-gray-500 hover:text-gray-700"><i class="fas fa-times text-xl"></i></button>
         <div class="mb-6"><h3 class="text-2xl font-bold text-gray-800">Edit Inventory Item</h3><p class="mt-1 text-sm text-gray-500">Update the selected item details.</p></div>
-        <form id="editInventoryForm" action="" method="POST" class="space-y-4">
+        <form id="editInventoryForm" action="" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf @method('PUT')
             <input type="hidden" name="category" id="editInventoryCategory">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Name</label><input id="editInventoryName" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label><select id="editInventoryType" name="event_type" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Birthday</option><option>Wedding</option></select></div>
+                <div><label id="editInventoryNameLabel" class="mb-1 block text-sm font-medium text-gray-700">Name</label><input id="editInventoryName" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div id="editInventoryTypeField"><label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label><select id="editInventoryType" name="event_type" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Birthday</option><option>Wedding</option></select></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label><input id="editInventoryPrice" name="price" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label><select id="editInventoryPricingBasis" name="pricing_basis" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option><option>Per Event</option></select></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Capacity / Maximum Guests</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Scheduling Requirement</label><select id="editInventoryScheduling" name="scheduling_requirement" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>No Additional Schedule</option><option>Date Required</option><option>Date &amp; Time Required</option></select></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label><input id="editInventoryQuantity" name="quantity" type="number" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Available From</label><input id="editInventoryFrom" name="available_from" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Available To</label><input id="editInventoryTo" name="available_to" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Status</label><select id="editInventoryStatus" name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option></select></div>
+                <div><label id="editInventoryCapacityLabel" class="mb-1 block text-sm font-medium text-gray-700">Capacity / Maximum Guests</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div id="editInventorySchedulingField"><label class="mb-1 block text-sm font-medium text-gray-700">Scheduling Requirement</label><select id="editInventoryScheduling" name="scheduling_requirement" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>No Additional Schedule</option><option>Date Required</option><option>Date &amp; Time Required</option></select></div>
+                <div id="editInventoryQuantityField"><label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label><input id="editInventoryQuantity" name="quantity" type="number" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div id="editInventoryFromField"><label class="mb-1 block text-sm font-medium text-gray-700">Available From</label><input id="editInventoryFrom" name="available_from" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div id="editInventoryToField"><label class="mb-1 block text-sm font-medium text-gray-700">Available To</label><input id="editInventoryTo" name="available_to" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div><label id="editInventoryStatusLabel" class="mb-1 block text-sm font-medium text-gray-700">Availability</label><select id="editInventoryStatus" name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option></select></div>
+            </div>
+            <div id="editInventoryImageField" class="hidden">
+                <label id="editInventoryImageLabel" class="mb-1 block text-sm font-medium text-gray-700">Catalog Photo</label>
+                <img id="editInventoryImagePreview" src="" alt="Current event place photo" class="mb-3 hidden h-40 w-full rounded-lg border border-gray-200 object-cover">
+                <p id="editInventoryNoImage" class="mb-3 hidden text-sm text-gray-500">No photo attached.</p>
+                <input id="editInventoryImage" name="image" type="file" accept="image/jpeg,image/png,image/gif,image/webp" class="w-full rounded-lg border border-gray-300 px-3 py-2">
             </div>
             <div><label class="mb-1 block text-sm font-medium text-gray-700">Description</label><textarea id="editInventoryDescription" name="description" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2"></textarea></div>
             <div class="flex justify-end gap-3"><button type="button" onclick="closeEditInventoryModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700">Cancel</button><button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white">Update Item</button></div>
@@ -575,11 +582,19 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label>
-                    <select name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option selected>Per Event</option><option>Per Person</option><option>Per Hour</option></select>
+                    <select name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option selected>Per Person</option><option>Per Hour</option></select>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Maximum Guests</label>
                     <input type="number" name="capacity" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Available From</label>
+                    <input type="time" name="available_from" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Available To</label>
+                    <input type="time" name="available_to" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
@@ -1074,9 +1089,51 @@
         document.getElementById('editInventoryName').value = item.name || '';
         document.getElementById('editInventoryType').value = item.event_type || item.type || 'Birthday';
         document.getElementById('editInventoryPrice').value = item.price || 0;
-        document.getElementById('editInventoryLocation').value = item.location || '';
+        const quantityField = document.getElementById('editInventoryQuantityField');
+        const quantityInput = document.getElementById('editInventoryQuantity');
+        const typeField = document.getElementById('editInventoryTypeField');
+        const typeInput = document.getElementById('editInventoryType');
+        const fromField = document.getElementById('editInventoryFromField');
+        const toField = document.getElementById('editInventoryToField');
+        const isEventPlace = category === 'event_place';
+        const isAmenity = category === 'amenities';
+        quantityField.classList.toggle('hidden', isEventPlace || isAmenity);
+        quantityInput.disabled = isEventPlace || isAmenity;
+        typeField.classList.toggle('hidden', isAmenity);
+        typeInput.disabled = isAmenity;
+        const schedulingField = document.getElementById('editInventorySchedulingField');
+        const schedulingInput = document.getElementById('editInventoryScheduling');
+        schedulingField.classList.toggle('hidden', isEventPlace);
+        schedulingInput.disabled = isEventPlace;
+        fromField.classList.toggle('hidden', isAmenity);
+        toField.classList.toggle('hidden', isAmenity);
+        const pricingBasis = document.getElementById('editInventoryPricingBasis');
+        pricingBasis.innerHTML = isEventPlace
+            ? '<option value="Per Person">Per Person</option><option value="Per Hour">Per Hour</option>'
+            : '<option value="Per Stay">Per Stay</option><option value="Per Person">Per Person</option><option value="Per Vehicle">Per Vehicle</option><option value="Per Hour">Per Hour</option><option value="Per Day">Per Day</option><option value="Fixed Price">Fixed Price</option>';
+        const allowedPricingBasis = isEventPlace
+            ? ['Per Person', 'Per Hour']
+            : ['Per Stay', 'Per Person', 'Per Vehicle', 'Per Hour', 'Per Day', 'Fixed Price'];
+        pricingBasis.value = allowedPricingBasis.includes(item.pricing_basis)
+            ? item.pricing_basis
+            : (isEventPlace ? 'Per Person' : 'Per Stay');
+        const imageField = document.getElementById('editInventoryImageField');
+        const imagePreview = document.getElementById('editInventoryImagePreview');
+        const noImage = document.getElementById('editInventoryNoImage');
+        imageField.classList.toggle('hidden', !isEventPlace && !isAmenity);
+        imagePreview.classList.toggle('hidden', (!isEventPlace && !isAmenity) || !item.image);
+        noImage.classList.toggle('hidden', (!isEventPlace && !isAmenity) || Boolean(item.image));
+        document.getElementById('editInventoryNameLabel').textContent = isAmenity ? 'Amenity Name' : 'Name';
+        document.getElementById('editInventoryCapacityLabel').textContent = isAmenity ? 'Capacity / Quantity' : 'Capacity / Maximum Guests';
+        document.getElementById('editInventoryStatusLabel').textContent = isAmenity ? 'Availability' : 'Status';
+        document.getElementById('editInventoryImageLabel').textContent = isAmenity ? 'Image (Optional)' : 'Event Place Photo';
+        const statusInput = document.getElementById('editInventoryStatus');
+        statusInput.innerHTML = isAmenity
+            ? '<option value="available">Available</option><option value="unavailable">Unavailable</option>'
+            : '<option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option>';
+        statusInput.value = item.status || 'available';
+        imagePreview.src = item.image ? "{{ asset('storage') }}/" + item.image : '';
         document.getElementById('editInventoryCapacity').value = item.capacity || '';
-        document.getElementById('editInventoryPricingBasis').value = item.pricing_basis || 'Per Stay';
         document.getElementById('editInventoryScheduling').value = item.scheduling_requirement || 'No Additional Schedule';
         document.getElementById('editInventoryQuantity').value = item.quantity || '';
         document.getElementById('editInventoryFrom').value = item.available_from ? item.available_from.substring(0, 5) : '';
