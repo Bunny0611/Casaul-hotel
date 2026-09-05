@@ -260,20 +260,23 @@
             <div class="flex items-center gap-3"><span id="amenitiesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('amenities')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected amenities"><i class="fas fa-trash"></i></button></div>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="min-w-[720px] w-full">
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllAmenitiesHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="amenities" onclick="toggleAllInventoryCheckboxes('amenities', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Type</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllAmenitiesHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="amenities" onclick="toggleAllInventoryCheckboxes('amenities', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amenity Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Floor</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Capacity / Quantity</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
                     </tr>
                 </thead>
                 <tbody id="amenities-list" class="divide-y divide-gray-200">
-                    @foreach($amenities as $item)
-                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-amenities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('amenities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">—</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "amenities")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit amenity"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "amenities")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change amenity status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=amenities" method="POST" onsubmit="return confirm('Delete this amenity?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete amenity"><i class="fas fa-trash"></i></button></form></div></td></tr>
-                    @endforeach
+                    @forelse($amenities as $item)
+                        @php($amenityStatus = strtolower($item->status ?? 'unavailable'))
+                        <tr class="transition-colors hover:bg-gray-50"><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-amenities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('amenities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full px-3 py-1 text-xs font-medium text-white {{ $amenityStatus === 'available' ? 'bg-green-500' : ($amenityStatus === 'limited' ? 'bg-yellow-500' : 'bg-red-500') }}">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "amenities")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit amenity"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "amenities")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change amenity status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=amenities" method="POST" onsubmit="return confirm('Delete this amenity?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete amenity"><i class="fas fa-trash"></i></button></form></div></td></tr>
+                    @empty
+                        <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-concierge-bell mb-4 text-4xl text-gray-300"></i><p>No amenities found. Add your first amenity to get started.</p></td></tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -455,7 +458,7 @@
                 <div><label id="editInventoryNameLabel" class="mb-1 block text-sm font-medium text-gray-700">Name</label><input id="editInventoryName" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div id="editInventoryTypeField"><label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label><select id="editInventoryType" name="event_type" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Birthday</option><option>Wedding</option></select></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label><input id="editInventoryPrice" name="price" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div><label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label><select id="editInventoryPricingBasis" name="pricing_basis" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option><option>Per Event</option></select></div>
+                <div><label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label><select id="editInventoryPricingBasis" name="pricing_basis" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Stay + Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option><option>Per Event</option></select></div>
                 <div><label id="editInventoryCapacityLabel" class="mb-1 block text-sm font-medium text-gray-700">Capacity / Maximum Guests</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div id="editInventorySchedulingField"><label class="mb-1 block text-sm font-medium text-gray-700">Scheduling Requirement</label><select id="editInventoryScheduling" name="scheduling_requirement" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>No Additional Schedule</option><option>Date Required</option><option>Date &amp; Time Required</option></select></div>
                 <div id="editInventoryQuantityField"><label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label><input id="editInventoryQuantity" name="quantity" type="number" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
@@ -516,11 +519,11 @@
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label>
                     <select name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2">
-                        <option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option>
+                        <option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Stay + Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option>
                     </select>
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Capacity / Quantity</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Capacity / Quantity (e.g. 2 vehicles)</label>
                     <input type="number" name="capacity" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2">
                 </div>
                 <div>
@@ -1110,10 +1113,10 @@
         const pricingBasis = document.getElementById('editInventoryPricingBasis');
         pricingBasis.innerHTML = isEventPlace
             ? '<option value="Per Person">Per Person</option><option value="Per Hour">Per Hour</option>'
-            : '<option value="Per Stay">Per Stay</option><option value="Per Person">Per Person</option><option value="Per Vehicle">Per Vehicle</option><option value="Per Hour">Per Hour</option><option value="Per Day">Per Day</option><option value="Fixed Price">Fixed Price</option>';
+            : '<option value="Per Stay">Per Stay</option><option value="Per Person">Per Person</option><option value="Per Vehicle">Per Vehicle</option><option value="Per Stay + Per Vehicle">Per Stay + Per Vehicle</option><option value="Per Hour">Per Hour</option><option value="Per Day">Per Day</option><option value="Fixed Price">Fixed Price</option>';
         const allowedPricingBasis = isEventPlace
             ? ['Per Person', 'Per Hour']
-            : ['Per Stay', 'Per Person', 'Per Vehicle', 'Per Hour', 'Per Day', 'Fixed Price'];
+            : ['Per Stay', 'Per Person', 'Per Vehicle', 'Per Stay + Per Vehicle', 'Per Hour', 'Per Day', 'Fixed Price'];
         pricingBasis.value = allowedPricingBasis.includes(item.pricing_basis)
             ? item.pricing_basis
             : (isEventPlace ? 'Per Person' : 'Per Stay');
@@ -1124,7 +1127,7 @@
         imagePreview.classList.toggle('hidden', (!isEventPlace && !isAmenity) || !item.image);
         noImage.classList.toggle('hidden', (!isEventPlace && !isAmenity) || Boolean(item.image));
         document.getElementById('editInventoryNameLabel').textContent = isAmenity ? 'Amenity Name' : 'Name';
-        document.getElementById('editInventoryCapacityLabel').textContent = isAmenity ? 'Capacity / Quantity' : 'Capacity / Maximum Guests';
+        document.getElementById('editInventoryCapacityLabel').textContent = isAmenity && ['Per Vehicle', 'Per Stay + Per Vehicle'].includes(item.pricing_basis) ? 'Maximum Vehicles' : (isAmenity ? 'Capacity / Quantity' : 'Capacity / Maximum Guests');
         document.getElementById('editInventoryStatusLabel').textContent = isAmenity ? 'Availability' : 'Status';
         document.getElementById('editInventoryImageLabel').textContent = isAmenity ? 'Image (Optional)' : 'Event Place Photo';
         const statusInput = document.getElementById('editInventoryStatus');

@@ -11,10 +11,12 @@ class AmenityReservation extends Model
     protected $casts = [
         'check_in' => 'date',
         'check_out' => 'date',
+        'amenity_quantity' => 'integer',
     ];
 
     protected $fillable = [
         'amenity_id',
+        'amenity_quantity',
         'guest_name',
         'guest_email',
         'guest_phone',

@@ -536,7 +536,7 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($amenities as $amenity)
-                        <article class="reservation-card" data-category="amenities" data-price="{{ $amenity->price }}" data-title="{{ $amenity->name }}" data-amenity-id="{{ $amenity->id }}" data-capacity="{{ $amenity->capacity ?? '' }}" data-scheduling="{{ $amenity->scheduling_requirement ?? 'No Additional Schedule' }}">
+                        <article class="reservation-card" data-category="amenities" data-price="{{ $amenity->price }}" data-pricing-basis="{{ $amenity->pricing_basis ?? 'Per Stay' }}" data-title="{{ $amenity->name }}" data-amenity-id="{{ $amenity->id }}" data-capacity="{{ $amenity->capacity ?? '' }}" data-scheduling="{{ $amenity->scheduling_requirement ?? 'No Additional Schedule' }}">
                             <img src="{{ $amenity->image ? asset('storage/' . $amenity->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $amenity->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $amenity->name }}</h4>
@@ -545,7 +545,7 @@
                                 @if(($amenity->capacity ?? null) || ($amenity->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
                                     <div class="amenity-options">
                                         @if($amenity->capacity)
-                                            <label class="field-label" for="amenityQuantity-{{ $amenity->id }}">Quantity</label>
+                                            <label class="field-label" for="amenityQuantity-{{ $amenity->id }}">{{ ($amenity->pricing_basis ?? '') === 'Per Vehicle' ? 'Number of Vehicles' : 'Quantity' }}</label>
                                             <select id="amenityQuantity-{{ $amenity->id }}" class="field-input amenity-quantity" max="{{ $amenity->capacity }}">
                                                 @for($quantity = 1; $quantity <= $amenity->capacity; $quantity++)<option value="{{ $quantity }}">{{ $quantity }}</option>@endfor
                                             </select>
@@ -577,7 +577,7 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
-                        <article class="reservation-card" data-category="event_place" data-price="{{ $event->price }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}">
+                        <article class="reservation-card" data-category="event_place" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}">
                             <img src="{{ $event->image ? asset('storage/' . $event->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $event->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $event->name }}</h4>
@@ -992,6 +992,7 @@
     <input type="hidden" name="dining_schedule" id="reservationDiningSchedule">
     <input type="hidden" name="quantity" id="reservationDiningQuantity">
     <input type="hidden" name="amenity_id" id="reservationAmenityId">
+    <input type="hidden" name="amenity_quantity" id="reservationAmenityQuantity">
     <input type="hidden" name="event_place_id" id="reservationEventPlaceId">
     <input type="hidden" name="event_type" id="reservationEventType">
     <input type="hidden" name="number_of_guests" id="reservationEventGuests">
@@ -1040,6 +1041,7 @@
         const reservationDiningSchedule = document.getElementById('reservationDiningSchedule');
         const reservationDiningQuantity = document.getElementById('reservationDiningQuantity');
         const reservationAmenityId = document.getElementById('reservationAmenityId');
+        const reservationAmenityQuantity = document.getElementById('reservationAmenityQuantity');
         const reservationEventPlaceId = document.getElementById('reservationEventPlaceId');
         const reservationEventType = document.getElementById('reservationEventType');
         const reservationEventGuests = document.getElementById('reservationEventGuests');
@@ -1148,6 +1150,35 @@
 
         const items = document.querySelectorAll('.select-option-btn');
         const sumItemTotal = (itemsList) => itemsList.reduce((sum, item) => sum + (Number(item.price || 0) * (Number(item.quantity || 1))), 0);
+        const getAmenityCharge = (amenity) => {
+            const price = Number(amenity.price || 0);
+            const pricingBasis = String(amenity.pricingBasis || '').trim().toLowerCase();
+            const vehicleCharge = price * Math.max(1, Number(amenity.quantity) || 1);
+
+            if (pricingBasis === 'per stay + per vehicle') {
+                return (price * getStayNights()) + vehicleCharge;
+            }
+
+            if (pricingBasis === 'per vehicle') {
+                return vehicleCharge;
+            }
+
+            return price;
+        };
+        const getEventCharge = (event) => {
+            const price = Number(event.price || 0);
+            const pricingBasis = String(event.pricingBasis || '').toLowerCase();
+
+            if (pricingBasis === 'per person') {
+                return price * Math.max(1, Number(event.guests) || 1);
+            }
+
+            if (pricingBasis === 'per hour') {
+                return price * Math.max(1, Number(event.durationHours) || 1);
+            }
+
+            return price;
+        };
         const getSelectedEventCount = () => selectedEvent.length;
         const getSelectedDiningCount = () => selectedDining.length;
 
@@ -1314,9 +1345,9 @@
             summaryAdditionalGuests.textContent = selectedExtraGuests > 0 ? `${selectedExtraGuests} added` : 'None';
             summaryEvent.textContent = selectedEvent.length ? `${selectedEvent.length} selected${selectedEventTitles ? ` • ${selectedEventTitles}` : ''}` : 'None';
             summaryDining.textContent = selectedDining.length ? `${selectedDining.length} selected${selectedDiningTitles ? ` • ${selectedDiningTitles}` : ''}${selectedDiningSchedule ? ` / ${selectedDiningSchedule}` : ''}${selectedDiningTable ? ` / ${selectedDiningTable}` : ''}` : 'None';
-            summaryAmenitiesPrice.textContent = `₱${sumItemTotal(selectedAmenities).toLocaleString()}`;
+            summaryAmenitiesPrice.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0).toLocaleString()}`;
             summaryAdditionalGuestsPrice.textContent = `₱${extraGuestsTotal.toLocaleString()}`;
-            summaryEventPrice.textContent = `₱${selectedEvent.reduce((sum, item) => sum + (Number(item.price || 0)), 0).toLocaleString()}`;
+            summaryEventPrice.textContent = `₱${selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0).toLocaleString()}`;
             summaryDiningPrice.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
 
             const total = calculateTotal();
@@ -1345,7 +1376,7 @@
             detailsAmenitiesSummary.textContent = hasAmenitySelection
                 ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''}`).join(', ')
                 : '';
-            detailsAmenitiesAmount.textContent = hasAmenitySelection ? `Amount: ${formatCurrencyValue(sumItemTotal(selectedAmenities))}` : '';
+            detailsAmenitiesAmount.textContent = hasAmenitySelection ? `Amount: ${formatCurrencyValue(selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0))}` : '';
             detailsAmenitiesStatus.textContent = hasAmenitySelection ? 'Status: Reserved' : '';
             detailsEventTitle.textContent = hasEventSelection ? selectedEvent.map(item => item.title).join(', ') : '';
             detailsEventSummary.innerHTML = hasEventSelection
@@ -1396,7 +1427,7 @@
             }
             confirmAmenitiesTitle.textContent = selectedAmenities.length ? selectedAmenities.map(item => item.title).join(', ') : 'None';
             confirmAmenities.textContent = selectedAmenities.length
-                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'} • ₱${(item.price * item.quantity).toLocaleString()}`).join(', ')
+                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'} • ₱${getAmenityCharge(item).toLocaleString()}`).join(', ')
                 : 'No amenities selected';
             confirmEventTitle.textContent = selectedEvent.length ? selectedEvent.map(item => item.title).join(', ') : 'None';
             confirmEventDining.textContent = selectedEvent.length
@@ -1413,8 +1444,8 @@
             confirmGuestPhone.textContent = detailsGuestPhone.value || '0000000000';
             confirmSpecialRequest.textContent = detailsSpecialRequest.value || 'None';
             confirmRoomCharge.textContent = `₱${roomTotal.toLocaleString()}`;
-            confirmAmenitiesCharge.textContent = `₱${sumItemTotal(selectedAmenities).toLocaleString()}`;
-            confirmEventCharge.textContent = `₱${selectedEvent.reduce((sum, item) => sum + (Number(item.price || 0)), 0).toLocaleString()}`;
+            confirmAmenitiesCharge.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0).toLocaleString()}`;
+            confirmEventCharge.textContent = `₱${selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0).toLocaleString()}`;
             confirmDiningCharge.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
             confirmExtraGuestCharge.textContent = `₱${extraGuestsTotal.toLocaleString()}`;
             confirmTotalAmount.textContent = `₱${calculateTotal().toLocaleString()}`;
@@ -1443,6 +1474,7 @@
             reservationDiningSchedule.value = selectedDining.map(item => item.schedule).filter(Boolean).join(',');
             reservationDiningQuantity.value = selectedDiningQuantity || '';
             reservationAmenityId.value = selectedAmenities.map(item => item.id).filter(Boolean).join(',');
+            reservationAmenityQuantity.value = selectedAmenities[0]?.quantity || '';
             reservationEventPlaceId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
             reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
             reservationEventGuests.value = selectedRoom
@@ -1491,8 +1523,8 @@
 
         const calculateTotal = () => {
             const stayNights = getStayNights();
-            const amenitiesTotal = sumItemTotal(selectedAmenities);
-            const eventTotal = selectedEvent.reduce((sum, item) => sum + (Number(item.price || 0)), 0);
+            const amenitiesTotal = selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0);
+            const eventTotal = selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0);
             const diningTotal = selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0);
             const extraGuestsTotal = selectedExtraGuests * selectedExtraGuestPrice * stayNights;
             return (roomPrice * stayNights) + amenitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
@@ -1714,6 +1746,7 @@
                             id: card.dataset.amenityId,
                             title,
                             price,
+                            pricingBasis: card.dataset.pricingBasis || 'Per Stay',
                             quantity,
                             date: card.querySelector('.amenity-date')?.value || '',
                             time: card.querySelector('.amenity-time')?.value || '',
@@ -1729,12 +1762,14 @@
                         selectedEvent.push({
                             id: card.dataset.eventId,
                             type: card.dataset.eventType,
+                            pricingBasis: card.dataset.pricingBasis || 'Per Event',
                             title,
                             price,
                             guests: normalizeEventGuestCount(card.querySelector('.event-guests'), card),
                             date: card.querySelector('.event-date')?.value || '',
                             startTime: card.querySelector('.event-start-time')?.value || '',
                             endTime: card.querySelector('.event-end-time')?.value || '',
+                            durationHours: Math.max(1, Math.min(12, Number(card.querySelector('.event-duration')?.value || 1))),
                         });
                         this.textContent = 'Selected';
                     } else {
@@ -1874,13 +1909,18 @@
                 selectedAmenities.forEach(item => {
                     const quantity = Number(item.quantity || 1);
                     const unitPrice = Number(item.price || 0);
-                    receiptItems.push([String(quantity), `Amenity - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(unitPrice * quantity)]);
+                    receiptItems.push([String(quantity), `Amenity - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(getAmenityCharge(item))]);
                 });
             }
             if (selectedEvent.length) {
                 selectedEvent.forEach(item => {
-                    const amount = Number(item.price || 0);
-                    receiptItems.push(['1', 'Event Reservation', formatCurrencyValue(amount), formatCurrencyValue(amount)]);
+                    const amount = getEventCharge(item);
+                    const quantity = item.pricingBasis === 'Per Person'
+                        ? Number(item.guests || 1)
+                        : item.pricingBasis === 'Per Hour'
+                            ? Number(item.durationHours || 1)
+                            : 1;
+                    receiptItems.push([String(quantity), `Event Reservation - ${item.pricingBasis || 'Per Event'}`, formatCurrencyValue(item.price), formatCurrencyValue(amount)]);
                 });
             }
             if (selectedDining.length) {

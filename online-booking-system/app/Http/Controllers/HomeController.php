@@ -237,6 +237,7 @@ class HomeController extends Controller
             'quantity' => 'nullable|integer|min:1',
             'duration_hours' => 'nullable|integer|min:1',
             'amenity_id' => 'nullable|string',
+            'amenity_quantity' => 'nullable|integer|min:1',
             'event_place_id' => 'nullable|string',
             'event_type' => 'nullable|string|max:100',
             'number_of_guests' => 'nullable|integer|min:1',
@@ -376,6 +377,14 @@ class HomeController extends Controller
             ])->all());
         } elseif ($category === 'amenities') {
             $amenity = Amenity::findOrFail($validated['amenity_id']);
+            $amenityQuantity = max(1, (int) ($validated['amenity_quantity'] ?? 1));
+            $pricingBasis = trim(strtolower((string) $amenity->pricing_basis));
+            if (in_array($pricingBasis, ['per vehicle', 'per stay + per vehicle'], true) && $amenity->capacity && $amenityQuantity > $amenity->capacity) {
+                throw ValidationException::withMessages([
+                    'amenity_quantity' => 'The selected number of vehicles exceeds this amenity\'s available capacity.',
+                ]);
+            }
+            $stayDays = max(1, Carbon::parse($validated['check_in'])->diffInDays(Carbon::parse($validated['check_out'])));
             $durationHours = max(1, (int) ($validated['duration_hours'] ?? 1));
             $amenityStartTime = $validated['check_in_time'] ?? '00:00';
             $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $amenityStartTime)
@@ -383,9 +392,14 @@ class HomeController extends Controller
             $validated['check_out'] = $endTime->toDateString();
             $validated['amenity_start_time'] = $amenityStartTime;
             $validated['amenity_end_time'] = $endTime->format('H:i');
-            $validated['total_amount'] = (float) $amenity->price * $durationHours;
+            $validated['amenity_quantity'] = $amenityQuantity;
+            $validated['total_amount'] = match ($pricingBasis) {
+                'per stay + per vehicle' => (float) $amenity->price * ($stayDays + $amenityQuantity),
+                'per vehicle' => (float) $amenity->price * $amenityQuantity,
+                default => (float) $amenity->price,
+            };
             $reservation = AmenityReservation::create(collect($validated)->only([
-                'amenity_id', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
+                'amenity_id', 'amenity_quantity', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
                 'amenity_start_time', 'check_out', 'amenity_end_time',
                 'number_of_guests', 'status', 'total_amount', 'payment_method',
                 'payment_details', 'amount_paid', 'special_requests',
