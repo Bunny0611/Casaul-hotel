@@ -440,7 +440,7 @@
                                 <td class="py-3 pr-3 text-sm text-slate-700">{{ $reservation->guest_name }}</td>
                                 <td class="py-3 pr-3 whitespace-nowrap">
                                     @if($reservation->status === 'checked-in')
-                                        <span class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 hover:opacity-80 transition" onclick="openCheckInModal(this.closest('tr'))"><i class="fas fa-check-circle"></i> Confirmed</span>
+                                        <span class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-700 hover:opacity-80 transition" onclick="openCheckInModal(this.closest('tr'))"><i class="fas fa-check-circle"></i> Checked-in</span>
                                     @else
                                         <span class="inline-flex cursor-pointer items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 hover:opacity-80 transition" onclick="openCheckInModal(this.closest('tr'))"><i class="fas fa-clock"></i> Pending</span>
                                     @endif
@@ -707,14 +707,14 @@
         
         const submitBtn = document.querySelector('#checkInForm button[type="submit"]');
         if (isConfirmed) {
-            submitBtn.textContent = 'Already Confirmed';
+            submitBtn.textContent = 'Already Checked-in';
             submitBtn.disabled = true;
         } else {
             submitBtn.textContent = 'Confirm Check-in';
             submitBtn.disabled = false;
         }
         
-        document.getElementById('checkInForm').action = document.getElementById('checkInForm').action.replace('__ID__', reservationId);
+        document.getElementById('checkInForm').action = `{{ url('/employee/reservations') }}/${reservationId}/status`;
         document.getElementById('checkInModal').classList.remove('hidden');
         document.getElementById('checkInModal').classList.add('flex');
     }
@@ -731,9 +731,7 @@
         .then(data => {
             if (currentCheckInRow) {
                 const statusCell = currentCheckInRow.querySelector('td:nth-child(3)');
-                const actionCell = currentCheckInRow.querySelector('td:nth-child(4)');
-                statusCell.innerHTML = '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"><i class="fas fa-check-circle"></i> Confirmed</span>';
-                actionCell.innerHTML = '<span class="text-sm font-semibold text-slate-400">Completed</span>';
+                statusCell.innerHTML = '<span class="inline-flex items-center gap-1 rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-700"><i class="fas fa-check-circle"></i> Checked-in</span>';
                 currentCheckInRow.dataset.status = 'Checked-in';
             }
             closeModal('checkInModal');

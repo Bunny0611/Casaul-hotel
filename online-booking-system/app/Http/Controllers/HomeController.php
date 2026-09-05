@@ -96,7 +96,34 @@ class HomeController extends Controller
         $diningSchedules = DiningSchedule::where('status', 'Active')->orderBy('available_from')->get();
         $diningTables = DiningTable::whereIn('status', ['Available', 'Reserved'])->orderBy('table_no')->get();
         $diningReservations = DiningReservation::whereNotIn('status', ['cancelled', 'completed'])
-            ->get(['dining_area', 'dining_schedule', 'check_in']);
+            ->get(['dining_area', 'dining_schedule', 'check_in'])
+            ->filter(function ($reservation) use ($diningSchedules) {
+                $reservationDate = Carbon::parse($reservation->check_in)->startOfDay();
+                $today = Carbon::today();
+
+                if ($reservationDate->lt($today)) {
+                    return false;
+                }
+
+                if (!$reservationDate->isToday()) {
+                    return true;
+                }
+
+                $reservationSchedules = collect(explode(',', (string) $reservation->dining_schedule))
+                    ->map(fn ($period) => trim($period))
+                    ->filter();
+
+                return $reservationSchedules->contains(function ($period) use ($diningSchedules) {
+                    $schedule = $diningSchedules->firstWhere('period', $period);
+                    return $schedule && Carbon::now()->lt(Carbon::parse($schedule->available_to));
+                });
+            })
+            ->map(fn ($reservation) => [
+                'dining_area' => $reservation->dining_area,
+                'dining_schedule' => $reservation->dining_schedule,
+                'check_in' => $reservation->check_in->format('Y-m-d'),
+            ])
+            ->values();
 
         return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningSchedules', 'diningTables', 'diningReservations'));
     }
@@ -221,8 +248,10 @@ class HomeController extends Controller
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'check_in' => 'required|date|after_or_equal:today',
             'check_in_time' => 'nullable|date_format:H:i',
+            'event_start_time' => 'nullable|date_format:H:i',
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => 'nullable|date_format:H:i',
+            'event_end_time' => 'nullable|date_format:H:i',
             'guest_name' => 'required|string|max:255',
             'guest_email' => 'required|email|max:255',
             'guest_phone' => 'required|string|max:20',
@@ -367,8 +396,8 @@ class HomeController extends Controller
                 ])->all());
             });
         } elseif ($category === 'event_place') {
-            $validated['event_start_time'] = $validated['check_in_time'] ?? null;
-            $validated['event_end_time'] = $validated['check_out_time'] ?? null;
+            $validated['event_start_time'] = $validated['event_start_time'] ?? $validated['check_in_time'] ?? null;
+            $validated['event_end_time'] = $validated['event_end_time'] ?? $validated['check_out_time'] ?? null;
             $reservation = EventReservation::create(collect($validated)->only([
                 'event_place_id', 'guest_name', 'guest_email', 'guest_phone',
                 'event_type', 'check_in', 'event_start_time', 'check_out',
@@ -446,6 +475,78 @@ class HomeController extends Controller
 
         if (!empty($diningSelections)) {
             $reservation->diningItems()->createMany($diningSelections);
+        }
+
+        // A guest booking can contain several products. Keep each selection visible
+        // in the employee/admin portals by recording it in its own reservation table.
+        if ($category !== 'dining' && !empty($diningSelections)) {
+            $diningReservation = DiningReservation::create([
+                'guest_name' => $validated['guest_name'],
+                'guest_email' => $validated['guest_email'],
+                'guest_phone' => $validated['guest_phone'],
+                'dining_area' => $validated['dining_area'] ?? ($diningSelections[0]['dining_area'] ?? 'N/A'),
+                'dining_schedule' => $validated['dining_schedule'] ?? ($diningSelections[0]['dining_schedule'] ?? 'N/A'),
+                'check_in' => $validated['check_in'],
+                'check_out' => $validated['check_out'],
+                'quantity' => $validated['quantity'] ?? 1,
+                'dining_id' => $validated['dining_id'] ?? null,
+                'status' => 'pending',
+                'total_amount' => max(0, $submittedTotalAmount),
+                'payment_method' => $validated['payment_method'],
+                'payment_details' => $validated['payment_details'],
+                'amount_paid' => 0,
+                'special_requests' => $validated['special_requests'] ?? null,
+            ]);
+            $diningReservation->diningItems()->createMany($diningSelections);
+        }
+
+        if ($category !== 'rooms' && $category !== 'amenities' && !empty($validated['room_id'])) {
+            RoomReservation::create([
+                'room_id' => $validated['room_id'],
+                'guest_name' => $validated['guest_name'],
+                'guest_email' => $validated['guest_email'],
+                'guest_phone' => $validated['guest_phone'],
+                'check_in' => $validated['check_in'],
+                'room_check_in_time' => $validated['check_in_time'] ?? null,
+                'check_out' => $validated['check_out'],
+                'room_check_out_time' => $validated['check_out_time'] ?? null,
+                'number_of_guests' => $validated['number_of_guests'],
+                'status' => 'pending',
+                'total_amount' => max(0, $submittedTotalAmount),
+                'payment_method' => $validated['payment_method'],
+                'payment_details' => $validated['payment_details'],
+                'amount_paid' => 0,
+                'special_requests' => $validated['special_requests'] ?? null,
+            ]);
+        }
+
+        if ($category !== 'amenities' && !empty($validated['amenity_id'])) {
+            $amenityId = (int) collect(explode(',', (string) $validated['amenity_id']))->filter()->first();
+            $amenity = Amenity::find($amenityId);
+            if ($amenity) {
+                $amenityQuantity = max(1, (int) ($validated['amenity_quantity'] ?? $validated['quantity'] ?? 1));
+                $amenityStartTime = $validated['check_in_time'] ?? '00:00';
+                $amenityEndTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $amenityStartTime)
+                    ->addHours(max(1, (int) ($validated['duration_hours'] ?? 1)));
+                AmenityReservation::create([
+                    'amenity_id' => $amenity->id,
+                    'amenity_quantity' => $amenityQuantity,
+                    'guest_name' => $validated['guest_name'],
+                    'guest_email' => $validated['guest_email'],
+                    'guest_phone' => $validated['guest_phone'],
+                    'check_in' => $validated['check_in'],
+                    'amenity_start_time' => $amenityStartTime,
+                    'check_out' => $amenityEndTime->toDateString(),
+                    'amenity_end_time' => $amenityEndTime->format('H:i'),
+                    'number_of_guests' => $validated['number_of_guests'],
+                    'status' => 'pending',
+                    'total_amount' => max(0, $submittedTotalAmount),
+                    'payment_method' => $validated['payment_method'],
+                    'payment_details' => $validated['payment_details'],
+                    'amount_paid' => 0,
+                    'special_requests' => $validated['special_requests'] ?? null,
+                ]);
+            }
         }
 
         if ($submissionToken) {
@@ -670,7 +771,7 @@ class HomeController extends Controller
         foreach ($validItems as $item) {
             $guestRequest = GuestRequest::create([
                 'guest_id' => $guest->id,
-                'reservation_id' => $reservation->id,
+                'reservation_id' => $reservation->getAttribute('request_reservation_id'),
                 'room_id' => $reservation->room_id,
                 'request_type' => $item['request_type'],
                 'description' => $validated['description'],
@@ -694,13 +795,37 @@ class HomeController extends Controller
 
     protected function activeReservationFor($guest): ?Reservation
     {
-        return Reservation::with('room')
+        $legacyReservation = Reservation::with('room')
             ->where('guest_email', $guest->email)
             ->whereIn('status', ['confirmed', 'checked-in'])
             ->whereDate('check_in', '<=', today())
             ->whereDate('check_out', '>=', today())
             ->latest('check_in')
             ->first();
+
+        if ($legacyReservation) {
+            $legacyReservation->setAttribute('request_reservation_id', $legacyReservation->id);
+            return $legacyReservation;
+        }
+
+        $roomReservation = RoomReservation::with('room')
+            ->where('guest_email', $guest->email)
+            ->whereIn('status', ['confirmed', 'checked-in'])
+            ->whereDate('check_in', '<=', today())
+            ->whereDate('check_out', '>=', today())
+            ->latest('check_in')
+            ->first();
+
+        if (!$roomReservation) {
+            return null;
+        }
+
+        $activeReservation = new Reservation();
+        $activeReservation->forceFill($roomReservation->getAttributes());
+        $activeReservation->setAttribute('request_reservation_id', null);
+        $activeReservation->setRelation('room', $roomReservation->room);
+
+        return $activeReservation;
     }
 
     public function roomDetail($slug)

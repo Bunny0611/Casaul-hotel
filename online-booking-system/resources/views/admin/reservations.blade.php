@@ -16,6 +16,26 @@
         width: 100%;
         min-width: 980px;
     }
+
+    .reservation-management-page .reservation-actions-column,
+    .reservation-management-page .reservation-actions-cell {
+        position: sticky;
+        right: 0;
+        min-width: 116px;
+        width: 116px;
+        white-space: nowrap;
+        background: white;
+        box-shadow: -8px 0 12px -12px rgba(15, 23, 42, 0.45);
+    }
+
+    .reservation-management-page .reservation-actions-column {
+        z-index: 3;
+        background: #f9fafb;
+    }
+
+    .reservation-management-page .reservation-actions-cell {
+        z-index: 2;
+    }
 </style>
 @php
     // Calculate stats for each reservation type
@@ -52,6 +72,111 @@
     ];
     
     $currentStats = $roomStats;
+    $uniqueCsvValue = function ($value) {
+        if (is_null($value) || $value === '') {
+            return 'N/A';
+        }
+
+        $parts = collect(explode(',', (string) $value))
+            ->map(fn ($item) => trim((string) $item))
+            ->filter(fn ($item) => $item !== '' && $item !== 'null')
+            ->unique()
+            ->values()
+            ->all();
+
+        return !empty($parts) ? implode(', ', $parts) : 'N/A';
+    };
+
+    $roomSelectedServices = function ($roomReservation) use ($amenityReservations) {
+        $roomDate = $roomReservation->check_in ? \Carbon\Carbon::parse($roomReservation->check_in)->toDateString() : null;
+
+        return $amenityReservations
+            ->filter(function ($amenityReservation) use ($roomReservation, $roomDate) {
+                $amenityDate = $amenityReservation->check_in ? \Carbon\Carbon::parse($amenityReservation->check_in)->toDateString() : null;
+                return $amenityReservation->guest_email === $roomReservation->guest_email && $amenityDate === $roomDate;
+            })
+            ->map(function ($amenityReservation) {
+                $name = $amenityReservation->amenity?->name ?? 'Amenity';
+                $quantity = $amenityReservation->amenity_quantity ?? $amenityReservation->quantity ?? 1;
+                return 'Amenity: ' . $name . ' (x' . $quantity . ')';
+            })
+            ->unique()
+            ->values()
+            ->all();
+    };
+
+    $employeeReservationDetails = function ($reservation, string $category) use ($uniqueCsvValue, $roomSelectedServices) {
+        $latestPayment = $reservation->payments->last();
+        $paymentDetails = $reservation->payment_details ?: ($latestPayment?->reference_number
+            ? 'Reference: ' . $latestPayment->reference_number . ($latestPayment->notes ? ' • ' . $latestPayment->notes : '')
+            : ($latestPayment?->notes ?: 'No additional payment details'));
+        $details = [
+            'id' => $reservation->id,
+            'category' => $category,
+            'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
+            'status' => ucfirst($reservation->status),
+            'guest_name' => $reservation->guest_name,
+            'guest_email' => $reservation->guest_email,
+            'guest_phone' => $reservation->guest_phone,
+            'special_requests' => $reservation->special_requests ?: 'No special requests',
+            'selected_services' => $category === 'rooms' ? $roomSelectedServices($reservation) : [],
+            'amount_paid' => $reservation->amount_paid ?? $latestPayment?->amount ?? 0,
+            'payment_method' => $reservation->payment_method ?: ($latestPayment?->payment_method ?? 'N/A'),
+            'payment_details' => $paymentDetails,
+            'payment_proof' => $latestPayment?->payment_proof,
+            'total_amount' => $reservation->total_amount ?? 0,
+        ];
+
+        if ($category === 'rooms') {
+            $details += [
+                'room_number' => $reservation->room?->room_number ?? 'N/A',
+                'room_type' => $reservation->room?->room_type ?? 'N/A',
+                'room_check_in' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                'room_check_in_time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
+                'room_check_out' => $reservation->check_out?->format('Y-m-d') ?? 'N/A',
+                'room_check_out_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
+                'room_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
+                'room_rate' => $reservation->room?->price ?? 'N/A',
+            ];
+        } elseif ($category === 'amenities') {
+            $details += [
+                'amenity_name' => $reservation->amenity?->name ?? 'N/A',
+                'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                'time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
+                'quantity' => $reservation->quantity ?? 'N/A',
+            ];
+            $details['selected_services'] = $reservation->amenity ? ['Amenity: ' . $reservation->amenity->name] : [];
+        } elseif ($category === 'event_place') {
+            $details += [
+                'event_place' => $reservation->eventPlace?->name ?? 'N/A',
+                'event_type' => $reservation->event_type ?? 'N/A',
+                'event_date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                'event_start_time' => $reservation->event_start_time ? \Carbon\Carbon::parse($reservation->event_start_time)->format('g:i A') : 'N/A',
+                'event_end_time' => $reservation->event_end_time ? \Carbon\Carbon::parse($reservation->event_end_time)->format('g:i A') : 'N/A',
+                'event_duration' => $reservation->event_start_time && $reservation->event_end_time ? \Carbon\Carbon::parse($reservation->event_start_time)->diffInHours(\Carbon\Carbon::parse($reservation->event_end_time)) . 'h' : 'N/A',
+                'event_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
+            ];
+            $details['selected_services'] = $reservation->eventPlace ? ['Event Place: ' . $reservation->eventPlace->name . ($reservation->event_type ? ' — ' . $reservation->event_type : '')] : [];
+        } else {
+            $reservationMealDetails = $reservation->diningItems
+                ->map(function ($item) {
+                    $mealName = $item->diningMenu?->name ?? 'Meal Item';
+                    return $mealName . ' (x' . ($item->quantity ?? 1) . ')';
+                })
+                ->unique()
+                ->values()
+                ->all();
+            $details += [
+                'dining_area' => $uniqueCsvValue($reservation->dining_area ?? 'N/A'),
+                'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
+                'time' => $uniqueCsvValue($reservation->dining_schedule ?? 'N/A'),
+                'number_of_guests' => $reservation->quantity ?? $reservation->number_of_guests ?? 'N/A',
+            ];
+            $details['selected_services'] = $reservationMealDetails ?: ($reservation->dining_area ? ['Dining Area: ' . $reservation->dining_area] : []);
+        }
+
+        return $details;
+    };
 @endphp
 
 <div class="reservation-management-page animate-fade-in space-y-6">
@@ -200,21 +325,21 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Check-out</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+                        <th class="reservation-actions-column px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($roomReservations as $reservation)
                         <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
-                            <td class="px-6 py-4">
+                            <td class="reservation-actions-cell px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900">
                                 {{ $reservation->room ? $reservation->room->room_number : 'N/A' }}
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}<br><span class="text-xs text-gray-500">{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}</span></td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_out instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_out->format('M d, Y') : $reservation->check_out }}<br><span class="text-xs text-gray-500">{{ $reservation->check_out_time ? \Illuminate\Support\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'Time not set' }}</span></td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}<br><span class="text-xs text-gray-500">{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}</span></td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_out instanceof \Illuminate\Support\Carbon ? $reservation->check_out->format('M d, Y') : $reservation->check_out }}<br><span class="text-xs text-gray-500">{{ $reservation->check_out_time ? \Illuminate\Support\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'Time not set' }}</span></td>
                             <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
                             <td class="px-6 py-4">
                                 <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
@@ -223,8 +348,7 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="relative flex items-center gap-2 text-sm">
-                                    <button type="button" onclick="showReservationDetails(this)" data-guest="{{ $reservation->guest_name }}" data-email="{{ $reservation->guest_email }}" data-phone="{{ $reservation->guest_phone }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-check-in="{{ $reservation->check_in }}" data-check-out="{{ $reservation->check_out }}" data-amount="₱{{ number_format($reservation->total_amount, 2) }}" data-status="{{ ucfirst($reservation->status) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details" aria-label="View details"><i class="fas fa-eye"></i></button>
-                                    <button type="button" onclick='openAdminEditReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation" aria-label="Edit reservation"><i class="fas fa-pen"></i></button>
+                                    <button type="button" onclick="showAdminReservationDetails(this)" data-reservation="{{ e(json_encode($employeeReservationDetails($reservation, 'rooms'))) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details" aria-label="View details"><i class="fas fa-eye"></i></button>
                                     <button type="button" onclick="toggleReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-v"></i></button>
                                     <div class="reservation-action-menu absolute right-0 top-10 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 text-left shadow-lg">
                                         @if($reservation->status === 'pending') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Confirm Reservation</button> @endif
@@ -260,22 +384,26 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amenity</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Time</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Quantity</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+                        <th class="reservation-actions-column px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($amenityReservations as $reservation)
                         <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->amenity?->name ?? '')) }}">
-                            <td class="px-6 py-4">
+                            <td class="reservation-actions-cell px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900">
                                 {{ $reservation->amenity ? $reservation->amenity->name : 'N/A' }}
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->amenity_start_time ? \Illuminate\Support\Carbon::parse($reservation->amenity_start_time)->format('g:i A') : 'Time not set' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->quantity ?? 'N/A' }}</td>
                             <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
                             <td class="px-6 py-4">
                                 <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
@@ -284,10 +412,11 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="relative flex items-center gap-2 text-sm">
-                                    <button type="button" onclick='openAdminEditReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation" aria-label="Edit reservation"><i class="fas fa-pen"></i></button>
+                                    <button type="button" onclick="showAdminReservationDetails(this)" data-reservation="{{ e(json_encode($employeeReservationDetails($reservation, 'amenities'))) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details" aria-label="View details"><i class="fas fa-eye"></i></button>
                                     <button type="button" onclick="toggleReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-v"></i></button>
                                     <div class="reservation-action-menu absolute right-0 top-10 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 text-left shadow-lg">
                                         @if($reservation->status === 'pending') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Confirm</button> @endif
+                                        @if($reservation->status === 'confirmed') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Mark as Completed</button> @endif
                                         @if($reservation->status !== 'cancelled' && $reservation->status !== 'completed') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Cancel</button> @endif
                                         <form action="{{ route('admin.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');"><button type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"><i class="fas fa-trash mr-2 w-4"></i>Delete</button>@csrf @method('DELETE')</form>
                                     </div>
@@ -296,7 +425,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-16 text-center text-gray-500">
+                            <td colspan="8" class="px-6 py-16 text-center text-gray-500">
                                 <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
                                 <p class="text-lg font-medium">No amenity reservations found.</p>
                                 <p class="mt-1 text-sm">Amenity reservations will appear here when guests make a booking.</p>
@@ -314,27 +443,31 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest/Client</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Place</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Type</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Date</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guests</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Start Time</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">End Time</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+                        <th class="reservation-actions-column px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($eventPlaceReservations as $reservation)
                         <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->eventPlace?->name ?? '')) }}">
-                            <td class="px-6 py-4">
+                            <td class="reservation-actions-cell px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900">
                                 {{ $reservation->eventPlace ? $reservation->eventPlace->name : 'N/A' }}
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->number_of_guests ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_type ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_start_time ? \Illuminate\Support\Carbon::parse($reservation->event_start_time)->format('g:i A') : 'Time not set' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_end_time ? \Illuminate\Support\Carbon::parse($reservation->event_end_time)->format('g:i A') : 'Time not set' }}</td>
                             <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
                             <td class="px-6 py-4">
                                 <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
@@ -343,10 +476,11 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="relative flex items-center gap-2 text-sm">
-                                    <button type="button" onclick='openAdminEditReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation" aria-label="Edit reservation"><i class="fas fa-pen"></i></button>
+                                    <button type="button" onclick="showAdminReservationDetails(this)" data-reservation="{{ e(json_encode($employeeReservationDetails($reservation, 'event_place'))) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details" aria-label="View details"><i class="fas fa-eye"></i></button>
                                     <button type="button" onclick="toggleReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-v"></i></button>
                                     <div class="reservation-action-menu absolute right-0 top-10 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 text-left shadow-lg">
                                         @if($reservation->status === 'pending') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Confirm</button> @endif
+                                        @if($reservation->status === 'confirmed') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Mark as Completed</button> @endif
                                         @if($reservation->status !== 'cancelled' && $reservation->status !== 'completed') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Cancel</button> @endif
                                         <form action="{{ route('admin.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');"><button type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"><i class="fas fa-trash mr-2 w-4"></i>Delete</button>@csrf @method('DELETE')</form>
                                     </div>
@@ -355,7 +489,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-16 text-center text-gray-500">
+                            <td colspan="9" class="px-6 py-16 text-center text-gray-500">
                                 <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
                                 <p class="text-lg font-medium">No event place reservations found.</p>
                                 <p class="mt-1 text-sm">Event place reservations will appear here when guests make a booking.</p>
@@ -380,20 +514,20 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Number of Guests</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
+                        <th class="reservation-actions-column px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($diningReservations as $reservation)
                         <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->dining_area ?? '')) }}">
-                            <td class="px-6 py-4">
+                            <td class="reservation-actions-cell px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->dining_area ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon\Carbon ? $reservation->check_in->format('M d, Y') : $reservation->check_in }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->dining_schedule ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->number_of_guests ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $uniqueCsvValue($reservation->dining_area ?? 'N/A') }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_in instanceof \Illuminate\Support\Carbon ? $reservation->check_in->format('F j, Y') : $reservation->check_in }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $uniqueCsvValue($reservation->dining_schedule ?? 'N/A') }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->quantity ?? $reservation->number_of_guests ?? 'N/A' }}</td>
                             <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
                             <td class="px-6 py-4">
                                 <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
@@ -402,10 +536,11 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div class="relative flex items-center gap-2 text-sm">
-                                    <button type="button" onclick='openAdminEditReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation" aria-label="Edit reservation"><i class="fas fa-pen"></i></button>
+                                    <button type="button" onclick="showAdminReservationDetails(this)" data-reservation="{{ e(json_encode($employeeReservationDetails($reservation, 'dining'))) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details" aria-label="View details"><i class="fas fa-eye"></i></button>
                                     <button type="button" onclick="toggleReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-v"></i></button>
                                     <div class="reservation-action-menu absolute right-0 top-10 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 text-left shadow-lg">
                                         @if($reservation->status === 'pending') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Confirm</button> @endif
+                                        @if($reservation->status === 'confirmed') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Mark as Completed</button> @endif
                                         @if($reservation->status !== 'cancelled' && $reservation->status !== 'completed') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Cancel</button> @endif
                                         <form action="{{ route('admin.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');"><button type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"><i class="fas fa-trash mr-2 w-4"></i>Delete</button>@csrf @method('DELETE')</form>
                                     </div>
@@ -427,41 +562,13 @@
     </div>
 </div>
 
-<div id="adminEditReservationModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl">
-        <div class="mb-5 flex items-center justify-between"><h3 class="text-xl font-bold text-gray-800">Edit Reservation</h3><button type="button" onclick="closeAdminEditReservation()" class="text-gray-500 hover:text-gray-800" aria-label="Close edit"><i class="fas fa-times text-xl"></i></button></div>
-        <form id="adminEditReservationForm" method="POST" class="grid grid-cols-1 gap-4 sm:grid-cols-2">@csrf @method('PUT')
-            <input name="guest_name" id="adminEditGuestName" class="rounded-lg border border-gray-300 px-3 py-2" placeholder="Guest name" required>
-            <input name="guest_email" id="adminEditGuestEmail" type="email" class="rounded-lg border border-gray-300 px-3 py-2" placeholder="Guest email" required>
-            <input name="guest_phone" id="adminEditGuestPhone" class="rounded-lg border border-gray-300 px-3 py-2" placeholder="Guest phone" required>
-            <select name="room_id" id="adminEditRoom" class="rounded-lg border border-gray-300 px-3 py-2">
-                <option value="">Select a room</option>
-                @foreach($rooms as $room)<option value="{{ $room->id }}">{{ $room->room_number }} - {{ $room->room_type }}</option>@endforeach
-            </select>
-            <select name="amenity_id" id="adminEditAmenity" class="rounded-lg border border-gray-300 px-3 py-2">
-                <option value="">Select an amenity</option>
-                @foreach(($amenities ?? collect()) as $amenity)<option value="{{ $amenity->id }}">{{ $amenity->name }}</option>@endforeach
-            </select>
-            <select name="event_place_id" id="adminEditEventPlace" class="rounded-lg border border-gray-300 px-3 py-2">
-                <option value="">Select an event place</option>
-                @foreach(($eventPlaces ?? collect()) as $place)<option value="{{ $place->id }}">{{ $place->name }}</option>@endforeach
-            </select>
-            <select name="dining_id" id="adminEditDiningMenu" class="rounded-lg border border-gray-300 px-3 py-2">
-                <option value="">Select a menu</option>
-                @foreach(($diningMenus ?? collect()) as $menu)<option value="{{ $menu->id }}" data-price="{{ (float) $menu->price }}">{{ $menu->name }} - ₱{{ number_format((float) $menu->price, 2) }}</option>@endforeach
-            </select>
-            <input name="dining_area" id="adminEditDiningArea" class="rounded-lg border border-gray-300 px-3 py-2" placeholder="Dining area">
-            <input name="dining_schedule" id="adminEditDiningSchedule" class="rounded-lg border border-gray-300 px-3 py-2" placeholder="Dining schedule">
-            <input name="number_of_guests" id="adminEditNumberOfGuests" type="number" class="rounded-lg border border-gray-300 px-3 py-2" placeholder="Number of guests">
-            <input name="check_in" id="adminEditCheckIn" type="date" class="rounded-lg border border-gray-300 px-3 py-2">
-            <input name="check_in_time" id="adminEditCheckInTime" type="time" class="rounded-lg border border-gray-300 px-3 py-2">
-            <input name="check_out" id="adminEditCheckOut" type="date" class="rounded-lg border border-gray-300 px-3 py-2">
-            <input name="check_out_time" id="adminEditCheckOutTime" type="time" class="rounded-lg border border-gray-300 px-3 py-2">
-            <select name="status" id="adminEditStatus" class="rounded-lg border border-gray-300 px-3 py-2" required><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="checked-in">Checked-in</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select>
-            <input name="total_amount" id="adminEditAmount" type="number" min="0" step="0.01" class="rounded-lg border border-gray-300 px-3 py-2" placeholder="Total amount" required>
-            <textarea name="special_requests" id="adminEditRequests" class="sm:col-span-2 rounded-lg border border-gray-300 px-3 py-2" rows="3" placeholder="Special requests"></textarea>
-            <div class="flex justify-end gap-3 sm:col-span-2"><button type="button" onclick="closeAdminEditReservation()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700">Cancel</button><button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white">Save Changes</button></div>
-        </form>
+<div id="adminReservationDetailsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="max-h-[85vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-gray-200 p-6">
+            <h3 class="text-xl font-bold text-gray-800">Reservation Details</h3>
+            <button type="button" onclick="closeAdminReservationDetails()" class="text-gray-500 hover:text-gray-800" aria-label="Close details"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div id="adminReservationDetailsContent" class="max-h-[70vh] space-y-5 overflow-y-auto p-6"></div>
     </div>
 </div>
 
@@ -472,6 +579,91 @@
 </form>
 
 <script>
+    function formatAdminMoney(value) {
+        const amount = Number(value || 0);
+        return Number.isFinite(amount) ? `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '₱0.00';
+    }
+
+    function formatAdminDate(value) {
+        if (!value || value === 'N/A') return 'N/A';
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function escapeAdminHtml(value) {
+        return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function renderAdminDetailsCard(title, entries) {
+        const entriesHtml = entries.map((entry) => `
+            <div class="rounded-xl border border-gray-200 bg-white p-3">
+                <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">${escapeAdminHtml(entry.label)}</div>
+                <div class="mt-1 text-sm font-semibold text-gray-900">${escapeAdminHtml(entry.value ?? 'N/A')}</div>
+            </div>
+        `).join('');
+        return `<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">${escapeAdminHtml(title)}</h4><div class="grid gap-3 sm:grid-cols-2">${entriesHtml}</div></div>`;
+    }
+
+    function showAdminReservationDetails(button) {
+        const rawReservation = button.getAttribute('data-reservation') || '{}';
+        let reservation;
+        try {
+            reservation = JSON.parse(rawReservation);
+        } catch (error) {
+            const decodedReservation = rawReservation
+                .replace(/&quot;/g, '"')
+                .replace(/&#039;/g, "'")
+                .replace(/&amp;/g, '&');
+            reservation = JSON.parse(decodedReservation);
+        }
+        const services = Array.isArray(reservation.selected_services) && reservation.selected_services.length ? reservation.selected_services : ['No additional services selected'];
+        const detailsSections = [
+            renderAdminDetailsCard('Reservation Information', [
+                { label: 'Reservation ID', value: reservation.id ? `RES-${reservation.id}` : 'N/A' },
+                { label: 'Reservation Date', value: reservation.reservation_date || 'N/A' },
+                { label: 'Status', value: reservation.status || 'N/A' },
+            ]),
+            renderAdminDetailsCard('Guest Information', [
+                { label: 'Full Name', value: reservation.guest_name || 'N/A' },
+                { label: 'Email', value: reservation.guest_email || 'N/A' },
+                { label: 'Mobile Number', value: reservation.guest_phone || 'N/A' },
+                { label: 'Special Request', value: reservation.special_requests || 'No special requests' },
+            ])
+        ];
+        const categoryEntries = {
+            rooms: [
+                ['Room Number', reservation.room_number], ['Room Type', reservation.room_type], ['Check-in Date', formatAdminDate(reservation.room_check_in)], ['Check-in Time', reservation.room_check_in_time], ['Check-out Date', formatAdminDate(reservation.room_check_out)], ['Check-out Time', reservation.room_check_out_time], ['Number of Guests', reservation.room_number_of_guests], ['Room Rate', reservation.room_rate && reservation.room_rate !== 'N/A' ? formatAdminMoney(reservation.room_rate) : 'N/A']
+            ],
+            amenities: [['Amenity', reservation.amenity_name], ['Date', formatAdminDate(reservation.date)], ['Time', reservation.time], ['Quantity', reservation.quantity]],
+            event_place: [['Event Place', reservation.event_place], ['Event Type', reservation.event_type], ['Event Date', formatAdminDate(reservation.event_date)], ['Start Time', reservation.event_start_time], ['End Time', reservation.event_end_time], ['Event Hours', reservation.event_duration], ['Number of Guests', reservation.event_number_of_guests]],
+            dining: [['Dining Area/Table', reservation.dining_area], ['Date', formatAdminDate(reservation.date)], ['Time', reservation.time], ['Number of Guests', reservation.number_of_guests]],
+        };
+        const categoryTitles = { rooms: 'Room Information', amenities: 'Amenity Information', event_place: 'Event Information', dining: 'Dining Information' };
+        detailsSections.push(renderAdminDetailsCard(categoryTitles[reservation.category] || 'Reservation Information', (categoryEntries[reservation.category] || []).map(([label, value]) => ({ label, value: value || 'N/A' }))));
+        const servicesTitle = reservation.category === 'dining' ? 'Menu/Meals' : 'Selected Services';
+        detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">${servicesTitle}</h4><ul class="space-y-2">${services.map((service) => `<li class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">${escapeAdminHtml(service)}</li>`).join('')}</ul></div>`);
+        detailsSections.push(renderAdminDetailsCard('Payment Information', [
+            { label: 'Payment Method', value: reservation.payment_method || 'N/A' },
+            { label: 'Payment Details', value: reservation.payment_details || 'No payment details recorded' },
+            { label: 'Amount Paid', value: formatAdminMoney(reservation.amount_paid || 0) },
+            { label: 'Total Amount', value: reservation.total_amount ? formatAdminMoney(reservation.total_amount) : 'N/A' },
+            { label: 'Status', value: reservation.status || 'N/A' },
+        ]));
+        if (reservation.payment_proof) {
+            detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">Payment Proof</h4><img src="${escapeAdminHtml(reservation.payment_proof)}" alt="Payment proof" class="max-h-72 w-full rounded-xl border border-gray-200 bg-white object-contain p-2" /></div>`);
+        }
+        document.getElementById('adminReservationDetailsContent').innerHTML = detailsSections.join('');
+        const modal = document.getElementById('adminReservationDetailsModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeAdminReservationDetails() {
+        const modal = document.getElementById('adminReservationDetailsModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
     function changeReservationStatus(id, status) {
         if (confirm(`Are you sure you want to change the status to ${status}?`)) {
             var actionTemplate = "{{ route('admin.reservations.status', ['id' => '__ID__']) }}";
@@ -487,37 +679,6 @@
             if (item !== menu) item.classList.add('hidden');
         });
         menu.classList.toggle('hidden');
-    }
-
-    function openAdminEditReservation(reservation) {
-        const form = document.getElementById('adminEditReservationForm');
-        form.action = "{{ route('admin.reservations.update', ['id' => '__ID__']) }}".replace('__ID__', reservation.id);
-        document.getElementById('adminEditGuestName').value = reservation.guest_name || '';
-        document.getElementById('adminEditGuestEmail').value = reservation.guest_email || '';
-        document.getElementById('adminEditGuestPhone').value = reservation.guest_phone || '';
-        document.getElementById('adminEditRoom').value = reservation.room_id || '';
-        document.getElementById('adminEditAmenity').value = reservation.amenity_id || '';
-        document.getElementById('adminEditEventPlace').value = reservation.event_place_id || '';
-        document.getElementById('adminEditDiningMenu').value = reservation.dining_id || '';
-        document.getElementById('adminEditDiningArea').value = reservation.dining_area || '';
-        document.getElementById('adminEditDiningSchedule').value = reservation.dining_schedule || '';
-        document.getElementById('adminEditNumberOfGuests').value = reservation.number_of_guests || '';
-        document.getElementById('adminEditCheckIn').value = reservation.check_in || '';
-        document.getElementById('adminEditCheckInTime').value = reservation.check_in_time ? String(reservation.check_in_time).slice(0, 5) : '';
-        document.getElementById('adminEditCheckOut').value = reservation.check_out || '';
-        document.getElementById('adminEditCheckOutTime').value = reservation.check_out_time ? String(reservation.check_out_time).slice(0, 5) : '';
-        document.getElementById('adminEditStatus').value = reservation.status || 'pending';
-        document.getElementById('adminEditAmount').value = reservation.total_amount || 0;
-        document.getElementById('adminEditRequests').value = reservation.special_requests || '';
-        const modal = document.getElementById('adminEditReservationModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
-
-    function closeAdminEditReservation() {
-        const modal = document.getElementById('adminEditReservationModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
     }
 
     // Tab switching functionality
