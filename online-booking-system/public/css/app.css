@@ -1179,13 +1179,13 @@ nav a:hover{
 
 /* About page */
 .about-page {
-    padding: 96px 20px 86px;
+    padding: 96px 56px 86px;
     background: linear-gradient(135deg, #fbfaf7 0%, #f4f1ec 100%);
     font-family: 'DM Sans', Poppins, sans-serif;
 }
 
-.dining-page { padding: 74px 20px 76px; background: linear-gradient(135deg, #fbfaf7, #f4f1ec); font-family: 'DM Sans', Poppins, sans-serif; }
-.dining-container { width: min(1100px, 100%); margin: 0 auto; }
+.dining-page { padding: 74px 0 76px; background: linear-gradient(135deg, #fbfaf7, #f4f1ec); font-family: 'DM Sans', Poppins, sans-serif; }
+.dining-container { width: 100%; margin: 0; }
 .dining-hero { position: relative; display: grid; grid-template-columns: 40% 60%; aspect-ratio: 4.65 / 1; overflow: hidden; border: 1px solid #e5a72a; border-radius: 15px; background: #fffdf9; box-shadow: 0 12px 26px rgba(66, 43, 28, .1); }
 .dining-hero-copy { position: relative; z-index: 2; padding: 24px 42px; display: flex; flex-direction: column; justify-content: center; }
 .dining-eyebrow { margin: 0 0 9px; color: #d69a25; font-family: Poppins, sans-serif; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
@@ -1228,7 +1228,7 @@ nav a:hover{
 .dining-experience-image { min-height: 205px; }
 
 @media (max-width: 760px) {
-    .dining-page { padding: 94px 14px 48px; }
+    .dining-page { padding: 94px 0 48px; }
     .dining-hero { display: flex; flex-direction: column; aspect-ratio: auto; }
     .dining-experience { grid-template-columns: 1fr; }
     .dining-hero-copy { flex: 0 0 auto; min-height: 0; padding: 27px 25px 42px; }
@@ -1242,7 +1242,7 @@ nav a:hover{
     .dining-booking a { margin-left: 38px; }
 }
 
-.about-container { width: min(1095px, 100%); margin: 0 auto; }
+.about-container { width: 100%; margin: 0; }
 .about-heading { text-align: center; margin-bottom: 16px; }
 .about-kicker { color: #a8751a; font-family: Poppins, sans-serif; font-size: .72rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; margin: 0 0 7px; }
 .about-heading h1 { color: #542d18; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(2.1rem, 4vw, 3.25rem); line-height: 1.1; margin: 0; }
@@ -1271,7 +1271,7 @@ nav a:hover{
 .about-value-card .about-rule { margin-bottom: 8px; }
 
 @media (max-width: 760px) {
-    .about-page { padding: 112px 14px 54px; }
+    .about-page { padding: 112px 32px 54px; }
     .about-feature-image { height: 220px; }
     .about-purpose-grid, .about-values-grid { grid-template-columns: 1fr; }
     .about-card { min-height: 0; }
@@ -1347,6 +1347,181 @@ nav a:hover{
     background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%);
     margin: 12px auto 0;
     border-radius: 2px;
+}
+
+/* ---- Events Page ---- */
+.event-page {
+    padding-top: 74px;
+    background: #fbf8f2;
+    color: #4d2a18;
+    font-family: 'DM Sans', Poppins, sans-serif;
+}
+
+.event-page .hero {
+    height: 360px;
+    justify-content: flex-start;
+    background: #4d2a18;
+}
+
+.event-page .hero .bg-image {
+    object-position: center;
+    filter: saturate(.82);
+}
+
+.event-page .hero .overlay {
+    align-items: flex-start;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 40px 5%;
+    background: linear-gradient(90deg, rgba(38, 18, 10, .72), rgba(38, 18, 10, .2) 62%, rgba(38, 18, 10, .05));
+    text-align: left;
+}
+
+.event-page .hero .overlay h1 {
+    max-width: 430px;
+    margin: 0 0 8px;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 400;
+    line-height: 1.15;
+}
+
+.event-page .hero .overlay p {
+    max-width: 350px;
+    font-size: .78rem;
+    line-height: 1.55;
+}
+
+.event-page .hero .btn {
+    margin-top: 17px;
+    padding: 10px 17px;
+    border-radius: 5px;
+    font-size: .62rem;
+    text-transform: uppercase;
+}
+
+.event-page .offers,
+.event-page .recommendation {
+    width: 100%;
+    margin: 0;
+    padding: 25px 24px 18px;
+}
+
+.event-page .offers {
+    background: #fffdf9;
+}
+
+.event-page .offers h2,
+.event-page .recommendation h2 {
+    margin-bottom: 21px;
+    color: #4d2a18;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 1.35rem;
+    font-weight: 400;
+}
+
+.event-page .offers h2::after,
+.event-page .recommendation h2::after {
+    width: 38px;
+    height: 2px;
+    margin-top: 8px;
+    background: #d99a21;
+}
+
+.event-page .cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 15px;
+}
+
+.event-page .card {
+    overflow: hidden;
+    border: 1px solid #eee5dc;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 7px 18px rgba(75, 44, 28, .09);
+}
+
+.event-page .card:hover {
+    transform: translateY(-3px);
+}
+
+.event-page .card img {
+    height: 142px;
+}
+
+.event-page .card h3 {
+    padding: 12px 12px 4px;
+    color: #4d2a18;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: .76rem;
+}
+
+.event-page .card p {
+    padding: 0 12px 13px;
+    color: #6f655e;
+    font-size: .59rem;
+    line-height: 1.4;
+}
+
+.event-page .recommendation {
+    width: calc(100% - 48px);
+    margin: 0 24px 22px;
+    border-radius: 12px;
+    background: #fff7ed;
+    box-shadow: 0 8px 20px rgba(66, 43, 28, .06);
+}
+
+.event-page .recommendation .cards {
+    gap: 10px;
+}
+
+.event-page .recommendation .card {
+    padding: 16px 14px;
+    text-align: center;
+    background: rgba(255, 255, 255, .65);
+    box-shadow: none;
+}
+
+.event-page .recommendation .card h3 {
+    padding: 0 0 5px;
+    font-family: 'DM Sans', Poppins, sans-serif;
+    font-size: .68rem;
+}
+
+.event-page .recommendation .card p {
+    padding: 0;
+    font-size: .56rem;
+}
+
+@media (max-width: 760px) {
+    .event-page {
+        padding-top: 58px;
+    }
+
+    .event-page .hero {
+        height: 390px;
+    }
+
+    .event-page .hero .overlay {
+        padding: 30px 24px;
+    }
+
+    .event-page .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .event-page .offers,
+    .event-page .recommendation {
+        padding-right: 14px;
+        padding-left: 14px;
+    }
+
+    .event-page .recommendation {
+        width: calc(100% - 28px);
+        margin-right: 14px;
+        margin-left: 14px;
+    }
 }
 
 .reservation-page {
@@ -2071,6 +2246,413 @@ nav a:hover{
     padding:0 16px 18px;
     color: var(--muted);
     font-weight:500;
+}
+
+.home-page {
+    margin-top: 64px;
+    color: #332018;
+    background: #fbf8f2;
+    font-family: 'DM Sans', Poppins, sans-serif;
+}
+
+.home-hero {
+    position: relative;
+    min-height: 420px;
+    overflow: hidden;
+}
+
+.home-hero > img {
+    width: 100%;
+    height: 420px;
+    display: block;
+    object-fit: cover;
+    object-position: center;
+}
+
+.home-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(10, 7, 5, .78) 0%, rgba(10, 7, 5, .45) 40%, rgba(10, 7, 5, .08) 75%), linear-gradient(0deg, rgba(10, 7, 5, .2), transparent 40%);
+}
+
+.home-hero-copy {
+    position: absolute;
+    top: 50%;
+    left: max(9%, calc((100% - 1200px) / 2));
+    width: min(430px, 48%);
+    color: #fff;
+    transform: translateY(-50%);
+}
+
+.home-eyebrow,
+.home-booking-card > p {
+    margin: 0 0 10px;
+    color: #efc66e;
+    font-size: .67rem;
+    font-weight: 700;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+}
+
+.home-hero-copy h1 {
+    margin: 0 0 10px;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: clamp(2rem, 4vw, 3.05rem);
+    font-weight: 400;
+    line-height: 1.12;
+}
+
+.home-hero-copy > p:not(.home-eyebrow) {
+    max-width: 370px;
+    margin: 0 0 20px;
+    color: rgba(255, 255, 255, .9);
+    font-size: .8rem;
+    line-height: 1.55;
+}
+
+.home-primary-btn,
+.home-secondary-btn,
+.home-light-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: .61rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.home-primary-btn {
+    padding: 10px 16px;
+    border-radius: 6px;
+    color: #fff;
+    background: #9a0d1b;
+}
+
+.home-primary-btn span,
+.home-light-btn span {
+    font-size: .95rem;
+}
+
+.home-rooms {
+    width: 100%;
+    margin: 0;
+    padding: 18px 24px 16px;
+}
+
+.home-section-heading {
+    text-align: center;
+}
+
+.home-section-heading h2,
+.home-trust-copy > h2 {
+    margin: 0;
+    color: #4c2b1d;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 1.45rem;
+}
+
+.home-section-heading p {
+    margin: 4px 0 0;
+    color: #776c65;
+    font-size: .65rem;
+}
+
+.home-heading-rule {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin: 5px auto 0;
+    color: #d49a28;
+    font-size: .62rem;
+}
+
+.home-heading-rule span {
+    width: 78px;
+    height: 1px;
+    background: #e4c27f;
+}
+
+.home-room-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 12px;
+}
+
+.home-room-card {
+    position: relative;
+    overflow: hidden;
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    border: 1px solid #eee5dc;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 7px 18px rgba(75, 44, 28, .08);
+}
+
+.home-room-image {
+    position: relative;
+    height: 125px;
+    overflow: hidden;
+}
+
+.home-room-image img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.home-room-image > span {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 7px;
+    border-radius: 3px;
+    color: #fff;
+    background: #8f0e16;
+    font-size: .48rem;
+    font-weight: 700;
+}
+
+.home-room-content {
+    position: relative;
+    min-height: 77px;
+    padding: 10px 12px;
+}
+
+.home-room-content h3 {
+    margin: 0 0 3px;
+    color: #3d2419;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: .78rem;
+}
+
+.home-room-content strong {
+    color: #86111b;
+    font-size: .67rem;
+}
+
+.home-room-content small {
+    color: #5f554f;
+    font-size: .58rem;
+    font-weight: 400;
+}
+
+.home-room-content p {
+    max-width: 210px;
+    margin: 4px 0 0;
+    color: #6f655e;
+    font-size: .59rem;
+    line-height: 1.35;
+}
+
+.home-room-arrow {
+    position: absolute;
+    right: 10px;
+    bottom: 12px;
+    display: grid;
+    place-items: center;
+    width: 23px;
+    height: 23px;
+    border: 1px solid #eadccf;
+    border-radius: 7px;
+    color: #8f0e16;
+    font-size: .72rem;
+}
+
+.home-secondary-btn {
+    display: flex;
+    width: fit-content;
+    margin: 12px auto 0;
+    padding: 7px 15px;
+    border-radius: 6px;
+    color: #fff;
+    background: #8f0e16;
+    font-size: .55rem;
+}
+
+.home-trust-section {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 18px;
+    width: 100%;
+    margin: 0;
+    padding: 0 24px 14px;
+}
+
+.home-trust-copy {
+    padding: 8px 0 0;
+}
+
+.home-trust-copy > h2 {
+    font-size: 1.25rem;
+}
+
+.home-accent-line {
+    width: 24px;
+    height: 2px;
+    margin: 5px 0 10px;
+    background: #e3aa37;
+}
+
+.home-trust-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.home-trust-grid article {
+    display: flex;
+    gap: 8px;
+    padding: 9px 7px;
+    border: 1px solid #eee5dc;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, .7);
+}
+
+.home-trust-grid article > i {
+    display: grid;
+    place-items: center;
+    flex: 0 0 27px;
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    color: #8f0e16;
+    background: #f5e1df;
+    font-size: .72rem;
+}
+
+.home-trust-grid h3 {
+    margin: 0 0 3px;
+    color: #493025;
+    font-size: .57rem;
+}
+
+.home-trust-grid p {
+    margin: 0;
+    color: #756b64;
+    font-size: .52rem;
+    line-height: 1.35;
+}
+
+.home-booking-card {
+    position: relative;
+    overflow: hidden;
+    min-height: 104px;
+    padding: 12px 15px;
+    border-radius: 9px;
+    color: #fff;
+    background: #780914;
+    box-shadow: 0 8px 18px rgba(86, 7, 16, .16);
+}
+
+.home-booking-card::after {
+    position: absolute;
+    right: 25px;
+    bottom: -30px;
+    width: 125px;
+    height: 125px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .06);
+    content: '';
+}
+
+.home-booking-card > p {
+    margin-bottom: 4px;
+    font-size: .52rem;
+}
+
+.home-booking-card h2 {
+    position: relative;
+    z-index: 1;
+    margin: 0 0 3px;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.15;
+}
+
+.home-booking-card > span {
+    position: relative;
+    z-index: 1;
+    display: block;
+    max-width: 250px;
+    margin-bottom: 6px;
+    color: rgba(255, 255, 255, .78);
+    font-size: .52rem;
+    line-height: 1.3;
+}
+
+.home-light-btn {
+    position: relative;
+    z-index: 1;
+    padding: 6px 9px;
+    border-radius: 4px;
+    color: #74101a;
+    background: #fff0ce;
+    font-size: .5rem;
+}
+
+.home-booking-icon {
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    z-index: 1;
+    color: rgba(255, 255, 255, .86);
+    font-size: 2.3rem;
+    transform: translateY(-50%);
+}
+
+.home-highlights {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 9px max(6%, calc((100% - 1180px) / 2));
+    background: #f5eadb;
+}
+
+.home-highlights article {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.home-highlights article > i {
+    color: #8f0e16;
+    font-size: .82rem;
+}
+
+.home-highlights strong,
+.home-highlights span {
+    display: block;
+}
+
+.home-highlights strong {
+    color: #4d3328;
+    font-size: .55rem;
+}
+
+.home-highlights span {
+    color: #796d65;
+    font-size: .49rem;
+}
+
+@media (max-width: 760px) {
+    .home-page { margin-top: 58px; }
+    .home-hero, .home-hero > img { min-height: 390px; height: 390px; }
+    .home-hero-copy { left: 8%; width: 82%; }
+    .home-rooms, .home-trust-section { padding-right: 14px; padding-left: 14px; }
+    .home-room-grid, .home-trust-section { grid-template-columns: 1fr; }
+    .home-room-grid { gap: 12px; }
+    .home-room-image { height: 170px; }
+    .home-trust-grid { grid-template-columns: 1fr; }
+    .home-booking-icon { right: 24px; }
+    .home-highlights { grid-template-columns: repeat(2, 1fr); padding: 12px 14px; }
 }
 
 .featured-room-grid {

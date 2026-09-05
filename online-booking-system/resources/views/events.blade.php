@@ -2,6 +2,7 @@
 
 @section('content')
 
+<div class="event-page">
 @include('partials.section-hero', [
     'title' => 'EVENTS',
     'subtitle' => 'Celebrate birthdays, gatherings, and special moments—made effortless.',
@@ -50,6 +51,8 @@
         </div>
     </div>
 </section>
+
+ </div>
 
 @endsection
 
