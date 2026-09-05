@@ -2,13 +2,8 @@
 
 namespace App\Http\Controllers;
 
-<<<<<<< HEAD
-use App\Events\GuestLoggedIn;
-use App\Models\User;
-=======
 use App\Models\Guest;
 use App\Models\Staff;
->>>>>>> 3554ed5d73a3d344021a784871285d5478192087
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -88,7 +83,6 @@ class AuthController extends Controller
             'password' => $credentials['password'],
         ], $request->boolean('remember'))) {
             $request->session()->regenerate();
-            GuestLoggedIn::dispatch(Auth::user(), now());
 
             return redirect()->route('home');
         }
@@ -125,7 +119,6 @@ class AuthController extends Controller
         // auto-login and secure session
         Auth::guard('guest')->login($user);
         $request->session()->regenerate();
-        GuestLoggedIn::dispatch($user, now());
 
         return redirect()->route('home');
     }
@@ -142,11 +135,7 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-<<<<<<< HEAD
-        return redirect()->route('home');
-=======
         return redirect()->route($isGuest ? 'home' : 'login');
->>>>>>> fba0bac772e21d4cdb5277a614d17e3c34f068ef
     }
 }
 

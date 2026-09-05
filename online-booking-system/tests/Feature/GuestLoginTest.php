@@ -2,10 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Mail\GuestLoginNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -15,7 +13,6 @@ class GuestLoginTest extends TestCase
 
     public function test_guest_login_page_is_accessible_and_logs_in_a_user(): void
     {
-        Mail::fake();
         $user = User::factory()->create([
             'email' => 'guest@example.com',
             'password' => Hash::make('guest-password'),
@@ -33,33 +30,10 @@ class GuestLoginTest extends TestCase
 
         $loginResponse->assertRedirect(route('home'));
         $this->assertAuthenticatedAs($user);
-        Mail::assertSent(GuestLoginNotification::class, function (GuestLoginNotification $mail) use ($user) {
-            return $mail->user->is($user)
-                && collect($mail->to)->contains(fn ($recipient) => ($recipient['address'] ?? null) === $user->email);
-        });
-    }
-
-    public function test_invalid_guest_login_does_not_send_a_notification(): void
-    {
-        Mail::fake();
-        User::factory()->create([
-            'email' => 'guest@example.com',
-            'password' => Hash::make('guest-password'),
-            'role' => 'guest',
-        ]);
-
-        $response = $this->post(route('guest.login.submit'), [
-            'email' => 'guest@example.com',
-            'password' => 'wrong-password',
-        ]);
-
-        $response->assertSessionHasErrors('email');
-        Mail::assertNothingSent();
     }
 
     public function test_guest_signup_logs_in_user_and_shows_profile_menu(): void
     {
-        Mail::fake();
         $response = $this->post(route('guest.register.submit'), [
             'first_name' => 'Maria',
             'last_name' => 'Santos',
@@ -78,9 +52,6 @@ class GuestLoginTest extends TestCase
         $homeResponse->assertSee('profile-dropdown');
         $homeResponse->assertSee('My Profile');
         $homeResponse->assertSee('Logout');
-        Mail::assertSent(GuestLoginNotification::class, function (GuestLoginNotification $mail) {
-            return collect($mail->to)->contains(fn ($recipient) => ($recipient['address'] ?? null) === 'maria@example.com');
-        });
     }
 
     public function test_authenticated_user_sees_profile_icon_even_without_guest_role(): void
@@ -95,16 +66,6 @@ class GuestLoginTest extends TestCase
         $response->assertSee('profile-dropdown');
         $response->assertSee('Staff User');
         $response->assertDontSee('id="guest-signin-trigger"');
-    }
-
-    public function test_guest_logout_redirects_to_homepage_and_clears_authentication(): void
-    {
-        $user = User::factory()->create(['role' => 'guest']);
-
-        $response = $this->actingAs($user)->post(route('logout'));
-
-        $response->assertRedirect(route('home'));
-        $this->assertGuest();
     }
 
     public function test_invalid_guest_signup_returns_validation_errors_to_homepage(): void

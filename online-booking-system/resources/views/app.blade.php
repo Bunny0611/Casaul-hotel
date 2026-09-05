@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Casaul Hotel</title>
 
-@vite(['resources/css/app.css', 'resources/js/app.js'])
+<link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -32,10 +32,7 @@
 
     <div class="logo">
         <img src="{{ asset('image/LOGO.png') }}" alt="Casaul Hotel Logo" class="logo-img">
-        <div class="logo-text">
-            <span>CASAUL HOTEL</span>
-            <small>LUXURY &amp; COMFORT</small>
-        </div>
+        CASAUL HOTEL
     </div>
 
     <ul>
@@ -76,27 +73,13 @@
                     <span class="profile-trigger-avatar">
                         <i class="fas fa-user-circle"></i>
                     </span>
-<<<<<<< HEAD
-                    <span class="profile-trigger-name">
-                        {{ trim((auth()->user()->first_name ?? '') . ' ' . (auth()->user()->middle_initial ?? '') . ' ' . (auth()->user()->last_name ?? '')) ?: auth()->user()->name }}
-                    </span>
-                    <i class="fas fa-chevron-down profile-trigger-caret"></i>
-=======
->>>>>>> 3554ed5d73a3d344021a784871285d5478192087
                 </button>
                 <div class="profile-menu" id="profile-menu" role="menu" aria-labelledby="profile-trigger">
                     <div class="profile-menu-header">
                         <span class="profile-menu-avatar"><i class="fas fa-user-circle"></i></span>
                         <div>
-<<<<<<< HEAD
-                            <p class="profile-menu-name">
-                                {{ trim((auth()->user()->first_name ?? '') . ' ' . (auth()->user()->middle_initial ?? '') . ' ' . (auth()->user()->last_name ?? '')) ?: auth()->user()->name }}
-                            </p>
-                            <p class="profile-menu-email">{{ auth()->user()->email }}</p>
-=======
                             <p class="profile-menu-name">{{ auth('guest')->user()->name }}</p>
                             <p class="profile-menu-email">{{ auth('guest')->user()->email }}</p>
->>>>>>> 3554ed5d73a3d344021a784871285d5478192087
                         </div>
                     </div>
                     @if(auth('guest')->check())
