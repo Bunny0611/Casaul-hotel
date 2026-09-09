@@ -1205,7 +1205,7 @@ nav a:hover{
 }
 
 .dining-page { padding: 74px 0 76px; background: linear-gradient(135deg, #fbfaf7, #f4f1ec); font-family: 'DM Sans', Poppins, sans-serif; }
-.dining-container { width: 100%; margin: 0; }
+.dining-container { width: min(1200px, 92%); margin: 0 auto; }
 .dining-hero { position: relative; display: grid; grid-template-columns: 40% 60%; aspect-ratio: 4.65 / 1; overflow: hidden; border: 1px solid #e5a72a; border-radius: 15px; background: #fffdf9; box-shadow: 0 12px 26px rgba(66, 43, 28, .1); }
 .dining-hero-copy { position: relative; z-index: 2; padding: 24px 42px; display: flex; flex-direction: column; justify-content: center; }
 .dining-eyebrow { margin: 0 0 9px; color: #d69a25; font-family: Poppins, sans-serif; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
@@ -3183,9 +3183,8 @@ body:has(.home-reference-page) nav { background: #a4000b; box-shadow: none; }
 .home-reference-eyebrow, .home-section-eyebrow { margin: 0 0 10px; color: #d7a337; font-size: .62rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .home-reference-hero h1 { margin: 0; color: #fffdf9; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(2.2rem, 5vw, 4rem); line-height: .99; }
 .home-reference-hero-copy > p:not(.home-reference-eyebrow) { margin: 16px 0 22px; color: rgba(255,255,255,.9); font-size: .9rem; line-height: 1.6; }
-.home-gold-button, .home-outline-button { display: inline-flex; align-items: center; gap: 18px; padding: 12px 18px; border-radius: 3px; color: #fff; background: #c6972c; font-size: .6rem; font-weight: 800; text-decoration: none; text-transform: uppercase; }
+.home-gold-button, .home-outline-button { display: inline-flex; align-items: center; justify-content: center; gap: 0; padding: 12px 18px; border-radius: 3px; color: #fff; background: #c6972c; font-size: .6rem; font-weight: 800; text-decoration: none; text-transform: uppercase; }
 .home-gold-button:hover { background: #dfaf42; }
-.home-gold-button span, .home-outline-button span, .home-featured-heading a span, .home-experience-card b span, .home-room-card b span { font-size: .8rem; }
 .home-welcome-section { display: grid; grid-template-columns: .82fr 1.18fr; align-items: center; gap: 64px; width: min(1120px, calc(100% - 56px)); margin: 0 auto; padding: 112px 0 62px; }
 .home-welcome-copy h2 { margin: 0; color: #33251f; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.8rem, 3.4vw, 2.6rem); }
 .home-welcome-copy h2 strong { color: #a20a12; font-weight: 400; }
