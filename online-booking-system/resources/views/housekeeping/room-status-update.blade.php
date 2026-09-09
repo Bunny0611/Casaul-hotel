@@ -12,6 +12,10 @@
             return in_array($status, ['vr', 'vacant_ready', 'available', 'vacant'], true)
                 && in_array($cleaning, ['clean', 'ready', '', null], true);
         })->count(),
+        'VC' => $rooms->filter(function ($room) {
+            $status = strtolower((string) ($room->status ?? ''));
+            return in_array($status, ['vc', 'vacant_clean'], true);
+        })->count(),
         'VD' => $rooms->filter(function ($room) {
             $status = strtolower((string) ($room->status ?? ''));
             $cleaning = strtolower((string) ($room->cleaning_status ?? ''));
@@ -30,17 +34,41 @@
             return in_array($status, ['od', 'occupied_dirty', 'occupied'], true)
                 && $cleaning === 'dirty';
         })->count(),
+        'HSD' => $rooms->filter(function ($room) {
+            $status = strtolower((string) ($room->status ?? ''));
+            return in_array($status, ['hsd', 'house_use_dirty'], true);
+        })->count(),
+        'HSUC' => $rooms->filter(function ($room) {
+            $status = strtolower((string) ($room->status ?? ''));
+            return in_array($status, ['hsuc', 'house_use_clean'], true);
+        })->count(),
         'OOO' => $rooms->filter(function ($room) {
             $status = strtolower((string) ($room->status ?? ''));
             $cleaning = strtolower((string) ($room->cleaning_status ?? ''));
             return in_array($status, ['ooo', 'out_of_order', 'maintenance', 'out of order'], true)
                 || in_array($cleaning, ['out_of_order', 'out of order'], true);
         })->count(),
-        'BNO' => $rooms->filter(function ($room) {
+        'BLO' => $rooms->filter(function ($room) {
             $status = strtolower((string) ($room->status ?? ''));
             $cleaning = strtolower((string) ($room->cleaning_status ?? ''));
             return in_array($status, ['blo', 'blocked', 'unavailable'], true)
                 || $cleaning === 'blocked';
+        })->count(),
+        'NS' => $rooms->filter(function ($room) {
+            $status = strtolower((string) ($room->status ?? ''));
+            return in_array($status, ['ns', 'no_show'], true);
+        })->count(),
+        'SO' => $rooms->filter(function ($room) {
+            $status = strtolower((string) ($room->status ?? ''));
+            return in_array($status, ['so', 'slept_out'], true);
+        })->count(),
+        'HU' => $rooms->filter(function ($room) {
+            $status = strtolower((string) ($room->status ?? ''));
+            return in_array($status, ['hu', 'house_use'], true);
+        })->count(),
+        'DND' => $rooms->filter(function ($room) {
+            $status = strtolower((string) ($room->status ?? ''));
+            return in_array($status, ['dnd', 'do_not_disturb'], true);
         })->count(),
     ];
 
@@ -52,38 +80,86 @@
         'OOO' => ['class' => 'badge-purple', 'label' => 'Out of Order', 'dot' => '#604bb9'],
         'BNO' => ['class' => 'badge-slate', 'label' => 'Blocked', 'dot' => '#4b5864'],
     ];
+
+    $statusCards = [
+        ['code' => 'VR', 'class' => 'card-vr'],
+        ['code' => 'VC', 'class' => 'card-vr'],
+        ['code' => 'VD', 'class' => 'card-vd'],
+        ['code' => 'OC', 'class' => 'card-oc'],
+        ['code' => 'OD', 'class' => 'card-od'],
+        ['code' => 'HSD', 'class' => 'card-vd'],
+        ['code' => 'HSUC', 'class' => 'card-vr'],
+        ['code' => 'OOO', 'class' => 'card-ooo'],
+        ['code' => 'BLO', 'class' => 'card-bno'],
+        ['code' => 'NS', 'class' => 'card-bno'],
+        ['code' => 'SO', 'class' => 'card-bno'],
+        ['code' => 'HU', 'class' => 'card-bno'],
+        ['code' => 'DND', 'class' => 'card-bno'],
+    ];
 @endphp
 
 <style>
 .room-status-page { display:flex; gap:22px; width:100%; max-width:1500px; margin:0 auto; padding:18px 18px 0; color:#24313b; font-family:"Segoe UI", sans-serif; }
-.room-status-main { flex:1 1 auto; min-width:0; background:rgba(255,255,255,0.45); border:1px solid #e6e0de; border-radius:16px; box-shadow:0 12px 28px rgba(24,34,41,0.04); padding:18px 18px 12px; }
+.room-status-main { flex:1 1 auto; min-width:0; background:#f2f3f1; border:1px solid #dfe3df; border-radius:18px; box-shadow:0 10px 22px rgba(24,34,41,0.03); padding:20px 20px 16px; }
 .room-status-aside { display:none; width:260px; flex-shrink:0; background:rgba(255,255,255,0.45); border:1px solid #e6e0de; border-radius:16px; box-shadow:0 12px 28px rgba(24,34,41,0.04); padding:16px 14px 10px; }
 .room-status-page.has-sidebar { display:flex; }
 .room-status-page.has-sidebar .room-status-aside { display:block; }
 .status-header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
 .status-title-wrap { display:flex; align-items:center; gap:12px; }
-.status-title-icon { display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:10px; background:#edf0ee; color:#263a3f; }
-.status-title-wrap h2 { margin:0; color:#2a3a46; font-size:24px; font-weight:700; }
-.status-title-wrap p { margin:2px 0 0; color:#808c95; font-size:12px; }
-.status-view-btn { display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border:1px solid #cfe4d8; border-radius:10px; background:#edf9f2; color:#1f4f41; font-size:12px; font-weight:600; text-decoration:none; }
-.status-summary { display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:12px; margin-bottom:18px; }
-.summary-card { min-height:96px; padding:12px 10px 9px; border-radius:10px; border:1px solid transparent; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
-.summary-card .code { display:inline-flex; align-items:center; justify-content:center; min-width:52px; padding:8px 10px; border-radius:8px; background:rgba(255,255,255,0.5); color:#1f2d38; font-weight:700; font-size:12px; letter-spacing:0.04em; margin-bottom:8px; }
-.summary-card .count { color:#1f2d38; font-size:20px; font-weight:800; line-height:1; }
-.card-vr { background:#dff5e7; border-color:#ccebd2; }
-.card-vd { background:#f3e9c9; border-color:#eedda7; }
-.card-oc { background:#dfeaf6; border-color:#cfe0f5; }
-.card-od { background:#f7dcdc; border-color:#efc1c4; }
-.card-ooo { background:#f0e6ff; border-color:#ddd0ff; }
-.card-bno { background:#e8ebee; border-color:#dfe6eb; }
-.toolbar { display:flex; align-items:center; gap:12px; padding:10px 0 14px; margin-bottom:12px; }
-.toolbar-search { flex:1 1 250px; position:relative; }
+.status-title-icon { display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:10px; background:#f0f1f0; color:#2d3d45; border:1px solid #dde2de; }
+.status-title-wrap h2 { margin:0; color:#2b3742; font-size:28px; font-weight:800; line-height:1.1; }
+.status-title-wrap p { margin:4px 0 0; color:#7b838a; font-size:13px; }
+.status-view-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border:1px solid #c5dcc9; border-radius:12px; background:#dff2e3; color:#2c7b5f; font-size:14px; font-weight:700; text-decoration:none; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.18); }
+.status-summary { margin:18px 0 0; }
+.status-carousel { display:flex; align-items:center; gap:12px; }
+.status-carousel-viewport { flex:1; overflow:hidden; border-radius:14px; }
+.status-carousel-track { display:flex; align-items:center; gap:10px; transition:transform 0.35s ease; will-change:transform; }
+.status-pill { flex:0 0 auto; min-width:122px; min-height:56px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 14px; border-radius:14px; border:1px solid rgba(98, 105, 109, 0.12); box-shadow:0 4px 10px rgba(17, 24, 39, 0.04); }
+.status-pill-content { display:flex; align-items:center; gap:8px; }
+.status-pill-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.status-pill-label { font-size:13px; font-weight:800; letter-spacing:0.02em; color:#2d3740; }
+.status-pill-count { font-size:15px; font-weight:800; letter-spacing:-0.04em; color:#2d3740; }
+.status-carousel-nav { flex-shrink:0; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #d9dedb; box-shadow:0 3px 8px rgba(17, 24, 39, 0.06); color:#5e666f; font-size:14px; font-weight:700; cursor:pointer; }
+.status-carousel-nav:hover { background:#f7faf8; }
+.status-carousel-nav:disabled { opacity:0.4; cursor:not-allowed; }
+.card-vr { background:#e4efe2; }
+.card-vr .status-pill-dot { background:#5d9c6c; }
+.card-vd { background:#efe7d0; }
+.card-vd .status-pill-dot { background:#b78a2c; }
+.card-oc { background:#dfeaf5; }
+.card-oc .status-pill-dot { background:#5e8dc8; }
+.card-od { background:#f3dfe0; }
+.card-od .status-pill-dot { background:#cb6b61; }
+.card-ooo { background:#e8e0f0; }
+.card-ooo .status-pill-dot { background:#7b63b8; }
+.card-bno { background:#e4e7ea; }
+.card-bno .status-pill-dot { background:#64717b; }
+
+.toolbar { display:flex; align-items:center; gap:10px; padding:10px 0 14px; margin-bottom:12px; }
+.toolbar-search { flex:1 1 220px; position:relative; }
 .toolbar-search .search-icon { position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#89949c; font-size:13px; }
-.toolbar-search input, .toolbar-select select { width:100%; min-height:36px; border:1px solid #dfe4e8; border-radius:10px; background:#fff; color:#53606c; font-size:13px; outline:none; padding:0 12px; }
+.toolbar-search input, .toolbar-select select { width:100%; min-height:34px; border:1px solid #dfe4e8; border-radius:10px; background:#fff; color:#53606c; font-size:13px; outline:none; padding:0 12px; }
 .toolbar-search input { padding-left:38px; }
-.toolbar-select { position:relative; flex:0 0 160px; }
+.toolbar-select { position:relative; flex:0 0 150px; }
 .toolbar-select select { appearance:none; background-image:linear-gradient(45deg, transparent 50%, #6e7a83 50%), linear-gradient(135deg, #6e7a83 50%, transparent 50%); background-position:calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px); background-size:6px 6px, 6px 6px; background-repeat:no-repeat; padding-right:32px; }
-.filter-clear { border:1px solid #dfe4e8; background:#fff; border-radius:10px; color:#4b5862; font-size:13px; font-weight:600; padding:9px 14px; cursor:pointer; }
+.filter-clear {
+    border:1px solid #dfe4e8;
+    background:#fff;
+    border-radius:10px;
+    color:#4b5862;
+    font-size:12px;
+    font-weight:700;
+    padding:0 18px;
+    min-height:34px;
+    min-width:116px;
+    line-height:1;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    white-space:nowrap;
+    box-sizing:border-box;
+}
 .room-table-wrap { border:1px solid #e7e0dd; border-radius:12px; overflow:hidden; background:#fff; }
 .room-table { width:100%; border-collapse:collapse; table-layout:fixed; }
 .room-table thead th { padding:12px 14px; background:#f2f4f5; border-bottom:1px solid #e7e0dd; color:#66737d; font-size:11px; text-transform:uppercase; font-weight:700; text-align:left; letter-spacing:0.06em; }
@@ -150,7 +226,7 @@
 .cancel-button, .confirm-button { min-height:42px; padding:0 17px; border-radius:9px; font-size:12px; font-weight:750; cursor:pointer; }
 .cancel-button { border:1px solid #ddd5d1; background:#fff; color:#665a54; }
 .confirm-button { border:0; background:linear-gradient(135deg, #8b2d1f, #b84e2c); color:#fff; }
-@media (max-width:1200px) { .room-status-page { flex-direction:column; } .room-status-aside { width:100%; } }
+@media (max-width:1200px) { .room-status-page { flex-direction:column; } .room-status-aside { width:100%; } .status-summary { grid-template-columns:repeat(4, minmax(0, 1fr)); } }
 @media (max-width:768px) { .status-summary { grid-template-columns:repeat(3, minmax(0, 1fr)); } .toolbar { flex-wrap:wrap; } .toolbar-select { flex:1 1 180px; } }
 @media (max-width:560px) { .status-summary { grid-template-columns:repeat(2, minmax(0, 1fr)); } .status-header { flex-direction:column; align-items:flex-start; } }
 </style>
@@ -171,21 +247,59 @@
         </div>
 
         <div class="status-summary">
-            <div class="summary-card card-vr"><div class="code">VR</div><div class="count">{{ $statusCounts['VR'] }}</div></div>
-            <div class="summary-card card-vd"><div class="code">VD</div><div class="count">{{ $statusCounts['VD'] }}</div></div>
-            <div class="summary-card card-oc"><div class="code">OC</div><div class="count">{{ $statusCounts['OC'] }}</div></div>
-            <div class="summary-card card-od"><div class="code">OD</div><div class="count">{{ $statusCounts['OD'] }}</div></div>
-            <div class="summary-card card-ooo"><div class="code">OOO</div><div class="count">{{ $statusCounts['OOO'] }}</div></div>
-            <div class="summary-card card-bno"><div class="code">BNO</div><div class="count">{{ $statusCounts['BNO'] }}</div></div>
+            <div class="status-carousel">
+                <button type="button" class="status-carousel-nav" id="statusCarouselPrev" aria-label="Show previous statuses">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="status-carousel-viewport">
+                    <div class="status-carousel-track" id="statusCarouselTrack">
+                        @foreach($statusCards as $statusCard)
+                            <div class="status-pill {{ $statusCard['class'] }}">
+                                <div class="status-pill-content">
+                                    <span class="status-pill-dot"></span>
+                                    <span class="status-pill-label">{{ $statusCard['code'] }}</span>
+                                </div>
+                                <span class="status-pill-count">{{ $statusCounts[$statusCard['code']] ?? 0 }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <button type="button" class="status-carousel-nav" id="statusCarouselNext" aria-label="Show next statuses">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
         </div>
 
-        <div class="toolbar">
-            <div class="toolbar-search"><i class="fas fa-search search-icon"></i><input type="text" placeholder="Search room number..." aria-label="Search room number"></div>
-            <div class="toolbar-select"><select aria-label="Room Type"><option>All</option>@foreach($rooms->pluck('room_type')->filter()->unique()->sort() as $type)<option>{{ $type }}</option>@endforeach</select></div>
-            <div class="toolbar-select"><select aria-label="Room Status"><option>All</option><option>Vacant Ready</option><option>Vacant Dirty</option><option>Occupied Clean</option><option>Occupied Dirty</option><option>Out of Order</option><option>Blocked</option></select></div>
-            <div class="toolbar-select"><select aria-label="Cleaning Status"><option>All</option><option>Clean</option><option>Dirty</option><option>In Progress</option></select></div>
-            <button type="button" class="filter-clear"><i class="fas fa-filter"></i> Clear Filters</button>
-        </div>
+        <form method="GET" action="{{ route('housekeeping.room-status-update') }}" class="toolbar" id="roomStatusFilters">
+            <div class="toolbar-search">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" name="search" value="{{ old('search', $search ?? '') }}" placeholder="Search room number..." aria-label="Search room number">
+            </div>
+            <div class="toolbar-select">
+                <select name="room_type" aria-label="Room Type">
+                    <option value="All">All</option>
+                    @foreach($roomTypes as $type)
+                        <option value="{{ $type }}" {{ $roomType === $type ? 'selected' : '' }}>{{ $type }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="toolbar-select">
+                <select name="room_status" aria-label="Room Status">
+                    @foreach($roomStatusOptions as $option)
+                        <option value="{{ $option }}" {{ $roomStatus === $option ? 'selected' : '' }}>{{ $option }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="toolbar-select">
+                <select name="cleaning_status" aria-label="Cleaning Status">
+                    @foreach($cleaningOptions as $option)
+                        <option value="{{ $option }}" {{ $cleaningStatus === $option ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $option)) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <button type="submit" class="filter-clear"><i class="fas fa-filter"></i> Apply Filters</button>
+            <a href="{{ route('housekeeping.room-status-update') }}" class="filter-clear" style="display:inline-flex; align-items:center; justify-content:center; text-decoration:none;"> <i class="fas fa-times"></i> Clear Filters</a>
+        </form>
 
         <div class="room-table-wrap">
             <table class="room-table">
@@ -423,6 +537,63 @@ document.querySelectorAll('.custom-select').forEach(bindCustomSelect);
 document.addEventListener('click', function () {
     document.querySelectorAll('.custom-select.open').forEach((select) => select.classList.remove('open'));
 });
+
+const statusCarouselTrack = document.getElementById('statusCarouselTrack');
+const statusCarouselPrev = document.getElementById('statusCarouselPrev');
+const statusCarouselNext = document.getElementById('statusCarouselNext');
+
+if (statusCarouselTrack && statusCarouselPrev && statusCarouselNext) {
+    const pills = Array.from(statusCarouselTrack.querySelectorAll('.status-pill'));
+
+    if (pills.length) {
+        const viewport = statusCarouselTrack.parentElement;
+        const gap = 10;
+
+        const getVisibleCount = () => {
+            if (window.innerWidth < 640) {
+                return 3;
+            }
+            if (window.innerWidth < 980) {
+                return 4;
+            }
+            return 6;
+        };
+
+        let page = 0;
+
+        function updateCarousel() {
+            const visibleCount = getVisibleCount();
+            const itemStep = pills[0].offsetWidth + gap;
+            const groups = Math.ceil(pills.length / visibleCount);
+            const maxScroll = Math.max(0, statusCarouselTrack.scrollWidth - viewport.clientWidth);
+            const maxPages = Math.max(1, groups - 1);
+            page = Math.min(page, maxPages);
+
+            const offset = page * visibleCount * itemStep;
+            statusCarouselTrack.style.transform = 'translateX(-' + Math.min(offset, maxScroll) + 'px)';
+
+            statusCarouselPrev.disabled = page === 0;
+            statusCarouselNext.disabled = page >= maxPages;
+        }
+
+        statusCarouselPrev.addEventListener('click', function () {
+            page = Math.max(0, page - 1);
+            updateCarousel();
+        });
+
+        statusCarouselNext.addEventListener('click', function () {
+            const visibleCount = getVisibleCount();
+            const groups = Math.max(1, Math.ceil(pills.length / visibleCount));
+            const maxPages = Math.max(1, groups - 1);
+
+            page = Math.min(page + 1, maxPages);
+            updateCarousel();
+        });
+
+        window.addEventListener('resize', updateCarousel);
+        updateCarousel();
+    }
+}
 
 function openStatusModal(roomId, roomNumber, roomType, currentStatus, currentCleaningStatus) {
     const modal = document.getElementById('statusModal');

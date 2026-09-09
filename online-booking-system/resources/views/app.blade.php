@@ -18,7 +18,7 @@
 
 <div class="page-loader" id="page-loader">
     <div class="loader-content">
-        <div class="loader-logo">CASAUL HOTEL</div>
+        <div class="loader-logo"></div>
         <div class="loader-spinner"></div>
     </div>
 </div>
