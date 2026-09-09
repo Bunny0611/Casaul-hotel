@@ -640,16 +640,32 @@
                         <input id="diningDate" class="field-input" type="date" aria-label="Dining date" placeholder="MM/DD/YY">
                     </div>
                 </div>
-                <div class="reservation-card-grid">
-                    @foreach($dining as $meal)
-                        <article class="reservation-card" data-category="dining" data-price="{{ $meal->price }}" data-title="{{ $meal->name }}" data-dining-id="{{ $meal->id }}" data-schedule="{{ $meal->diningSchedule?->period }}">
-                            <img src="{{ $meal->image ? asset('storage/' . $meal->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
+
+                <div class="dining-category-nav" aria-label="Dining menu categories">
+                    @php($diningCategories = ['Breakfast', 'Appetizer', 'Main Course', 'Soup', 'Salad', 'Dessert', 'Beverage'])
+                    @foreach($diningCategories as $category)
+                        <button type="button" class="dining-category-btn {{ $loop->first ? 'active' : '' }}" data-dining-category="{{ $category }}" aria-pressed="{{ $loop->first ? 'true' : 'false' }}">
+                            <span>{{ $category }}</span>
+                        </button>
+                    @endforeach
+                </div>
+
+                <div class="dining-menu-header">
+                    <h4 id="diningMenuTitle">Breakfast Menu</h4>
+                </div>
+
+                <div id="diningMenuGrid" class="reservation-card-grid">
+                    @foreach(($diningByCategory['Breakfast'] ?? collect()) as $meal)
+                        <article class="reservation-card" data-category="dining" data-menu-category="{{ $meal->category ?: 'Breakfast' }}" data-price="{{ $meal->price }}" data-title="{{ $meal->name }}" data-dining-id="{{ $meal->id }}" data-schedule="{{ $meal->diningSchedule?->period }}">
+                            <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? asset('storage/' . $meal->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $meal->name }}</h4>
                                 <p>{{ $meal->description ?: 'A dining option for your stay.' }}</p>
-                                <p class="text-muted">{{ $meal->category ?: 'Dining package' }}</p>
+                                <p class="text-muted">{{ $meal->category ?: 'Breakfast' }}</p>
                                 @if($meal->diningSchedule)
                                     <p class="text-muted">{{ $meal->diningSchedule->period }}: {{ \Carbon\Carbon::parse($meal->diningSchedule->available_from)->format('g:i A') }} - {{ \Carbon\Carbon::parse($meal->diningSchedule->available_to)->format('g:i A') }}</p>
+                                @else
+                                    <p class="text-muted">Available All Day</p>
                                 @endif
                                 <div class="reservation-card-footer dining-card-footer">
                                     <span class="price">₱{{ number_format($meal->price, 0) }}</span>
@@ -658,8 +674,8 @@
                                         <input type="number" min="1" value="1" class="dining-quantity" data-dining-id="{{ $meal->id }}">
                                         <button type="button" class="qty-btn qty-increase" data-dining-id="{{ $meal->id }}" aria-label="Increase quantity">+</button>
                                     </div>
-                                    <button type="button" class="select-option-btn" data-title="{{ $meal->name }}" data-price="{{ $meal->price }}">Add to Reservation</button>
                                 </div>
+                                <button type="button" class="select-option-btn" data-title="{{ $meal->name }}" data-price="{{ $meal->price }}">Add to Reservation</button>
                             </div>
                         </article>
                     @endforeach
@@ -1052,7 +1068,11 @@
         const diningSchedule = document.getElementById('diningSchedule');
         const diningTable = document.getElementById('diningTable');
         const diningDate = document.getElementById('diningDate');
+        const diningCategoryButtons = document.querySelectorAll('.dining-category-btn');
+        const diningMenuGrid = document.getElementById('diningMenuGrid');
+        const diningMenuTitle = document.getElementById('diningMenuTitle');
         const diningReservations = @json($diningReservations ?? []);
+        const diningMenuCatalog = null;
         const paymentMethodChoices = document.querySelectorAll('.payment-method-option');
         const confirmationModal = document.getElementById('confirmationModal');
         const receiptModal = document.getElementById('receiptModal');
@@ -1569,6 +1589,134 @@
                 syncDiningQuantity(card, this.value);
             });
         });
+
+        const renderDiningCategory = (category, catalog = null) => {
+            if (!diningMenuGrid) {
+                return;
+            }
+
+            const normalizedCategory = category || 'Breakfast';
+            diningMenuTitle.textContent = `${normalizedCategory} Menu`;
+
+            const cards = Array.from(diningMenuGrid.querySelectorAll('.reservation-card'));
+            const knownVisibleCardIds = new Set(cards.map(card => String(card.dataset.diningId)));
+
+            cards.forEach(card => {
+                const matches = (card.dataset.menuCategory || 'Breakfast') === normalizedCategory;
+                card.style.display = matches ? '' : 'none';
+            });
+
+            if (!catalog || !catalog[normalizedCategory]) {
+                return;
+            }
+
+            catalog[normalizedCategory].forEach((meal) => {
+                const matchingCard = cards.find(card => String(card.dataset.diningId) === String(meal.id));
+                if (matchingCard) {
+                    matchingCard.style.display = '';
+                    matchingCard.dataset.menuCategory = meal.category || normalizedCategory;
+                    return;
+                }
+
+                if (knownVisibleCardIds.has(String(meal.id))) {
+                    return;
+                }
+
+                const article = document.createElement('article');
+                article.className = 'reservation-card';
+                article.dataset.category = 'dining';
+                article.dataset.menuCategory = meal.category || normalizedCategory;
+                article.dataset.price = meal.price || 0;
+                article.dataset.title = meal.name || '';
+                article.dataset.diningId = meal.id;
+                article.dataset.schedule = meal.dining_schedule || meal.schedule || '';
+
+                const imageUrl = meal.image ? `{{ asset('storage/') }}/${meal.image.replace(/^storage\//, '')}` : "{{ asset('image/Royal-Suite-room.jpg') }}";
+                const displayCategory = meal.category || normalizedCategory;
+                article.innerHTML = `
+                    <img src="${imageUrl}" alt="${meal.name || ''}">
+                    <div class="reservation-card-body">
+                        <h4>${meal.name || ''}</h4>
+                        <p>${meal.description || 'A dining option for your stay.'}</p>
+                        <p class="text-muted">${displayCategory}</p>
+                        <p class="text-muted">${meal.dining_schedule ? meal.dining_schedule : 'Available All Day'}</p>
+                        <div class="reservation-card-footer dining-card-footer">
+                            <span class="price">₱${Number(meal.price || 0).toLocaleString('en-US')}</span>
+                            <div class="dining-qty">
+                                <button type="button" class="qty-btn qty-decrease" data-dining-id="${meal.id}" aria-label="Decrease quantity">−</button>
+                                <input type="number" min="1" value="1" class="dining-quantity" data-dining-id="${meal.id}">
+                                <button type="button" class="qty-btn qty-increase" data-dining-id="${meal.id}" aria-label="Increase quantity">+</button>
+                            </div>
+                        </div>
+                        <button type="button" class="select-option-btn" data-title="${meal.name || ''}" data-price="${meal.price || 0}">Add to Reservation</button>
+                    </div>
+                `;
+
+                if (article.dataset.menuCategory !== normalizedCategory) {
+                    article.style.display = 'none';
+                }
+
+                diningMenuGrid.appendChild(article);
+
+                article.querySelectorAll('.qty-btn').forEach(button => {
+                    button.addEventListener('click', function () {
+                        const input = article.querySelector('.dining-quantity');
+                        const currentValue = Number(input?.value) || 1;
+                        syncDiningQuantity(article, currentValue + (this.classList.contains('qty-increase') ? 1 : -1));
+                    });
+                });
+
+                article.querySelector('.dining-quantity')?.addEventListener('change', function () {
+                    syncDiningQuantity(article, this.value);
+                });
+
+                article.querySelector('.select-option-btn')?.addEventListener('click', function () {
+                    const diningIndex = selectedDining.findIndex(item => item.id === article.dataset.diningId);
+                    const quantity = Number(article.querySelector('.dining-quantity')?.value || 1);
+                    const diningItem = {
+                        id: article.dataset.diningId,
+                        title: article.dataset.title,
+                        price: Number(article.dataset.price || 0),
+                        schedule: diningSchedule.value || article.dataset.schedule || '',
+                        table: diningTable.value || '',
+                        date: diningDate.value || '',
+                        quantity,
+                    };
+
+                    if (diningIndex === -1) {
+                        selectedDining.push(diningItem);
+                        this.textContent = 'Selected';
+                    } else {
+                        selectedDining[diningIndex].quantity = quantity;
+                        selectedDining.splice(diningIndex, 1);
+                        this.textContent = 'Add to Reservation';
+                    }
+
+                    updateSummary();
+                });
+            });
+        };
+
+        diningCategoryButtons.forEach((button) => {
+            button.addEventListener('click', function () {
+                const selectedCategory = this.dataset.diningCategory || 'Breakfast';
+                diningCategoryButtons.forEach((item) => {
+                    const isActive = item === this;
+                    item.classList.toggle('active', isActive);
+                    item.setAttribute('aria-pressed', String(isActive));
+                });
+                fetch(`{{ route('dining.menu.category', [], false) }}?category=${encodeURIComponent(selectedCategory)}`)
+                    .then(response => response.ok ? response.json() : Promise.reject())
+                    .then(payload => {
+                        renderDiningCategory(payload.category || selectedCategory, {
+                            [payload.category || selectedCategory]: payload.items || [],
+                        });
+                    })
+                    .catch(() => renderDiningCategory(selectedCategory));
+            });
+        });
+
+        renderDiningCategory('Breakfast');
 
         diningSchedule.addEventListener('change', function () {
             syncDiningTableAvailability();

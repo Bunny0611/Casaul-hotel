@@ -27,7 +27,8 @@ Route::post('/reservation', [HomeController::class, 'storeReservation'])->name('
 Route::post('/send-message', [HomeController::class, 'sendMessage'])->name('send.message');
 Route::view('/offers', 'offers')->name('offers');
 Route::view('/gallery', 'gallery')->name('gallery');
-Route::view('/dining', 'dining')->name('dining');
+Route::get('/dining', [HomeController::class, 'dining'])->name('dining');
+Route::get('/dining/menu', [HomeController::class, 'diningMenuItems'])->name('dining.menu.category');
 Route::view('/events', 'events')->name('events');
 Route::view('/aboutus', 'aboutus')->name('aboutus');
 

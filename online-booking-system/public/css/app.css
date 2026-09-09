@@ -1248,6 +1248,23 @@ nav a:hover{
 .dining-booking a:focus-visible, .dining-dish-copy a:focus-visible { outline: 3px solid rgba(251, 191, 36, .55); outline-offset: 3px; }
 .dining-experience-image { min-height: 205px; }
 
+.dining-category-nav { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 20px; }
+.dining-category-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 18px; border: 1px solid #e8d6c1; border-radius: 12px; background: #fffdf9; color: #4d2a18; font-size: .76rem; font-weight: 700; cursor: pointer; transition: all .2s ease; }
+.dining-category-btn i { font-size: .82rem; }
+.dining-category-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); box-shadow: 0 10px 22px rgba(168, 22, 29, .15); }
+.dining-menu-header { margin-top: 10px; margin-bottom: 14px; }
+.dining-menu-header h4 { margin: 0; color: #4d2a18; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.25rem; }
+.dining-empty-state { grid-column: 1 / -1; padding: 24px; border: 1px dashed #e7d3b4; border-radius: 12px; background: #fffaf3; color: #72563d; text-align: center; }
+.dining-meta-tag { display: inline-flex; align-items: center; gap: 6px; margin-top: 2px; padding: 4px 8px; border-radius: 999px; background: #fff4e5; color: #b0621b; font-size: .65rem; font-weight: 700; }
+.dining-meta-tag::before { content: '\f2e7'; font-family: 'Font Awesome 6 Free'; font-weight: 700; font-size: .6rem; }
+.dining-time { color: #745d4c; font-size: .7rem; line-height: 1.5; }
+.dining-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dining-price { color: #111827; font-weight: 800; }
+@media (max-width: 760px) {
+    .dining-category-nav { gap: 10px; }
+    .dining-category-btn { flex: 1 1 calc(50% - 10px); min-width: 120px; }
+}
+
 @media (max-width: 760px) {
     .dining-page { padding: 94px 0 48px; }
     .dining-hero { display: flex; flex-direction: column; aspect-ratio: auto; }

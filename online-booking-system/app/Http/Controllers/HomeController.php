@@ -20,6 +20,7 @@ use App\Models\GuestRequest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -94,6 +95,14 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
+        $diningByCategory = collect($this->diningCategoryOptions())->mapWithKeys(function ($category) use ($dining) {
+            $items = $dining
+                ->filter(fn ($meal) => $this->normalizeDiningCategory($meal->category ?? 'Breakfast') === $category)
+                ->values();
+
+            return [$category => $items];
+        });
+
         $diningSchedules = DiningSchedule::where('status', 'Active')->orderBy('available_from')->get();
         $diningTables = DiningTable::whereIn('status', ['Available', 'Reserved'])->orderBy('table_no')->get();
         $diningReservations = DiningReservation::whereNotIn('status', ['cancelled', 'completed'])
@@ -126,7 +135,100 @@ class HomeController extends Controller
             ])
             ->values();
 
-        return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningSchedules', 'diningTables', 'diningReservations'));
+        return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningByCategory', 'diningSchedules', 'diningTables', 'diningReservations'));
+    }
+
+    public function dining()
+    {
+        $dining = DiningMenu::with('diningSchedule')
+            ->whereIn('status', ['available', 'limited'])
+            ->where(function ($query) {
+                $query->whereNull('dining_schedule_id')
+                    ->orWhereHas('diningSchedule', fn ($schedule) => $schedule->where('status', 'Active'));
+            })
+            ->orderBy('name')
+            ->get();
+
+        $menuByCategory = collect($this->diningCategoryOptions())->mapWithKeys(function ($category) use ($dining) {
+            $items = $dining->filter(fn ($meal) => $this->normalizeDiningCategory($meal->category ?? 'Breakfast') === $category)->values();
+            return [$category => $items];
+        });
+
+        return view('dining', ['dining' => $dining, 'menuByCategory' => $menuByCategory, 'diningCategories' => $this->diningCategoryOptions()]);
+    }
+
+    public function diningMenuItems(Request $request)
+    {
+        $selectedCategory = $this->normalizeDiningCategory($request->query('category', 'Breakfast'));
+
+        $items = DiningMenu::with('diningSchedule')
+            ->whereIn('status', ['available', 'limited'])
+            ->where(function ($query) {
+                $query->whereNull('dining_schedule_id')
+                    ->orWhereHas('diningSchedule', fn ($schedule) => $schedule->where('status', 'Active'));
+            })
+            ->orderBy('name')
+            ->get()
+            ->filter(fn ($meal) => $this->normalizeDiningCategory($meal->category ?? 'Breakfast') === $selectedCategory)
+            ->values();
+
+        return response()->json([
+            'category' => $selectedCategory,
+            'items' => $items->map(function ($meal) {
+                $category = $this->normalizeDiningCategory($meal->category ?? 'Breakfast');
+                $availableFrom = $meal->available_from ?: $meal->diningSchedule?->available_from;
+                $availableTo = $meal->available_to ?: $meal->diningSchedule?->available_to;
+
+                return [
+                    'id' => $meal->id,
+                    'name' => $meal->name,
+                    'description' => $meal->description ?: 'A delicious option crafted for your stay.',
+                    'category' => $category,
+                    'price' => (float) $meal->price,
+                    'image' => $meal->image && Storage::disk('public')->exists($meal->image)
+                        ? asset('storage/' . $meal->image)
+                        : asset('image/Royal-Suite-room.jpg'),
+                    'available_from' => $availableFrom ? Carbon::parse($availableFrom)->format('H:i') : null,
+                    'available_to' => $availableTo ? Carbon::parse($availableTo)->format('H:i') : null,
+                    'schedule' => $meal->diningSchedule?->period,
+                ];
+            })->values(),
+        ]);
+    }
+
+    private function diningCategoryOptions(): array
+    {
+        return ['Breakfast', 'Appetizer', 'Main Course', 'Soup', 'Salad', 'Dessert', 'Beverage'];
+    }
+
+    private function normalizeDiningCategory(?string $category): string
+    {
+        $value = strtolower(trim((string) ($category ?? '')));
+
+        $map = [
+            'breakfast' => 'Breakfast',
+            'appetizer' => 'Appetizer',
+            'appetisers' => 'Appetizer',
+            'appetizers' => 'Appetizer',
+            'main course' => 'Main Course',
+            'main-course' => 'Main Course',
+            'maincourse' => 'Main Course',
+            'lunch' => 'Main Course',
+            'dinner' => 'Main Course',
+            'afternoon snacks' => 'Appetizer',
+            'afternoon-snacks' => 'Appetizer',
+            'snack' => 'Appetizer',
+            'snacks' => 'Appetizer',
+            'soup' => 'Soup',
+            'salad' => 'Salad',
+            'dessert' => 'Dessert',
+            'beverage' => 'Beverage',
+            'beverages' => 'Beverage',
+            'drinks' => 'Beverage',
+            'drink' => 'Beverage',
+        ];
+
+        return $map[$value] ?? ($value !== '' ? ucfirst($value) : 'Breakfast');
     }
 
     private function normalizeIdList($value): ?string

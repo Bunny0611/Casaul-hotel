@@ -91,4 +91,49 @@ class ReservationInventorySyncTest extends TestCase
         $response->assertOk();
         $response->assertSee('inventory/spa.jpg');
     }
+
+    public function test_reservation_page_shows_dining_categories_with_breakfast_selected_by_default(): void
+    {
+        Room::create([
+            'room_number' => '303',
+            'room_type' => 'Suite',
+            'price' => 3200.00,
+            'floor' => '3rd',
+            'capacity' => 2,
+            'description' => 'A room for the test.',
+            'status' => 'available',
+        ]);
+
+        \App\Models\DiningMenu::create([
+            'name' => 'Filipino Breakfast',
+            'category' => 'Breakfast',
+            'description' => 'Traditional Filipino breakfast.',
+            'price' => 250,
+            'status' => 'available',
+            'available_from' => '07:00:00',
+            'available_to' => '10:00:00',
+            'image' => 'dining/filipino-breakfast.jpg',
+        ]);
+
+        \App\Models\DiningMenu::create([
+            'name' => 'Chicken Adobo',
+            'category' => 'Main Course',
+            'description' => 'Classic savory Filipino dish.',
+            'price' => 350,
+            'status' => 'available',
+            'available_from' => '10:00:00',
+            'available_to' => '22:00:00',
+            'image' => 'dining/chicken-adobo.jpg',
+        ]);
+
+        $response = $this->get(route('reservation'));
+
+        $response->assertOk();
+        $response->assertSee('Breakfast');
+        $response->assertSee('Appetizer');
+        $response->assertSee('Main Course');
+        $response->assertSee('data-dining-category="Breakfast"', false);
+        $response->assertSee('Filipino Breakfast');
+        $response->assertDontSee('Chicken Adobo');
+    }
 }
