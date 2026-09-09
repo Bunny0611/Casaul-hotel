@@ -1,0 +1,374 @@
+CASAUL Hotel Management System Overview
+
+This project is a Laravel-based hotel management and online booking web application for CASAUL Hotel. It combines a public booking website with separate internal portals for administrators, employees, housekeeping staff, and guests.
+
+At a high level, the system is organized as a standard Laravel MVC application:
+- Routes define the URLs and actions.
+- Controllers contain the main business logic.
+- Models represent database entities.
+- Views render the user interfaces.
+- Middleware handles role-based authorization.
+
+1. System structure
+
+The application is divided into several major parts:
+
+A. Public website
+- Home page
+- Accommodation pages
+- Reservation page
+- Dining and events pages
+- Offers, gallery, and about pages
+- Contact/message form
+
+B. Guest portal
+- Guest registration and login
+- Guest profile
+- Reservation records
+- Receipts
+- Reservation cancellation and deletion
+- Guest requests during their stay
+
+C. Employee portal
+- Employee dashboard
+- Reservation management
+- Payment handling
+- Room activity monitoring
+- Check-in and check-out overview
+- Guest request handling
+- Messaging
+
+D. Housekeeping portal
+- Cleaning task dashboard
+- Room status updates
+- Assigned rooms and task tracking
+- Guest requests for housekeeping
+- Maintenance reporting
+- Cleaning history
+
+E. Admin portal
+- Dashboard overviews and statistics
+- Room management
+- Dining management
+- Inventory and amenities management
+- Event venue management
+- Reservation management
+- Account management
+- Messages and reports
+- Settings
+
+2. Authentication and role system
+
+The app uses two login systems:
+- Staff authentication for admin, employee, and housekeeping
+- Guest authentication for guest accounts
+
+Staff login is handled through AuthController and checks:
+- email
+- password
+- selected role
+- whether the account is active
+
+Guest login uses a separate guest guard.
+
+The CheckRole middleware protects routes and ensures that users only access pages for their allowed role.
+
+Important role distinction:
+- Admin, employee, and housekeeping accounts are stored in the staff_users table.
+- Guest accounts are stored separately and are authenticated using the guest guard.
+
+3. Main controllers
+
+HomeController
+- handles the public-facing pages
+- displays room listings and room detail pages
+- handles reservation submission from website visitors
+- processes guest requests
+- records contact messages
+- provides guest profile, records, receipts, and reservation cancellation/deletion features
+
+AdminController
+- handles the admin dashboard and statistics
+- manages rooms, amenities, dining, event places, and inventory
+- manages reservations and payments
+- manages account creation, updates, status changes, and deletion
+- handles messages, reports, maintenance updates, and settings
+- provides employee dashboard for staff portal purposes
+
+HousekeepingController
+- handles housekeeping dashboard and assigned rooms
+- creates, starts, completes, and deletes cleaning tasks
+- updates room cleaning status
+- manages guest requests directed to housekeeping
+- handles maintenance reports and cleaning history
+- manages housekeeping messages
+
+AuthController
+- shows login forms for staff and guests
+- authenticates users
+- creates guest accounts
+- handles logout for both guest and staff sessions
+
+4. Public booking flow
+
+The public reservation flow works like this:
+
+1. Visitor opens the reservation page.
+2. Available rooms, amenities, event places, and dining items are loaded.
+3. Visitor selects a category such as rooms, amenities, event places, or dining.
+4. The request data is normalized and validated.
+5. The system checks that selected items exist and that quantities and capacities are valid.
+6. If a room reservation is selected, the system checks for overlapping room bookings.
+7. The reservation is then created in the correct reservation table.
+8. Related dining items may also be stored.
+9. The guest is redirected back to the reservation page with a success message.
+
+This system is designed to support multiple reservation types simultaneously, instead of forcing everything into one generic reservation table.
+
+5. Reservation categories and tables
+
+The project supports multiple reservation types:
+- RoomReservation
+- AmenityReservation
+- EventReservation
+- DiningReservation
+- ReservationDiningItem
+
+Each category has its own purpose:
+
+Room reservations
+- store room booking information
+- include check-in/check-out dates and times
+- include guest details, status, payment method, and amounts
+
+Amenity reservations
+- store selected amenities and their quantities
+- support pricing based on amenity rules
+
+Event reservations
+- support event venue bookings
+- include event type, guest count, and event time range
+
+Dining reservations
+- store dining area and schedule selections
+- support dining items and reservation-specific details
+
+6. Key database models
+
+The application contains many models reflecting the hotel business domain:
+
+Core user models
+- User
+- Staff
+- Guest
+
+Hotel inventory models
+- Room
+- Amenity
+- EventPlace
+- DiningMenu
+- DiningTable
+- DiningSchedule
+- InventoryItem
+
+Reservation models
+- Reservation
+- RoomReservation
+- EventReservation
+- AmenityReservation
+- DiningReservation
+- ReservationDiningItem
+
+Supporting models
+- Message
+- GuestRequest
+- HousekeepingTask
+- MaintenanceReport
+- Payment
+
+7. Hotel operations handled by the system
+
+Room management
+- Add, update, delete, and view rooms
+- Set room status such as available, occupied, or maintenance
+- Manage room images and room information
+
+Dining management
+- Add dining menus
+- Add dining schedules and tables
+- Update dining item status
+- Manage dining availability
+
+Amenity and event management
+- Add amenities and event places
+- Attach pricing basis and capacities
+- Update status and availability
+
+Inventory management
+- Add inventory items tied to categories such as amenities, event place, or dining
+- Update and delete inventory records
+- Support bulk operations
+
+8. Housekeeping workflow
+
+Housekeeping is one of the system's strongest modules.
+
+Room cleaning status
+- Rooms can have cleaning_status values like clean, dirty, and in_progress.
+
+Housekeeping tasks
+- Housekeeping staff can create tasks for rooms.
+- Tasks can be assigned to staff members.
+- Tasks include priority, scheduled date/time, estimated duration, notes, and status.
+
+Task lifecycle
+- pending
+- in_progress
+- completed
+
+Guest requests
+- Guests can submit requests such as extra towels, pillows, toiletries, room cleaning, maintenance issues, and other service requests.
+- Housekeeping receives these requests and can update them to different statuses.
+
+Maintenance reports
+- Housekeeping staff can submit maintenance issues for rooms.
+- Reports include room number, category, priority, description, and optional photo.
+- Reports can later be updated or deleted.
+
+9. Guest request system
+
+The guest request module allows users to send requests during a stay.
+
+Requests can be categorized by department:
+- Housekeeping
+- Employee
+
+Request types include things like:
+- Extra Towels
+- Extra Pillows
+- Extra Blanket
+- Toiletries
+- Room Cleaning
+- Change Bedsheets
+- Broken Aircon
+- Broken TV
+- Broken Light
+- Plumbing/Water Problem
+- Late Checkout
+- Early Check-in
+- Dining/Food Request
+- Transportation Request
+- Other Request
+
+Guest requests are stored with details such as:
+- guest information
+- reservation reference
+- room reference
+- preferred time
+- priority
+- description
+- quantity
+- status
+
+10. Payment and revenue logic
+
+The system stores payment information on reservation records and supports payment tracking.
+
+The admin dashboard calculates:
+- total revenue
+- average daily revenue over the last 30 days
+- reservation counts by status
+- occupancy rate
+- room type distribution
+- recent reservation activity
+
+The application also supports a payment method field and stores details such as amount paid and payment method.
+
+11. Messaging and customer communication
+
+The project includes a messaging feature.
+
+Public users can send messages through the website contact form.
+
+Internal staff can then review those messages through their portals.
+
+This gives the system a lightweight CRM-like communication feature alongside booking and operations.
+
+12. Reporting and analytics
+
+The admin dashboard provides business insights such as:
+- total revenue
+- occupied rooms
+- available rooms
+- maintenance rooms
+- total guests
+- active reservations
+- pending, confirmed, completed, and cancelled reservation counts
+- occupancy rate
+- recent reservation history
+- room type breakdown
+
+This allows hotel management to monitor how the property is performing.
+
+13. Database and schema approach
+
+The project uses Laravel migrations for the application schema and also includes a SQL snapshot file:
+- database/casaul_hotel.sql
+
+This snapshot is intended to help collaborators share the same schema and data state.
+
+The README also explains that the database can be imported using phpMyAdmin or a mysql command, and that the project includes seeded staff accounts for admin, employee, and housekeeping roles.
+
+14. Staff account setup
+
+The README mentions seeded staff accounts with default password:
+- admin@casaul.com
+- employee@casaul.com
+- housekeeping@casaul.com
+
+The default password is listed as password.
+
+Admins can create additional accounts from the Manage Account feature in the admin dashboard.
+
+15. Role-based portals in summary
+
+Admin portal
+- full control of hotel operations and business management
+
+Employee portal
+- handles daily front-desk operational tasks
+
+Housekeeping portal
+- handles cleanliness, maintenance, and room-based service work
+
+Guest portal
+- allows customers to manage their own reservations and requests
+
+16. Biggest strengths of this system
+
+This project is strong because it covers many hotel operations at once, including:
+- online booking
+- room and service management
+- guest self-service
+- employee operations
+- housekeeping workflows
+- maintenance tracking
+- payment and reporting features
+- role-based access control
+
+17. Architectural observation
+
+One important design point is that the system does not use one single universal reservation table for every booking. Instead, it spreads reservations into specialized tables based on the category.
+
+This gives better structure for different types of bookings, but it also means the codebase is more complex and requires more coordination between models, controllers, and views.
+
+18. Final summary
+
+CASAUL Hotel Management System is a complete Laravel hotel management platform that brings together public booking, guest account management, employee operations, housekeeping workflows, reports, and administrative control in one application.
+
+The system is designed to support a hotel business end-to-end:
+- visitors can browse and book services,
+- guests can manage their stays,
+- employees can operate the hotel day by day,
+- housekeeping can maintain room quality,
+- and admins can oversee the business and monitor performance.
