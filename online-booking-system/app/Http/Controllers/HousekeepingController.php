@@ -356,7 +356,7 @@ class HousekeepingController extends Controller
             Room::where('room_number', $id)->firstOrFail();
 
         $validated = $request->validate([
-            'cleaning_status' => ['required', 'in:clean,dirty,in_progress'],
+            'cleaning_status' => ['required', 'in:clean,dirty,in_progress,ready,blocked,out_of_order'],
         ]);
 
         $room->update([

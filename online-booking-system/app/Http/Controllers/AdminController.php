@@ -458,7 +458,7 @@ class AdminController extends Controller
             'capacity' => 'required|integer|min:1',
             'description' => 'nullable|string',
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
-            'status' => 'required|in:available,occupied,reserved,maintenance',
+            'status' => 'required|in:OC,OD,VR,VC,VD,HSD,HSUC,OOO,BLO,NS,SO,HU,DND,available,occupied,reserved,maintenance,blocked,out_of_order',
         ]);
 
         if ($request->hasFile('image')) {
