@@ -537,10 +537,12 @@ class AdminController extends Controller
 
     public function reservations()
     {
+        $this->completeFinishedReservations();
+
         $roomReservations = RoomReservation::with('room')->latest()->get();
         $amenityReservations = AmenityReservation::with('amenity')->latest()->get();
         $eventPlaceReservations = EventReservation::with(['eventPlace', 'diningItems.diningMenu'])->latest()->get();
-        $diningReservations = DiningReservation::latest()->get();
+        $diningReservations = DiningReservation::with('diningItems.diningMenu')->latest()->get();
 
         $legacyReservations = Reservation::with(['room', 'amenity', 'eventPlace', 'diningItems'])->latest()->get();
         $legacyReservations->each(function ($reservation) use (&$roomReservations, &$amenityReservations, &$eventPlaceReservations, &$diningReservations) {
@@ -578,6 +580,53 @@ class AdminController extends Controller
         return request()->routeIs('employee.reservation')
             ? view('employee.reservation', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningTables', 'diningMenus', 'diningSchedules'))
             : view('admin.reservations', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'));
+    }
+
+    private function completeFinishedReservations(): void
+    {
+        $now = Carbon::now();
+
+        RoomReservation::whereIn('status', ['confirmed', 'checked-in'])
+            ->get()
+            ->each(function ($reservation) use ($now) {
+                $end = Carbon::parse(Carbon::parse($reservation->check_out)->format('Y-m-d') . ' ' . ($reservation->room_check_out_time ?: '23:59:59'));
+                if ($end->lte($now)) {
+                    $reservation->update(['status' => 'completed']);
+                    $reservation->room?->update(['status' => 'available', 'cleaning_status' => 'dirty']);
+                }
+            });
+
+        EventReservation::whereIn('status', ['confirmed', 'checked-in'])
+            ->get()
+            ->each(function ($reservation) use ($now) {
+                $end = Carbon::parse(Carbon::parse($reservation->check_out)->format('Y-m-d') . ' ' . ($reservation->event_end_time ?: '23:59:59'));
+                if ($end->lte($now)) {
+                    $reservation->update(['status' => 'completed']);
+                    $reservation->eventPlace?->update(['status' => 'available']);
+                }
+            });
+
+        AmenityReservation::whereIn('status', ['confirmed', 'checked-in'])
+            ->get()
+            ->each(function ($reservation) use ($now) {
+                $end = Carbon::parse(Carbon::parse($reservation->check_out)->format('Y-m-d') . ' ' . ($reservation->amenity_end_time ?: '23:59:59'));
+                if ($end->lte($now)) {
+                    $reservation->update(['status' => 'completed']);
+                }
+            });
+
+        DiningReservation::whereIn('status', ['confirmed', 'checked-in'])
+            ->get()
+            ->each(function ($reservation) use ($now) {
+                $scheduleEnd = DiningSchedule::whereIn('period', collect(explode(',', (string) $reservation->dining_schedule))->map(fn ($period) => trim($period))->filter()->all())
+                    ->max('available_to');
+                $end = Carbon::parse(Carbon::parse($reservation->check_in)->format('Y-m-d') . ' ' . ($scheduleEnd ?: '23:59:59'));
+                if ($end->lte($now)) {
+                    $reservation->update(['status' => 'completed']);
+                    $tableNumbers = collect(explode(',', (string) $reservation->dining_area))->map(fn ($table) => trim($table))->filter();
+                    DiningTable::whereIn('table_no', $tableNumbers)->update(['status' => 'available']);
+                }
+            });
     }
 
     protected function normalizeDiningSelections(Request $request): array
@@ -684,10 +733,13 @@ class AdminController extends Controller
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
             'quantity' => ['nullable', 'integer', 'min:1'],
+            'amenity_quantity' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'required_if:category,amenities', 'date_format:H:i'],
+            'event_start_time' => ['nullable', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
+            'event_end_time' => ['nullable', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
@@ -735,8 +787,8 @@ class AdminController extends Controller
             $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
             $reservation = RoomReservation::create($validated);
         } elseif ($category === 'event_place') {
-            $validated['event_start_time'] = $validated['check_in_time'] ?? null;
-            $validated['event_end_time'] = $validated['check_out_time'] ?? null;
+            $validated['event_start_time'] = $validated['event_start_time'] ?? $validated['check_in_time'] ?? null;
+            $validated['event_end_time'] = $validated['event_end_time'] ?? $validated['check_out_time'] ?? null;
             $reservation = EventReservation::create($validated);
         } elseif ($category === 'amenities') {
             $amenity = Amenity::findOrFail($validated['amenity_id']);
@@ -745,6 +797,7 @@ class AdminController extends Controller
             $validated['check_out'] = $endTime->toDateString();
             $validated['amenity_end_time'] = $endTime->format('H:i');
             $validated['amenity_start_time'] = $validated['check_in_time'] ?? null;
+            $validated['amenity_quantity'] = $validated['amenity_quantity'] ?? $validated['quantity'] ?? 1;
             $validated['total_amount'] = (float) $amenity->price * (int) $validated['duration_hours'];
             unset($validated['duration_hours']);
             $reservation = AmenityReservation::create($validated);
@@ -846,12 +899,16 @@ class AdminController extends Controller
 
             // Only update room status for room reservations
             if ($reservationType === 'room' && $reservation->room) {
-                if ($validated['status'] === 'checked-in') {
+                if ($validated['status'] === 'confirmed') {
+                    $reservation->room->update([
+                        'status' => 'reserved',
+                    ]);
+                } elseif ($validated['status'] === 'checked-in') {
                     $reservation->room->update([
                         'status' => 'occupied',
                         'cleaning_status' => 'clean',
                     ]);
-                } elseif ($validated['status'] === 'completed') {
+                } elseif (in_array($validated['status'], ['cancelled', 'completed'], true)) {
                     $reservation->room->update([
                         'status' => 'available',
                         'cleaning_status' => 'dirty',
@@ -870,8 +927,12 @@ class AdminController extends Controller
                 }
             }
 
-            if ($reservation instanceof EventReservation && $validated['status'] === 'confirmed' && $reservation->eventPlace) {
-                $reservation->eventPlace->update(['status' => 'reserved']);
+            if ($reservation instanceof EventReservation && $reservation->eventPlace) {
+                if ($validated['status'] === 'confirmed') {
+                    $reservation->eventPlace->update(['status' => 'reserved']);
+                } elseif (in_array($validated['status'], ['cancelled', 'completed'], true)) {
+                    $reservation->eventPlace->update(['status' => 'available']);
+                }
             }
         });
 
@@ -964,10 +1025,13 @@ class AdminController extends Controller
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
             'quantity' => ['nullable', 'integer', 'min:1'],
+            'amenity_quantity' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'date_format:H:i'],
+            'event_start_time' => ['nullable', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
+            'event_end_time' => ['nullable', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['nullable', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
@@ -999,8 +1063,8 @@ class AdminController extends Controller
             $attributes['room_check_in_time'] = $validated['check_in_time'] ?? null;
             $attributes['room_check_out_time'] = $validated['check_out_time'] ?? null;
         } elseif ($validated['category'] === 'event_place') {
-            $attributes['event_start_time'] = $validated['check_in_time'] ?? null;
-            $attributes['event_end_time'] = $validated['check_out_time'] ?? null;
+            $attributes['event_start_time'] = $validated['event_start_time'] ?? $validated['check_in_time'] ?? null;
+            $attributes['event_end_time'] = $validated['event_end_time'] ?? $validated['check_out_time'] ?? null;
         } elseif ($validated['category'] === 'amenities') {
             $attributes['amenity_start_time'] = $validated['check_in_time'] ?? null;
             $attributes['amenity_end_time'] = $validated['check_out_time'] ?? null;

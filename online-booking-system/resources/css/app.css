@@ -2260,7 +2260,7 @@ footer{
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     color:white;
     margin-top: 60px;
-    padding: 72px 0 48px;
+    padding: 40px 0 28px;
     position: relative;
     overflow: hidden;
 }
@@ -2279,8 +2279,8 @@ footer::before{
     width: min(1200px, 92%);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 1.2fr 1fr 1fr;
-    gap: 48px;
+    grid-template-columns: 1.2fr 1fr 1fr 1fr;
+    gap: 32px;
     text-align: left;
     position: relative;
     z-index: 1;
@@ -2394,6 +2394,49 @@ footer::before{
     transform: translateX(2px);
 }
 
+.footer-newsletter-form{
+    display: flex;
+    margin-top: 12px;
+    border: 1px solid rgba(255,255,255,.25);
+    background: rgba(255,255,255,.08);
+}
+
+.footer-newsletter-form input{
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    padding: 10px 12px;
+    outline: 0;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+}
+
+.footer-newsletter-form input::placeholder{
+    color: rgba(255,255,255,.65);
+}
+
+.footer-newsletter-form button{
+    width: 38px;
+    border: 0;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+}
+
+.footer-bottom{
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    width: min(1200px, 92%);
+    margin: 28px auto 0;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,.15);
+    color: rgba(255,255,255,.6);
+    font-size: 12px;
+}
+
 /* Responsive */
 @media (max-width: 768px){
     .footer-container{
@@ -2412,6 +2455,11 @@ footer::before{
 
     .footer-brand-list li::before{
         display: none;
+    }
+
+    .footer-bottom{
+        flex-direction: column;
+        text-align: center;
     }
 
     .footer-col h4::after{

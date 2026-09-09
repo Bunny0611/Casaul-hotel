@@ -980,6 +980,8 @@
     <input type="hidden" name="check_in_time" id="reservationCheckInTime">
     <input type="hidden" name="check_out" id="reservationCheckOut">
     <input type="hidden" name="check_out_time" id="reservationCheckOutTime">
+    <input type="hidden" name="event_start_time" id="reservationEventStartTime">
+    <input type="hidden" name="event_end_time" id="reservationEventEndTime">
     <input type="hidden" name="guest_name" id="reservationGuestName" value="{{ $guest?->name ?? 'Guest' }}">
     <input type="hidden" name="guest_email" id="reservationGuestEmail" value="{{ $guest?->email ?? 'guest@example.com' }}">
     <input type="hidden" name="guest_phone" id="reservationGuestPhone" value="{{ $guest?->contact_no ?? '0000000000' }}">
@@ -1030,6 +1032,8 @@
         const reservationCheckInTime = document.getElementById('reservationCheckInTime');
         const reservationCheckOut = document.getElementById('reservationCheckOut');
         const reservationCheckOutTime = document.getElementById('reservationCheckOutTime');
+        const reservationEventStartTime = document.getElementById('reservationEventStartTime');
+        const reservationEventEndTime = document.getElementById('reservationEventEndTime');
         const reservationGuestName = document.getElementById('reservationGuestName');
         const reservationGuestEmail = document.getElementById('reservationGuestEmail');
         const reservationGuestPhone = document.getElementById('reservationGuestPhone');
@@ -1462,6 +1466,8 @@
             reservationCheckOut.value = bookingEndDate;
             reservationCheckInTime.value = bookingStartTime;
             reservationCheckOutTime.value = bookingEndTime;
+            reservationEventStartTime.value = selectedEventStartTime;
+            reservationEventEndTime.value = selectedEventEndTime;
             reservationDiningId.value = selectedDining.map(item => item.id).filter(Boolean).join(',');
             reservationDiningItems.value = JSON.stringify(selectedDining.map(item => ({
                 dining_id: item.id,
@@ -2120,12 +2126,18 @@
             } else if (firstEventSelection) {
                 reservationCheckInTime.value = firstEventSelection.startTime || '';
                 reservationCheckOutTime.value = firstEventSelection.endTime || '';
+                reservationEventStartTime.value = firstEventSelection.startTime || '';
+                reservationEventEndTime.value = firstEventSelection.endTime || '';
             } else if (firstAmenitySelection) {
                 reservationCheckInTime.value = firstAmenitySelection.time || '';
                 reservationCheckOutTime.value = '';
+                reservationEventStartTime.value = '';
+                reservationEventEndTime.value = '';
             } else {
                 reservationCheckInTime.value = arrivalTime.value || '';
                 reservationCheckOutTime.value = '';
+                reservationEventStartTime.value = '';
+                reservationEventEndTime.value = '';
             }
 
             const existingPaymentMethodInput = reservationForm.querySelector('input[name="payment_method"]');

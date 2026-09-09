@@ -2,78 +2,105 @@
 
 @section('content')
 
-@include('partials.section-hero', [
-    'title' => 'ACCOMMODATION',
-    'subtitle' => 'Comfortable stays with premium rooms and unforgettable views.',
-    'cta' => ['href' => '#rooms', 'label' => 'Explore Rooms'],
-'backgroundImage' => 'image/Royal-Suite-room.jpg',
-])
-
-<section class="offers animate-on-scroll" id="rooms">
-    <h2>Featured Rooms</h2>
-
-    <div class="cards">
-        @forelse($rooms as $room)
-        <div class="card">
-            <img src="{{ $room->image ? asset('images/' . $room->image) : asset('images/room1.jpg') }}" alt="{{ $room->room_type }}">
-            <h3>{{ $room->room_type }}</h3>
-            <p>₱{{ number_format($room->price, 2) }}/night • {{ $room->description ?? 'Comfortable and spacious room.' }}</p>
+<main class="accommodation-reference-page">
+    <section class="accommodation-reference-hero">
+        <div class="accommodation-reference-hero-copy">
+            <p class="accommodation-eyebrow">Comfort. Elegance. Memories. <span></span></p>
+            <h1>Rooms Designed<br>for Your <strong>Comfort</strong></h1>
+            <p class="accommodation-hero-text">Relax in our thoughtfully designed rooms<br class="accommodation-desktop-break"> where comfort meets elegance.</p>
+            <a class="accommodation-check-button" href="#rooms"><i class="far fa-calendar-alt"></i> Check Availability</a>
         </div>
-        @empty
-        <div class="card">
-            <img src="{{ asset('images/room1.jpg') }}" alt="Deluxe Room">
-            <h3>Deluxe Room</h3>
-            <p>₱3,500/night • Cozy, modern, and perfect for couples.</p>
+        <div class="accommodation-reference-hero-image">
+            <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="Elegant CASAUL Hotel guest room">
         </div>
+    </section>
 
-        <div class="card">
-            <img src="{{ asset('images/room2.jpg') }}" alt="Executive Suite">
-            <h3>Executive Suite</h3>
-            <p>₱6,500/night • Spacious suite with lounge area.</p>
-        </div>
+    <section class="accommodation-rooms-section" id="rooms">
+        <header class="accommodation-section-heading">
+            <h2>Featured Rooms</h2>
+            <div class="accommodation-heading-rule"><span></span><i class="fas fa-bed"></i><span></span></div>
+        </header>
 
-        <div class="card">
-            <img src="{{ asset('images/room3.jpg') }}" alt="Presidential Suite">
-            <h3>Presidential Suite</h3>
-            <p>₱12,000/night • Luxury experience for special occasions.</p>
+        <div class="accommodation-room-grid">
+            @forelse($rooms->take(5) as $index => $room)
+                <article class="accommodation-room-card">
+                    @if($index === 0)<span class="accommodation-room-badge">Best Seller</span>@endif
+                    <div class="accommodation-room-image"><img src="{{ $room->image ? asset('images/' . $room->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}"></div>
+                    <div class="accommodation-room-content">
+                        <h3>{{ $room->room_type }}</h3>
+                        <p class="accommodation-room-price">₱{{ number_format($room->price, 2) }} <span>/ night</span></p>
+                        <p class="accommodation-room-description">{{ $room->description ?? 'Comfortable and spacious room.' }}</p>
+                        <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> 2 Guests</span><span><i class="fas fa-bed"></i> 1 Bed</span><span><i class="fas fa-wifi"></i> Wi-Fi</span><span><i class="fas fa-snowflake"></i> AC</span></div>
+                    </div>
+                    <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room->room_type }}" data-room-price="₱{{ number_format($room->price, 2) }}" data-room-description="{{ $room->description ?? 'Comfortable and spacious room.' }}" data-room-image="{{ $room->image ? asset('images/' . $room->image) : asset('image/Royal-Suite-room.jpg') }}">View Details</button>
+                </article>
+            @empty
+                @foreach([
+                    ['slug' => 'deluxe-room', 'name' => 'Deluxe Room', 'price' => '3,000.00', 'description' => 'Comfortable and spacious room.', 'image' => 'image/Royal-Suite-room.jpg'],
+                    ['slug' => 'executive-room', 'name' => 'Deluxe Room', 'price' => '3,500.00', 'description' => 'Comfortable and spacious room.', 'image' => 'image/HM.jpg'],
+                    ['slug' => 'presidential-room', 'name' => 'Deluxe Room', 'price' => '4,200.00', 'description' => 'Elegant and relaxing atmosphere.', 'image' => 'image/Royal-Suite-room.jpg'],
+                    ['slug' => 'standard-room', 'name' => 'Deluxe Room', 'price' => '4,000.00', 'description' => 'Bright and relaxing atmosphere.', 'image' => 'image/HM.jpg'],
+                    ['slug' => 'deluxe-room', 'name' => 'Deluxe Room', 'price' => '3,800.00', 'description' => 'Bright and cozy room.', 'image' => 'image/Royal-Suite-room.jpg'],
+                ] as $index => $room)
+                    <article class="accommodation-room-card">
+                        @if($index === 0)<span class="accommodation-room-badge">Best Seller</span>@endif
+                        <div class="accommodation-room-image"><img src="{{ asset($room['image']) }}" alt="{{ $room['name'] }}"></div>
+                        <div class="accommodation-room-content">
+                            <h3>{{ $room['name'] }}</h3>
+                            <p class="accommodation-room-price">₱{{ $room['price'] }} <span>/ night</span></p>
+                            <p class="accommodation-room-description">{{ $room['description'] }}</p>
+                            <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> 2 Guests</span><span><i class="fas fa-bed"></i> 1 Bed</span><span><i class="fas fa-wifi"></i> Wi-Fi</span><span><i class="fas fa-snowflake"></i> AC</span></div>
+                        </div>
+                        <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room['name'] }}" data-room-price="₱{{ $room['price'] }}" data-room-description="{{ $room['description'] }}" data-room-image="{{ asset($room['image']) }}">View Details</button>
+                    </article>
+                @endforeach
+            @endforelse
         </div>
-        @endforelse
+    </section>
+
+    <section class="accommodation-benefits" aria-label="Why guests love CASAUL Hotel">
+        <article><i class="fas fa-crown"></i><div><h3>Premium Amenities</h3><p>Enjoy world-class facilities and thoughtful in-room essentials.</p></div></article>
+        <article><i class="fas fa-users"></i><div><h3>Friendly Hospitality</h3><p>We take care of the details so your stay feels effortless.</p></div></article>
+        <article><i class="fas fa-map-marker-alt"></i><div><h3>Prime Location</h3><p>Close to dining, attractions, and easy transport access.</p></div></article>
+    </section>
+
+    <div class="accommodation-details-modal" id="accommodation-details-modal" aria-hidden="true">
+        <div class="accommodation-details-dialog" role="dialog" aria-modal="true" aria-labelledby="accommodation-details-title">
+            <button class="accommodation-details-close" type="button" aria-label="Close room details"><i class="fas fa-times"></i></button>
+            <img id="accommodation-details-image" src="" alt="">
+            <div class="accommodation-details-copy">
+                <p class="accommodation-eyebrow">Room Details</p>
+                <h2 id="accommodation-details-title"></h2>
+                <p class="accommodation-details-price" id="accommodation-details-price"></p>
+                <p id="accommodation-details-description"></p>
+                <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> 2 Guests</span><span><i class="fas fa-bed"></i> 1 Bed</span><span><i class="fas fa-wifi"></i> Wi-Fi</span><span><i class="fas fa-snowflake"></i> AC</span></div>
+            </div>
+        </div>
     </div>
-</section>
+</main>
 
-<section class="recommendation animate-on-scroll">
-    <h2>Why Guests Love Us</h2>
+<script>
+    document.querySelectorAll('.accommodation-details-trigger').forEach(function (button) {
+        button.addEventListener('click', function () {
+            document.getElementById('accommodation-details-title').textContent = button.dataset.roomName;
+            document.getElementById('accommodation-details-price').textContent = button.dataset.roomPrice + ' / night';
+            document.getElementById('accommodation-details-description').textContent = button.dataset.roomDescription;
+            document.getElementById('accommodation-details-image').src = button.dataset.roomImage;
+            document.getElementById('accommodation-details-image').alt = button.dataset.roomName;
+            document.getElementById('accommodation-details-modal').classList.add('is-open');
+            document.getElementById('accommodation-details-modal').setAttribute('aria-hidden', 'false');
+        });
+    });
 
-    <div class="cards">
-        <div class="card">
-            <h3>Premium Amenities</h3>
-            <p>Fast Wi‑Fi, comfortable bedding, and thoughtful in-room essentials.</p>
-        </div>
-        <div class="card">
-            <h3>Friendly Hospitality</h3>
-            <p>We take care of the details so your stay feels effortless.</p>
-        </div>
-        <div class="card">
-            <h3>Prime Location</h3>
-            <p>Close to dining, attractions, and easy transport access.</p>
-        </div>
-    </div>
-</section>
+    function closeAccommodationDetails() {
+        document.getElementById('accommodation-details-modal').classList.remove('is-open');
+        document.getElementById('accommodation-details-modal').setAttribute('aria-hidden', 'true');
+    }
 
-<section class="reservation-highlight animate-on-scroll">
-    <div class="reservation-highlight-card" style="background: rgba(255,255,255,0.96); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 24px 45px rgba(0,0,0,0.12); border-radius: 28px; padding: 2rem; max-width: 960px; margin: 0 auto;">
-        <div class="reservation-highlight-copy" style="display: flex; flex-direction: column; gap: 0.75rem;">
-            <span class="eyebrow">Plan the Perfect Stay</span>
-            <h2 style="margin: 0; font-size: clamp(1.75rem, 2.4vw, 2.6rem);">Ready to lock in your ideal room?</h2>
-            <p style="margin: 0; color: #4f4f4f; line-height: 1.7;">Choose your room, amenities, event package, or dining plan in one seamless booking experience.</p>
-        </div>
-        <div style="margin-top: 1.75rem; display: flex; justify-content: flex-start;">
-            <a href="{{ auth('guest')->check() ? route('reservation') : '#guest-auth-modal' }}" class="btn{{ auth('guest')->check() ? '' : ' js-auth-trigger' }}"{{ auth('guest')->check() ? '' : ' data-auth-trigger' }} style="padding: 0.95rem 1.8rem; border-radius: 999px; background: #3f51b5; color: #fff; text-decoration: none; box-shadow: 0 14px 30px rgba(63,81,181,0.18); transition: transform 0.2s ease;">
-                <span>Make Reservation</span>
-            </a>
-        </div>
-    </div>
-</section>
- 
+    document.querySelector('.accommodation-details-close').addEventListener('click', closeAccommodationDetails);
+    document.getElementById('accommodation-details-modal').addEventListener('click', function (event) {
+        if (event.target === this) closeAccommodationDetails();
+    });
+</script>
+
 @endsection
-
