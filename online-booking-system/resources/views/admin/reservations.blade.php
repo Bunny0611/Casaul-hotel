@@ -150,7 +150,7 @@
             ->all();
     };
 
-    $employeeReservationDetails = function ($reservation, string $category) use ($uniqueCsvValue, $roomSelectedServices) {
+    $employeeReservationDetails = function ($reservation, string $category) use ($uniqueCsvValue, $roomSelectedServices, $overallReservationSummary) {
         $latestPayment = $reservation->payments->last();
         $overallPayment = $overallReservationSummary($reservation);
         $paymentDetails = $reservation->payment_details ?: ($latestPayment?->reference_number
