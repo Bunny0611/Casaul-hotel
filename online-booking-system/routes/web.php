@@ -22,8 +22,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/accommodation', [HomeController::class, 'accommodation'])->name('accommodation');
 Route::get('/accommodation/{slug}', [HomeController::class, 'roomDetail'])->name('accommodation.room');
-Route::get('/reservation', [HomeController::class, 'reservation'])->name('reservation');
-Route::post('/reservation', [HomeController::class, 'storeReservation'])->name('reservation.store');
+Route::middleware(['auth:guest', 'verified', 'role:guest'])->group(function () {
+    Route::get('/reservation', [HomeController::class, 'reservation'])->name('reservation');
+    Route::post('/reservation', [HomeController::class, 'storeReservation'])->name('reservation.store');
+});
 Route::post('/send-message', [HomeController::class, 'sendMessage'])->name('send.message');
 Route::view('/offers', 'offers')->name('offers');
 Route::view('/gallery', 'gallery')->name('gallery');
@@ -37,12 +39,22 @@ Route::get('/staff/login', [AuthController::class, 'showLoginForm'])->name('logi
 Route::post('/staff/login', [AuthController::class, 'login'])->name('login.submit');
 
 // --- Guest Login ---
-Route::get('/guest/login', [AuthController::class, 'showGuestLoginForm'])->name('guest.login');
 Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.login.submit');
+Route::get('/guest/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('guest.password.request');
+Route::post('/guest/forgot-password', [AuthController::class, 'sendPasswordResetLink'])->name('guest.password.email');
+Route::get('/guest/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
+Route::post('/guest/reset-password', [AuthController::class, 'resetPassword'])->name('guest.password.update');
 Route::post('/guest/register', [AuthController::class, 'guestRegister'])->name('guest.register.submit');
+Route::get('/guest/email/verify', [AuthController::class, 'showVerificationNotice'])->name('guest.verification.notice');
+Route::post('/guest/email/verification-notification', [AuthController::class, 'resendVerification'])
+    ->middleware('throttle:6,1')
+    ->name('guest.verification.send');
+Route::get('/guest/email/verify/{id}/{hash}', [AuthController::class, 'verifyGuestEmail'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify');
 
 // --- Guest Profile ---
-Route::middleware(['auth:guest', 'role:guest'])->group(function () {
+Route::middleware(['auth:guest', 'verified', 'role:guest'])->group(function () {
     Route::get('/guest/profile', [HomeController::class, 'profile'])->name('guest.profile');
     Route::get('/guest/records', [HomeController::class, 'records'])->name('guest.records');
     Route::get('/guest/receipts', [HomeController::class, 'receipts'])->name('guest.receipts');
@@ -208,7 +220,7 @@ Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:
 // --- Logout ---
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::middleware('auth:guest')->group(function () {
+Route::middleware(['auth:guest', 'verified'])->group(function () {
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });

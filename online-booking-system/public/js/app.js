@@ -348,6 +348,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
+        document.querySelectorAll('.auth-password-toggle').forEach((toggle) => {
+            toggle.addEventListener('click', () => {
+                const passwordInput = document.getElementById(toggle.dataset.passwordTarget);
+                const icon = toggle.querySelector('i');
+                if (!passwordInput) return;
+
+                const isVisible = passwordInput.type === 'text';
+                passwordInput.type = isVisible ? 'password' : 'text';
+                toggle.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+                icon.classList.toggle('fa-eye', isVisible);
+                icon.classList.toggle('fa-eye-slash', !isVisible);
+            });
+        });
+
 // Allow the signup form to submit so guests can actually create accounts.
         // (Previously blocked with a "coming soon" message.)
     }

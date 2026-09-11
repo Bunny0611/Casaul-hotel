@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Guest;
 use App\Models\Staff;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
@@ -16,14 +18,6 @@ class AuthController extends Controller
     public function showLoginForm()
     {
         return view('admin.login');
-    }
-
-    /**
-     * Show the guest login form.
-     */
-    public function showGuestLoginForm()
-    {
-        return view('guest.login');
     }
 
     /**
@@ -92,6 +86,51 @@ class AuthController extends Controller
         ])->onlyInput('email');
     }
 
+    public function showForgotPasswordForm()
+    {
+        return view('guest.forgot-password');
+    }
+
+    public function sendPasswordResetLink(Request $request)
+    {
+        $credentials = $request->validate(['email' => ['required', 'email']]);
+
+        $status = Password::broker('guests')->sendResetLink($credentials);
+
+        return back()->with('status', __($status));
+    }
+
+    public function showResetPasswordForm(string $token)
+    {
+        return view('guest.reset-password', [
+            'token' => $token,
+            'email' => request('email'),
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $data = $request->validate([
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', 'min:6'],
+        ]);
+
+        $status = Password::broker('guests')->reset(
+            $data,
+            function (Guest $guest, string $password): void {
+                $guest->forceFill(['password' => Hash::make($password)])->save();
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return redirect()->route('home', ['auth' => 'signin'])
+                ->with('status', 'Your password has been reset. You may now sign in.');
+        }
+
+        return back()->withErrors(['email' => __($status)])->withInput($request->only('email'));
+    }
+
     /**
      * Handle a guest registration attempt.
      */
@@ -116,11 +155,62 @@ class AuthController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
-        // auto-login and secure session
-        Auth::guard('guest')->login($user);
-        $request->session()->regenerate();
+        $user->sendEmailVerificationNotification();
 
-        return redirect()->route('home');
+        $request->session()->put([
+            'verification_email' => $user->email,
+            'verification_name' => $user->first_name,
+        ]);
+
+        return redirect()->route('guest.verification.notice');
+    }
+
+    /**
+     * Show the email verification instructions after guest registration.
+     */
+    public function showVerificationNotice(Request $request)
+    {
+        abort_unless($request->session()->has('verification_email'), 404);
+
+        return view('guest.verify-email', [
+            'email' => $request->session()->get('verification_email'),
+            'name' => $request->session()->get('verification_name'),
+        ]);
+    }
+
+    /**
+     * Resend Laravel's built-in verification notification.
+     */
+    public function resendVerification(Request $request)
+    {
+        $email = $request->session()->get('verification_email');
+        $guest = $email ? Guest::where('email', $email)->first() : null;
+
+        if ($guest && ! $guest->hasVerifiedEmail()) {
+            $guest->sendEmailVerificationNotification();
+        }
+
+        return back()->with('status', 'A new verification link has been sent.');
+    }
+
+    /**
+     * Verify a guest through Laravel's signed verification URL without logging in.
+     */
+    public function verifyGuestEmail(Request $request, string $id, string $hash)
+    {
+        abort_unless($request->hasValidSignature(), 403);
+
+        $guest = Guest::findOrFail($id);
+        abort_unless(hash_equals(sha1($guest->getEmailForVerification()), $hash), 403);
+
+        if (! $guest->hasVerifiedEmail() && $guest->markEmailAsVerified()) {
+            event(new Verified($guest));
+        }
+
+        $request->session()->forget(['verification_email', 'verification_name']);
+
+        return redirect()->route('home', ['auth' => 'signin'])
+            ->with('status', 'Your email has been verified. You may now sign in.');
     }
 
     /**

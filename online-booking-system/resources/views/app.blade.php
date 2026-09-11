@@ -118,19 +118,19 @@
 
 @php($signupHasErrors = $errors->hasAny(['first_name', 'last_name', 'middle_initial', 'contact_no', 'password_confirmation']))
 @php($authHasErrors = $errors->has('email') || $signupHasErrors)
-<div class="auth-modal-backdrop{{ $authHasErrors ? ' open' : '' }}" id="guest-auth-modal" aria-hidden="{{ $authHasErrors ? 'false' : 'true' }}">
+@php($authShouldOpen = $authHasErrors || request()->query('auth') === 'signin' || session()->has('status'))
+<div class="auth-modal-backdrop{{ $authShouldOpen ? ' open' : '' }}" id="guest-auth-modal" aria-hidden="{{ $authShouldOpen ? 'false' : 'true' }}">
     <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="guest-auth-title">
         <button type="button" class="auth-close-btn" id="guest-auth-close" aria-label="Close">×</button>
 
         <div class="auth-brand">
             <img src="{{ asset('image/LOGO.png') }}" alt="Casaul Hotel" class="auth-brand-logo">
-            <h2 id="guest-auth-title">Welcome to CASAUL</h2>
-            <p>Sign in to continue or create a guest account.</p>
+            <h2 id="guest-auth-title">CASAUL</h2>
         </div>
 
-        @if($authHasErrors)
+        @if($authHasErrors || session('status'))
             <div id="auth-message" class="auth-message" role="alert">
-                {{ $errors->first() }}
+                {{ $errors->first() ?: session('status') }}
             </div>
         @else
             <div id="auth-message" class="auth-message" style="display:none;"></div>
@@ -138,31 +138,40 @@
 
         <div class="auth-content">
             <div id="auth-signin-view" class="auth-panel{{ $signupHasErrors ? ' auth-hidden' : '' }}">
+                <div class="auth-panel-heading">
+                    <h3>Welcome Back</h3>
+                    <p>Sign in to continue to your account.</p>
+                </div>
                 <button type="button" class="auth-social-btn google-btn" id="google-signin-btn">
                     <i class="fab fa-google"></i>
                     Continue with Google
                 </button>
 
-                <div class="auth-divider"><span>or sign in with email</span></div>
+                <div class="auth-divider"><span>OR</span></div>
 
                 <form method="POST" action="{{ route('guest.login.submit') }}" class="auth-form">
                     @csrf
-                    <input type="email" name="email" class="auth-input" placeholder="Email address" required>
-                    <input type="password" name="password" class="auth-input" placeholder="Password" required>
+                    <label class="auth-input-wrap"><i class="far fa-envelope" aria-hidden="true"></i><input type="email" name="email" class="auth-input" placeholder="Email address" required></label>
+                    <label class="auth-input-wrap"><i class="fas fa-lock" aria-hidden="true"></i><input id="signin-password" type="password" name="password" class="auth-input" placeholder="Password" required><button type="button" class="auth-password-toggle" data-password-target="signin-password" aria-label="Show password"><i class="far fa-eye" aria-hidden="true"></i></button></label>
+                    <a href="{{ route('guest.password.request') }}" class="auth-forgot-link">Forgot password?</a>
                     <button type="submit" class="auth-submit-btn">Sign In</button>
                 </form>
             </div>
 
             <div id="auth-signup-view" class="auth-panel{{ $signupHasErrors ? '' : ' auth-hidden' }}">
+                <div class="auth-panel-heading">
+                    <h3>Create Your Account</h3>
+                    <p>Join CASAUL and create your guest account.</p>
+                </div>
                 <form method="POST" action="{{ route('guest.register.submit') }}" class="auth-form" id="guest-signup-form">
                     @csrf
-                    <input type="text" name="first_name" class="auth-input" placeholder="First Name" value="{{ old('first_name') }}" required>
-                    <input type="text" name="last_name" class="auth-input" placeholder="Last Name" value="{{ old('last_name') }}" required>
-                    <input type="text" name="middle_initial" class="auth-input" placeholder="M.I" maxlength="3" value="{{ old('middle_initial') }}" required>
-                    <input type="email" name="email" class="auth-input" placeholder="Gmail Address" value="{{ old('email') }}" required>
-                    <input type="text" name="contact_no" class="auth-input" placeholder="Contact No." value="{{ old('contact_no') }}" required>
-                    <input type="password" name="password" class="auth-input" placeholder="Password" required>
-                    <input type="password" name="password_confirmation" class="auth-input" placeholder="Re-Type Password" required>
+                    <label class="auth-input-wrap"><i class="far fa-user" aria-hidden="true"></i><input type="text" name="first_name" class="auth-input" placeholder="First Name" value="{{ old('first_name') }}" required></label>
+                    <label class="auth-input-wrap"><i class="far fa-user" aria-hidden="true"></i><input type="text" name="last_name" class="auth-input" placeholder="Last Name" value="{{ old('last_name') }}" required></label>
+                    <label class="auth-input-wrap"><i class="far fa-id-card" aria-hidden="true"></i><input type="text" name="middle_initial" class="auth-input" placeholder="M.I." maxlength="3" value="{{ old('middle_initial') }}" required></label>
+                    <label class="auth-input-wrap"><i class="far fa-envelope" aria-hidden="true"></i><input type="email" name="email" class="auth-input" placeholder="Gmail Address" value="{{ old('email') }}" required></label>
+                    <label class="auth-input-wrap"><i class="fas fa-phone" aria-hidden="true"></i><input type="text" name="contact_no" class="auth-input" placeholder="Contact No." value="{{ old('contact_no') }}" required></label>
+                    <label class="auth-input-wrap"><i class="fas fa-lock" aria-hidden="true"></i><input id="signup-password" type="password" name="password" class="auth-input" placeholder="Password" required><button type="button" class="auth-password-toggle" data-password-target="signup-password" aria-label="Show password"><i class="far fa-eye" aria-hidden="true"></i></button></label>
+                    <label class="auth-input-wrap"><i class="fas fa-lock" aria-hidden="true"></i><input id="signup-password-confirmation" type="password" name="password_confirmation" class="auth-input" placeholder="Re-type Password" required><button type="button" class="auth-password-toggle" data-password-target="signup-password-confirmation" aria-label="Show password"><i class="far fa-eye" aria-hidden="true"></i></button></label>
                     <button type="submit" class="auth-submit-btn">Create Account</button>
                 </form>
             </div>
