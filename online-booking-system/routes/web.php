@@ -40,6 +40,8 @@ Route::post('/staff/login', [AuthController::class, 'login'])->name('login.submi
 
 // --- Guest Login ---
 Route::post('/guest/login', [AuthController::class, 'guestLogin'])->name('guest.login.submit');
+Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('guest.google.redirect');
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('guest.google.callback');
 Route::get('/guest/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('guest.password.request');
 Route::post('/guest/forgot-password', [AuthController::class, 'sendPasswordResetLink'])->name('guest.password.email');
 Route::get('/guest/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');

@@ -341,13 +341,6 @@ document.addEventListener('DOMContentLoaded', function () {
             switchBtn.textContent = isSignUp ? 'Sign in' : 'Sign up';
         });
 
-        googleBtn?.addEventListener('click', () => {
-            if (authMessage) {
-                authMessage.style.display = 'block';
-                authMessage.textContent = 'Google sign-in is coming soon. Please use email sign-in for now.';
-            }
-        });
-
         document.querySelectorAll('.auth-password-toggle').forEach((toggle) => {
             toggle.addEventListener('click', () => {
                 const passwordInput = document.getElementById(toggle.dataset.passwordTarget);

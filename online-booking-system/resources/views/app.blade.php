@@ -142,10 +142,10 @@
                     <h3>Welcome Back</h3>
                     <p>Sign in to continue to your account.</p>
                 </div>
-                <button type="button" class="auth-social-btn google-btn" id="google-signin-btn">
+                <a href="{{ route('guest.google.redirect') }}" class="auth-social-btn google-btn" id="google-signin-btn">
                     <i class="fab fa-google"></i>
                     Continue with Google
-                </button>
+                </a>
 
                 <div class="auth-divider"><span>OR</span></div>
 

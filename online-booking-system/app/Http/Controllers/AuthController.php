@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
@@ -84,6 +86,58 @@ class AuthController extends Controller
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
+    }
+
+    public function redirectToGoogle()
+    {
+        if (! config('services.google.client_id') || ! config('services.google.client_secret')) {
+            return redirect()->route('home', ['auth' => 'signin'])
+                ->withErrors(['email' => 'Google sign-in is not configured yet. Please use email sign-in or contact the hotel.']);
+        }
+
+        return Socialite::driver('google')->redirect();
+    }
+
+    public function handleGoogleCallback(Request $request)
+    {
+        if (! config('services.google.client_id') || ! config('services.google.client_secret')) {
+            return redirect()->route('home', ['auth' => 'signin'])
+                ->withErrors(['email' => 'Google sign-in is not configured yet. Please use email sign-in or contact the hotel.']);
+        }
+
+        $googleUser = Socialite::driver('google')->user();
+
+        if (! $googleUser->getEmail()) {
+            return redirect()->route('home', ['auth' => 'signin'])
+                ->withErrors(['email' => 'Google did not provide an email address.']);
+        }
+
+        $guest = Guest::where('email', $googleUser->getEmail())->first();
+
+        if (! $guest) {
+            $name = trim((string) $googleUser->getName());
+            $nameParts = preg_split('/\s+/', $name, 2);
+            $firstName = $nameParts[0] ?? 'Google';
+            $lastName = $nameParts[1] ?? 'Guest';
+
+            $guest = Guest::create([
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'middle_initial' => null,
+                'name' => $name !== '' ? $name : $googleUser->getEmail(),
+                'email' => $googleUser->getEmail(),
+                'contact_no' => null,
+                'password' => Hash::make(Str::random(40)),
+            ]);
+            $guest->markEmailAsVerified();
+        } elseif (! $guest->hasVerifiedEmail()) {
+            $guest->markEmailAsVerified();
+        }
+
+        Auth::guard('guest')->login($guest, true);
+        $request->session()->regenerate();
+
+        return redirect()->route('home');
     }
 
     public function showForgotPasswordForm()
