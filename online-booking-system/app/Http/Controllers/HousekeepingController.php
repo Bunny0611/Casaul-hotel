@@ -111,11 +111,148 @@ class HousekeepingController extends Controller
     }
 
 
-    public function roomStatusUpdate()
+    public function roomStatusUpdate(Request $request)
     {
-        $rooms = Room::orderBy('room_number')->get();
+        $search = trim((string) $request->query('search', ''));
+        $roomType = trim((string) $request->query('room_type', ''));
+        $roomStatus = trim((string) $request->query('room_status', ''));
+        $cleaningStatus = trim((string) $request->query('cleaning_status', ''));
 
-        return view('housekeeping.room-status-update', compact('rooms'));
+        $baseRooms = Room::orderBy('room_number')->get();
+
+        $roomsQuery = Room::query();
+
+        if ($search !== '') {
+            $roomsQuery->where('room_number', 'like', "%{$search}%");
+        }
+
+        if ($roomType !== '' && $roomType !== 'All') {
+            $roomsQuery->where('room_type', $roomType);
+        }
+
+        if ($cleaningStatus !== '' && $cleaningStatus !== 'All') {
+            $roomsQuery->where('cleaning_status', $cleaningStatus);
+        }
+
+        $rooms = $roomsQuery->orderBy('room_number')->get();
+
+        if ($roomStatus !== '' && $roomStatus !== 'All') {
+            $rooms = $rooms->filter(function ($room) use ($roomStatus) {
+                return $this->resolveRoomStatusLabel($room) === $roomStatus;
+            })->values();
+        }
+
+        $roomTypes = $baseRooms
+            ->pluck('room_type')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        $roomStatusOptions = [
+            'All',
+            'Vacant Ready',
+            'Vacant Clean',
+            'Vacant Dirty',
+            'Occupied Clean',
+            'Occupied Dirty',
+            'House Use Dirty',
+            'House Use Clean',
+            'Out of Order',
+            'Blocked',
+            'No Show',
+            'Slept Out',
+            'House Use',
+            'Do Not Disturb',
+        ];
+
+        $cleaningOptions = [
+            'All',
+            'clean',
+            'dirty',
+            'in_progress',
+            'ready',
+            'blocked',
+            'out_of_order',
+        ];
+
+        return view('housekeeping.room-status-update', compact(
+            'rooms',
+            'roomTypes',
+            'roomStatusOptions',
+            'cleaningOptions',
+            'search',
+            'roomType',
+            'roomStatus',
+            'cleaningStatus'
+        ));
+    }
+
+    private function resolveRoomStatusLabel($room): string
+    {
+        $status = strtolower((string) ($room->status ?? ''));
+        $cleaningStatus = strtolower((string) ($room->cleaning_status ?? ''));
+
+        if (in_array($status, ['vr', 'vacant_ready', 'available', 'vacant'], true)
+            && in_array($cleaningStatus, ['clean', 'ready', '', null], true)) {
+            return 'Vacant Ready';
+        }
+
+        if (in_array($status, ['vc', 'vacant_clean'], true)) {
+            return 'Vacant Clean';
+        }
+
+        if (in_array($status, ['vd', 'vacant_dirty', 'available', 'vacant'], true)
+            && $cleaningStatus === 'dirty') {
+            return 'Vacant Dirty';
+        }
+
+        if (in_array($status, ['oc', 'occupied_clean', 'occupied'], true)
+            && in_array($cleaningStatus, ['clean', 'ready'], true)) {
+            return 'Occupied Clean';
+        }
+
+        if (in_array($status, ['od', 'occupied_dirty', 'occupied'], true)
+            && $cleaningStatus === 'dirty') {
+            return 'Occupied Dirty';
+        }
+
+        if (in_array($status, ['hsd', 'house_use_dirty'], true)) {
+            return 'House Use Dirty';
+        }
+
+        if (in_array($status, ['hsuc', 'house_use_clean'], true)) {
+            return 'House Use Clean';
+        }
+
+        if (in_array($status, ['ooo', 'out_of_order', 'maintenance', 'out of order'], true)
+            || in_array($cleaningStatus, ['out_of_order', 'out of order'], true)) {
+            return 'Out of Order';
+        }
+
+        if (in_array($status, ['blo', 'blocked', 'unavailable'], true)
+            || $cleaningStatus === 'blocked') {
+            return 'Blocked';
+        }
+
+        if (in_array($status, ['ns', 'no_show'], true)) {
+            return 'No Show';
+        }
+
+        if (in_array($status, ['so', 'slept_out'], true)) {
+            return 'Slept Out';
+        }
+
+        if (in_array($status, ['hu', 'house_use'], true)) {
+            return 'House Use';
+        }
+
+        if (in_array($status, ['dnd', 'do_not_disturb'], true)) {
+            return 'Do Not Disturb';
+        }
+
+        return 'Vacant Ready';
     }
 
     public function guestRequests()

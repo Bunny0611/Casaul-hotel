@@ -502,6 +502,12 @@
 	.room-status-badge.clean { background: #ecfdf5; color: #047857; }
 	.room-status-badge.dirty { background: #fef2f2; color: #b91c1c; }
 	.room-status-badge.in_progress { background: #fffbeb; color: #b45309; }
+	.room-status-badge.badge-green { background: #dff3e6; color: #2c8653; }
+	.room-status-badge.badge-amber { background: #f4e6bf; color: #b77a18; }
+	.room-status-badge.badge-oc { background: #dfeaf7; color: #2f6aa5; }
+	.room-status-badge.badge-red { background: #f8dfe3; color: #d24b5a; }
+	.room-status-badge.badge-purple { background: #ece4ff; color: #604bb9; }
+	.room-status-badge.badge-slate { background: #edf0f3; color: #4b5864; }
 
 	.cleaning-update-form {
 		display: flex;
@@ -699,12 +705,71 @@
 				</thead>
 				<tbody>
 					@forelse($rooms as $room)
-						@php($cleaningStatus = strtolower($room->cleaning_status ?: 'dirty'))
+						@php
+							$roomStatus = strtolower((string) ($room->status ?? ''));
+							$cleaningStatus = strtolower((string) ($room->cleaning_status ?? ''));
+
+							$statusLabel = 'Vacant Ready';
+							$statusClass = 'badge-green';
+
+							if (in_array($roomStatus, ['vr', 'vacant_ready', 'available', 'vacant'], true) && in_array($cleaningStatus, ['clean', 'ready', '', null], true)) {
+								$statusLabel = 'Vacant Ready';
+								$statusClass = 'badge-green';
+							} elseif (in_array($roomStatus, ['vc', 'vacant_clean'], true)) {
+								$statusLabel = 'Vacant Clean';
+								$statusClass = 'badge-green';
+							} elseif (in_array($roomStatus, ['vd', 'vacant_dirty', 'available', 'vacant'], true) && $cleaningStatus === 'dirty') {
+								$statusLabel = 'Vacant Dirty';
+								$statusClass = 'badge-amber';
+							} elseif (in_array($roomStatus, ['oc', 'occupied_clean', 'occupied'], true) && in_array($cleaningStatus, ['clean', 'ready'], true)) {
+								$statusLabel = 'Occupied Clean';
+								$statusClass = 'badge-oc';
+							} elseif (in_array($roomStatus, ['od', 'occupied_dirty', 'occupied'], true) && $cleaningStatus === 'dirty') {
+								$statusLabel = 'Occupied Dirty';
+								$statusClass = 'badge-red';
+							} elseif (in_array($roomStatus, ['hsd', 'house_use_dirty'], true)) {
+								$statusLabel = 'House Use Dirty';
+								$statusClass = 'badge-amber';
+							} elseif (in_array($roomStatus, ['hsuc', 'house_use_clean'], true)) {
+								$statusLabel = 'House Use Clean';
+								$statusClass = 'badge-green';
+							} elseif (in_array($roomStatus, ['ooo', 'out_of_order', 'maintenance', 'out of order'], true) || in_array($cleaningStatus, ['out_of_order', 'out of order'], true)) {
+								$statusLabel = 'Out of Order';
+								$statusClass = 'badge-purple';
+							} elseif (in_array($roomStatus, ['blo', 'blocked', 'unavailable'], true) || $cleaningStatus === 'blocked') {
+								$statusLabel = 'Blocked';
+								$statusClass = 'badge-slate';
+							} elseif (in_array($roomStatus, ['ns', 'no_show'], true)) {
+								$statusLabel = 'No Show';
+								$statusClass = 'badge-slate';
+							} elseif (in_array($roomStatus, ['so', 'slept_out'], true)) {
+								$statusLabel = 'Slept Out';
+								$statusClass = 'badge-slate';
+							} elseif (in_array($roomStatus, ['hu', 'house_use'], true)) {
+								$statusLabel = 'House Use';
+								$statusClass = 'badge-slate';
+							} elseif (in_array($roomStatus, ['dnd', 'do_not_disturb'], true)) {
+								$statusLabel = 'Do Not Disturb';
+								$statusClass = 'badge-slate';
+							}
+
+							$cleaningLabel = ucfirst(str_replace('_', ' ', $cleaningStatus ?: 'clean'));
+							if ($cleaningStatus === 'in_progress') {
+								$cleaningLabel = 'In Progress';
+							}
+
+							$cleaningClass = 'clean';
+							if ($cleaningStatus === 'dirty') {
+								$cleaningClass = 'dirty';
+							} elseif ($cleaningStatus === 'in_progress') {
+								$cleaningClass = 'in_progress';
+							}
+						@endphp
 						<tr>
 							<td><strong>{{ $room->room_number }}</strong></td>
 							<td>{{ $room->floor ?: 'N/A' }}</td>
-							<td>{{ ucfirst($room->status ?: 'N/A') }}</td>
-							<td><span class="room-status-badge {{ $cleaningStatus }}">{{ ucfirst(str_replace('_', ' ', $cleaningStatus)) }}</span></td>
+							<td><span class="room-status-badge {{ $statusClass }}">{{ $statusLabel }}</span></td>
+							<td><span class="room-status-badge {{ $cleaningClass }}">{{ $cleaningLabel }}</span></td>
 							<td>{{ $room->updated_at?->format('M d, Y g:i A') ?? 'N/A' }}</td>
 							<td><a href="{{ route('housekeeping.room-status-update') }}" class="cleaning-view-link" aria-label="View room {{ $room->room_number }} status actions"><i class="fas fa-eye"></i> View</a></td>
 						</tr>
