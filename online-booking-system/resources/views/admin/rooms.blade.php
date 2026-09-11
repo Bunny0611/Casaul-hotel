@@ -68,8 +68,8 @@
     }
 
     .room-management-page [data-panel="rooms"] button[onclick="confirmBulkDelete()"],
-    .room-management-page [data-panel="amenities"] button[onclick^="confirmBulkInventoryDelete"],
-    .room-management-page [data-panel="event-place"] button[onclick^="confirmBulkInventoryDelete"] {
+    .room-management-page [data-panel="facilities"] button[onclick^="confirmBulkInventoryDelete"],
+    .room-management-page [data-panel="events"] button[onclick^="confirmBulkInventoryDelete"] {
         display: none;
     }
 
@@ -155,18 +155,18 @@
                 <i class="fas fa-plus mr-2"></i>Add Room
             </button>
             <button id="add-amenities-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
-                <i class="fas fa-plus mr-2"></i>Add Amenities
+                <i class="fas fa-plus mr-2"></i>Add Facility
             </button>
             <button id="add-event-place-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
-                <i class="fas fa-plus mr-2"></i>Add Event Place
+                <i class="fas fa-plus mr-2"></i>Add Event
             </button>
         </div>
     </div>
 
     <div class="mb-6 flex flex-wrap gap-2 sm:gap-4">
         <button type="button" data-tab="rooms" class="tab-button rounded-lg bg-orange-500 px-6 py-3 font-medium text-white transition hover:bg-orange-600">ROOMS</button>
-        <button type="button" data-tab="amenities" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">AMENITIES</button>
-        <button type="button" data-tab="event-place" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">EVENT PLACE</button>
+        <button type="button" data-tab="facilities" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">FACILITIES</button>
+        <button type="button" data-tab="events" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">EVENTS</button>
         <button type="button" data-tab="dining" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">DINING</button>
     </div>
 
@@ -254,7 +254,7 @@
         </div>
     </div>
 
-    <div data-panel="amenities" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div data-panel="facilities" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
             <div></div>
             <div class="flex items-center gap-3"><span id="amenitiesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('amenities')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected amenities"><i class="fas fa-trash"></i></button></div>
@@ -263,7 +263,7 @@
             <table class="min-w-[720px] w-full">
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllAmenitiesHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="amenities" onclick="toggleAllInventoryCheckboxes('amenities', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amenity Name</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllAmenitiesHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="facilities" onclick="toggleAllInventoryCheckboxes('facilities', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Facility Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Capacity / Quantity</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
@@ -275,7 +275,7 @@
                         @php($amenityStatus = strtolower($item->status ?? 'unavailable'))
                         <tr class="transition-colors hover:bg-gray-50"><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-amenities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('amenities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full px-3 py-1 text-xs font-medium text-white {{ $amenityStatus === 'available' ? 'bg-green-500' : ($amenityStatus === 'limited' ? 'bg-yellow-500' : 'bg-red-500') }}">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "amenities")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit amenity"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "amenities")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change amenity status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=amenities" method="POST" onsubmit="return confirm('Delete this amenity?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete amenity"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @empty
-                        <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-concierge-bell mb-4 text-4xl text-gray-300"></i><p>No amenities found. Add your first amenity to get started.</p></td></tr>
+                        <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-concierge-bell mb-4 text-4xl text-gray-300"></i><p>No facilities found. Add your first facility to get started.</p></td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -283,7 +283,7 @@
         {{ $amenities->links('pagination.admin-rooms') }}
     </div>
 
-    <div data-panel="event-place" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div data-panel="events" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4"><div></div><div class="flex items-center gap-3"><span id="event_placeSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('event_place')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white" aria-label="Delete selected event places"><i class="fas fa-trash"></i></button></div></div>
         <div class="overflow-x-auto">
             <table class="w-full">
@@ -489,8 +489,8 @@
         </button>
 
         <div class="mb-6">
-            <h3 class="text-2xl font-bold text-gray-800">Add Amenity</h3>
-            <p class="mt-1 text-sm text-gray-500">Create a new amenity option for guests.</p>
+            <h3 class="text-2xl font-bold text-gray-800">Add Facility</h3>
+            <p class="mt-1 text-sm text-gray-500">Create a new facility option for guests.</p>
         </div>
         @if($errors->any() && old('category') === 'amenities')
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
@@ -498,10 +498,10 @@
 
         <form id="addAmenityForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
-            <input type="hidden" name="category" value="amenities">
+            <input type="hidden" name="category" value="facilities">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Amenity Name</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Facility Name</label>
                     <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="md:col-span-2">
@@ -539,7 +539,7 @@
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeAmenityModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
-                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Amenity</button>
+                <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Facility</button>
             </div>
         </form>
     </div>
@@ -561,7 +561,7 @@
 
         <form id="addEventPlaceForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
-            <input type="hidden" name="category" value="event_place">
+            <input type="hidden" name="category" value="event">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label>
@@ -1023,7 +1023,7 @@
         const count = document.querySelectorAll('.inventory-checkbox-' + category + ':checked').length;
         const label = document.getElementById(category + 'SelectedCount');
         if (label) label.textContent = count + ' selected';
-        const panelName = category === 'event_place' ? 'event-place' : category;
+        const panelName = category === 'event' ? 'events' : category;
         const deleteButton = document.querySelector('[data-panel="' + panelName + '"] button[onclick^="confirmBulkInventoryDelete"]');
         const selectAll = document.querySelector('.inventory-select-all[data-category="' + category + '"]');
         if (deleteButton) deleteButton.style.display = selectAll && selectAll.checked ? 'inline-flex' : 'none';
@@ -1423,7 +1423,7 @@
                 const shouldShow =
                     (targetName === 'rooms' && button.id === 'add-room-button') ||
                     (targetName === 'amenities' && button.id === 'add-amenities-button') ||
-                    (targetName === 'event-place' && button.id === 'add-event-place-button');
+                    (targetName === 'events' && button.id === 'add-event-place-button');
                 button.classList.toggle('hidden', !shouldShow);
             });
             if (targetName === 'dining') {
@@ -1484,7 +1484,7 @@
 
         @if($errors->any())
             @if(old('category'))
-                activateTab(@json(old('category') === 'event_place' ? 'event-place' : old('category')));
+                activateTab(@json(old('category') === 'event' ? 'events' : old('category')));
                 @if(old('category') === 'amenities') openAmenityModal(); @elseif(old('category') === 'event_place') openEventPlaceModal(); @elseif(old('category') === 'dining') openDiningModal(); @endif
             @else
                 openAddRoomModal();

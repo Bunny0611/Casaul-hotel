@@ -14,19 +14,20 @@ use App\Models\Room;
 use App\Models\Reservation;
 use App\Models\RoomReservation;
 use App\Models\EventReservation;
-use App\Models\AmenityReservation;
+use App\Models\FacilityReservation;
 use App\Models\DiningReservation;
 use App\Models\Message;
 use App\Models\MaintenanceReport;
 use App\Models\Staff;
 use App\Models\InventoryItem;
-use App\Models\Amenity;
-use App\Models\EventPlace;
+use App\Models\Facility;
+use App\Models\Event;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
 use App\Models\DiningMenu;
 use App\Models\ReservationDiningItem;
 use App\Models\GuestRequest;
+use App\Support\ReservationPricing;
 
 class AdminController extends Controller
 {
@@ -130,14 +131,14 @@ class AdminController extends Controller
     public function rooms()
     {
         $rooms = Room::orderBy('room_number')->paginate(5);
-        $amenities = Amenity::orderBy('name')->paginate(5, ['*'], 'amenities_page')->appends(['tab' => 'amenities']);
-        $eventPlaces = EventPlace::orderBy('name')->paginate(5, ['*'], 'event_places_page')->appends(['tab' => 'event-place']);
+        $amenities = Facility::orderBy('name')->paginate(5, ['*'], 'facilities_page')->appends(['tab' => 'facilities']);
+        $eventPlaces = Event::orderBy('name')->paginate(5, ['*'], 'events_page')->appends(['tab' => 'events']);
         $dining = DiningMenu::orderBy('name')->paginate(5, ['*'], 'dining_page')->appends(['tab' => 'dining']);
         $diningTables = DiningTable::orderBy('table_no')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $activeTab = request()->query('tab', 'rooms');
 
-        if (!in_array($activeTab, ['rooms', 'amenities', 'event-place', 'dining'], true)) {
+        if (!in_array($activeTab, ['rooms', 'facilities', 'events', 'dining'], true)) {
             $activeTab = 'rooms';
         }
 
@@ -216,13 +217,13 @@ class AdminController extends Controller
     public function storeInventoryItem(Request $request)
     {
         $validated = $request->validate([
-            'category' => ['required', 'in:amenities,event_place,dining'],
+            'category' => ['required', 'in:facilities,event,dining'],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
-            'pricing_basis' => ['required_if:category,amenities,event_place', 'nullable', 'string', 'in:Per Stay,Per Person,Per Vehicle,Per Stay + Per Vehicle,Per Hour,Per Day,Fixed Price,Per Event'],
-            'scheduling_requirement' => ['required_if:category,amenities', 'nullable', 'string', 'in:No Additional Schedule,Date Required,Date & Time Required'],
+            'pricing_basis' => ['required_if:category,facilities,event', 'nullable', 'string', 'in:Per Stay,Per Person,Per Vehicle,Per Stay + Per Vehicle,Per Hour,Per Day,Fixed Price,Per Event'],
+            'scheduling_requirement' => ['required_if:category,facilities', 'nullable', 'string', 'in:No Additional Schedule,Date Required,Date & Time Required'],
             'event_type' => ['nullable', 'string', 'in:Birthday,Wedding'],
             'status' => ['required', 'string', 'max:50'],
             'location' => ['nullable', 'string', 'max:255'],
@@ -235,8 +236,8 @@ class AdminController extends Controller
         $validated['status'] = strtolower($validated['status']);
 
         $catalogModel = match ($validated['category']) {
-            'amenities' => Amenity::class,
-            'event_place' => EventPlace::class,
+            'facilities' => Facility::class,
+            'event' => Event::class,
             default => DiningMenu::class,
         };
         if ($catalogModel::where('name', $validated['name'])->exists()) {
@@ -248,13 +249,13 @@ class AdminController extends Controller
         }
 
         match ($validated['category']) {
-            'amenities' => Amenity::create([
+            'facilities' => Facility::create([
                 'name' => $validated['name'], 'description' => $validated['description'] ?? null,
                 'price' => $validated['price'], 'status' => $validated['status'], 'image' => $validated['image'] ?? null,
                 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null,
                 'scheduling_requirement' => $validated['scheduling_requirement'] ?? 'No Additional Schedule',
             ]),
-            'event_place' => EventPlace::create([
+            'event' => Event::create([
                 'event_type' => $validated['event_type'] ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null,
                 'price' => $validated['price'], 'capacity' => $validated['capacity'] ?? null,
                 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'location' => $validated['location'] ?? null,
@@ -325,14 +326,14 @@ class AdminController extends Controller
     public function updateInventoryItem(Request $request, $id)
     {
         $category = $request->input('category');
-        $item = $category === 'amenities' ? Amenity::findOrFail($id) : ($category === 'event_place' ? EventPlace::findOrFail($id) : DiningMenu::findOrFail($id));
+        $item = $category === 'facilities' ? Facility::findOrFail($id) : ($category === 'event' ? Event::findOrFail($id) : DiningMenu::findOrFail($id));
         $validated = $request->validate([
-            'category' => ['required', 'in:amenities,event_place,dining'],
+            'category' => ['required', 'in:facilities,event,dining'],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
-            'pricing_basis' => ['required_if:category,amenities,event_place', 'nullable', 'string', 'in:Per Stay,Per Person,Per Vehicle,Per Stay + Per Vehicle,Per Hour,Per Day,Fixed Price,Per Event'],
+            'pricing_basis' => ['required_if:category,facilities,event', 'nullable', 'string', 'in:Per Stay,Per Person,Per Vehicle,Per Stay + Per Vehicle,Per Hour,Per Day,Fixed Price,Per Event'],
             'scheduling_requirement' => ['nullable', 'string', 'in:No Additional Schedule,Date Required,Date & Time Required'],
             'event_type' => ['nullable', 'string', 'in:Birthday,Wedding'],
             'status' => ['required', 'string', 'max:50'],
@@ -345,7 +346,7 @@ class AdminController extends Controller
         ]);
         $validated['status'] = strtolower($validated['status']);
 
-        $model = $category === 'amenities' ? Amenity::class : ($category === 'event_place' ? EventPlace::class : DiningMenu::class);
+        $model = $category === 'facilities' ? Facility::class : ($category === 'event' ? Event::class : DiningMenu::class);
         if ($model::where('name', $validated['name'])->where('id', '!=', $item->id)->exists()) {
             return back()->withErrors(['name' => 'An item with this name already exists.'])->withInput();
         }
@@ -354,9 +355,9 @@ class AdminController extends Controller
             $validated['image'] = $this->handleCatalogImageUpload($request, $item->image);
         }
 
-        $item->update($category === 'amenities'
+        $item->update($category === 'facilities'
             ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? $item->scheduling_requirement ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
-            : ($category === 'event_place'
+            : ($category === 'event'
                 ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
                 : $validated));
 
@@ -366,7 +367,7 @@ class AdminController extends Controller
     public function updateInventoryStatus(Request $request, $id)
     {
         $category = $request->input('category', 'dining');
-        $item = $category === 'amenities' ? Amenity::findOrFail($id) : ($category === 'event_place' ? EventPlace::findOrFail($id) : DiningMenu::findOrFail($id));
+        $item = $category === 'facilities' ? Facility::findOrFail($id) : ($category === 'event' ? Event::findOrFail($id) : DiningMenu::findOrFail($id));
         $validated = $request->validate(['status' => ['required', 'string', 'max:50']]);
         $item->update(['status' => strtolower($validated['status'])]);
 
@@ -394,7 +395,7 @@ class AdminController extends Controller
     public function destroyInventoryItem($id)
     {
         $category = request()->input('category', 'dining');
-        $item = $category === 'amenities' ? Amenity::findOrFail($id) : ($category === 'event_place' ? EventPlace::findOrFail($id) : DiningMenu::findOrFail($id));
+        $item = $category === 'facilities' ? Facility::findOrFail($id) : ($category === 'event' ? Event::findOrFail($id) : DiningMenu::findOrFail($id));
         $item->delete();
 
         return redirect()->route('admin.rooms')->with('success', 'Item deleted successfully.');
@@ -416,11 +417,11 @@ class AdminController extends Controller
             ->values()
             ->all();
 
-        if (!count($inventoryIds) || !in_array($category, ['amenities', 'event_place', 'dining'], true)) {
+        if (!count($inventoryIds) || !in_array($category, ['facilities', 'event', 'dining'], true)) {
             return redirect()->route('admin.rooms')->with('success', 'No inventory items selected for deletion.');
         }
 
-        $model = $category === 'amenities' ? Amenity::class : ($category === 'event_place' ? EventPlace::class : DiningMenu::class);
+        $model = $category === 'facilities' ? Facility::class : ($category === 'event' ? Event::class : DiningMenu::class);
         $deleted = $model::whereIn('id', $inventoryIds)->delete();
 
         return redirect()->route('admin.rooms')->with('success', $deleted . ' inventory item(s) deleted successfully.');
@@ -540,20 +541,20 @@ class AdminController extends Controller
         $this->completeFinishedReservations();
 
         $roomReservations = RoomReservation::with('room')->latest()->get();
-        $amenityReservations = AmenityReservation::with('amenity')->latest()->get();
-        $eventPlaceReservations = EventReservation::with(['eventPlace', 'diningItems.diningMenu'])->latest()->get();
+        $amenityReservations = FacilityReservation::with('facility')->latest()->get();
+        $eventPlaceReservations = EventReservation::with(['event', 'diningItems.diningMenu'])->latest()->get();
         $diningReservations = DiningReservation::with('diningItems.diningMenu')->latest()->get();
 
-        $legacyReservations = Reservation::with(['room', 'amenity', 'eventPlace', 'diningItems'])->latest()->get();
+        $legacyReservations = Reservation::with(['room', 'facility', 'event', 'diningItems'])->latest()->get();
         $legacyReservations->each(function ($reservation) use (&$roomReservations, &$amenityReservations, &$eventPlaceReservations, &$diningReservations) {
             $category = $reservation->category;
             if ($category === 'rooms' || $reservation->room_id) {
                 $roomReservations->push($reservation);
             }
-            if ($category === 'amenities' || $reservation->amenity_id) {
+            if ($category === 'facilities' || $reservation->facility_id) {
                 $amenityReservations->push($reservation);
             }
-            if ($category === 'event_place' || $reservation->event_place_id) {
+            if ($category === 'event' || $reservation->event_id) {
                 $eventPlaceReservations->push($reservation);
             }
             if ($category === 'dining' || $reservation->dining_id || $reservation->dining_area || $reservation->dining_schedule) {
@@ -568,8 +569,8 @@ class AdminController extends Controller
         
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
-        $amenities = Amenity::orderBy('name')->get();
-        $eventPlaces = EventPlace::orderBy('name')->get();
+        $amenities = Facility::orderBy('name')->get();
+        $eventPlaces = Event::orderBy('name')->get();
         $diningMenus = DiningMenu::orderBy('name')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $diningTables = DiningTable::orderBy('table_no')->get();
@@ -602,14 +603,14 @@ class AdminController extends Controller
                 $end = Carbon::parse(Carbon::parse($reservation->check_out)->format('Y-m-d') . ' ' . ($reservation->event_end_time ?: '23:59:59'));
                 if ($end->lte($now)) {
                     $reservation->update(['status' => 'completed']);
-                    $reservation->eventPlace?->update(['status' => 'available']);
+                    $reservation->event?->update(['status' => 'available']);
                 }
             });
 
-        AmenityReservation::whereIn('status', ['confirmed', 'checked-in'])
+        FacilityReservation::whereIn('status', ['confirmed', 'checked-in'])
             ->get()
             ->each(function ($reservation) use ($now) {
-                $end = Carbon::parse(Carbon::parse($reservation->check_out)->format('Y-m-d') . ' ' . ($reservation->amenity_end_time ?: '23:59:59'));
+                $end = Carbon::parse(Carbon::parse($reservation->check_out)->format('Y-m-d') . ' ' . ($reservation->facility_end_time ?: '23:59:59'));
                 if ($end->lte($now)) {
                     $reservation->update(['status' => 'completed']);
                 }
@@ -723,19 +724,19 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'category' => ['required', 'in:rooms,amenities,event_place,dining'],
+            'category' => ['required', 'in:rooms,facilities,event,dining'],
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'guest_name' => ['required', 'string', 'max:255'],
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:20'],
-            'event_type' => ['nullable', 'required_if:category,event_place', 'string', 'max:100'],
-            'number_of_guests' => ['nullable', 'required_if:category,rooms|required_if:category,event_place', 'integer', 'min:1'],
+            'event_type' => ['nullable', 'required_if:category,event', 'string', 'max:100'],
+            'number_of_guests' => ['nullable', 'required_if:category,rooms|required_if:category,event', 'integer', 'min:1'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
             'quantity' => ['nullable', 'integer', 'min:1'],
-            'amenity_quantity' => ['nullable', 'integer', 'min:1'],
+            'facility_quantity' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
-            'check_in_time' => ['nullable', 'required_if:category,amenities', 'date_format:H:i'],
+            'check_in_time' => ['nullable', 'required_if:category,facilities', 'date_format:H:i'],
             'event_start_time' => ['nullable', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
@@ -744,10 +745,10 @@ class AdminController extends Controller
             'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
-            'amenity_id' => ['nullable', 'required_if:category,amenities', 'exists:amenities,id'],
-            'event_place_id' => ['nullable', 'required_if:category,event_place', 'exists:event_places,id'],
+            'facility_id' => ['nullable', 'required_if:category,facilities', 'exists:facilities,id'],
+            'event_id' => ['nullable', 'required_if:category,event', 'exists:events,id'],
             'dining_id' => ['nullable', 'string'],
-            'duration_hours' => ['nullable', 'required_if:category,amenities', 'integer', 'min:1', 'max:24'],
+            'duration_hours' => ['nullable', 'required_if:category,facilities', 'integer', 'min:1', 'max:24'],
             'special_requests' => ['nullable', 'string'],
             'submission_token' => ['nullable', 'string', 'max:100'],
         ]);
@@ -781,26 +782,52 @@ class AdminController extends Controller
 
         // Process based on category
         $category = $validated['category'];
+        $room = !empty($validated['room_id']) ? Room::findOrFail($validated['room_id']) : null;
+        $facility = !empty($validated['facility_id']) ? Facility::findOrFail($validated['facility_id']) : null;
+        $event = !empty($validated['event_id']) ? Event::findOrFail($validated['event_id']) : null;
+        $roomTotal = $room
+            ? ReservationPricing::room($room, $validated['check_in'], $validated['check_out'], (int) ($validated['number_of_guests'] ?? 1))
+            : 0;
+        $facilityTotal = $facility
+            ? ReservationPricing::facilities(
+                collect([$facility]),
+                (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1),
+                $validated['check_in'],
+                $validated['check_out']
+            )
+            : 0;
+        $eventDurationHours = 1;
+        if (!empty($validated['event_start_time']) && !empty($validated['event_end_time'])) {
+            $eventDurationHours = max(1, Carbon::parse($validated['event_start_time'])->diffInHours(Carbon::parse($validated['event_end_time'])));
+        }
+        $eventTotal = $event
+            ? ReservationPricing::events(collect([$event]), (int) ($validated['number_of_guests'] ?? 1), $eventDurationHours)
+            : 0;
+        $diningTotal = ReservationPricing::dining($diningSelections);
+        $validated['total_amount'] = match ($category) {
+            'rooms' => $roomTotal,
+            'facilities' => $facilityTotal,
+            'event' => $eventTotal,
+            'dining' => $diningTotal,
+        };
 
         if ($category === 'rooms') {
             $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
             $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
             $reservation = RoomReservation::create($validated);
-        } elseif ($category === 'event_place') {
+        } elseif ($category === 'event') {
             $validated['event_start_time'] = $validated['event_start_time'] ?? $validated['check_in_time'] ?? null;
             $validated['event_end_time'] = $validated['event_end_time'] ?? $validated['check_out_time'] ?? null;
             $reservation = EventReservation::create($validated);
-        } elseif ($category === 'amenities') {
-            $amenity = Amenity::findOrFail($validated['amenity_id']);
+        } elseif ($category === 'facilities') {
             $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $validated['check_in_time'])
                 ->addHours((int) $validated['duration_hours']);
             $validated['check_out'] = $endTime->toDateString();
-            $validated['amenity_end_time'] = $endTime->format('H:i');
-            $validated['amenity_start_time'] = $validated['check_in_time'] ?? null;
-            $validated['amenity_quantity'] = $validated['amenity_quantity'] ?? $validated['quantity'] ?? 1;
-            $validated['total_amount'] = (float) $amenity->price * (int) $validated['duration_hours'];
+            $validated['facility_end_time'] = $endTime->format('H:i');
+            $validated['facility_start_time'] = $validated['check_in_time'] ?? null;
+            $validated['facility_quantity'] = $validated['facility_quantity'] ?? $validated['quantity'] ?? 1;
             unset($validated['duration_hours']);
-            $reservation = AmenityReservation::create($validated);
+            $reservation = FacilityReservation::create($validated);
         } elseif ($category === 'dining') {
             $hasDiningConflict = DiningReservation::query()
                 ->activeForTableAndSchedule(
@@ -831,31 +858,31 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', 'in:pending,confirmed,checked-in,cancelled,completed'],
-            'category' => ['nullable', 'in:rooms,amenities,event_place,dining'],
+            'category' => ['nullable', 'in:rooms,facilities,event,dining'],
         ]);
 
         DB::transaction(function () use ($id, $validated) {
             $reservationType = match ($validated['category'] ?? null) {
                 'rooms' => 'room',
-                'event_place' => 'event',
-                'amenities' => 'amenity',
+                'event' => 'event',
+                'facilities' => 'facility',
                 'dining' => 'dining',
                 default => null,
             };
             $reservation = match ($validated['category'] ?? null) {
                 'rooms' => RoomReservation::with('room')->find($id),
-                'event_place' => EventReservation::find($id),
-                'amenities' => AmenityReservation::find($id),
+                'event' => EventReservation::find($id),
+                'facilities' => FacilityReservation::find($id),
                 'dining' => DiningReservation::find($id),
                 default => RoomReservation::with('room')->find($id)
                     ?? EventReservation::find($id)
-                    ?? AmenityReservation::find($id)
+                    ?? FacilityReservation::find($id)
                     ?? DiningReservation::find($id),
             };
 
             if (!$reservationType) {
                 $reservationType = $reservation instanceof EventReservation ? 'event'
-                    : ($reservation instanceof AmenityReservation ? 'amenity'
+                    : ($reservation instanceof FacilityReservation ? 'facility'
                     : ($reservation instanceof DiningReservation ? 'dining' : 'room'));
             }
 
@@ -890,7 +917,7 @@ class AdminController extends Controller
             }
 
             if ($reservation instanceof RoomReservation) {
-                AmenityReservation::query()
+                FacilityReservation::query()
                     ->where('guest_email', $reservation->guest_email)
                     ->whereDate('check_in', $reservation->check_in)
                     ->whereNotIn('status', ['cancelled', 'completed'])
@@ -927,11 +954,11 @@ class AdminController extends Controller
                 }
             }
 
-            if ($reservation instanceof EventReservation && $reservation->eventPlace) {
+            if ($reservation instanceof EventReservation && $reservation->event) {
                 if ($validated['status'] === 'confirmed') {
-                    $reservation->eventPlace->update(['status' => 'reserved']);
+                    $reservation->event->update(['status' => 'reserved']);
                 } elseif (in_array($validated['status'], ['cancelled', 'completed'], true)) {
-                    $reservation->eventPlace->update(['status' => 'available']);
+                    $reservation->event->update(['status' => 'available']);
                 }
             }
         });
@@ -958,7 +985,7 @@ class AdminController extends Controller
         $result = DB::transaction(function () use ($request, $id, $validated) {
             // Find reservation in all tables
             $reservation = RoomReservation::find($id) ?? EventReservation::find($id) ?? 
-                          AmenityReservation::find($id) ?? DiningReservation::find($id);
+                          FacilityReservation::find($id) ?? DiningReservation::find($id);
             
             abort_if(!$reservation, 404, 'Reservation not found');
             
@@ -1015,17 +1042,17 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'category' => ['required', 'in:rooms,amenities,event_place,dining'],
+            'category' => ['required', 'in:rooms,facilities,event,dining'],
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'guest_name' => ['required', 'string', 'max:255'],
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:20'],
-            'event_type' => ['nullable', 'required_if:category,event_place', 'string', 'max:100'],
-            'number_of_guests' => ['nullable', 'required_if:category,event_place', 'integer', 'min:1'],
+            'event_type' => ['nullable', 'required_if:category,event', 'string', 'max:100'],
+            'number_of_guests' => ['nullable', 'required_if:category,event', 'integer', 'min:1'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Dinner'],
             'quantity' => ['nullable', 'integer', 'min:1'],
-            'amenity_quantity' => ['nullable', 'integer', 'min:1'],
+            'facility_quantity' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'date_format:H:i'],
             'event_start_time' => ['nullable', 'date_format:H:i'],
@@ -1042,8 +1069,8 @@ class AdminController extends Controller
 
         $reservation = match ($validated['category']) {
             'rooms' => RoomReservation::findOrFail($id),
-            'event_place' => EventReservation::findOrFail($id),
-            'amenities' => AmenityReservation::findOrFail($id),
+            'event' => EventReservation::findOrFail($id),
+            'facilities' => FacilityReservation::findOrFail($id),
             'dining' => DiningReservation::findOrFail($id),
         };
 
@@ -1062,12 +1089,12 @@ class AdminController extends Controller
         if ($validated['category'] === 'rooms') {
             $attributes['room_check_in_time'] = $validated['check_in_time'] ?? null;
             $attributes['room_check_out_time'] = $validated['check_out_time'] ?? null;
-        } elseif ($validated['category'] === 'event_place') {
+        } elseif ($validated['category'] === 'event') {
             $attributes['event_start_time'] = $validated['event_start_time'] ?? $validated['check_in_time'] ?? null;
             $attributes['event_end_time'] = $validated['event_end_time'] ?? $validated['check_out_time'] ?? null;
-        } elseif ($validated['category'] === 'amenities') {
-            $attributes['amenity_start_time'] = $validated['check_in_time'] ?? null;
-            $attributes['amenity_end_time'] = $validated['check_out_time'] ?? null;
+        } elseif ($validated['category'] === 'facilities') {
+            $attributes['facility_start_time'] = $validated['check_in_time'] ?? null;
+            $attributes['facility_end_time'] = $validated['check_out_time'] ?? null;
         }
 
         $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
@@ -1085,37 +1112,37 @@ class AdminController extends Controller
     public function destroyReservation(Request $request, $id)
     {
         $category = $request->validate([
-            'category' => ['nullable', 'in:rooms,amenities,event_place,dining'],
+            'category' => ['nullable', 'in:rooms,facilities,event,dining'],
         ])['category'] ?? null;
         $reservationType = match ($category) {
             'rooms' => 'room',
-            'event_place' => 'event',
-            'amenities' => 'amenity',
+            'event' => 'event',
+            'facilities' => 'facility',
             'dining' => 'dining',
             default => null,
         };
         $reservation = match ($category) {
             'rooms' => RoomReservation::with('room')->find($id) ?? Reservation::with('room')->find($id),
-            'event_place' => EventReservation::find($id) ?? Reservation::with('eventPlace')->find($id),
-            'amenities' => AmenityReservation::find($id) ?? Reservation::with('amenity')->find($id),
+            'event' => EventReservation::find($id) ?? Reservation::with('event')->find($id),
+            'facilities' => FacilityReservation::find($id) ?? Reservation::with('facility')->find($id),
             'dining' => DiningReservation::find($id) ?? Reservation::find($id),
             default => RoomReservation::with('room')->find($id)
                 ?? EventReservation::find($id)
-                ?? AmenityReservation::find($id)
+                ?? FacilityReservation::find($id)
                 ?? DiningReservation::find($id)
                 ?? Reservation::find($id),
         };
 
         if (!$reservationType && $reservation instanceof Reservation) {
             $reservationType = match ($reservation->category) {
-                'event_place' => 'event',
-                'amenities' => 'amenity',
+                'event' => 'event',
+                'facilities' => 'facility',
                 'dining' => 'dining',
                 default => 'room',
             };
         } elseif (!$reservationType) {
             $reservationType = $reservation instanceof EventReservation ? 'event'
-                : ($reservation instanceof AmenityReservation ? 'amenity'
+                : ($reservation instanceof FacilityReservation ? 'facility'
                 : ($reservation instanceof DiningReservation ? 'dining' : 'room'));
         }
 

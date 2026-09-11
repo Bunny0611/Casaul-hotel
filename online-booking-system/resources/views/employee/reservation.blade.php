@@ -39,6 +39,66 @@
             || !empty($reservation->dining_schedule)
             || (method_exists($reservation, 'diningItems') && $reservation->diningItems()->exists());
     });
+    $allReservationRows = collect([$roomReservations, $amenityReservations, $eventPlaceReservations, $diningReservations])
+        ->flatten(1)
+        ->unique(fn ($row) => get_class($row) . ':' . $row->id)
+        ->values();
+    $overallReservationSummary = function ($reservation) use ($allReservationRows) {
+        $relatedRows = $allReservationRows->filter(function ($row) use ($reservation) {
+            return $row->guest_email === $reservation->guest_email
+                && optional($row->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
+        });
+        $paymentRow = $relatedRows->first(fn ($row) => !empty($row->payment_details) || !empty($row->payment_method));
+        $paymentDetails = (string) ($paymentRow?->payment_details ?? $reservation->payment_details ?? '');
+        $latestPayment = $relatedRows->flatMap(fn ($row) => $row->payments)->sortByDesc('created_at')->first();
+        $reference = $latestPayment?->reference_number;
+        if (!$reference && preg_match('/(?:Reference(?: Number)?|Ref)\s*:\s*([^•|]+)/i', $paymentDetails, $matches)) {
+            $reference = trim($matches[1]);
+        }
+        $proof = $latestPayment?->payment_proof;
+        if (!$proof && preg_match('/Proof:\s*(https?:\/\/\S+|storage\/[^•|\s]+)/i', $paymentDetails, $matches)) {
+            $proof = $matches[1];
+        }
+        $paid = max(
+            (float) $relatedRows->max(fn ($row) => (float) ($row->amount_paid ?? 0)),
+            (float) $relatedRows->sum(fn ($row) => (float) $row->payments->sum('amount'))
+        );
+        $categoryAmounts = [
+            'rooms' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'room_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'rooms')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
+            'facilities' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'facility_reservations' || $row->getTable() === 'amenity_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'facilities')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
+            'events' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'event_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'event')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
+            'dining' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'dining_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'dining')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
+        ];
+        $grandTotal = array_sum($categoryAmounts);
+
+        return [
+            'room_amount' => $categoryAmounts['rooms'],
+            'facilities_amount' => $categoryAmounts['facilities'],
+            'event_amount' => $categoryAmounts['events'],
+            'dining_amount' => $categoryAmounts['dining'],
+            'grand_total' => $grandTotal,
+            'amount_paid' => $paid,
+            'balance_due' => max($grandTotal - $paid, 0),
+            'payment_method' => $paymentRow?->payment_method ?: ($latestPayment?->payment_method ?? 'N/A'),
+            'reference_number' => $reference ?: 'N/A',
+            'payment_proof' => $proof,
+        ];
+    };
+    $categoryAmountMap = $allReservationRows->mapWithKeys(function ($row) use ($overallReservationSummary) {
+        $category = match ($row->getTable()) {
+            'room_reservations' => 'rooms',
+            'facility_reservations', 'amenity_reservations' => 'amenities',
+            'event_reservations' => 'event_place',
+            default => 'dining',
+        };
+        $summary = $overallReservationSummary($row);
+        return [$category . ':' . $row->id => [
+            'Room' => $summary['room_amount'],
+            'Facilities' => $summary['facilities_amount'],
+            'Event' => $summary['event_amount'],
+            'Dining' => $summary['dining_amount'],
+        ]];
+    });
     $roomSelectedServices = function ($roomReservation) use ($amenityReservations) {
         $roomDate = $roomReservation->check_in ? \Carbon\Carbon::parse($roomReservation->check_in)->toDateString() : null;
 
@@ -103,8 +163,8 @@
     <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div class="flex flex-wrap gap-2">
             <button type="button" data-reservation-tab="rooms" class="reservation-tab inline-flex items-center rounded-full border border-orange-500 bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition">ROOMS</button>
-            <button type="button" data-reservation-tab="amenities" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">AMENITIES</button>
-            <button type="button" data-reservation-tab="event_place" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">EVENT PLACE</button>
+            <button type="button" data-reservation-tab="amenities" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">FACILITIES</button>
+            <button type="button" data-reservation-tab="event_place" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">EVENTS</button>
             <button type="button" data-reservation-tab="dining" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">DINING</button>
         </div>
     </div>
@@ -211,6 +271,18 @@
                                             'payment_details' => $paymentDetails,
                                             'payment_proof' => $latestPayment?->payment_proof ?? (preg_match('/https?:\/\/\S+|\/storage\/\S+|data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9\/+=]+/', (string) $paymentDetails) ? preg_replace('/.*?(https?:\/\/\S+|\/storage\/\S+|data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9\/+=]+).*/i', '$1', (string) $paymentDetails) : null),
                                             'total_amount' => $reservation->total_amount ?? 0,
+                                            'grand_total' => $overallReservationSummary($reservation)['grand_total'],
+                                            'overall_amount_paid' => $overallReservationSummary($reservation)['amount_paid'],
+                                            'balance_due' => $overallReservationSummary($reservation)['balance_due'],
+                                            'overall_payment_method' => $overallReservationSummary($reservation)['payment_method'],
+                                            'overall_reference_number' => $overallReservationSummary($reservation)['reference_number'],
+                                            'overall_payment_proof' => $overallReservationSummary($reservation)['payment_proof'],
+                                            'category_amounts' => [
+                                                'Room' => $overallReservationSummary($reservation)['room_amount'],
+                                                'Facilities' => $overallReservationSummary($reservation)['facilities_amount'],
+                                                'Event' => $overallReservationSummary($reservation)['event_amount'],
+                                                'Dining' => $overallReservationSummary($reservation)['dining_amount'],
+                                            ],
                                         ])
                                         <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
                                         <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation"><i class="fas fa-pen"></i></button>
@@ -283,6 +355,12 @@
                                 'payment_method' => $paymentMethod,
                                 'payment_details' => $paymentDetails,
                                 'total_amount' => $reservation->total_amount ?? 0,
+                                'grand_total' => $overallReservationSummary($reservation)['grand_total'],
+                                'overall_amount_paid' => $overallReservationSummary($reservation)['amount_paid'],
+                                'balance_due' => $overallReservationSummary($reservation)['balance_due'],
+                                'overall_payment_method' => $overallReservationSummary($reservation)['payment_method'],
+                                'overall_reference_number' => $overallReservationSummary($reservation)['reference_number'],
+                                'overall_payment_proof' => $overallReservationSummary($reservation)['payment_proof'],
                             ])
                             <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
                             <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"><i class="fas fa-pen mr-1"></i>Edit</button>
@@ -330,7 +408,7 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amenity</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Facility</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Time</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Quantity</th>
@@ -376,6 +454,12 @@
                                             'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
                                             'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
                                             'total_amount' => $reservation->total_amount ?? 0,
+                                            'grand_total' => $overallReservationSummary($reservation)['grand_total'],
+                                            'overall_amount_paid' => $overallReservationSummary($reservation)['amount_paid'],
+                                            'balance_due' => $overallReservationSummary($reservation)['balance_due'],
+                                            'overall_payment_method' => $overallReservationSummary($reservation)['payment_method'],
+                                            'overall_reference_number' => $overallReservationSummary($reservation)['reference_number'],
+                                            'overall_payment_proof' => $overallReservationSummary($reservation)['payment_proof'],
                                         ])
                                         <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
                                         <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation"><i class="fas fa-pen"></i></button>
@@ -394,8 +478,8 @@
                             <tr>
                                 <td colspan="8" class="px-6 py-16 text-center text-gray-500">
                                     <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
-                                    <p class="text-lg font-medium">No amenity reservations found.</p>
-                                    <p class="mt-1 text-sm">Create your first amenity reservation to get started.</p>
+                                    <p class="text-lg font-medium">No facility reservations found.</p>
+                                    <p class="mt-1 text-sm">Create your first facility reservation to get started.</p>
                                 </td>
                             </tr>
                         @endforelse
@@ -441,6 +525,12 @@
                                 'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
                                 'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
                                 'total_amount' => $reservation->total_amount ?? 0,
+                                'grand_total' => $overallReservationSummary($reservation)['grand_total'],
+                                'overall_amount_paid' => $overallReservationSummary($reservation)['amount_paid'],
+                                'balance_due' => $overallReservationSummary($reservation)['balance_due'],
+                                'overall_payment_method' => $overallReservationSummary($reservation)['payment_method'],
+                                'overall_reference_number' => $overallReservationSummary($reservation)['reference_number'],
+                                'overall_payment_proof' => $overallReservationSummary($reservation)['payment_proof'],
                             ])
                             <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
                             <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"><i class="fas fa-pen mr-1"></i>Edit</button>
@@ -488,7 +578,7 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest/Client</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Place</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Type</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Date</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Start Time</th>
@@ -539,6 +629,12 @@
                                             'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
                                             'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
                                             'total_amount' => $reservation->total_amount ?? 0,
+                                            'grand_total' => $overallReservationSummary($reservation)['grand_total'],
+                                            'overall_amount_paid' => $overallReservationSummary($reservation)['amount_paid'],
+                                            'balance_due' => $overallReservationSummary($reservation)['balance_due'],
+                                            'overall_payment_method' => $overallReservationSummary($reservation)['payment_method'],
+                                            'overall_reference_number' => $overallReservationSummary($reservation)['reference_number'],
+                                            'overall_payment_proof' => $overallReservationSummary($reservation)['payment_proof'],
                                         ])
                                         <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
                                         <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation"><i class="fas fa-pen"></i></button>
@@ -608,6 +704,12 @@
                                 'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
                                 'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
                                 'total_amount' => $reservation->total_amount ?? 0,
+                                'grand_total' => $overallReservationSummary($reservation)['grand_total'],
+                                'overall_amount_paid' => $overallReservationSummary($reservation)['amount_paid'],
+                                'balance_due' => $overallReservationSummary($reservation)['balance_due'],
+                                'overall_payment_method' => $overallReservationSummary($reservation)['payment_method'],
+                                'overall_reference_number' => $overallReservationSummary($reservation)['reference_number'],
+                                'overall_payment_proof' => $overallReservationSummary($reservation)['payment_proof'],
                             ])
                             <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
                             <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"><i class="fas fa-pen mr-1"></i>Edit</button>
@@ -617,8 +719,8 @@
                 @empty
                     <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
                         <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
-                        <p class="text-lg font-medium">No event place reservations found.</p>
-                        <p class="mt-1 text-sm">Create your first event place reservation to get started.</p>
+                        <p class="text-lg font-medium">No event reservations found.</p>
+                        <p class="mt-1 text-sm">Create your first event reservation to get started.</p>
                     </div>
                 @endforelse
             </div>
@@ -709,6 +811,12 @@
                                             'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
                                             'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
                                             'total_amount' => $reservation->total_amount ?? 0,
+                                            'grand_total' => $overallReservationSummary($reservation)['grand_total'],
+                                            'overall_amount_paid' => $overallReservationSummary($reservation)['amount_paid'],
+                                            'balance_due' => $overallReservationSummary($reservation)['balance_due'],
+                                            'overall_payment_method' => $overallReservationSummary($reservation)['payment_method'],
+                                            'overall_reference_number' => $overallReservationSummary($reservation)['reference_number'],
+                                            'overall_payment_proof' => $overallReservationSummary($reservation)['payment_proof'],
                                         ])
                                         <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
                                         <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation"><i class="fas fa-pen"></i></button>
@@ -783,6 +891,12 @@
                                 'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
                                 'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
                                 'total_amount' => $reservation->total_amount ?? 0,
+                                'grand_total' => $overallReservationSummary($reservation)['grand_total'],
+                                'overall_amount_paid' => $overallReservationSummary($reservation)['amount_paid'],
+                                'balance_due' => $overallReservationSummary($reservation)['balance_due'],
+                                'overall_payment_method' => $overallReservationSummary($reservation)['payment_method'],
+                                'overall_reference_number' => $overallReservationSummary($reservation)['reference_number'],
+                                'overall_payment_proof' => $overallReservationSummary($reservation)['payment_proof'],
                             ])
                             <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
                             <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"><i class="fas fa-pen mr-1"></i>Edit</button>
@@ -1051,6 +1165,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const categoryAmountMap = @json($categoryAmountMap);
         const reservationTypeLabels = {
             rooms: 'Room',
             amenities: 'Amenities',
@@ -1372,6 +1487,29 @@
         `;
     }
 
+    function parseEmployeePaymentDetails(value) {
+        const details = { accountName: 'N/A', accountNumber: 'N/A', amount: 'N/A', referenceNumber: 'N/A', proof: '' };
+        String(value || '').split(/\s*[•|]\s*/).forEach((part) => {
+            const separator = part.indexOf(':');
+            if (separator < 0) return;
+            const label = part.slice(0, separator).trim().toLowerCase();
+            const detail = part.slice(separator + 1).trim();
+            if (label === 'account' || label === 'account name') details.accountName = detail || 'N/A';
+            if (label === 'number' || label === 'account number') details.accountNumber = detail || 'N/A';
+            if (label === 'amount') details.amount = detail || 'N/A';
+            if (label === 'reference' || label === 'reference number') details.referenceNumber = detail || 'N/A';
+            if (label === 'proof' || label === 'payment proof') details.proof = detail;
+        });
+        return details;
+    }
+
+    function resolveEmployeePaymentProof(value) {
+        const proof = String(value || '').trim();
+        if (!proof) return '';
+        if (/^(https?:\/\/|data:image\/|\/)/i.test(proof)) return proof;
+        return `{{ asset('storage') }}/${proof.replace(/^storage\//i, '')}`;
+    }
+
     function showEmployeeReservationDetails(button) {
         const reservation = JSON.parse(button.dataset.reservation || '{}');
         const category = reservation.category || 'rooms';
@@ -1446,34 +1584,22 @@
                 <ul class="space-y-2">${serviceList}</ul>
             </div>
         `);
+        const categoryAmountLabels = { rooms: 'Room', amenities: 'Facilities', event_place: 'Event', dining: 'Dining' };
+        detailsSections.push(renderDetailsCard('Reservation Amounts', [
+            { label: categoryAmountLabels[category] || 'Reservation', value: formatMoney(reservation.total_amount || 0) },
+        ]));
 
+        const paymentDetails = parseEmployeePaymentDetails(reservation.payment_details);
+        const paymentProofUrl = resolveEmployeePaymentProof(reservation.overall_payment_proof || reservation.payment_proof || paymentDetails.proof);
         const paymentEntries = [
-            { label: 'Payment Method', value: reservation.payment_method || 'N/A' },
-            { label: 'Payment Details', value: reservation.payment_details || 'No payment details recorded' },
-            { label: 'Amount Paid', value: formatMoney(reservation.amount_paid || 0) },
-            { label: 'Total Amount', value: reservation.total_amount ? formatMoney(reservation.total_amount) : 'N/A' },
-            { label: 'Status', value: status },
+            { label: 'Grand Total', value: formatMoney(reservation.grand_total || reservation.total_amount || 0) },
+            { label: 'Amount Paid', value: formatMoney(reservation.overall_amount_paid || 0) },
+            { label: 'Balance Due', value: formatMoney(reservation.balance_due || 0) },
+            { label: 'Payment Method', value: reservation.overall_payment_method || reservation.payment_method || 'N/A' },
+            { label: 'Reference Number', value: reservation.overall_reference_number || paymentDetails.referenceNumber || 'N/A' },
         ];
-
-        const paymentProofUrl = reservation.payment_proof || (() => {
-            if (typeof reservation.payment_details !== 'string') {
-                return null;
-            }
-
-            const match = reservation.payment_details.match(/https?:\/\/\S+|\/storage\/\S+|data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/i);
-            return match ? match[0] : null;
-        })();
-
-        detailsSections.push(renderDetailsCard('Payment Information', paymentEntries));
-
-        if (paymentProofUrl) {
-            detailsSections.push(`
-                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                    <h4 class="mb-3 text-base font-semibold text-gray-800">Payment Proof</h4>
-                    <img src="${escapeHtml(paymentProofUrl)}" alt="Payment proof" class="max-h-72 w-full rounded-xl border border-gray-200 bg-white object-contain p-2" />
-                </div>
-            `);
-        }
+        detailsSections.push(renderDetailsCard('Payment Details', paymentEntries));
+        detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">Payment Proof</h4>${paymentProofUrl ? `<a href="${escapeHtml(paymentProofUrl)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${escapeHtml(paymentProofUrl)}" alt="Payment proof" class="max-h-72 w-full rounded-xl border border-gray-200 bg-white object-contain p-2" /></a>` : '<p class="text-sm text-gray-600">No payment proof uploaded.</p>'}</div>`);
 
         document.getElementById('employeeDetailsBody').innerHTML = detailsSections.join('');
 

@@ -72,6 +72,51 @@
     ];
     
     $currentStats = $roomStats;
+    $allReservationRows = collect([$roomReservations, $amenityReservations, $eventPlaceReservations, $diningReservations])
+        ->flatten(1)
+        ->unique(fn ($row) => get_class($row) . ':' . $row->id)
+        ->values();
+    $overallReservationSummary = function ($reservation) use ($allReservationRows) {
+        $relatedRows = $allReservationRows->filter(function ($row) use ($reservation) {
+            return $row->guest_email === $reservation->guest_email
+                && optional($row->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
+        });
+        $paymentRow = $relatedRows->first(fn ($row) => !empty($row->payment_details) || !empty($row->payment_method));
+        $paymentDetails = (string) ($paymentRow?->payment_details ?? $reservation->payment_details ?? '');
+        $latestPayment = $relatedRows->flatMap(fn ($row) => $row->payments)->sortByDesc('created_at')->first();
+        $reference = $latestPayment?->reference_number;
+        if (!$reference && preg_match('/(?:Reference(?: Number)?|Ref)\s*:\s*([^•|]+)/i', $paymentDetails, $matches)) {
+            $reference = trim($matches[1]);
+        }
+        $proof = $latestPayment?->payment_proof;
+        if (!$proof && preg_match('/Proof:\s*(https?:\/\/\S+|storage\/[^•|\s]+)/i', $paymentDetails, $matches)) {
+            $proof = $matches[1];
+        }
+        $paid = max(
+            (float) $relatedRows->max(fn ($row) => (float) ($row->amount_paid ?? 0)),
+            (float) $relatedRows->sum(fn ($row) => (float) $row->payments->sum('amount'))
+        );
+        $categoryAmounts = [
+            'rooms' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'room_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'rooms')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
+            'facilities' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'facility_reservations' || $row->getTable() === 'amenity_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'facilities')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
+            'events' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'event_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'event')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
+            'dining' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'dining_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'dining')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
+        ];
+        $grandTotal = array_sum($categoryAmounts);
+
+        return [
+            'room_amount' => $categoryAmounts['rooms'],
+            'facilities_amount' => $categoryAmounts['facilities'],
+            'event_amount' => $categoryAmounts['events'],
+            'dining_amount' => $categoryAmounts['dining'],
+            'grand_total' => $grandTotal,
+            'amount_paid' => $paid,
+            'balance_due' => max($grandTotal - $paid, 0),
+            'payment_method' => $paymentRow?->payment_method ?: ($latestPayment?->payment_method ?? 'N/A'),
+            'reference_number' => $reference ?: 'N/A',
+            'payment_proof' => $proof,
+        ];
+    };
     $uniqueCsvValue = function ($value) {
         if (is_null($value) || $value === '') {
             return 'N/A';
@@ -107,6 +152,7 @@
 
     $employeeReservationDetails = function ($reservation, string $category) use ($uniqueCsvValue, $roomSelectedServices) {
         $latestPayment = $reservation->payments->last();
+        $overallPayment = $overallReservationSummary($reservation);
         $paymentDetails = $reservation->payment_details ?: ($latestPayment?->reference_number
             ? 'Reference: ' . $latestPayment->reference_number . ($latestPayment->notes ? ' • ' . $latestPayment->notes : '')
             : ($latestPayment?->notes ?: 'No additional payment details'));
@@ -125,6 +171,22 @@
             'payment_details' => $paymentDetails,
             'payment_proof' => $latestPayment?->payment_proof,
             'total_amount' => $reservation->total_amount ?? 0,
+            'grand_total' => $overallPayment['grand_total'],
+            'overall_amount_paid' => $overallPayment['amount_paid'],
+            'balance_due' => $overallPayment['balance_due'],
+            'overall_payment_method' => $overallPayment['payment_method'],
+            'overall_reference_number' => $overallPayment['reference_number'],
+            'overall_payment_proof' => $overallPayment['payment_proof'],
+            'room_amount' => $overallPayment['room_amount'],
+            'facilities_amount' => $overallPayment['facilities_amount'],
+            'event_amount' => $overallPayment['event_amount'],
+            'dining_amount' => $overallPayment['dining_amount'],
+            'category_amounts' => [
+                'Room' => $overallPayment['room_amount'],
+                'Facilities' => $overallPayment['facilities_amount'],
+                'Event' => $overallPayment['event_amount'],
+                'Dining' => $overallPayment['dining_amount'],
+            ],
         ];
 
         if ($category === 'rooms') {
@@ -196,8 +258,8 @@
     <!-- Tab Buttons -->
     <div class="mb-6 flex flex-wrap gap-2 sm:gap-4">
         <button type="button" data-tab="rooms" class="tab-button rounded-lg bg-orange-500 px-6 py-3 font-medium text-white transition hover:bg-orange-600">ROOMS</button>
-        <button type="button" data-tab="amenities" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">AMENITIES</button>
-        <button type="button" data-tab="event-place" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">EVENT PLACE</button>
+        <button type="button" data-tab="amenities" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">FACILITIES</button>
+        <button type="button" data-tab="event-place" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">EVENTS</button>
         <button type="button" data-tab="dining" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">DINING</button>
     </div>
 
@@ -382,7 +444,7 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Amenity</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Facility</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Time</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Quantity</th>
@@ -427,8 +489,8 @@
                         <tr>
                             <td colspan="8" class="px-6 py-16 text-center text-gray-500">
                                 <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
-                                <p class="text-lg font-medium">No amenity reservations found.</p>
-                                <p class="mt-1 text-sm">Amenity reservations will appear here when guests make a booking.</p>
+                                <p class="text-lg font-medium">No facility reservations found.</p>
+                                <p class="mt-1 text-sm">Facility reservations will appear here when guests make a booking.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -444,7 +506,7 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Guest/Client</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Place</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Type</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Date</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Start Time</th>
@@ -491,8 +553,8 @@
                         <tr>
                             <td colspan="9" class="px-6 py-16 text-center text-gray-500">
                                 <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
-                                <p class="text-lg font-medium">No event place reservations found.</p>
-                                <p class="mt-1 text-sm">Event place reservations will appear here when guests make a booking.</p>
+                                <p class="text-lg font-medium">No event reservations found.</p>
+                                <p class="mt-1 text-sm">Event reservations will appear here when guests make a booking.</p>
                             </td>
                         </tr>
                     @endforelse
@@ -604,6 +666,29 @@
         return `<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">${escapeAdminHtml(title)}</h4><div class="grid gap-3 sm:grid-cols-2">${entriesHtml}</div></div>`;
     }
 
+    function parseAdminPaymentDetails(value) {
+        const details = { accountName: 'N/A', accountNumber: 'N/A', amount: 'N/A', referenceNumber: 'N/A', proof: '' };
+        String(value || '').split(/\s*[•|]\s*/).forEach((part) => {
+            const separator = part.indexOf(':');
+            if (separator < 0) return;
+            const label = part.slice(0, separator).trim().toLowerCase();
+            const detail = part.slice(separator + 1).trim();
+            if (label === 'account' || label === 'account name') details.accountName = detail || 'N/A';
+            if (label === 'number' || label === 'account number') details.accountNumber = detail || 'N/A';
+            if (label === 'amount') details.amount = detail || 'N/A';
+            if (label === 'reference' || label === 'reference number') details.referenceNumber = detail || 'N/A';
+            if (label === 'proof' || label === 'payment proof') details.proof = detail;
+        });
+        return details;
+    }
+
+    function resolveAdminPaymentProof(value) {
+        const proof = String(value || '').trim();
+        if (!proof) return '';
+        if (/^(https?:\/\/|data:image\/|\/)/i.test(proof)) return proof;
+        return `{{ asset('storage') }}/${proof.replace(/^storage\//i, '')}`;
+    }
+
     function showAdminReservationDetails(button) {
         const rawReservation = button.getAttribute('data-reservation') || '{}';
         let reservation;
@@ -642,16 +727,20 @@
         detailsSections.push(renderAdminDetailsCard(categoryTitles[reservation.category] || 'Reservation Information', (categoryEntries[reservation.category] || []).map(([label, value]) => ({ label, value: value || 'N/A' }))));
         const servicesTitle = reservation.category === 'dining' ? 'Menu/Meals' : 'Selected Services';
         detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">${servicesTitle}</h4><ul class="space-y-2">${services.map((service) => `<li class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">${escapeAdminHtml(service)}</li>`).join('')}</ul></div>`);
-        detailsSections.push(renderAdminDetailsCard('Payment Information', [
-            { label: 'Payment Method', value: reservation.payment_method || 'N/A' },
-            { label: 'Payment Details', value: reservation.payment_details || 'No payment details recorded' },
-            { label: 'Amount Paid', value: formatAdminMoney(reservation.amount_paid || 0) },
-            { label: 'Total Amount', value: reservation.total_amount ? formatAdminMoney(reservation.total_amount) : 'N/A' },
-            { label: 'Status', value: reservation.status || 'N/A' },
+        const categoryAmountLabels = { rooms: 'Room', amenities: 'Facilities', event_place: 'Event', dining: 'Dining' };
+        detailsSections.push(renderAdminDetailsCard('Reservation Amounts', [
+            { label: categoryAmountLabels[reservation.category] || 'Reservation', value: formatAdminMoney(reservation.total_amount || 0) },
         ]));
-        if (reservation.payment_proof) {
-            detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">Payment Proof</h4><img src="${escapeAdminHtml(reservation.payment_proof)}" alt="Payment proof" class="max-h-72 w-full rounded-xl border border-gray-200 bg-white object-contain p-2" /></div>`);
-        }
+        const paymentDetails = parseAdminPaymentDetails(reservation.payment_details);
+        const paymentProofUrl = resolveAdminPaymentProof(reservation.overall_payment_proof || reservation.payment_proof || paymentDetails.proof);
+        detailsSections.push(renderAdminDetailsCard('Payment Summary', [
+            { label: 'Grand Total', value: formatAdminMoney(reservation.grand_total || reservation.total_amount || 0) },
+            { label: 'Amount Paid', value: formatAdminMoney(reservation.overall_amount_paid || 0) },
+            { label: 'Balance Due', value: formatAdminMoney(reservation.balance_due || 0) },
+            { label: 'Payment Method', value: reservation.overall_payment_method || reservation.payment_method || 'N/A' },
+            { label: 'Reference Number', value: reservation.overall_reference_number || paymentDetails.referenceNumber || 'N/A' },
+        ]));
+        detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">Payment Proof</h4>${paymentProofUrl ? `<a href="${escapeAdminHtml(paymentProofUrl)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${escapeAdminHtml(paymentProofUrl)}" alt="Payment proof" class="max-h-72 w-full rounded-xl border border-gray-200 bg-white object-contain p-2" /></a>` : '<p class="text-sm text-gray-600">No payment proof uploaded.</p>'}</div>`);
         document.getElementById('adminReservationDetailsContent').innerHTML = detailsSections.join('');
         const modal = document.getElementById('adminReservationDetailsModal');
         modal.classList.remove('hidden');

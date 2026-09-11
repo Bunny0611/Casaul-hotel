@@ -82,12 +82,12 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();
-        $amenities = \App\Models\Amenity::orderBy('name')->get();
-        $eventPlaces = \App\Models\EventPlace::orderBy('name')->get();
+        $amenities = \App\Models\Facility::orderBy('name')->get();
+        $eventPlaces = \App\Models\Event::orderBy('name')->get();
         $confirmedEventPlaceIds = EventReservation::query()
             ->where('status', 'confirmed')
             ->whereDate('check_out', '>=', today())
-            ->pluck('event_place_id')
+            ->pluck('event_id')
             ->filter()
             ->unique();
         $eventPlaces->each(function ($eventPlace) use ($confirmedEventPlaceIds) {

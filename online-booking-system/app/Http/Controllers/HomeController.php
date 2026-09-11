@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Room;
 use App\Models\InventoryItem;
-use App\Models\Amenity;
-use App\Models\EventPlace;
+use App\Models\Facility;
+use App\Models\Event;
 use App\Models\DiningMenu;
 use App\Models\DiningSchedule;
 use App\Models\DiningTable;
@@ -14,9 +14,10 @@ use App\Models\Message;
 use App\Models\Reservation;
 use App\Models\RoomReservation;
 use App\Models\EventReservation;
-use App\Models\AmenityReservation;
+use App\Models\FacilityReservation;
 use App\Models\DiningReservation;
 use App\Models\GuestRequest;
+use App\Support\ReservationPricing;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -78,11 +79,11 @@ class HomeController extends Controller
     {
         $rooms = Room::where('status', 'available')->get();
 
-        $amenities = Amenity::whereIn('status', ['available', 'limited'])
+        $amenities = Facility::whereIn('status', ['available', 'limited'])
             ->orderBy('name')
             ->get();
 
-        $events = EventPlace::whereIn('status', ['available', 'limited'])
+        $events = Event::whereIn('status', ['available', 'limited'])
             ->orderBy('name')
             ->get();
 
@@ -324,21 +325,21 @@ class HomeController extends Controller
         $diningSelections = $this->normalizeDiningSelections($request);
 
         $request->merge([
-            'amenity_id' => $this->normalizeIdList($request->input('amenity_id')),
-            'event_place_id' => $this->normalizeIdList($request->input('event_place_id')),
+            'facility_id' => $this->normalizeIdList($request->input('facility_id')),
+            'event_id' => $this->normalizeIdList($request->input('event_id')),
             'dining_id' => empty($diningSelections) ? $this->normalizeIdList($request->input('dining_id')) : null,
             'category' => $request->input('category', 'rooms'),
         ]);
 
         // Determine reservation category based on what's selected (priority order matters)
-        $eventPlaceId = $request->input('event_place_id');
-        $amenityId = $request->input('amenity_id');
+        $eventId = $request->input('event_id');
+        $facilityId = $request->input('facility_id');
         $hasDining = !empty($diningSelections) || !empty($request->input('dining_id')) || !empty($request->input('dining_area')) || !empty($request->input('dining_schedule'));
 
-        if (!empty($eventPlaceId)) {
-            $request->merge(['category' => 'event_place']);
-        } elseif (!empty($amenityId)) {
-            $request->merge(['category' => 'amenities']);
+        if (!empty($eventId)) {
+            $request->merge(['category' => 'event']);
+        } elseif (!empty($facilityId)) {
+            $request->merge(['category' => 'facilities']);
         } elseif ($hasDining) {
             $request->merge(['category' => 'dining']);
         } else {
@@ -347,7 +348,7 @@ class HomeController extends Controller
         }
 
         $validated = $request->validate([
-            'category' => ['required', 'in:rooms,amenities,event_place,dining'],
+            'category' => ['required', 'in:rooms,facilities,event,dining'],
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'check_in' => 'required|date|after_or_equal:today',
             'check_in_time' => 'nullable|date_format:H:i',
@@ -361,6 +362,7 @@ class HomeController extends Controller
             'total_amount' => 'required|numeric|min:0',
             'payment_method' => ['nullable', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
+            'payment_proof' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'special_requests' => 'nullable|string',
             'dining_id' => 'nullable|string',
@@ -368,9 +370,9 @@ class HomeController extends Controller
             'dining_schedule' => 'nullable|string|max:100',
             'quantity' => 'nullable|integer|min:1',
             'duration_hours' => 'nullable|integer|min:1',
-            'amenity_id' => 'nullable|string',
-            'amenity_quantity' => 'nullable|integer|min:1',
-            'event_place_id' => 'nullable|string',
+            'facility_id' => 'nullable|string',
+            'facility_quantity' => 'nullable|integer|min:1',
+            'event_id' => 'nullable|string',
             'event_type' => 'nullable|string|max:100',
             'number_of_guests' => 'nullable|integer|min:1',
             'submission_token' => 'nullable|string|max:100',
@@ -399,36 +401,42 @@ class HomeController extends Controller
             $validated['amount_paid'] = 0;
         }
 
-        if (!empty($validated['amenity_id'])) {
-            $amenityIds = collect(explode(',', $validated['amenity_id']))
+        if ($request->hasFile('payment_proof')) {
+            $paymentProofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
+            $validated['payment_details'] = preg_replace('/\s*•\s*Proof:\s*[^•]*/i', '', (string) ($validated['payment_details'] ?? ''));
+            $validated['payment_details'] = trim((string) $validated['payment_details']) . ' • Proof: storage/' . $paymentProofPath;
+        }
+
+        if (!empty($validated['facility_id'])) {
+            $facilityIds = collect(explode(',', $validated['facility_id']))
                 ->map(fn ($id) => trim((string) $id))
                 ->filter(fn ($id) => $id !== '')
                 ->all();
 
-            $invalidAmenityIds = collect($amenityIds)->filter(fn ($id) => !Amenity::whereKey($id)->exists())->values()->all();
-            abort_if(!empty($invalidAmenityIds), 422, 'One or more selected amenities are invalid.');
+            $invalidFacilityIds = collect($facilityIds)->filter(fn ($id) => !Facility::whereKey($id)->exists())->values()->all();
+            abort_if(!empty($invalidFacilityIds), 422, 'One or more selected facilities are invalid.');
 
-            $validated['amenity_id'] = implode(',', $amenityIds);
-            $selectedAmenityQuantity = (int) ($validated['quantity'] ?? 1);
-            foreach ($amenityIds as $amenityId) {
-                $amenity = Amenity::find($amenityId);
-                abort_if($amenity?->capacity && $selectedAmenityQuantity > $amenity->capacity, 422, 'The selected amenity quantity exceeds its capacity.');
+            $validated['facility_id'] = implode(',', $facilityIds);
+            $selectedFacilityQuantity = (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1);
+            foreach ($facilityIds as $facilityId) {
+                $facility = Facility::find($facilityId);
+                abort_if($facility?->capacity && $selectedFacilityQuantity > $facility->capacity, 422, 'The selected facility quantity exceeds its capacity.');
             }
         }
 
-        if (!empty($validated['event_place_id'])) {
-            $eventPlaceIds = collect(explode(',', $validated['event_place_id']))
+        if (!empty($validated['event_id'])) {
+            $eventIds = collect(explode(',', $validated['event_id']))
                 ->map(fn ($id) => trim((string) $id))
                 ->filter(fn ($id) => $id !== '')
                 ->all();
 
-            $invalidEventIds = collect($eventPlaceIds)->filter(fn ($id) => !EventPlace::whereKey($id)->exists())->values()->all();
+            $invalidEventIds = collect($eventIds)->filter(fn ($id) => !Event::whereKey($id)->exists())->values()->all();
             abort_if(!empty($invalidEventIds), 422, 'One or more selected event packages are invalid.');
 
-            $validated['event_place_id'] = implode(',', $eventPlaceIds);
-            foreach ($eventPlaceIds as $eventPlaceId) {
-                $eventPlace = EventPlace::find($eventPlaceId);
-                abort_if($eventPlace?->capacity && !empty($validated['number_of_guests']) && $validated['number_of_guests'] > $eventPlace->capacity, 422, 'The selected guest count exceeds the package capacity.');
+            $validated['event_id'] = implode(',', $eventIds);
+            foreach ($eventIds as $eventId) {
+                $event = Event::find($eventId);
+                abort_if($event?->capacity && !empty($validated['number_of_guests']) && $validated['number_of_guests'] > $event->capacity, 422, 'The selected guest count exceeds the package capacity.');
             }
         }
 
@@ -460,8 +468,48 @@ class HomeController extends Controller
 
         $validated['status'] = 'pending';
         $validated['number_of_guests'] = max(1, (int) ($validated['number_of_guests'] ?? 1));
-        $submittedTotalAmount = (float) $validated['total_amount'];
         $category = $validated['category'];
+
+        $facilityIds = collect(explode(',', (string) ($validated['facility_id'] ?? '')))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->values();
+        $eventIds = collect(explode(',', (string) ($validated['event_id'] ?? '')))
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->values();
+        $facilities = Facility::whereIn('id', $facilityIds)->get();
+        $events = Event::whereIn('id', $eventIds)->get();
+        $room = !empty($validated['room_id']) ? Room::findOrFail($validated['room_id']) : null;
+        $roomTotal = $room
+            ? ReservationPricing::room($room, $validated['check_in'], $validated['check_out'], $validated['number_of_guests'])
+            : 0;
+        $facilityTotal = ReservationPricing::facilities(
+            $facilities,
+            (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1),
+            $validated['check_in'],
+            $validated['check_out']
+        );
+        $eventDurationHours = 1;
+        if (!empty($validated['event_start_time']) && !empty($validated['event_end_time'])) {
+            $eventDurationHours = max(1, Carbon::parse($validated['event_start_time'])->diffInHours(Carbon::parse($validated['event_end_time'])));
+        }
+        $eventTotal = ReservationPricing::events($events, $validated['number_of_guests'], $eventDurationHours);
+        $diningTotal = ReservationPricing::dining($diningSelections);
+        $categoryTotal = match ($category) {
+            'rooms' => $roomTotal,
+            'facilities' => $facilityTotal,
+            'event' => $eventTotal,
+            'dining' => $diningTotal,
+        };
+        $validated['total_amount'] = $categoryTotal;
+
+        if ($facilityIds->isNotEmpty()) {
+            $validated['facility_id'] = $facilityIds->first();
+        }
+        if ($eventIds->isNotEmpty()) {
+            $validated['event_id'] = $eventIds->first();
+        }
 
         if ($category === 'rooms') {
             $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
@@ -498,41 +546,36 @@ class HomeController extends Controller
                     'payment_details', 'amount_paid', 'special_requests',
                 ])->all());
             });
-        } elseif ($category === 'event_place') {
+        } elseif ($category === 'event') {
             $validated['event_start_time'] = $validated['event_start_time'] ?? $validated['check_in_time'] ?? null;
             $validated['event_end_time'] = $validated['event_end_time'] ?? $validated['check_out_time'] ?? null;
             $reservation = EventReservation::create(collect($validated)->only([
-                'event_place_id', 'guest_name', 'guest_email', 'guest_phone',
+                'event_id', 'guest_name', 'guest_email', 'guest_phone',
                 'event_type', 'check_in', 'event_start_time', 'check_out',
                 'event_end_time', 'number_of_guests', 'status', 'total_amount',
                 'payment_method', 'payment_details', 'amount_paid', 'special_requests',
             ])->all());
-        } elseif ($category === 'amenities') {
-            $amenity = Amenity::findOrFail($validated['amenity_id']);
-            $amenityQuantity = max(1, (int) ($validated['amenity_quantity'] ?? 1));
-            $pricingBasis = trim(strtolower((string) $amenity->pricing_basis));
-            if (in_array($pricingBasis, ['per vehicle', 'per stay + per vehicle'], true) && $amenity->capacity && $amenityQuantity > $amenity->capacity) {
+        } elseif ($category === 'facilities') {
+            $facility = $facilities->firstOrFail();
+            $facilityQuantity = max(1, (int) ($validated['facility_quantity'] ?? 1));
+            $pricingBasis = trim(strtolower((string) $facility->pricing_basis));
+            if (in_array($pricingBasis, ['per vehicle', 'per stay + per vehicle'], true) && $facility->capacity && $facilityQuantity > $facility->capacity) {
                 throw ValidationException::withMessages([
-                    'amenity_quantity' => 'The selected number of vehicles exceeds this amenity\'s available capacity.',
+                    'facility_quantity' => 'The selected number of vehicles exceeds this facility\'s available capacity.',
                 ]);
             }
-            $stayDays = max(1, Carbon::parse($validated['check_in'])->diffInDays(Carbon::parse($validated['check_out'])));
             $durationHours = max(1, (int) ($validated['duration_hours'] ?? 1));
-            $amenityStartTime = $validated['check_in_time'] ?? '00:00';
-            $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $amenityStartTime)
+            $facilityStartTime = $validated['check_in_time'] ?? '00:00';
+            $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $facilityStartTime)
                 ->addHours($durationHours);
             $validated['check_out'] = $endTime->toDateString();
-            $validated['amenity_start_time'] = $amenityStartTime;
-            $validated['amenity_end_time'] = $endTime->format('H:i');
-            $validated['amenity_quantity'] = $amenityQuantity;
-            $validated['total_amount'] = match ($pricingBasis) {
-                'per stay + per vehicle' => (float) $amenity->price * ($stayDays + $amenityQuantity),
-                'per vehicle' => (float) $amenity->price * $amenityQuantity,
-                default => (float) $amenity->price,
-            };
-            $reservation = AmenityReservation::create(collect($validated)->only([
-                'amenity_id', 'amenity_quantity', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
-                'amenity_start_time', 'check_out', 'amenity_end_time',
+            $validated['facility_start_time'] = $facilityStartTime;
+            $validated['facility_end_time'] = $endTime->format('H:i');
+            $validated['facility_quantity'] = $facilityQuantity;
+            $validated['total_amount'] = $facilityTotal;
+            $reservation = FacilityReservation::create(collect($validated)->only([
+                'facility_id', 'facility_quantity', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
+                'facility_start_time', 'check_out', 'facility_end_time',
                 'number_of_guests', 'status', 'total_amount', 'payment_method',
                 'payment_details', 'amount_paid', 'special_requests',
             ])->all());
@@ -549,7 +592,7 @@ class HomeController extends Controller
                     'room_check_out_time' => $validated['check_out_time'] ?? null,
                     'number_of_guests' => $validated['number_of_guests'],
                     'status' => 'pending',
-                    'total_amount' => max(0, $submittedTotalAmount - (float) $validated['total_amount']),
+                    'total_amount' => $roomTotal,
                     'payment_method' => $validated['payment_method'],
                     'payment_details' => $validated['payment_details'],
                     'amount_paid' => 0,
@@ -594,7 +637,7 @@ class HomeController extends Controller
                 'quantity' => $validated['quantity'] ?? 1,
                 'dining_id' => $validated['dining_id'] ?? null,
                 'status' => 'pending',
-                'total_amount' => max(0, $submittedTotalAmount),
+                'total_amount' => $diningTotal,
                 'payment_method' => $validated['payment_method'],
                 'payment_details' => $validated['payment_details'],
                 'amount_paid' => 0,
@@ -603,7 +646,7 @@ class HomeController extends Controller
             $diningReservation->diningItems()->createMany($diningSelections);
         }
 
-        if ($category !== 'rooms' && $category !== 'amenities' && !empty($validated['room_id'])) {
+        if ($category !== 'rooms' && $category !== 'facilities' && !empty($validated['room_id'])) {
             RoomReservation::create([
                 'room_id' => $validated['room_id'],
                 'guest_name' => $validated['guest_name'],
@@ -615,7 +658,7 @@ class HomeController extends Controller
                 'room_check_out_time' => $validated['check_out_time'] ?? null,
                 'number_of_guests' => $validated['number_of_guests'],
                 'status' => 'pending',
-                'total_amount' => max(0, $submittedTotalAmount),
+                'total_amount' => $roomTotal,
                 'payment_method' => $validated['payment_method'],
                 'payment_details' => $validated['payment_details'],
                 'amount_paid' => 0,
@@ -623,27 +666,27 @@ class HomeController extends Controller
             ]);
         }
 
-        if ($category !== 'amenities' && !empty($validated['amenity_id'])) {
-            $amenityId = (int) collect(explode(',', (string) $validated['amenity_id']))->filter()->first();
-            $amenity = Amenity::find($amenityId);
-            if ($amenity) {
-                $amenityQuantity = max(1, (int) ($validated['amenity_quantity'] ?? $validated['quantity'] ?? 1));
-                $amenityStartTime = $validated['check_in_time'] ?? '00:00';
-                $amenityEndTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $amenityStartTime)
+        if ($category !== 'facilities' && !empty($validated['facility_id'])) {
+            $facilityId = (int) collect(explode(',', (string) $validated['facility_id']))->filter()->first();
+            $facility = Facility::find($facilityId);
+            if ($facility) {
+                $facilityQuantity = max(1, (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1));
+                $facilityStartTime = $validated['check_in_time'] ?? '00:00';
+                $facilityEndTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $facilityStartTime)
                     ->addHours(max(1, (int) ($validated['duration_hours'] ?? 1)));
-                AmenityReservation::create([
-                    'amenity_id' => $amenity->id,
-                    'amenity_quantity' => $amenityQuantity,
+                FacilityReservation::create([
+                    'facility_id' => $facility->id,
+                    'facility_quantity' => $facilityQuantity,
                     'guest_name' => $validated['guest_name'],
                     'guest_email' => $validated['guest_email'],
                     'guest_phone' => $validated['guest_phone'],
                     'check_in' => $validated['check_in'],
-                    'amenity_start_time' => $amenityStartTime,
-                    'check_out' => $amenityEndTime->toDateString(),
-                    'amenity_end_time' => $amenityEndTime->format('H:i'),
+                    'facility_start_time' => $facilityStartTime,
+                    'check_out' => $facilityEndTime->toDateString(),
+                    'facility_end_time' => $facilityEndTime->format('H:i'),
                     'number_of_guests' => $validated['number_of_guests'],
                     'status' => 'pending',
-                    'total_amount' => max(0, $submittedTotalAmount),
+                    'total_amount' => $facilityTotal,
                     'payment_method' => $validated['payment_method'],
                     'payment_details' => $validated['payment_details'],
                     'amount_paid' => 0,
@@ -686,12 +729,12 @@ class HomeController extends Controller
             RoomReservation::with(['room', 'payments'])
                 ->where('guest_email', $guest->email)->get()
                 ->each(fn ($reservation) => $reservation->category = 'rooms'),
-            EventReservation::with(['eventPlace', 'diningItems.diningMenu', 'payments'])
+            EventReservation::with(['event', 'diningItems.diningMenu', 'payments'])
                 ->where('guest_email', $guest->email)->get()
-                ->each(fn ($reservation) => $reservation->category = 'event_place'),
-            AmenityReservation::with(['amenity', 'payments'])
+                ->each(fn ($reservation) => $reservation->category = 'event'),
+            FacilityReservation::with(['facility', 'payments'])
                 ->where('guest_email', $guest->email)->get()
-                ->each(fn ($reservation) => $reservation->category = 'amenities'),
+                ->each(fn ($reservation) => $reservation->category = 'facilities'),
             DiningReservation::with(['diningItems.diningMenu', 'payments'])
                 ->where('guest_email', $guest->email)->get()
                 ->each(fn ($reservation) => $reservation->category = 'dining'),
@@ -700,8 +743,8 @@ class HomeController extends Controller
             $reservation->forceFill($source->getAttributes());
             $reservation->setAttribute('category', $source->category);
             $reservation->setRelation('room', $source->relationLoaded('room') ? $source->getRelation('room') : null);
-            $reservation->setRelation('amenities', $source->relationLoaded('amenity') && $source->amenity ? collect([$source->amenity]) : collect());
-            $reservation->setRelation('eventPlaces', $source->relationLoaded('eventPlace') && $source->eventPlace ? collect([$source->eventPlace]) : collect());
+            $reservation->setRelation('facilities', $source->relationLoaded('facility') && $source->facility ? collect([$source->facility]) : collect());
+            $reservation->setRelation('events', $source->relationLoaded('event') && $source->event ? collect([$source->event]) : collect());
             $reservation->setRelation('diningItems', $source->relationLoaded('diningItems') ? $source->getRelation('diningItems') : collect());
             $reservation->setRelation('payments', $source->relationLoaded('payments') ? $source->getRelation('payments') : collect());
 
@@ -713,11 +756,11 @@ class HomeController extends Controller
             ->values();
 
         $reservations->each(function (Reservation $reservation) {
-            $amenityIds = array_values(array_filter(array_map('trim', explode(',', (string) $reservation->amenity_id))));
-            $eventPlaceIds = array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_place_id))));
+            $facilityIds = array_values(array_filter(array_map('trim', explode(',', (string) $reservation->facility_id))));
+            $eventIds = array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_id))));
 
-            $reservation->setRelation('amenities', Amenity::whereIn('id', $amenityIds)->get());
-            $reservation->setRelation('eventPlaces', EventPlace::whereIn('id', $eventPlaceIds)->get());
+            $reservation->setRelation('facilities', Facility::whereIn('id', $facilityIds)->get());
+            $reservation->setRelation('events', Event::whereIn('id', $eventIds)->get());
         });
 
         $activeReservation = $this->activeReservationFor($guest);
@@ -750,8 +793,8 @@ class HomeController extends Controller
 
         $reservation = match ($request->input('category')) {
             'rooms' => RoomReservation::find($reservation),
-            'event_place' => EventReservation::find($reservation),
-            'amenities' => AmenityReservation::find($reservation),
+            'event' => EventReservation::find($reservation),
+            'facilities' => FacilityReservation::find($reservation),
             'dining' => DiningReservation::find($reservation),
             default => Reservation::find($reservation),
         };
@@ -791,8 +834,8 @@ class HomeController extends Controller
 
         $reservation = match ($request->input('category')) {
             'rooms' => RoomReservation::find($reservation),
-            'event_place' => EventReservation::find($reservation),
-            'amenities' => AmenityReservation::find($reservation),
+            'event' => EventReservation::find($reservation),
+            'facilities' => FacilityReservation::find($reservation),
             'dining' => DiningReservation::find($reservation),
             default => Reservation::find($reservation),
         };

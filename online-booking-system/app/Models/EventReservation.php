@@ -14,7 +14,7 @@ class EventReservation extends Model
     ];
 
     protected $fillable = [
-        'event_place_id',
+        'event_id',
         'guest_name',
         'guest_email',
         'guest_phone',
@@ -32,9 +32,14 @@ class EventReservation extends Model
         'special_requests',
     ];
 
+    public function event()
+    {
+        return $this->belongsTo(Event::class);
+    }
+
     public function eventPlace()
     {
-        return $this->belongsTo(EventPlace::class);
+        return $this->event();
     }
 
     public function payments()

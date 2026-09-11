@@ -466,8 +466,8 @@
         <div class="reservation-left">
             <div class="reservation-tabs">
                 <button type="button" class="tab-btn active" data-tab="room-tab"><span class="tab-icon"><i class="fas fa-bed"></i></span>Rooms</button>
-                <button type="button" class="tab-btn" data-tab="amenities-tab"><span class="tab-icon"><i class="fas fa-concierge-bell"></i></span>Amenities</button>
-                <button type="button" class="tab-btn" data-tab="event-place-tab"><span class="tab-icon"><i class="fas fa-calendar-check"></i></span>Event Place</button>
+                <button type="button" class="tab-btn" data-tab="amenities-tab"><span class="tab-icon"><i class="fas fa-concierge-bell"></i></span>Facilities</button>
+                <button type="button" class="tab-btn" data-tab="event-place-tab"><span class="tab-icon"><i class="fas fa-calendar-check"></i></span>Events</button>
                 <button type="button" class="tab-btn" data-tab="dining-tab"><span class="tab-icon"><i class="fas fa-utensils"></i></span>Dining</button>
             </div>
 
@@ -531,12 +531,12 @@
 
             <div id="amenities-tab" class="reservation-panel">
                 <div class="panel-header">
-                    <h3>Amenities</h3>
+                    <h3>Facilities</h3>
                     <p>Choose amenities to enhance your stay.</p>
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($amenities as $amenity)
-                        <article class="reservation-card" data-category="amenities" data-price="{{ $amenity->price }}" data-pricing-basis="{{ $amenity->pricing_basis ?? 'Per Stay' }}" data-title="{{ $amenity->name }}" data-amenity-id="{{ $amenity->id }}" data-capacity="{{ $amenity->capacity ?? '' }}" data-scheduling="{{ $amenity->scheduling_requirement ?? 'No Additional Schedule' }}">
+                        <article class="reservation-card" data-category="facilities" data-price="{{ $amenity->price }}" data-pricing-basis="{{ $amenity->pricing_basis ?? 'Per Stay' }}" data-title="{{ $amenity->name }}" data-amenity-id="{{ $amenity->id }}" data-capacity="{{ $amenity->capacity ?? '' }}" data-scheduling="{{ $amenity->scheduling_requirement ?? 'No Additional Schedule' }}">
                             <img src="{{ $amenity->image ? asset('storage/' . $amenity->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $amenity->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $amenity->name }}</h4>
@@ -572,12 +572,12 @@
 
             <div id="event-place-tab" class="reservation-panel">
                 <div class="panel-header">
-                    <h3>Event Place</h3>
+                    <h3>Events</h3>
                     <p>Select an event package for your occasion.</p>
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
-                        <article class="reservation-card" data-category="event_place" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}">
+                        <article class="reservation-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}">
                             <img src="{{ $event->image ? asset('storage/' . $event->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $event->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $event->name }}</h4>
@@ -898,7 +898,7 @@
                         <div class="payment-field"><label for="gcashNumber">GCash Number</label><input id="gcashNumber" type="tel" placeholder="09XX XXX XXXX"></div>
                         <div class="payment-field"><label for="gcashReferenceNumber">Reference Number</label><input id="gcashReferenceNumber" type="text" placeholder="Enter reference number"></div>
                         <div class="payment-field"><label for="gcashPaymentAmount">Payment Amount</label><input id="gcashPaymentAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
-                        <div class="payment-field full-width"><label for="gcashPaymentProof">Upload Payment Proof</label><input id="gcashPaymentProof" type="file" accept="image/*,.pdf"></div>
+                        <div class="payment-field full-width"><label for="gcashPaymentProof">Upload Payment Proof</label><input id="gcashPaymentProof" name="payment_proof" form="reservationForm" type="file" accept="image/*"></div>
                     </div>
                 </div>
                 <div class="payment-method-panel" data-payment-panel="Maya" hidden>
@@ -908,7 +908,7 @@
                         <div class="payment-field"><label for="mayaNumber">Maya Number</label><input id="mayaNumber" type="tel" placeholder="09XX XXX XXXX"></div>
                         <div class="payment-field"><label for="mayaReferenceNumber">Reference Number</label><input id="mayaReferenceNumber" type="text" placeholder="Enter reference number"></div>
                         <div class="payment-field"><label for="mayaPaymentAmount">Payment Amount</label><input id="mayaPaymentAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
-                        <div class="payment-field full-width"><label for="mayaPaymentProof">Upload Payment Proof</label><input id="mayaPaymentProof" type="file" accept="image/*,.pdf"></div>
+                        <div class="payment-field full-width"><label for="mayaPaymentProof">Upload Payment Proof</label><input id="mayaPaymentProof" name="payment_proof" form="reservationForm" type="file" accept="image/*"></div>
                     </div>
                 </div>
                 <div class="payment-method-panel" data-payment-panel="Credit / Debit Card" hidden>
@@ -929,7 +929,7 @@
                         <div class="payment-field"><label for="bankReferenceNumber">Reference Number</label><input id="bankReferenceNumber" type="text" placeholder="Enter reference number"></div>
                         <div class="payment-field"><label for="transferDate">Transfer Date</label><input id="transferDate" type="date"></div>
                         <div class="payment-field"><label for="transferAmount">Amount Transferred</label><input id="transferAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
-                        <div class="payment-field"><label for="bankPaymentProof">Upload Payment Proof</label><input id="bankPaymentProof" type="file" accept="image/*,.pdf"></div>
+                        <div class="payment-field"><label for="bankPaymentProof">Upload Payment Proof</label><input id="bankPaymentProof" name="payment_proof" form="reservationForm" type="file" accept="image/*"></div>
                     </div>
                 </div>
             </div>
@@ -988,7 +988,7 @@
     </div>
 </div>
 
-<form id="reservationForm" action="{{ route('reservation.store', [], false) }}" method="POST" style="display:none;">
+<form id="reservationForm" action="{{ route('reservation.store', [], false) }}" method="POST" enctype="multipart/form-data" style="display:none;">
     @csrf
     <input type="hidden" name="submission_token" value="{{ \Illuminate\Support\Str::uuid() }}">
     <input type="hidden" name="room_id" id="reservationRoomId">
@@ -1009,9 +1009,9 @@
     <input type="hidden" name="dining_area" id="reservationDiningArea">
     <input type="hidden" name="dining_schedule" id="reservationDiningSchedule">
     <input type="hidden" name="quantity" id="reservationDiningQuantity">
-    <input type="hidden" name="amenity_id" id="reservationAmenityId">
-    <input type="hidden" name="amenity_quantity" id="reservationAmenityQuantity">
-    <input type="hidden" name="event_place_id" id="reservationEventPlaceId">
+    <input type="hidden" name="facility_id" id="reservationAmenityId">
+    <input type="hidden" name="facility_quantity" id="reservationAmenityQuantity">
+    <input type="hidden" name="event_id" id="reservationEventPlaceId">
     <input type="hidden" name="event_type" id="reservationEventType">
     <input type="hidden" name="number_of_guests" id="reservationEventGuests">
 </form>
@@ -1860,7 +1860,7 @@
                             if (btn.closest('.reservation-card').dataset.category === 'room') {
                                 btn.textContent = 'Add to Reservation';
                             }
-                            if (btn.closest('.reservation-card').dataset.category === 'amenities') {
+                            if (btn.closest('.reservation-card').dataset.category === 'facilities') {
                                 btn.textContent = 'Add to Reservation';
                                 btn.disabled = false;
                             }
@@ -1876,7 +1876,7 @@
                             if (btn.closest('.reservation-card').dataset.category === 'room') {
                                 btn.textContent = 'Add to Reservation';
                             }
-                            if (btn.closest('.reservation-card').dataset.category === 'amenities') {
+                            if (btn.closest('.reservation-card').dataset.category === 'facilities') {
                                 btn.disabled = false;
                                 if (selectedAmenities.some(item => item.id === btn.closest('.reservation-card').dataset.amenityId)) {
                                     btn.textContent = 'Selected';
@@ -1887,7 +1887,7 @@
                         });
                         this.textContent = 'Selected';
                     }
-                } else if (category === 'amenities') {
+                } else if (category === 'facilities') {
                     if (!selectedRoom) {
                         alert('Amenities can only be selected when a room is booked.');
                         return;
@@ -1910,7 +1910,7 @@
                         selectedAmenities.splice(itemIndex, 1);
                         this.textContent = 'Add to Reservation';
                     }
-                } else if (category === 'event_place') {
+                } else if (category === 'event') {
                     const eventIndex = selectedEvent.findIndex(item => item.id === card.dataset.eventId);
                     if (eventIndex === -1) {
                         selectedEvent.push({
@@ -2121,8 +2121,11 @@
             });
             selectedDining.forEach(item => {
                 reservationDetails.push(['Dining', `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`]);
-                if (item.table) reservationDetails.push(['Dining Table', item.table]);
             });
+            const receiptDiningTables = [...new Set(selectedDining.map(item => item.table).filter(Boolean))];
+            if (receiptDiningTables.length) {
+                reservationDetails.push(['Dining Table', receiptDiningTables.join(', ')]);
+            }
             receiptReservationDetails.innerHTML = reservationDetails.map(([label, value]) => `<p class="receipt-reservation-detail"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></p>`).join('');
             receiptContent.innerHTML = `<table class="receipt-table"><thead><tr><th>Quantity</th><th>Description</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>${receiptItems.map(([quantity, description, unitPrice, amount]) => `<tr><td>${escapeHtml(quantity)}</td><td>${escapeHtml(description)}</td><td>${escapeHtml(unitPrice)}</td><td>${escapeHtml(amount)}</td></tr>`).join('')}<tr class="receipt-total-row"><td colspan="3">Total</td><td>${escapeHtml(confirmTotalAmount.textContent)}</td></tr></tbody></table>`;
             receiptModal.classList.add('open');

@@ -33,16 +33,16 @@ class Reservation extends Model
         'room_check_out_time',
         'event_start_time',
         'event_end_time',
-        'amenity_start_time',
-        'amenity_end_time',
+        'facility_start_time',
+        'facility_end_time',
         'dining_time',
         'check_out',
         'check_out_time',
         'status',
         'total_amount',
         'amount_paid',
-        'amenity_id',
-        'event_place_id',
+        'facility_id',
+        'event_id',
         'dining_id',
         'payment_method',
         'payment_details',
@@ -54,14 +54,34 @@ class Reservation extends Model
         return $this->belongsTo(Room::class);
     }
 
+    public function facility()
+    {
+        return $this->belongsTo(Facility::class);
+    }
+
     public function amenity()
     {
-        return $this->belongsTo(Amenity::class);
+        return $this->facility();
+    }
+
+    public function event()
+    {
+        return $this->belongsTo(Event::class);
     }
 
     public function eventPlace()
     {
-        return $this->belongsTo(EventPlace::class);
+        return $this->event();
+    }
+
+    public function getAmenityIdAttribute()
+    {
+        return $this->getAttribute('facility_id');
+    }
+
+    public function getEventPlaceIdAttribute()
+    {
+        return $this->getAttribute('event_id');
     }
 
     public function diningMenu()
