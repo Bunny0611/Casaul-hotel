@@ -217,13 +217,6 @@ document.addEventListener('DOMContentLoaded', function () {
             switchBtn.textContent = isSignUp ? 'Sign in' : 'Sign up';
         });
 
-        googleBtn?.addEventListener('click', () => {
-            if (authMessage) {
-                authMessage.style.display = 'block';
-                authMessage.textContent = 'Google sign-in is coming soon. Please use email sign-in for now.';
-            }
-        });
-
         signupForm?.addEventListener('submit', () => {
             if (authMessage) {
                 authMessage.style.display = 'none';
