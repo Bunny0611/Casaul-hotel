@@ -81,36 +81,286 @@
         'BNO' => ['class' => 'badge-slate', 'label' => 'Blocked', 'dot' => '#4b5864'],
     ];
 
-    $statusCards = [
-        ['code' => 'VR', 'class' => 'card-vr'],
-        ['code' => 'VC', 'class' => 'card-vr'],
-        ['code' => 'VD', 'class' => 'card-vd'],
-        ['code' => 'OC', 'class' => 'card-oc'],
-        ['code' => 'OD', 'class' => 'card-od'],
-        ['code' => 'HSD', 'class' => 'card-vd'],
-        ['code' => 'HSUC', 'class' => 'card-vr'],
-        ['code' => 'OOO', 'class' => 'card-ooo'],
-        ['code' => 'BLO', 'class' => 'card-bno'],
-        ['code' => 'NS', 'class' => 'card-bno'],
-        ['code' => 'SO', 'class' => 'card-bno'],
-        ['code' => 'HU', 'class' => 'card-bno'],
-        ['code' => 'DND', 'class' => 'card-bno'],
+    $summaryCards = [
+        [
+            'label' => 'Vacant Ready',
+            'count' => ($statusCounts['VR'] ?? 0),
+            'class' => 'summary-card-green',
+            'icon' => 'fa-bed',
+        ],
+        [
+            'label' => 'Vacant Clean',
+            'count' => ($statusCounts['VC'] ?? 0),
+            'class' => 'summary-card-green',
+            'icon' => 'fa-bed',
+        ],
+        [
+            'label' => 'Vacant Dirty',
+            'count' => ($statusCounts['VD'] ?? 0),
+            'class' => 'summary-card-amber',
+            'icon' => 'fa-exclamation-circle',
+        ],
+        [
+            'label' => 'Occupied Clean',
+            'count' => ($statusCounts['OC'] ?? 0),
+            'class' => 'summary-card-blue',
+            'icon' => 'fa-user',
+        ],
+        [
+            'label' => 'Occupied Dirty',
+            'count' => ($statusCounts['OD'] ?? 0),
+            'class' => 'summary-card-red',
+            'icon' => 'fa-user',
+        ],
+        [
+            'label' => 'Others',
+            'count' => 8,
+            'class' => 'summary-card-gray',
+            'icon' => 'fa-ellipsis-h',
+        ],
     ];
+
+    $otherRoomStatuses = [
+        ['code' => 'HSD', 'label' => 'House Use Dirty', 'count' => $statusCounts['HSD'] ?? 0, 'class' => 'other-card-purple'],
+        ['code' => 'HSUC', 'label' => 'House Use Clean', 'count' => $statusCounts['HSUC'] ?? 0, 'class' => 'other-card-green'],
+        ['code' => 'OOO', 'label' => 'Out of Order', 'count' => $statusCounts['OOO'] ?? 0, 'class' => 'other-card-indigo'],
+        ['code' => 'BLO', 'label' => 'Blocked', 'count' => $statusCounts['BLO'] ?? 0, 'class' => 'other-card-slate'],
+        ['code' => 'NS', 'label' => 'No Show', 'count' => $statusCounts['NS'] ?? 0, 'class' => 'other-card-slate'],
+        ['code' => 'SO', 'label' => 'Slept Out', 'count' => $statusCounts['SO'] ?? 0, 'class' => 'other-card-slate'],
+        ['code' => 'HU', 'label' => 'House Use', 'count' => $statusCounts['HU'] ?? 0, 'class' => 'other-card-slate'],
+        ['code' => 'DND', 'label' => 'Do Not Disturb', 'count' => $statusCounts['DND'] ?? 0, 'class' => 'other-card-slate'],
+    ];
+
+    $perPage = 5;
+    $currentPage = max(1, (int) request()->query('page', 1));
+    $totalPages = max(1, (int) ceil($rooms->count() / $perPage));
+    $currentPage = min($currentPage, $totalPages);
+    $pagedRooms = $rooms->slice(($currentPage - 1) * $perPage, $perPage)->values();
 @endphp
 
 <style>
-.room-status-page { display:flex; gap:22px; width:100%; max-width:1500px; margin:0 auto; padding:18px 18px 0; color:#24313b; font-family:"Segoe UI", sans-serif; }
-.room-status-main { flex:1 1 auto; min-width:0; background:#f2f3f1; border:1px solid #dfe3df; border-radius:18px; box-shadow:0 10px 22px rgba(24,34,41,0.03); padding:20px 20px 16px; }
-.room-status-aside { display:none; width:260px; flex-shrink:0; background:rgba(255,255,255,0.45); border:1px solid #e6e0de; border-radius:16px; box-shadow:0 12px 28px rgba(24,34,41,0.04); padding:16px 14px 10px; }
-.room-status-page.has-sidebar { display:flex; }
-.room-status-page.has-sidebar .room-status-aside { display:block; }
+.room-status-page { width:100%; max-width:1500px; margin:0 auto; padding:18px 18px 0; color:#24313b; font-family:"Segoe UI", sans-serif; height:100%; }
+.room-status-main { flex:1 1 auto; min-width:0; background:#f2f3f1; border:1px solid #dfe3df; border-radius:18px; box-shadow:0 10px 22px rgba(24,34,41,0.03); padding:20px 20px 0; }
+.room-status-aside {
+    width:0;
+    min-width:0;
+    max-width:0;
+    flex-shrink:0;
+    overflow:hidden;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    background:rgba(255,255,255,0.45);
+    border:1px solid transparent;
+    border-radius:16px;
+    box-shadow:none;
+    padding:0;
+    transition: width 0.25s ease, max-width 0.25s ease, opacity 0.2s ease, visibility 0.2s ease, padding 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.room-status-page.has-sidebar { display:flex; gap:22px; }
+.room-status-page.has-sidebar .room-status-aside {
+    width:260px;
+    max-width:260px;
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+    border-color:#e6e0de;
+    box-shadow:0 12px 28px rgba(24,34,41,0.04);
+    padding:16px 14px 10px;
+}
+.room-status-page:not(.has-sidebar) .room-status-aside {
+    border-width:0;
+}
 .status-header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
 .status-title-wrap { display:flex; align-items:center; gap:12px; }
 .status-title-icon { display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:10px; background:#f0f1f0; color:#2d3d45; border:1px solid #dde2de; }
 .status-title-wrap h2 { margin:0; color:#2b3742; font-size:28px; font-weight:800; line-height:1.1; }
 .status-title-wrap p { margin:4px 0 0; color:#7b838a; font-size:13px; }
-.status-view-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border:1px solid #c5dcc9; border-radius:12px; background:#dff2e3; color:#2c7b5f; font-size:14px; font-weight:700; text-decoration:none; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.18); }
+.status-view-btn {
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 14px;
+    min-height:42px;
+    border:1px solid #d9e3eb;
+    border-radius:12px;
+    background:rgba(255,255,255,0.65);
+    color:#3a4c57;
+    font-size:14px;
+    font-weight:700;
+    box-shadow:0 8px 18px rgba(24,34,41,0.02);
+}
+.status-view-btn-icon {
+    width:24px;
+    height:24px;
+    border-radius:8px;
+    background:#edf4fb;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#4e7bb2;
+    font-size:12px;
+}
 .status-summary { margin:18px 0 0; }
+.summary-grid {
+    display:grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap:14px;
+}
+
+.room-status-page.has-sidebar .summary-grid {
+    grid-template-columns: repeat(6, minmax(90px, 1fr));
+}
+.other-room-statuses {
+    display:none;
+    margin-top:18px;
+    padding-top:14px;
+    border-top:1px solid rgba(117, 129, 138, 0.18);
+}
+.other-room-statuses.is-visible {
+    display:block;
+}
+.other-room-statuses-header {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+}
+.other-room-statuses-header h3 {
+    margin:0;
+    font-size:15px;
+    font-weight:800;
+    color:#2a3440;
+}
+.other-room-grid {
+    display:grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap:12px;
+}
+.other-room-card {
+    min-height:62px;
+    padding:10px 10px;
+    border-radius:12px;
+    border:1px solid rgba(123, 134, 145, 0.18);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    background:rgba(255,255,255,0.28);
+    box-shadow:0 4px 10px rgba(24,34,41,0.02);
+}
+.other-room-card-label {
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+}
+.other-room-card-dot {
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    flex-shrink:0;
+}
+.other-room-card-code {
+    font-size:11px;
+    font-weight:800;
+    color:#3f4d59;
+}
+.other-room-card-count {
+    font-size:14px;
+    font-weight:800;
+    color:#2b3742;
+}
+.other-card-purple { background:linear-gradient(180deg, rgba(238, 229, 248, 0.92), rgba(224, 214, 240, 0.94)); }
+.other-card-green { background:linear-gradient(180deg, rgba(222, 245, 232, 0.92), rgba(202, 235, 216, 0.93)); }
+.other-card-indigo { background:linear-gradient(180deg, rgba(232, 226, 246, 0.92), rgba(218, 209, 241, 0.94)); }
+.other-card-slate { background:linear-gradient(180deg, rgba(234, 238, 240, 0.94), rgba(218, 224, 229, 0.95)); }
+.summary-card {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    min-height:92px;
+    padding:16px 18px;
+    border-radius:18px;
+    border:1px solid rgba(137, 153, 164, 0.18);
+    box-shadow:0 10px 22px rgba(24,34,41,0.03);
+    min-width:0;
+}
+
+.room-status-page.has-sidebar .summary-card {
+    min-height:82px;
+    padding:12px 10px;
+}
+.summary-card-content {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    width:100%;
+    min-width:0;
+}
+
+.room-status-page.has-sidebar .summary-card-content {
+    gap:8px;
+}
+.summary-card-icon {
+    width:42px;
+    height:42px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+    color:#3d4f5c;
+    background:rgba(255,255,255,0.35);
+    border:1px solid rgba(60,83,94,0.12);
+}
+
+.room-status-page.has-sidebar .summary-card-icon {
+    width:30px;
+    height:30px;
+    font-size:14px;
+}
+.summary-card-meta {
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:4px;
+    min-width:0;
+    flex:1 1 auto;
+}
+.summary-card-label {
+    font-size:12px;
+    font-weight:700;
+    color:#3b4d57;
+    line-height:1.1;
+    white-space:normal;
+    overflow-wrap:normal;
+    word-break:normal;
+    text-align:center;
+}
+
+.room-status-page.has-sidebar .summary-card-label {
+    font-size:11px;
+    white-space:normal;
+    line-height:1.05;
+}
+.summary-card-count {
+    font-size:18px;
+    font-weight:800;
+    color:#1f2b34;
+    line-height:1;
+}
+
+.room-status-page.has-sidebar .summary-card-count {
+    font-size:15px;
+}
+.summary-card-green { background:linear-gradient(180deg, rgba(222, 244, 232, 0.92), rgba(201, 231, 214, 0.9)); }
+.summary-card-blue { background:linear-gradient(180deg, rgba(223, 235, 249, 0.94), rgba(196, 220, 242, 0.92)); }
+.summary-card-red { background:linear-gradient(180deg, rgba(245, 223, 226, 0.96), rgba(238, 200, 209, 0.95)); }
+.summary-card-amber { background:linear-gradient(180deg, rgba(248, 237, 210, 0.96), rgba(238, 220, 174, 0.95)); }
+.summary-card-purple { background:linear-gradient(180deg, rgba(236, 230, 245, 0.96), rgba(214, 199, 239, 0.95)); }
+.summary-card-gray { background:linear-gradient(180deg, rgba(235, 238, 240, 0.96), rgba(224, 228, 232, 0.95)); }
 .status-carousel { display:flex; align-items:center; gap:12px; }
 .status-carousel-viewport { flex:1; overflow:hidden; border-radius:14px; }
 .status-carousel-track { display:flex; align-items:center; gap:10px; transition:transform 0.35s ease; will-change:transform; }
@@ -135,12 +385,20 @@
 .card-bno { background:#e4e7ea; }
 .card-bno .status-pill-dot { background:#64717b; }
 
-.toolbar { display:flex; align-items:center; gap:10px; padding:10px 0 14px; margin-bottom:12px; }
-.toolbar-search { flex:1 1 220px; position:relative; }
+.toolbar {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 0 14px;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+    row-gap:8px;
+}
+.toolbar-search { flex:1 1 210px; max-width:210px; position:relative; min-width:160px; }
 .toolbar-search .search-icon { position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#89949c; font-size:13px; }
 .toolbar-search input, .toolbar-select select { width:100%; min-height:34px; border:1px solid #dfe4e8; border-radius:10px; background:#fff; color:#53606c; font-size:13px; outline:none; padding:0 12px; }
 .toolbar-search input { padding-left:38px; }
-.toolbar-select { position:relative; flex:0 0 150px; }
+.toolbar-select { position:relative; flex:1 1 130px; min-width:100px; }
 .toolbar-select select { appearance:none; background-image:linear-gradient(45deg, transparent 50%, #6e7a83 50%), linear-gradient(135deg, #6e7a83 50%, transparent 50%); background-position:calc(100% - 18px) calc(50% - 2px), calc(100% - 12px) calc(50% - 2px); background-size:6px 6px, 6px 6px; background-repeat:no-repeat; padding-right:32px; }
 .filter-clear {
     border:1px solid #dfe4e8;
@@ -165,6 +423,51 @@
 .room-table thead th { padding:12px 14px; background:#f2f4f5; border-bottom:1px solid #e7e0dd; color:#66737d; font-size:11px; text-transform:uppercase; font-weight:700; text-align:left; letter-spacing:0.06em; }
 .room-table tbody td { padding:12px 14px; border-bottom:1px solid #f0eceb; vertical-align:middle; font-size:13px; color:#3c4b57; }
 .room-table tbody tr:last-child td { border-bottom:none; }
+.table-pagination {
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    padding:12px 16px;
+    border-top:1px solid #e7e0dd;
+    background:#fbfbfa;
+}
+.table-page-controls {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+}
+.table-page-btn {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    height:32px;
+    border:1px solid #d9e3eb;
+    border-radius:8px;
+    background:#fff;
+    color:#344d5b;
+    font-size:14px;
+    font-weight:700;
+    text-decoration:none;
+    line-height:1;
+}
+.table-page-btn.is-disabled {
+    opacity:0.4;
+    pointer-events:none;
+}
+.table-page-number {
+    min-width:34px;
+    height:32px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid #d9e3eb;
+    border-radius:8px;
+    background:#f4f6f6;
+    color:#2d3d45;
+    font-size:13px;
+    font-weight:800;
+}
 .room-cell { display:flex; align-items:center; gap:10px; font-weight:600; color:#2d3740; }
 .room-icon { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:8px; background:#f4e6df; color:#6d4b39; font-size:12px; }
 .status-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
@@ -226,9 +529,50 @@
 .cancel-button, .confirm-button { min-height:42px; padding:0 17px; border-radius:9px; font-size:12px; font-weight:750; cursor:pointer; }
 .cancel-button { border:1px solid #ddd5d1; background:#fff; color:#665a54; }
 .confirm-button { border:0; background:linear-gradient(135deg, #8b2d1f, #b84e2c); color:#fff; }
-@media (max-width:1200px) { .room-status-page { flex-direction:column; } .room-status-aside { width:100%; } .status-summary { grid-template-columns:repeat(4, minmax(0, 1fr)); } }
-@media (max-width:768px) { .status-summary { grid-template-columns:repeat(3, minmax(0, 1fr)); } .toolbar { flex-wrap:wrap; } .toolbar-select { flex:1 1 180px; } }
-@media (max-width:560px) { .status-summary { grid-template-columns:repeat(2, minmax(0, 1fr)); } .status-header { flex-direction:column; align-items:flex-start; } }
+@media (max-width:1200px) {
+    .room-status-page { flex-direction:column; }
+    .room-status-aside { width:100%; }
+    .summary-grid { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+    .other-room-grid { grid-template-columns:repeat(4, minmax(0, 1fr)); }
+    .summary-card-label { font-size:12px; }
+    .summary-card-count { font-size:16px; }
+}
+
+@media (max-width:900px) {
+    .status-header { flex-direction:column; align-items:flex-start; }
+    .status-view-btn { width:100%; justify-content:space-between; }
+    .toolbar {
+        display:grid;
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+        gap:10px;
+    }
+    .toolbar-search { grid-column:1 / -1; }
+    .toolbar-select, .toolbar .filter-clear, .toolbar a.filter-clear {
+        width:100%;
+    }
+    .summary-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .other-room-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .room-table-wrap { overflow-x:auto; }
+    .room-table { min-width:760px; }
+}
+
+@media (max-width:560px) {
+    .room-status-page { padding:12px 12px 0; }
+    .room-status-main { padding:16px 14px 12px; }
+    .status-title-wrap h2 { font-size:22px; }
+    .status-title-wrap p { font-size:12px; }
+    .summary-grid { grid-template-columns:1fr; }
+    .other-room-grid { grid-template-columns:1fr; }
+    .toolbar { grid-template-columns:1fr; }
+    .toolbar-search, .toolbar-select, .toolbar .filter-clear, .toolbar a.filter-clear {
+        grid-column:auto;
+        width:100%;
+    }
+    .filter-clear { min-width:0; }
+    .status-view-btn { justify-content:space-between; }
+    .room-table { min-width:680px; }
+    .table-update { padding:0 8px; }
+}
 </style>
 
 <div class="room-status-page" id="roomStatusPage">
@@ -242,31 +586,45 @@
                 </div>
             </div>
             <button type="button" class="status-view-btn" id="toggleStatusPanel" aria-expanded="false">
-                <i class="fas fa-eye"></i> View All Statuses ({{ $statusCodeCount }})
+                <span class="status-view-btn-icon"><i class="fas fa-circle-info"></i></span>
+                <span>Room Status Codes</span>
+                <i class="fas fa-chevron-down"></i>
             </button>
         </div>
 
         <div class="status-summary">
-            <div class="status-carousel">
-                <button type="button" class="status-carousel-nav" id="statusCarouselPrev" aria-label="Show previous statuses">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <div class="status-carousel-viewport">
-                    <div class="status-carousel-track" id="statusCarouselTrack">
-                        @foreach($statusCards as $statusCard)
-                            <div class="status-pill {{ $statusCard['class'] }}">
-                                <div class="status-pill-content">
-                                    <span class="status-pill-dot"></span>
-                                    <span class="status-pill-label">{{ $statusCard['code'] }}</span>
-                                </div>
-                                <span class="status-pill-count">{{ $statusCounts[$statusCard['code']] ?? 0 }}</span>
+            <div class="summary-grid">
+                @foreach($summaryCards as $card)
+                    <div class="summary-card {{ $card['class'] }}{{ in_array($card['label'], ['Other', 'Others'], true) ? ' summary-card-toggle' : '' }}"
+                         {{ in_array($card['label'], ['Other', 'Others'], true) ? 'data-toggle-target="otherRoomStatuses" aria-expanded="false"' : '' }}>
+                        <div class="summary-card-content">
+                            <div class="summary-card-icon">
+                                <i class="fas {{ $card['icon'] }}"></i>
                             </div>
-                        @endforeach
+                            <div class="summary-card-meta">
+                                <span class="summary-card-label">{{ $card['label'] }}</span>
+                                <span class="summary-card-count">{{ $card['count'] }}</span>
+                            </div>
+                        </div>
                     </div>
+                @endforeach
+            </div>
+
+            <div class="other-room-statuses" id="otherRoomStatuses">
+                <div class="other-room-statuses-header">
+                    <h3>Other Room Statuses</h3>
                 </div>
-                <button type="button" class="status-carousel-nav" id="statusCarouselNext" aria-label="Show next statuses">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
+                <div class="other-room-grid">
+                    @foreach($otherRoomStatuses as $status)
+                        <div class="other-room-card {{ $status['class'] }}">
+                            <div class="other-room-card-label">
+                                <span class="other-room-card-dot" style="background: {{ $status['code'] === 'HSD' ? '#8a66c1' : ($status['code'] === 'HSUC' ? '#3da981' : ($status['code'] === 'OOO' ? '#7a63c4' : '#64717b')) }};"></span>
+                                <span class="other-room-card-code">{{ $status['code'] }}</span>
+                            </div>
+                            <span class="other-room-card-count">{{ $status['count'] }}</span>
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </div>
 
@@ -314,7 +672,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($rooms as $room)
+                    @forelse($pagedRooms as $room)
                         @php
                             $statusKey = 'VR';
                             $roomStatus = strtolower((string) ($room->status ?? ''));
@@ -374,6 +732,31 @@
                 </tbody>
             </table>
         </div>
+
+        @if($rooms->count() >= $perPage)
+            <div class="table-pagination">
+                @php
+                    $prevPage = max(1, $currentPage - 1);
+                    $nextPage = min($totalPages, $currentPage + 1);
+                @endphp
+
+                <div class="table-page-controls">
+                    @if($currentPage > 1)
+                        <a href="{{ route('housekeeping.room-status-update', array_merge(request()->query(), ['page' => $prevPage])) }}" class="table-page-btn" aria-label="Previous page"><i class="fas fa-chevron-left"></i></a>
+                    @else
+                        <span class="table-page-btn is-disabled" aria-label="Previous page"><i class="fas fa-chevron-left"></i></span>
+                    @endif
+
+                    <span class="table-page-number">{{ $currentPage }}</span>
+
+                    @if($currentPage < $totalPages)
+                        <a href="{{ route('housekeeping.room-status-update', array_merge(request()->query(), ['page' => $nextPage])) }}" class="table-page-btn" aria-label="Next page"><i class="fas fa-chevron-right"></i></a>
+                    @else
+                        <span class="table-page-btn is-disabled" aria-label="Next page"><i class="fas fa-chevron-right"></i></span>
+                    @endif
+                </div>
+            </div>
+        @endif
     </div>
 
     <aside class="room-status-aside" id="statusLegendPanel">
@@ -467,15 +850,34 @@
 const roomStatusPage = document.getElementById('roomStatusPage');
 const toggleStatusButton = document.getElementById('toggleStatusPanel');
 const statusLegendPanel = document.getElementById('statusLegendPanel');
+const otherRoomStatuses = document.getElementById('otherRoomStatuses');
+
+if (otherRoomStatuses) {
+    const otherToggleCards = document.querySelectorAll('.summary-card-toggle');
+
+    otherToggleCards.forEach((card) => {
+        card.addEventListener('click', function () {
+            const isVisible = otherRoomStatuses.classList.toggle('is-visible');
+            this.setAttribute('aria-expanded', String(isVisible));
+        });
+    });
+}
 
 if (toggleStatusButton && roomStatusPage && statusLegendPanel) {
+    const updateToggleButtonState = (isVisible) => {
+        toggleStatusButton.setAttribute('aria-expanded', String(isVisible));
+        const chevron = toggleStatusButton.querySelector('.fa-chevron-down, .fa-chevron-up');
+        if (chevron) {
+            chevron.classList.toggle('fa-chevron-down', isVisible);
+            chevron.classList.toggle('fa-chevron-up', !isVisible);
+        }
+    };
+
+    updateToggleButtonState(roomStatusPage.classList.contains('has-sidebar'));
+
     toggleStatusButton.addEventListener('click', function () {
         const isVisible = roomStatusPage.classList.toggle('has-sidebar');
-        statusLegendPanel.style.display = isVisible ? 'block' : 'none';
-        toggleStatusButton.setAttribute('aria-expanded', String(isVisible));
-        toggleStatusButton.innerHTML = isVisible
-            ? '<i class="fas fa-eye-slash"></i> Hide Statuses ({{ $statusCodeCount }})'
-            : '<i class="fas fa-eye"></i> View All Statuses ({{ $statusCodeCount }})';
+        updateToggleButtonState(isVisible);
     });
 }
 

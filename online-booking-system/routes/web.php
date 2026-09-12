@@ -75,6 +75,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
     Route::post('/reservations/{id}/payments', [AdminController::class, 'storePayment'])->name('reservations.payments.store');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
+    Route::post('/reservations/bulk-delete', [AdminController::class, 'bulkDestroyReservations'])->name('reservations.bulk-destroy');
     Route::get('/checkin', function () {
         $checkIns = RoomReservation::with('room')
             ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
@@ -179,6 +180,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
+    Route::post('/reservations/bulk-delete', [AdminController::class, 'bulkDestroyReservations'])->name('reservations.bulk-destroy');
     Route::get('/guests', [AdminController::class, 'guests'])->name('guests');
     Route::get('/messages', [AdminController::class, 'messages'])->name('messages');
     Route::post('/messages/{id}/reply', [AdminController::class, 'replyMessage'])->name('messages.reply');
