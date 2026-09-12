@@ -277,6 +277,7 @@ body {
 }
 
 .status-badge.available { background: var(--available); }
+.status-badge.active { background: var(--available); }
 .status-badge.reserved { background: var(--reserved); }
 .status-badge.occupied { background: var(--occupied); }
 .status-badge.unavailable { background: var(--unavailable); }
