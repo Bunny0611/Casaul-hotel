@@ -96,18 +96,18 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();
-        $amenities = \App\Models\Facility::orderBy('name')->get();
-        $eventPlaces = \App\Models\Event::orderBy('name')->get();
-        $confirmedEventPlaceIds = EventReservation::query()
+        $facilities = \App\Models\Facility::orderBy('name')->get();
+        $events = \App\Models\Event::orderBy('name')->get();
+        $confirmedEventIds = EventReservation::query()
             ->where('status', 'confirmed')
             ->whereDate('check_out', '>=', today())
             ->pluck('event_id')
             ->filter()
             ->unique();
-        $eventPlaces->each(function ($eventPlace) use ($confirmedEventPlaceIds) {
-            if ($confirmedEventPlaceIds->contains($eventPlace->id)
-                && !in_array(strtolower((string) $eventPlace->status), ['unavailable', 'maintenance'], true)) {
-                $eventPlace->status = 'reserved';
+        $events->each(function ($event) use ($confirmedEventIds) {
+            if ($confirmedEventIds->contains($event->id)
+                && !in_array(strtolower((string) $event->status), ['unavailable', 'maintenance'], true)) {
+                $event->status = 'reserved';
             }
         });
         $diningTables = DiningTable::orderBy('table_no')->get();
@@ -139,7 +139,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
             $table->status = $isReservedNow ? 'Reserved' : 'Available';
         });
 
-        return view('employee.room-status', compact('rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningTables', 'dining', 'diningSchedules'));
+        return view('employee.room-status', compact('rooms', 'inventoryItems', 'facilities', 'events', 'diningTables', 'dining', 'diningSchedules'));
     })->name('room-status');
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
     Route::get('/guest-requests/{id}', [AdminController::class, 'employeeGuestRequest'])->name('guest-requests.show');

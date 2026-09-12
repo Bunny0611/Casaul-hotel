@@ -7,14 +7,14 @@
     $reservations = $reservations ?? collect([]);
     $rooms = $rooms ?? collect([]);
     $inventoryItems = $inventoryItems ?? collect([]);
-    $amenities = $amenities ?? collect([]);
-    $eventPlaces = $eventPlaces ?? collect([]);
+    $facilities = $facilities ?? collect([]);
+    $events = $events ?? collect([]);
     $diningTables = $diningTables ?? collect([]);
     $dining = $dining ?? collect([]);
     $diningSchedules = $diningSchedules ?? collect([]);
     $roomReservations = $reservations;
-    $amenityReservations = $reservations->where('category', 'amenities');
-    $eventPlaceReservations = $reservations->where('category', 'event_place');
+    $facilityReservations = $reservations->where('category', 'facilities');
+    $eventReservations = $reservations->where('category', 'event');
     $diningReservations = $reservations->where('category', 'dining');
 
     $stats = [
@@ -27,19 +27,19 @@
             'cleaning' => $rooms->where('cleaning_status', 'in_progress')->count(),
             'maintenance' => $rooms->where('status', 'maintenance')->count(),
         ],
-        'amenities' => [
-            'total' => $amenities->count(),
-            'available' => $amenities->where('status', 'available')->count(),
-            'reserved' => $amenities->where('status', 'reserved')->count(),
-            'in_use' => $amenities->where('status', 'occupied')->count(),
-            'unavailable' => $amenities->whereIn('status', ['unavailable', 'maintenance'])->count(),
+        'facilities' => [
+            'total' => $facilities->count(),
+            'available' => $facilities->where('status', 'available')->count(),
+            'reserved' => $facilities->where('status', 'reserved')->count(),
+            'in_use' => $facilities->where('status', 'occupied')->count(),
+            'unavailable' => $facilities->whereIn('status', ['unavailable', 'maintenance'])->count(),
         ],
-        'event_place' => [
-            'total' => $eventPlaces->count(),
-            'available' => $eventPlaces->where('status', 'available')->count(),
-            'reserved' => $eventPlaces->where('status', 'reserved')->count(),
-            'ongoing' => $eventPlaces->where('status', 'occupied')->count(),
-            'unavailable' => $eventPlaces->whereIn('status', ['unavailable', 'maintenance'])->count(),
+        'event' => [
+            'total' => $events->count(),
+            'available' => $events->where('status', 'available')->count(),
+            'reserved' => $events->where('status', 'reserved')->count(),
+            'ongoing' => $events->where('status', 'occupied')->count(),
+            'unavailable' => $events->whereIn('status', ['unavailable', 'maintenance'])->count(),
         ],
         'dining' => [
             'total' => $diningTables->count(),
@@ -103,8 +103,8 @@
         <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm pb-2">
             <div class="flex flex-wrap gap-2">
                 <button type="button" data-reservation-tab="rooms" class="reservation-tab inline-flex items-center rounded-full border border-orange-500 bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition">ROOMS</button>
-                <button type="button" data-reservation-tab="amenities" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">AMENITIES</button>
-                <button type="button" data-reservation-tab="event_place" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">EVENT PLACE</button>
+                <button type="button" data-reservation-tab="facilities" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">FACILITIES</button>
+                <button type="button" data-reservation-tab="event" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">EVENTS</button>
                 <button type="button" data-reservation-tab="dining" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">DINING</button>
             </div>
         </div>
@@ -188,54 +188,54 @@
         </form>
         </div>
             
-        <div id="amenitiesTab" data-reservation-panel="amenities" class="hidden space-y-4 pt-4 pb-3">
+        <div id="facilitiesTab" data-reservation-panel="facilities" class="hidden space-y-4 pt-4 pb-3">
             <div class="grid gap-4 md:grid-cols-5">
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <p class="text-sm text-gray-500">Total Amenities</p>
-                    <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['amenities']['total'] }}</p>
+                    <p class="text-sm text-gray-500">Total Facilities</p>
+                    <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['facilities']['total'] }}</p>
                 </div>
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Available</p>
-                    <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['amenities']['available'] }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['facilities']['available'] }}</p>
                 </div>
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Reserved</p>
-                    <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['amenities']['reserved'] }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['facilities']['reserved'] }}</p>
                 </div>
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">In Use</p>
-                    <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['amenities']['in_use'] }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['facilities']['in_use'] }}</p>
                 </div>
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Unavailable</p>
-                    <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['amenities']['unavailable'] }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['facilities']['unavailable'] }}</p>
                 </div>
                 
             </div>
-            <form class="filter-panel" id="amenities-filter-form">
-                <div class="field-group"><label class="field-label" for="amenity-search-name">Search Amenity</label><input class="field-input" id="amenity-search-name" type="text" placeholder="e.g. Swimming Pool"></div>
-                <div class="field-group"><label class="field-label" for="amenity-search-type">Search Amenity Type</label><input class="field-input" id="amenity-search-type" type="text" placeholder="e.g. Recreation"></div>
-                <div class="field-group"><label class="field-label" for="amenity-filter-status">Filter by Status</label><select class="field-select" id="amenity-filter-status"><option value="">All Status</option><option value="available">Available</option><option value="reserved">Reserved</option><option value="occupied">In Use</option><option value="cleaning">Cleaning</option></select></div>
-                <div class="field-group"><label class="field-label" for="amenity-filter-location">Filter by Location</label><select class="field-select" id="amenity-filter-location"><option value="">All Locations</option><option>Ground Floor</option><option>2nd Floor</option><option>3rd Floor</option></select></div>
+            <form class="filter-panel" id="facilities-filter-form">
+                <div class="field-group"><label class="field-label" for="facility-search-name">Search Facility</label><input class="field-input" id="facility-search-name" type="text" placeholder="e.g. Swimming Pool"></div>
+                <div class="field-group"><label class="field-label" for="facility-search-type">Search Facility Type</label><input class="field-input" id="facility-search-type" type="text" placeholder="e.g. Recreation"></div>
+                <div class="field-group"><label class="field-label" for="facility-filter-status">Filter by Status</label><select class="field-select" id="facility-filter-status"><option value="">All Status</option><option value="available">Available</option><option value="reserved">Reserved</option><option value="occupied">In Use</option><option value="cleaning">Cleaning</option></select></div>
+                <div class="field-group"><label class="field-label" for="facility-filter-location">Filter by Location</label><select class="field-select" id="facility-filter-location"><option value="">All Locations</option><option>Ground Floor</option><option>2nd Floor</option><option>3rd Floor</option></select></div>
                 <button class="secondary-btn" type="button">Reset Filters</button>
             </form>
             <div class="table-card">
-                <div class="table-scroll-hint">Tap the Details button for complete amenity information</div>
+                <div class="table-scroll-hint">Tap the Details button for complete facility information</div>
                 <div class="table-scroll">
                     <table class="room-table">
-                        <thead><tr><th>Amenity</th><th>Type</th><th>Location</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
+                        <thead><tr><th>Facility</th><th>Type</th><th>Location</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
                         <tbody>
-                            @foreach($amenities as $item)
-                                <tr data-amenity-row data-amenity-name="{{ $item->name }}" data-amenity-type="Amenity" data-amenity-location="—" data-amenity-capacity="{{ $item->capacity ?: '—' }}" data-amenity-status="{{ $item->status }}" data-amenity-hours="—" data-amenity-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>Amenity</td><td>—</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
+                            @foreach($facilities as $item)
+                                <tr data-facility-row data-facility-name="{{ $item->name }}" data-facility-type="Facility" data-facility-location="—" data-facility-capacity="{{ $item->capacity ?: '—' }}" data-facility-status="{{ $item->status }}" data-facility-hours="—" data-facility-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>Facility</td><td>—</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-facility">Details</button></td></tr>
                             @endforeach
-                            @if($amenities->isEmpty())
-                                <tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No amenities added by the admin.</td></tr>
+                            @if($facilities->isEmpty())
+                                <tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No facilities added by the admin.</td></tr>
                             @endif
                             @if(false)
-                            <tr data-amenity-row data-amenity-name="Swimming Pool" data-amenity-type="Recreation" data-amenity-location="Ground Floor" data-amenity-capacity="30" data-amenity-status="available" data-amenity-hours="6:00 AM - 10:00 PM" data-amenity-description="Outdoor swimming pool for hotel guests." data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="Today, 6:00 AM" data-maintenance-status="Operational" data-notes="—"><td>Swimming Pool</td><td>Recreation</td><td>Ground Floor</td><td>30</td><td><span class="status-badge available">Available</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
-                            <tr data-amenity-row data-amenity-name="Gym" data-amenity-type="Fitness" data-amenity-location="2nd Floor" data-amenity-capacity="15" data-amenity-status="occupied" data-amenity-hours="5:00 AM - 11:00 PM" data-amenity-description="Fitness center with cardio and strength equipment." data-reservation-status="In Use" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="Today, 7:00 AM" data-maintenance-status="Operational" data-notes="—"><td>Gym</td><td>Fitness</td><td>2nd Floor</td><td>15</td><td><span class="status-badge occupied">In Use</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
-                            <tr data-amenity-row data-amenity-name="Spa" data-amenity-type="Wellness" data-amenity-location="2nd Floor" data-amenity-capacity="8" data-amenity-status="reserved" data-amenity-hours="9:00 AM - 9:00 PM" data-amenity-description="Relaxation and wellness treatment area." data-reservation-status="Reserved" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="Yesterday, 8:00 PM" data-maintenance-status="Operational" data-notes="—"><td>Spa</td><td>Wellness</td><td>2nd Floor</td><td>8</td><td><span class="status-badge reserved">Reserved</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
-                            <tr data-amenity-row data-amenity-name="Jacuzzi" data-amenity-type="Recreation" data-amenity-location="3rd Floor" data-amenity-capacity="6" data-amenity-status="cleaning" data-amenity-hours="8:00 AM - 10:00 PM" data-amenity-description="Private jacuzzi area." data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="In progress" data-maintenance-status="Cleaning" data-notes="Temporarily unavailable for cleaning."><td>Jacuzzi</td><td>Recreation</td><td>3rd Floor</td><td>6</td><td><span class="status-badge cleaning">Cleaning</span></td><td><button class="action-btn" type="button" data-action="view-amenity">Details</button></td></tr>
+                            <tr data-facility-row data-facility-name="Swimming Pool" data-facility-type="Recreation" data-facility-location="Ground Floor" data-facility-capacity="30" data-facility-status="available" data-facility-hours="6:00 AM - 10:00 PM" data-facility-description="Outdoor swimming pool for hotel guests." data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="Today, 6:00 AM" data-maintenance-status="Operational" data-notes="—"><td>Swimming Pool</td><td>Recreation</td><td>Ground Floor</td><td>30</td><td><span class="status-badge available">Available</span></td><td><button class="action-btn" type="button" data-action="view-facility">Details</button></td></tr>
+                            <tr data-facility-row data-facility-name="Gym" data-facility-type="Fitness" data-facility-location="2nd Floor" data-facility-capacity="15" data-facility-status="occupied" data-facility-hours="5:00 AM - 11:00 PM" data-facility-description="Fitness center with cardio and strength equipment." data-reservation-status="In Use" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="Today, 7:00 AM" data-maintenance-status="Operational" data-notes="—"><td>Gym</td><td>Fitness</td><td>2nd Floor</td><td>15</td><td><span class="status-badge occupied">In Use</span></td><td><button class="action-btn" type="button" data-action="view-facility">Details</button></td></tr>
+                            <tr data-facility-row data-facility-name="Spa" data-facility-type="Wellness" data-facility-location="2nd Floor" data-facility-capacity="8" data-facility-status="reserved" data-facility-hours="9:00 AM - 9:00 PM" data-facility-description="Relaxation and wellness treatment area." data-reservation-status="Reserved" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="Yesterday, 8:00 PM" data-maintenance-status="Operational" data-notes="—"><td>Spa</td><td>Wellness</td><td>2nd Floor</td><td>8</td><td><span class="status-badge reserved">Reserved</span></td><td><button class="action-btn" type="button" data-action="view-facility">Details</button></td></tr>
+                            <tr data-facility-row data-facility-name="Jacuzzi" data-facility-type="Recreation" data-facility-location="3rd Floor" data-facility-capacity="6" data-facility-status="cleaning" data-facility-hours="8:00 AM - 10:00 PM" data-facility-description="Private jacuzzi area." data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="In progress" data-maintenance-status="Cleaning" data-notes="Temporarily unavailable for cleaning."><td>Jacuzzi</td><td>Recreation</td><td>3rd Floor</td><td>6</td><td><span class="status-badge cleaning">Cleaning</span></td><td><button class="action-btn" type="button" data-action="view-facility">Details</button></td></tr>
                             @endif
                         </tbody>
                     </table>
@@ -243,43 +243,43 @@
             </div>
         </div>
 
-        <div id="eventPlaceTab" data-reservation-panel="event_place" class="hidden space-y-4 pt-4 pb-3">
+        <div id="eventsTab" data-reservation-panel="event" class="hidden space-y-4 pt-4 pb-3">
             <div class="grid gap-4 md:grid-cols-5">
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Total Venues</p>
-                    <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['event_place']['total'] }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['event']['total'] }}</p>
                 </div>
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Available</p>
-                    <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['event_place']['available'] }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['event']['available'] }}</p>
                 </div>
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Reserved</p>
-                    <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['event_place']['reserved'] }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['event']['reserved'] }}</p>
                 </div>
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Ongoing</p>
-                    <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['event_place']['ongoing'] }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['event']['ongoing'] }}</p>
                 </div>
                 <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                     <p class="text-sm text-gray-500">Unavailable</p>
-                    <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['event_place']['unavailable'] }}</p>
+                    <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['event']['unavailable'] }}</p>
                 </div>
             </div>
-            <form class="filter-panel" id="event-place-filter-form">
-                <div class="field-group"><label class="field-label" for="event-place-search-name">Search Event Place</label><input class="field-input" id="event-place-search-name" type="text" placeholder="e.g. Grand Ballroom"></div>
-                <div class="field-group"><label class="field-label" for="event-place-search-type">Search Venue Type</label><input class="field-input" id="event-place-search-type" type="text" placeholder="e.g. Ballroom"></div>
-                <div class="field-group"><label class="field-label" for="event-place-filter-status">Filter by Status</label><select class="field-select" id="event-place-filter-status"><option value="">All Status</option><option value="available">Available</option><option value="reserved">Reserved</option><option value="occupied">In Use</option></select></div>
-                <div class="field-group"><label class="field-label" for="event-place-filter-location">Filter by Location</label><select class="field-select" id="event-place-filter-location"><option value="">All Locations</option><option>Ground Floor</option><option>Garden</option><option>2nd Floor</option></select></div>
+            <form class="filter-panel" id="events-filter-form">
+                <div class="field-group"><label class="field-label" for="events-search-name">Search Event</label><input class="field-input" id="events-search-name" type="text" placeholder="e.g. Grand Ballroom"></div>
+                <div class="field-group"><label class="field-label" for="events-search-type">Search Event Type</label><input class="field-input" id="events-search-type" type="text" placeholder="e.g. Ballroom"></div>
+                <div class="field-group"><label class="field-label" for="events-filter-status">Filter by Status</label><select class="field-select" id="events-filter-status"><option value="">All Status</option><option value="available">Available</option><option value="reserved">Reserved</option><option value="occupied">In Use</option></select></div>
+                <div class="field-group"><label class="field-label" for="events-filter-location">Filter by Location</label><select class="field-select" id="events-filter-location"><option value="">All Locations</option><option>Ground Floor</option><option>Garden</option><option>2nd Floor</option></select></div>
                 <button class="secondary-btn" type="button">Reset Filters</button>
             </form>
             <div class="table-card">
                 <div class="table-scroll-hint">Tap the Details button for complete event place information</div>
                 <div class="table-scroll"><table class="room-table"><thead><tr><th>Event Place</th><th>Type</th><th>Location</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead><tbody>
-                    @foreach($eventPlaces as $item)
+                    @foreach($events as $item)
                         <tr data-event-row data-event-name="{{ $item->name }}" data-event-type="{{ $item->event_type ?: 'Event Place' }}" data-event-location="{{ $item->location ?: '—' }}" data-event-capacity="{{ $item->capacity ?: '—' }}" data-event-status="{{ $item->status }}" data-event-size="—" data-event-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="—" data-cleaning-status="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>{{ $item->event_type ?: 'Event Place' }}</td><td>{{ $item->location ?: '—' }}</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
                     @endforeach
-                    @if($eventPlaces->isEmpty())<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No event places added by the admin.</td></tr>@endif
+                    @if($events->isEmpty())<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No events added by the admin.</td></tr>@endif
                     @if(false)
                     <tr data-event-row data-event-name="Grand Ballroom" data-event-type="Ballroom" data-event-location="Ground Floor" data-event-capacity="300" data-event-status="available" data-event-size="500 sq m" data-event-description="Large formal event venue." data-reservation-status="—" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="Ready" data-cleaning-status="Complete" data-maintenance-status="Operational" data-notes="—"><td>Grand Ballroom</td><td>Ballroom</td><td>Ground Floor</td><td>300</td><td><span class="status-badge available">Available</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
                     <tr data-event-row data-event-name="Garden Pavilion" data-event-type="Outdoor" data-event-location="Garden" data-event-capacity="150" data-event-status="reserved" data-event-size="350 sq m" data-event-description="Open-air venue surrounded by gardens." data-reservation-status="Reserved" data-guest="—" data-reservation-id="—" data-event-date="—" data-start-time="—" data-end-time="—" data-expected-guests="—" data-setup-status="Scheduled" data-cleaning-status="Complete" data-maintenance-status="Operational" data-notes="—"><td>Garden Pavilion</td><td>Outdoor</td><td>Garden</td><td>150</td><td><span class="status-badge reserved">Reserved</span></td><td><button class="action-btn" type="button" data-action="view-event">Details</button></td></tr>
@@ -565,14 +565,14 @@
     </div>
 </div>
 
-<div class="modal-overlay" id="amenity-details-modal" aria-hidden="true">
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="amenity-modal-title">
-        <div class="modal-head"><h4 class="modal-title" id="amenity-modal-title">Amenity Details</h4><button class="close-btn" type="button" data-close-modal="amenity-details-modal" aria-label="Close dialog">×</button></div>
-        <div class="modal-body"><div class="modal-section-title">Amenity Information</div><div class="modal-grid">
-            <div class="modal-item"><strong>Amenity Name</strong><span id="amenity-detail-name">—</span></div><div class="modal-item"><strong>Amenity Type</strong><span id="amenity-detail-type">—</span></div><div class="modal-item"><strong>Location</strong><span id="amenity-detail-location">—</span></div><div class="modal-item"><strong>Capacity</strong><span id="amenity-detail-capacity">—</span></div><div class="modal-item"><strong>Current Status</strong><span id="amenity-detail-status">—</span></div><div class="modal-item"><strong>Operating Hours</strong><span id="amenity-detail-hours">—</span></div><div class="modal-item modal-notes"><strong>Description</strong><span id="amenity-detail-description">—</span></div>
+<div class="modal-overlay" id="facility-details-modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="facility-modal-title">
+        <div class="modal-head"><h4 class="modal-title" id="facility-modal-title">Facility Details</h4><button class="close-btn" type="button" data-close-modal="facility-details-modal" aria-label="Close dialog">×</button></div>
+        <div class="modal-body"><div class="modal-section-title">Facility Information</div><div class="modal-grid">
+            <div class="modal-item"><strong>Facility Name</strong><span id="facility-detail-name">—</span></div><div class="modal-item"><strong>Facility Type</strong><span id="facility-detail-type">—</span></div><div class="modal-item"><strong>Location</strong><span id="facility-detail-location">—</span></div><div class="modal-item"><strong>Capacity</strong><span id="facility-detail-capacity">—</span></div><div class="modal-item"><strong>Current Status</strong><span id="facility-detail-status">—</span></div><div class="modal-item"><strong>Operating Hours</strong><span id="facility-detail-hours">—</span></div><div class="modal-item modal-notes"><strong>Description</strong><span id="facility-detail-description">—</span></div>
         </div><div class="modal-section-title">Management Information</div><div class="modal-grid">
-            <div class="modal-item"><strong>Last Cleaned</strong><span id="amenity-detail-last-cleaned">—</span></div><div class="modal-item"><strong>Maintenance Status</strong><span id="amenity-detail-maintenance">—</span></div><div class="modal-item modal-notes"><strong>Notes</strong><span id="amenity-detail-notes">—</span></div>
-        </div></div><div class="modal-actions"><button class="secondary-btn" type="button" data-close-modal="amenity-details-modal">Close</button></div>
+            <div class="modal-item"><strong>Last Cleaned</strong><span id="facility-detail-last-cleaned">—</span></div><div class="modal-item"><strong>Maintenance Status</strong><span id="facility-detail-maintenance">—</span></div><div class="modal-item modal-notes"><strong>Notes</strong><span id="facility-detail-notes">—</span></div>
+        </div></div><div class="modal-actions"><button class="secondary-btn" type="button" data-close-modal="facility-details-modal">Close</button></div>
     </div>
 </div>
 

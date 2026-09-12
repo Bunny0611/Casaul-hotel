@@ -966,7 +966,7 @@
                         <div class="panel-title-icon"><i class="fas fa-inbox"></i></div>
                         <div>
                             <h3>Housekeeping Add-On Requests</h3>
-                            <p>View and manage guest requested add-ons and amenities.</p>
+                            <p>View and manage guest requested add-ons and facilities.</p>
                         </div>
                     </div>
                     <button type="button" class="view-all-button" onclick="openRequestDetails()">
@@ -1045,7 +1045,7 @@
         <div class="details-heading">
             <div>
                 <h2 id="detailsPageTitle">All Housekeeping Add-On Requests</h2>
-                <p id="detailsPageDescription">View and manage all guest requested add-ons and amenities.</p>
+                <p id="detailsPageDescription">View and manage all guest requested add-ons and facilities.</p>
             </div>
             <span id="detailsPageStatus" class="details-status"><i class="far fa-clock"></i> All Requests</span>
         </div>
@@ -1213,7 +1213,7 @@
 
                     <option>Extra Pillows</option>
                     <option>Towels</option>
-                    <option>Amenities</option>
+                    <option>Facilities</option>
                     <option>Drinking Water</option>
 
                 </select>
@@ -1327,7 +1327,7 @@ function openRequestDetails() {
             element.style.display = '';
         });
         title.textContent = 'All Housekeeping Add-On Requests';
-        description.textContent = 'View and manage all guest requested add-ons and amenities.';
+        description.textContent = 'View and manage all guest requested add-ons and facilities.';
         status.innerHTML = '<i class="fas fa-list"></i> All Requests';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1354,7 +1354,7 @@ function openGuestRequest(requestId) {
         allRequests.style.display = 'none';
         specificContent.forEach((element) => element.classList.add('is-visible'));
         title.textContent = 'Housekeeping Add-On Request';
-        description.textContent = 'View and manage this guest\'s requested add-ons and amenities.';
+        description.textContent = 'View and manage this guest\'s requested add-ons and facilities.';
         status.innerHTML = '<i class="far fa-clock"></i> Status: ' + (localStorage.getItem('housekeeping-request-status-' + request.requestId) || request.status);
 
         document.getElementById('detailReservationId').textContent = request.reservation;

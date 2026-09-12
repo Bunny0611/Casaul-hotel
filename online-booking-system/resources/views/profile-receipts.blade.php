@@ -296,22 +296,22 @@
                                 ];
                             }
 
-                            $amenityIds = $reservation->amenity_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->amenity_id)))) : [];
-                            foreach ($amenityIds as $amenityId) {
-                                $amenity = \App\Models\Amenity::find($amenityId);
-                                if ($amenity) {
+                            $facilityIds = $reservation->facility_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->facility_id)))) : [];
+                            foreach ($facilityIds as $facilityId) {
+                                $facility = \App\Models\Facility::find($facilityId);
+                                if ($facility) {
                                     $reservationReceiptLines[] = [
                                         'quantity' => 1,
-                                        'description' => 'Amenities - ' . $amenity->name,
-                                        'unitPrice' => '₱' . number_format((float) $amenity->price, 2),
-                                        'amount' => '₱' . number_format((float) $amenity->price, 2),
+                                        'description' => 'Facilities - ' . $facility->name,
+                                        'unitPrice' => '₱' . number_format((float) $facility->price, 2),
+                                        'amount' => '₱' . number_format((float) $facility->price, 2),
                                     ];
                                 }
                             }
 
-                            $eventIds = $reservation->event_place_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_place_id)))) : [];
+                            $eventIds = $reservation->event_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_id)))) : [];
                             foreach ($eventIds as $eventId) {
-                                $event = \App\Models\EventPlace::find($eventId);
+                                $event = \App\Models\Event::find($eventId);
                                 if ($event) {
                                     $reservationReceiptLines[] = [
                                         'quantity' => 1,

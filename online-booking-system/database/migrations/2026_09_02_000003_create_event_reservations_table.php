@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('event_reservations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('event_place_id')->constrained('event_places')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->string('guest_name');
             $table->string('guest_email');
             $table->string('guest_phone');

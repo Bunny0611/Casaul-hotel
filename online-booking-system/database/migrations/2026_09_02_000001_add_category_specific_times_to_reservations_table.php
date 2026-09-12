@@ -13,9 +13,9 @@ return new class extends Migration
             $table->time('room_check_out_time')->nullable()->after('check_out_time');
             $table->time('event_start_time')->nullable()->after('room_check_out_time');
             $table->time('event_end_time')->nullable()->after('event_start_time');
-            $table->time('amenity_start_time')->nullable()->after('event_end_time');
-            $table->time('amenity_end_time')->nullable()->after('amenity_start_time');
-            $table->time('dining_time')->nullable()->after('amenity_end_time');
+            $table->time('facility_start_time')->nullable()->after('event_end_time');
+            $table->time('facility_end_time')->nullable()->after('facility_start_time');
+            $table->time('dining_time')->nullable()->after('facility_end_time');
         });
     }
 
@@ -27,8 +27,8 @@ return new class extends Migration
                 'room_check_out_time',
                 'event_start_time',
                 'event_end_time',
-                'amenity_start_time',
-                'amenity_end_time',
+                'facility_start_time',
+                'facility_end_time',
                 'dining_time',
             ]);
         });

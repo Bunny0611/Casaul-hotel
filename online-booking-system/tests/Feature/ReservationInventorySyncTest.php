@@ -24,7 +24,7 @@ class ReservationInventorySyncTest extends TestCase
         ]);
 
         InventoryItem::create([
-            'category' => 'amenities',
+            'category' => 'facilities',
             'name' => 'Pool Pass',
             'type' => 'wellness',
             'description' => 'Pool access for two guests.',
@@ -35,7 +35,7 @@ class ReservationInventorySyncTest extends TestCase
         ]);
 
         InventoryItem::create([
-            'category' => 'event_place',
+            'category' => 'event',
             'name' => 'Garden Hall',
             'type' => 'wedding',
             'description' => 'Outdoor venue with garden view.',
@@ -77,7 +77,7 @@ class ReservationInventorySyncTest extends TestCase
         ]);
 
         InventoryItem::create([
-            'category' => 'amenities',
+            'category' => 'facilities',
             'name' => 'Spa Access',
             'type' => 'wellness',
             'description' => 'Spa access for guests.',

@@ -447,7 +447,7 @@
     <section class="reservation-hero">
         <br>
         <h1>Choose the type of reservation you want to make.</h1>
-        <p>Book rooms, add amenities, include an event package, or reserve dining—all in one seamless checkout experience.</p>
+        <p>Book rooms, add facilities, include an event package, or reserve dining—all in one seamless checkout experience.</p>
     </section>
 
     @if(session('success'))
@@ -466,8 +466,8 @@
         <div class="reservation-left">
             <div class="reservation-tabs">
                 <button type="button" class="tab-btn active" data-tab="room-tab"><span class="tab-icon"><i class="fas fa-bed"></i></span>Rooms</button>
-                <button type="button" class="tab-btn" data-tab="amenities-tab"><span class="tab-icon"><i class="fas fa-concierge-bell"></i></span>Facilities</button>
-                <button type="button" class="tab-btn" data-tab="event-place-tab"><span class="tab-icon"><i class="fas fa-calendar-check"></i></span>Events</button>
+                <button type="button" class="tab-btn" data-tab="facilities-tab"><span class="tab-icon"><i class="fas fa-concierge-bell"></i></span>Facilities</button>
+                <button type="button" class="tab-btn" data-tab="events-tab"><span class="tab-icon"><i class="fas fa-calendar-check"></i></span>Events</button>
                 <button type="button" class="tab-btn" data-tab="dining-tab"><span class="tab-icon"><i class="fas fa-utensils"></i></span>Dining</button>
             </div>
 
@@ -511,7 +511,7 @@
                                     <span><i class="fas fa-users"></i>{{ $room->capacity ?? 2 }} Guests</span>
                                     <span><i class="fas fa-bed"></i>1 Queen Bed</span>
                                 </div>
-                                <p>{{ $room->description ?? 'Premium stay with comfortable bedding and modern amenities.' }}</p>
+                                <p>{{ $room->description ?? 'Premium stay with comfortable bedding and modern facilities.' }}</p>
                                 <label class="field-label" for="extraGuests-{{ $room->id }}">Add a Person</label>
                                 <select id="extraGuests-{{ $room->id }}" class="field-input room-extra-guests">
                                     <option value="0" selected>No extra persons</option>
@@ -529,40 +529,40 @@
                 </div>
             </div>
 
-            <div id="amenities-tab" class="reservation-panel">
+            <div id="facilities-tab" class="reservation-panel">
                 <div class="panel-header">
                     <h3>Facilities</h3>
-                    <p>Choose amenities to enhance your stay.</p>
+                    <p>Choose facilities to enhance your stay.</p>
                 </div>
                 <div class="reservation-card-grid">
-                    @foreach($amenities as $amenity)
-                        <article class="reservation-card" data-category="facilities" data-price="{{ $amenity->price }}" data-pricing-basis="{{ $amenity->pricing_basis ?? 'Per Stay' }}" data-title="{{ $amenity->name }}" data-amenity-id="{{ $amenity->id }}" data-capacity="{{ $amenity->capacity ?? '' }}" data-scheduling="{{ $amenity->scheduling_requirement ?? 'No Additional Schedule' }}">
-                            <img src="{{ $amenity->image ? asset('storage/' . $amenity->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $amenity->name }}">
+                    @foreach($facilities as $facility)
+                        <article class="reservation-card" data-category="facilities" data-price="{{ $facility->price }}" data-pricing-basis="{{ $facility->pricing_basis ?? 'Per Stay' }}" data-title="{{ $facility->name }}" data-facility-id="{{ $facility->id }}" data-capacity="{{ $facility->capacity ?? '' }}" data-scheduling="{{ $facility->scheduling_requirement ?? 'No Additional Schedule' }}">
+                            <img src="{{ $facility->image ? asset('storage/' . $facility->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $facility->name }}">
                             <div class="reservation-card-body">
-                                <h4>{{ $amenity->name }}</h4>
-                                <p>{{ $amenity->description ?: 'Premium guest add-on for your stay.' }}</p>
-                                <p class="text-muted">₱{{ number_format($amenity->price, 0) }} / {{ strtolower(str_replace('Per ', '', $amenity->pricing_basis ?? 'Stay')) }}</p>
-                                @if(($amenity->capacity ?? null) || ($amenity->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
-                                    <div class="amenity-options">
-                                        @if($amenity->capacity)
-                                            <label class="field-label" for="amenityQuantity-{{ $amenity->id }}">{{ ($amenity->pricing_basis ?? '') === 'Per Vehicle' ? 'Number of Vehicles' : 'Quantity' }}</label>
-                                            <select id="amenityQuantity-{{ $amenity->id }}" class="field-input amenity-quantity" max="{{ $amenity->capacity }}">
-                                                @for($quantity = 1; $quantity <= $amenity->capacity; $quantity++)<option value="{{ $quantity }}">{{ $quantity }}</option>@endfor
+                                <h4>{{ $facility->name }}</h4>
+                                <p>{{ $facility->description ?: 'Premium guest add-on for your stay.' }}</p>
+                                <p class="text-muted">₱{{ number_format($facility->price, 0) }} / {{ strtolower(str_replace('Per ', '', $facility->pricing_basis ?? 'Stay')) }}</p>
+                                @if(($facility->capacity ?? null) || ($facility->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
+                                    <div class="facility-options">
+                                        @if($facility->capacity)
+                                            <label class="field-label" for="facilityQuantity-{{ $facility->id }}">{{ ($facility->pricing_basis ?? '') === 'Per Vehicle' ? 'Number of Vehicles' : 'Quantity' }}</label>
+                                            <select id="facilityQuantity-{{ $facility->id }}" class="field-input facility-quantity" max="{{ $facility->capacity }}">
+                                                @for($quantity = 1; $quantity <= $facility->capacity; $quantity++)<option value="{{ $quantity }}">{{ $quantity }}</option>@endfor
                                             </select>
                                         @endif
-                                        @if(($amenity->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
-                                            <label class="field-label" for="amenityDate-{{ $amenity->id }}">Date</label>
-                                            <input id="amenityDate-{{ $amenity->id }}" class="field-input amenity-date" type="date">
+                                        @if(($facility->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
+                                            <label class="field-label" for="facilityDate-{{ $facility->id }}">Date</label>
+                                            <input id="facilityDate-{{ $facility->id }}" class="field-input facility-date" type="date">
                                         @endif
-                                        @if(($amenity->scheduling_requirement ?? '') === 'Date & Time Required')
-                                            <label class="field-label" for="amenityTime-{{ $amenity->id }}">Time</label>
-                                            <input id="amenityTime-{{ $amenity->id }}" class="field-input amenity-time" type="time">
+                                        @if(($facility->scheduling_requirement ?? '') === 'Date & Time Required')
+                                            <label class="field-label" for="facilityTime-{{ $facility->id }}">Time</label>
+                                            <input id="facilityTime-{{ $facility->id }}" class="field-input facility-time" type="time">
                                         @endif
                                     </div>
                                 @endif
                                 <div class="reservation-card-footer">
-                                    <span class="price">₱{{ number_format($amenity->price, 0) }}</span>
-                                    <button type="button" class="select-option-btn" data-title="{{ $amenity->name }}" data-price="{{ $amenity->price }}">Add to Reservation</button>
+                                    <span class="price">₱{{ number_format($facility->price, 0) }}</span>
+                                    <button type="button" class="select-option-btn" data-title="{{ $facility->name }}" data-price="{{ $facility->price }}">Add to Reservation</button>
                                 </div>
                             </div>
                         </article>
@@ -570,7 +570,7 @@
                 </div>
             </div>
 
-            <div id="event-place-tab" class="reservation-panel">
+            <div id="events-tab" class="reservation-panel">
                 <div class="panel-header">
                     <h3>Events</h3>
                     <p>Select an event package for your occasion.</p>
@@ -704,13 +704,13 @@
                     <div class="summary-item-card-left">
                         <div class="summary-item-icon"><i class="fas fa-concierge-bell"></i></div>
                         <div class="summary-item-details">
-                            <p class="summary-item-title">Amenities</p>
+                            <p class="summary-item-title">Facilities</p>
                             <p class="summary-item-subtitle" id="summaryItems">0 selected</p>
                         </div>
                     </div>
                     <div class="summary-item-card-right">
-                        <span class="summary-item-price" id="summaryAmenitiesPrice">₱0</span>
-                        <button type="button" class="summary-edit-btn" data-target="amenities-tab">Edit</button>
+                        <span class="summary-item-price" id="summaryFacilitiesPrice">₱0</span>
+                        <button type="button" class="summary-edit-btn" data-target="facilities-tab">Edit</button>
                     </div>
                 </article>
                 <article class="summary-item-card">
@@ -729,13 +729,13 @@
                     <div class="summary-item-card-left">
                         <div class="summary-item-icon"><i class="fas fa-calendar-check"></i></div>
                         <div class="summary-item-details">
-                            <p class="summary-item-title">Event Place</p>
+                            <p class="summary-item-title">Events</p>
                             <p class="summary-item-subtitle" id="summaryEvent">None</p>
                         </div>
                     </div>
                     <div class="summary-item-card-right">
                         <span class="summary-item-price" id="summaryEventPrice">₱0</span>
-                        <button type="button" class="summary-edit-btn" data-target="event-place-tab">Edit</button>
+                        <button type="button" class="summary-edit-btn" data-target="events-tab">Edit</button>
                     </div>
                 </article>
                 <article class="summary-item-card">
@@ -794,7 +794,7 @@
                 </section>
                 <section class="review-section">
                     <h4><i class="fas fa-list-check"></i> Selected Services</h4>
-                    <div class="review-service amenity-review"><div class="review-service-icon"><i class="fas fa-concierge-bell"></i></div><div><h5>Amenity</h5><strong id="confirmAmenitiesTitle">None</strong><span id="confirmAmenities">No amenities selected</span></div></div>
+                    <div class="review-service facility-review"><div class="review-service-icon"><i class="fas fa-concierge-bell"></i></div><div><h5>Facility</h5><strong id="confirmFacilitiesTitle">None</strong><span id="confirmFacilities">No facilities selected</span></div></div>
                     <div class="review-service event-review"><div class="review-service-icon"><i class="fas fa-ring"></i></div><div><h5>Event</h5><strong id="confirmEventTitle">None</strong><span id="confirmEventDining">No event selected</span></div></div>
                     <div class="review-service dining-review"><div class="review-service-icon"><i class="fas fa-utensils"></i></div><div><h5>Dining</h5><strong id="confirmDiningTitle">None</strong><span id="confirmDiningDetails">No dining selected</span></div></div>
                 </section>
@@ -810,7 +810,7 @@
                 <section class="review-section">
                     <h4><i class="fas fa-credit-card"></i> Payment Summary</h4>
                     <div class="review-payment-row"><span>Room</span><strong id="confirmRoomCharge">₱0</strong></div>
-                    <div class="review-payment-row"><span>Amenities</span><strong id="confirmAmenitiesCharge">₱0</strong></div>
+                    <div class="review-payment-row"><span>Facilities</span><strong id="confirmFacilitiesCharge">₱0</strong></div>
                     <div class="review-payment-row"><span>Event</span><strong id="confirmEventCharge">₱0</strong></div>
                     <div class="review-payment-row"><span>Dining</span><strong id="confirmDiningCharge">₱0</strong></div>
                     <div class="review-payment-row"><span>Extra person</span><strong id="confirmExtraGuestCharge">₱0</strong></div>
@@ -852,9 +852,9 @@
                 </section>
                 <section class="details-form-section details-services-summary" id="detailsServicesSummary">
                     <h4 class="details-summary-title"><i class="fas fa-list-check"></i> <span id="detailsServicesTitle">Selected Services</span></h4>
-                    <div class="details-service-item amenity-service" id="detailsAmenityService">
+                    <div class="details-service-item facility-service" id="detailsFacilityService">
                         <div class="details-service-icon"><i class="fas fa-square-parking"></i></div>
-                        <div><p class="details-service-label">Amenity</p><strong class="details-service-value" id="detailsAmenitiesTitle"></strong><span class="details-service-meta" id="detailsAmenitiesSummary"></span><span class="details-service-meta" id="detailsAmenitiesAmount"></span><span class="details-service-meta" id="detailsAmenitiesStatus"></span></div>
+                        <div><p class="details-service-label">Facility</p><strong class="details-service-value" id="detailsFacilitiesTitle"></strong><span class="details-service-meta" id="detailsFacilitiesSummary"></span><span class="details-service-meta" id="detailsFacilitiesAmount"></span><span class="details-service-meta" id="detailsFacilitiesStatus"></span></div>
                     </div>
                     <div class="details-service-item event-service" id="detailsEventService">
                         <div class="details-service-icon"><i class="fas fa-ring"></i></div>
@@ -1009,9 +1009,9 @@
     <input type="hidden" name="dining_area" id="reservationDiningArea">
     <input type="hidden" name="dining_schedule" id="reservationDiningSchedule">
     <input type="hidden" name="quantity" id="reservationDiningQuantity">
-    <input type="hidden" name="facility_id" id="reservationAmenityId">
-    <input type="hidden" name="facility_quantity" id="reservationAmenityQuantity">
-    <input type="hidden" name="event_id" id="reservationEventPlaceId">
+    <input type="hidden" name="facility_id" id="reservationFacilityId">
+    <input type="hidden" name="facility_quantity" id="reservationFacilityQuantity">
+    <input type="hidden" name="event_id" id="reservationEventId">
     <input type="hidden" name="event_type" id="reservationEventType">
     <input type="hidden" name="number_of_guests" id="reservationEventGuests">
 </form>
@@ -1034,7 +1034,7 @@
         const summaryAdditionalGuestsPrice = document.getElementById('summaryAdditionalGuestsPrice');
         const summaryEvent = document.getElementById('summaryEvent');
         const summaryDining = document.getElementById('summaryDining');
-        const summaryAmenitiesPrice = document.getElementById('summaryAmenitiesPrice');
+        const summaryFacilitiesPrice = document.getElementById('summaryFacilitiesPrice');
         const summaryEventPrice = document.getElementById('summaryEventPrice');
         const summaryDiningPrice = document.getElementById('summaryDiningPrice');
         const summaryTotal = document.getElementById('summaryTotal');
@@ -1060,9 +1060,9 @@
         const reservationDiningArea = document.getElementById('reservationDiningArea');
         const reservationDiningSchedule = document.getElementById('reservationDiningSchedule');
         const reservationDiningQuantity = document.getElementById('reservationDiningQuantity');
-        const reservationAmenityId = document.getElementById('reservationAmenityId');
-        const reservationAmenityQuantity = document.getElementById('reservationAmenityQuantity');
-        const reservationEventPlaceId = document.getElementById('reservationEventPlaceId');
+        const reservationFacilityId = document.getElementById('reservationFacilityId');
+        const reservationFacilityQuantity = document.getElementById('reservationFacilityQuantity');
+        const reservationEventId = document.getElementById('reservationEventId');
         const reservationEventType = document.getElementById('reservationEventType');
         const reservationEventGuests = document.getElementById('reservationEventGuests');
         const diningSchedule = document.getElementById('diningSchedule');
@@ -1107,8 +1107,8 @@
         const confirmCheckOut = document.getElementById('confirmCheckOut');
         const confirmStatus = document.getElementById('confirmStatus');
         const confirmPaymentMethod = document.getElementById('confirmPaymentMethod');
-        const confirmAmenitiesTitle = document.getElementById('confirmAmenitiesTitle');
-        const confirmAmenities = document.getElementById('confirmAmenities');
+        const confirmFacilitiesTitle = document.getElementById('confirmFacilitiesTitle');
+        const confirmFacilities = document.getElementById('confirmFacilities');
         const confirmEventTitle = document.getElementById('confirmEventTitle');
         const confirmEventDining = document.getElementById('confirmEventDining');
         const confirmDiningTitle = document.getElementById('confirmDiningTitle');
@@ -1118,7 +1118,7 @@
         const confirmGuestPhone = document.getElementById('confirmGuestPhone');
         const confirmSpecialRequest = document.getElementById('confirmSpecialRequest');
         const confirmRoomCharge = document.getElementById('confirmRoomCharge');
-        const confirmAmenitiesCharge = document.getElementById('confirmAmenitiesCharge');
+        const confirmFacilitiesCharge = document.getElementById('confirmFacilitiesCharge');
         const confirmEventCharge = document.getElementById('confirmEventCharge');
         const confirmDiningCharge = document.getElementById('confirmDiningCharge');
         const confirmExtraGuestCharge = document.getElementById('confirmExtraGuestCharge');
@@ -1131,10 +1131,10 @@
         const detailsArrivalTime = document.getElementById('detailsArrivalTime');
         const detailsCheckOut = document.getElementById('detailsCheckOut');
         const detailsRoomGuests = document.getElementById('detailsRoomGuests');
-        const detailsAmenitiesTitle = document.getElementById('detailsAmenitiesTitle');
-        const detailsAmenitiesSummary = document.getElementById('detailsAmenitiesSummary');
-        const detailsAmenitiesAmount = document.getElementById('detailsAmenitiesAmount');
-        const detailsAmenitiesStatus = document.getElementById('detailsAmenitiesStatus');
+        const detailsFacilitiesTitle = document.getElementById('detailsFacilitiesTitle');
+        const detailsFacilitiesSummary = document.getElementById('detailsFacilitiesSummary');
+        const detailsFacilitiesAmount = document.getElementById('detailsFacilitiesAmount');
+        const detailsFacilitiesStatus = document.getElementById('detailsFacilitiesStatus');
         const detailsEventTitle = document.getElementById('detailsEventTitle');
         const detailsEventSummary = document.getElementById('detailsEventSummary');
         const detailsEventAmount = document.getElementById('detailsEventAmount');
@@ -1149,7 +1149,7 @@
         const detailsSecondaryGrid = document.getElementById('detailsSecondaryGrid');
         const detailsServicesSummary = document.getElementById('detailsServicesSummary');
         const detailsServicesTitle = document.getElementById('detailsServicesTitle');
-        const detailsAmenityService = document.getElementById('detailsAmenityService');
+        const detailsFacilityService = document.getElementById('detailsFacilityService');
         const detailsEventService = document.getElementById('detailsEventService');
         const detailsDiningService = document.getElementById('detailsDiningService');
         const detailsGuestName = document.getElementById('detailsGuestName');
@@ -1164,7 +1164,7 @@
         let selectedRoom = null;
         let roomPrice = 0;
         let selectedRoomCapacity = 2;
-        let selectedAmenities = [];
+        let selectedFacilities = [];
         let selectedEvent = [];
         let selectedDining = [];
         let selectedExtraGuests = 0;
@@ -1174,10 +1174,10 @@
 
         const items = document.querySelectorAll('.select-option-btn');
         const sumItemTotal = (itemsList) => itemsList.reduce((sum, item) => sum + (Number(item.price || 0) * (Number(item.quantity || 1))), 0);
-        const getAmenityCharge = (amenity) => {
-            const price = Number(amenity.price || 0);
-            const pricingBasis = String(amenity.pricingBasis || '').trim().toLowerCase();
-            const vehicleCharge = price * Math.max(1, Number(amenity.quantity) || 1);
+        const getFacilityCharge = (facility) => {
+            const price = Number(facility.price || 0);
+            const pricingBasis = String(facility.pricingBasis || '').trim().toLowerCase();
+            const vehicleCharge = price * Math.max(1, Number(facility.quantity) || 1);
 
             if (pricingBasis === 'per stay + per vehicle') {
                 return (price * getStayNights()) + vehicleCharge;
@@ -1365,29 +1365,29 @@
             summaryRoom.textContent = selectedRoom ? selectedRoom : 'None';
             summaryRoomDetails.textContent = selectedRoom ? `${formatDisplayDate(checkIn.value)} – ${formatDisplayDate(checkOut.value)} • ${stayNights} night${stayNights === 1 ? '' : 's'}${selectedExtraGuests > 0 ? ` • ${selectedExtraGuests} Extra Person(s)` : ''}` : 'Choose a room and dates';
             summaryRoomPrice.textContent = `₱${roomTotal.toLocaleString()}`;
-            summaryItems.textContent = selectedAmenities.length > 0 ? `${selectedAmenities.length} selected` : '0 selected';
+            summaryItems.textContent = selectedFacilities.length > 0 ? `${selectedFacilities.length} selected` : '0 selected';
             summaryAdditionalGuests.textContent = selectedExtraGuests > 0 ? `${selectedExtraGuests} added` : 'None';
             summaryEvent.textContent = selectedEvent.length ? `${selectedEvent.length} selected${selectedEventTitles ? ` • ${selectedEventTitles}` : ''}` : 'None';
             summaryDining.textContent = selectedDining.length ? `${selectedDining.length} selected${selectedDiningTitles ? ` • ${selectedDiningTitles}` : ''}${selectedDiningSchedule ? ` / ${selectedDiningSchedule}` : ''}${selectedDiningTable ? ` / ${selectedDiningTable}` : ''}` : 'None';
-            summaryAmenitiesPrice.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0).toLocaleString()}`;
+            summaryFacilitiesPrice.textContent = `₱${selectedFacilities.reduce((sum, item) => sum + getFacilityCharge(item), 0).toLocaleString()}`;
             summaryAdditionalGuestsPrice.textContent = `₱${extraGuestsTotal.toLocaleString()}`;
             summaryEventPrice.textContent = `₱${selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0).toLocaleString()}`;
             summaryDiningPrice.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
 
             const total = calculateTotal();
             const hasRoomSelection = Boolean(selectedRoom);
-            const hasAmenitySelection = selectedAmenities.length > 0;
+            const hasFacilitySelection = selectedFacilities.length > 0;
             const hasEventSelection = selectedEvent.length > 0;
             const hasDiningSelection = selectedDining.length > 0;
-            const selectedServiceCount = Number(hasAmenitySelection) + Number(hasEventSelection) + Number(hasDiningSelection);
+            const selectedServiceCount = Number(hasFacilitySelection) + Number(hasEventSelection) + Number(hasDiningSelection);
             detailsRoomSummary.hidden = !hasRoomSelection;
             detailsSecondaryGrid.classList.toggle('details-only-services', !hasRoomSelection);
-            detailsAmenityService.hidden = !hasAmenitySelection;
+            detailsFacilityService.hidden = !hasFacilitySelection;
             detailsEventService.hidden = !hasEventSelection;
             detailsDiningService.hidden = !hasDiningSelection;
             detailsServicesSummary.hidden = selectedServiceCount === 0;
             detailsServicesTitle.textContent = selectedServiceCount === 1
-                ? (hasAmenitySelection ? 'Amenity Summary' : hasEventSelection ? 'Event Summary' : 'Dining Summary')
+                ? (hasFacilitySelection ? 'Facility Summary' : hasEventSelection ? 'Event Summary' : 'Dining Summary')
                 : 'Selected Services';
             detailsRoomName.textContent = hasRoomSelection ? selectedRoom : '';
             detailsCheckIn.textContent = hasRoomSelection ? formatDisplayDate(checkIn.value) : '—';
@@ -1396,12 +1396,12 @@
             detailsRoomGuests.textContent = hasRoomSelection ? `${selectedRoomCapacity + selectedExtraGuests} Guests` : '—';
             detailsRoomAmount.textContent = hasRoomSelection ? `Amount: ${formatCurrencyValue(roomTotal)}` : '';
             detailsRoomStatus.textContent = hasRoomSelection ? 'Status: Reserved' : '';
-            detailsAmenitiesTitle.textContent = hasAmenitySelection ? selectedAmenities.map(item => item.title).join(', ') : '';
-            detailsAmenitiesSummary.textContent = hasAmenitySelection
-                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''}`).join(', ')
+            detailsFacilitiesTitle.textContent = hasFacilitySelection ? selectedFacilities.map(item => item.title).join(', ') : '';
+            detailsFacilitiesSummary.textContent = hasFacilitySelection
+                ? selectedFacilities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''}`).join(', ')
                 : '';
-            detailsAmenitiesAmount.textContent = hasAmenitySelection ? `Amount: ${formatCurrencyValue(selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0))}` : '';
-            detailsAmenitiesStatus.textContent = hasAmenitySelection ? 'Status: Reserved' : '';
+            detailsFacilitiesAmount.textContent = hasFacilitySelection ? `Amount: ${formatCurrencyValue(selectedFacilities.reduce((sum, item) => sum + getFacilityCharge(item), 0))}` : '';
+            detailsFacilitiesStatus.textContent = hasFacilitySelection ? 'Status: Reserved' : '';
             detailsEventTitle.textContent = hasEventSelection ? selectedEvent.map(item => item.title).join(', ') : '';
             detailsEventSummary.innerHTML = hasEventSelection
                 ? selectedEvent.map(item => [
@@ -1449,10 +1449,10 @@
                 confirmPaymentProof.removeAttribute('src');
                 confirmPaymentProof.style.display = 'none';
             }
-            confirmAmenitiesTitle.textContent = selectedAmenities.length ? selectedAmenities.map(item => item.title).join(', ') : 'None';
-            confirmAmenities.textContent = selectedAmenities.length
-                ? selectedAmenities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'} • ₱${getAmenityCharge(item).toLocaleString()}`).join(', ')
-                : 'No amenities selected';
+            confirmFacilitiesTitle.textContent = selectedFacilities.length ? selectedFacilities.map(item => item.title).join(', ') : 'None';
+            confirmFacilities.textContent = selectedFacilities.length
+                ? selectedFacilities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'} • ₱${getFacilityCharge(item).toLocaleString()}`).join(', ')
+                : 'No facilities selected';
             confirmEventTitle.textContent = selectedEvent.length ? selectedEvent.map(item => item.title).join(', ') : 'None';
             confirmEventDining.textContent = selectedEvent.length
                 ? selectedEvent.map(item => `${item.type || 'Event'} • ${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}`).join(', ')
@@ -1468,7 +1468,7 @@
             confirmGuestPhone.textContent = detailsGuestPhone.value || '0000000000';
             confirmSpecialRequest.textContent = detailsSpecialRequest.value || 'None';
             confirmRoomCharge.textContent = `₱${roomTotal.toLocaleString()}`;
-            confirmAmenitiesCharge.textContent = `₱${selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0).toLocaleString()}`;
+            confirmFacilitiesCharge.textContent = `₱${selectedFacilities.reduce((sum, item) => sum + getFacilityCharge(item), 0).toLocaleString()}`;
             confirmEventCharge.textContent = `₱${selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0).toLocaleString()}`;
             confirmDiningCharge.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
             confirmExtraGuestCharge.textContent = `₱${extraGuestsTotal.toLocaleString()}`;
@@ -1499,9 +1499,9 @@
             reservationDiningArea.value = selectedDining.map(item => item.table).filter(Boolean).join(',');
             reservationDiningSchedule.value = selectedDining.map(item => item.schedule).filter(Boolean).join(',');
             reservationDiningQuantity.value = selectedDiningQuantity || '';
-            reservationAmenityId.value = selectedAmenities.map(item => item.id).filter(Boolean).join(',');
-            reservationAmenityQuantity.value = selectedAmenities[0]?.quantity || '';
-            reservationEventPlaceId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
+            reservationFacilityId.value = selectedFacilities.map(item => item.id).filter(Boolean).join(',');
+            reservationFacilityQuantity.value = selectedFacilities[0]?.quantity || '';
+            reservationEventId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
             reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
             reservationEventGuests.value = selectedRoom
                 ? selectedRoomCapacity + selectedExtraGuests
@@ -1549,11 +1549,11 @@
 
         const calculateTotal = () => {
             const stayNights = getStayNights();
-            const amenitiesTotal = selectedAmenities.reduce((sum, item) => sum + getAmenityCharge(item), 0);
+            const facilitiesTotal = selectedFacilities.reduce((sum, item) => sum + getFacilityCharge(item), 0);
             const eventTotal = selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0);
             const diningTotal = selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0);
             const extraGuestsTotal = selectedExtraGuests * selectedExtraGuestPrice * stayNights;
-            return (roomPrice * stayNights) + amenitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
+            return (roomPrice * stayNights) + facilitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
         };
 
         const syncDiningQuantity = (card, nextValue) => {
@@ -1764,14 +1764,14 @@
 
         syncDiningTableAvailability();
 
-        document.querySelectorAll('.amenity-quantity, .amenity-date, .amenity-time').forEach(input => {
+        document.querySelectorAll('.facility-quantity, .facility-date, .facility-time').forEach(input => {
             input.addEventListener('change', function () {
                 const card = this.closest('.reservation-card');
-                const amenity = selectedAmenities.find(item => item.id === card.dataset.amenityId);
-                if (amenity) {
-                    amenity.quantity = Number(card.querySelector('.amenity-quantity')?.value || 1);
-                    amenity.date = card.querySelector('.amenity-date')?.value || '';
-                    amenity.time = card.querySelector('.amenity-time')?.value || '';
+                const facility = selectedFacilities.find(item => item.id === card.dataset.facilityId);
+                if (facility) {
+                    facility.quantity = Number(card.querySelector('.facility-quantity')?.value || 1);
+                    facility.date = card.querySelector('.facility-date')?.value || '';
+                    facility.time = card.querySelector('.facility-time')?.value || '';
                     updateSummary();
                 }
             });
@@ -1851,7 +1851,7 @@
                         selectedRoom = null;
                         roomPrice = 0;
                         selectedRoomCapacity = 2;
-                        selectedAmenities = [];
+                        selectedFacilities = [];
                         reservationRoomId.value = '';
                         selectedExtraGuests = 0;
                         selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice || 650);
@@ -1878,7 +1878,7 @@
                             }
                             if (btn.closest('.reservation-card').dataset.category === 'facilities') {
                                 btn.disabled = false;
-                                if (selectedAmenities.some(item => item.id === btn.closest('.reservation-card').dataset.amenityId)) {
+                                if (selectedFacilities.some(item => item.id === btn.closest('.reservation-card').dataset.facilityId)) {
                                     btn.textContent = 'Selected';
                                 } else {
                                     btn.textContent = 'Add to Reservation';
@@ -1889,25 +1889,25 @@
                     }
                 } else if (category === 'facilities') {
                     if (!selectedRoom) {
-                        alert('Amenities can only be selected when a room is booked.');
+                        alert('Facilities can only be selected when a room is booked.');
                         return;
                     }
 
-                    const itemIndex = selectedAmenities.findIndex(item => item.id === card.dataset.amenityId);
+                    const itemIndex = selectedFacilities.findIndex(item => item.id === card.dataset.facilityId);
                     if (itemIndex === -1) {
-                        const quantity = Number(card.querySelector('.amenity-quantity')?.value || 1);
-                        selectedAmenities.push({
-                            id: card.dataset.amenityId,
+                        const quantity = Number(card.querySelector('.facility-quantity')?.value || 1);
+                        selectedFacilities.push({
+                            id: card.dataset.facilityId,
                             title,
                             price,
                             pricingBasis: card.dataset.pricingBasis || 'Per Stay',
                             quantity,
-                            date: card.querySelector('.amenity-date')?.value || '',
-                            time: card.querySelector('.amenity-time')?.value || '',
+                            date: card.querySelector('.facility-date')?.value || '',
+                            time: card.querySelector('.facility-time')?.value || '',
                         });
                         this.textContent = 'Selected';
                     } else {
-                        selectedAmenities.splice(itemIndex, 1);
+                        selectedFacilities.splice(itemIndex, 1);
                         this.textContent = 'Add to Reservation';
                     }
                 } else if (category === 'event') {
@@ -2012,8 +2012,8 @@
                 return;
             }
 
-            if (selectedAmenities.length > 0 && !selectedRoom) {
-                alert('Amenities can only be selected when a room is booked.');
+            if (selectedFacilities.length > 0 && !selectedRoom) {
+                alert('Facilities can only be selected when a room is booked.');
                 return;
             }
 
@@ -2059,11 +2059,11 @@
             if (selectedRoom) {
                 receiptItems.push([String(stayNights), `Room - ${selectedRoom}`, formatCurrencyValue(roomPrice), formatCurrencyValue(roomPrice * stayNights)]);
             }
-            if (selectedAmenities.length) {
-                selectedAmenities.forEach(item => {
+            if (selectedFacilities.length) {
+                selectedFacilities.forEach(item => {
                     const quantity = Number(item.quantity || 1);
                     const unitPrice = Number(item.price || 0);
-                    receiptItems.push([String(quantity), `Amenity - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(getAmenityCharge(item))]);
+                    receiptItems.push([String(quantity), `Facility - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(getFacilityCharge(item))]);
                 });
             }
             if (selectedEvent.length) {
@@ -2099,7 +2099,7 @@
                     ? `${selectedEvent.reduce((sum, item) => sum + Number(item.guests || 0), 0)} Guests`
                     : '—';
             receiptRoom.textContent = selectedRoom ? selectedRoom : '';
-            const firstReservation = selectedEvent[0] || selectedDining[0] || selectedAmenities[0];
+            const firstReservation = selectedEvent[0] || selectedDining[0] || selectedFacilities[0];
             const hasDateOrTime = Boolean(firstReservation?.date || firstReservation?.startTime || firstReservation?.time || firstReservation?.schedule);
             receiptCheckInLabel.textContent = selectedRoom ? 'Check-in' : 'Date';
             receiptCheckOutLabel.textContent = selectedRoom ? 'Check-out' : 'Time';
@@ -2116,8 +2116,8 @@
             receiptGuestsRow.hidden = !selectedRoom && !selectedEvent.length;
             receiptRoomRow.hidden = !selectedRoom;
             const reservationDetails = [];
-            selectedAmenities.forEach(item => {
-                reservationDetails.push(['Amenity', item.title]);
+            selectedFacilities.forEach(item => {
+                reservationDetails.push(['Facility', item.title]);
             });
             selectedDining.forEach(item => {
                 reservationDetails.push(['Dining', `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`]);
@@ -2268,7 +2268,7 @@
             reservationGuestPhone.value = detailsGuestPhone.value || '0000000000';
             reservationSpecialRequests.value = detailsSpecialRequest.value;
             const firstEventSelection = selectedEvent[0] || null;
-            const firstAmenitySelection = selectedAmenities[0] || null;
+            const firstFacilitySelection = selectedFacilities[0] || null;
             const hasRoomSelection = Boolean(selectedRoom);
 
             if (hasRoomSelection) {
@@ -2279,8 +2279,8 @@
                 reservationCheckOutTime.value = firstEventSelection.endTime || '';
                 reservationEventStartTime.value = firstEventSelection.startTime || '';
                 reservationEventEndTime.value = firstEventSelection.endTime || '';
-            } else if (firstAmenitySelection) {
-                reservationCheckInTime.value = firstAmenitySelection.time || '';
+            } else if (firstFacilitySelection) {
+                reservationCheckInTime.value = firstFacilitySelection.time || '';
                 reservationCheckOutTime.value = '';
                 reservationEventStartTime.value = '';
                 reservationEventEndTime.value = '';
@@ -2326,7 +2326,7 @@
 
         clearBtn.addEventListener('click', function () {
             selectedRoom = null;
-            selectedAmenities = [];
+            selectedFacilities = [];
             selectedEvent = [];
             selectedDining = [];
             diningSchedule.value = '';

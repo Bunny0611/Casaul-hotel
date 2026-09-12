@@ -205,9 +205,9 @@ class AdminReservationTest extends TestCase
         ]);
     }
 
-    public function test_public_booking_can_create_an_event_place_reservation(): void
+    public function test_public_booking_can_create_an_event_reservation(): void
     {
-        $eventPlace = \App\Models\EventPlace::create([
+        $event = \App\Models\Event::create([
             'name' => 'Garden Hall',
             'event_type' => 'Wedding',
             'description' => 'Outdoor venue',
@@ -220,8 +220,8 @@ class AdminReservationTest extends TestCase
 
         $eventDate = now()->addDay()->format('Y-m-d');
         $response = $this->post(route('reservation.store'), [
-            'category' => 'event_place',
-            'event_place_id' => $eventPlace->id,
+            'category' => 'event',
+            'event_id' => $event->id,
             'event_type' => 'Wedding',
             'guest_name' => 'Event Guest',
             'guest_email' => 'event@example.com',
@@ -237,7 +237,7 @@ class AdminReservationTest extends TestCase
 
         $response->assertRedirect(route('reservation'));
         $this->assertDatabaseHas('event_reservations', [
-            'event_place_id' => $eventPlace->id,
+            'event_id' => $event->id,
             'guest_email' => 'event@example.com',
             'number_of_guests' => 50,
         ]);

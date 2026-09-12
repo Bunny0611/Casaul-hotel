@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('amenities', function (Blueprint $table) {
+        Schema::create('facilities', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
@@ -19,7 +19,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('event_places', function (Blueprint $table) {
+        Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
@@ -31,8 +31,8 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        foreach (DB::table('inventory_items')->where('category', 'amenities')->get() as $item) {
-            DB::table('amenities')->insert([
+        foreach (DB::table('inventory_items')->where('category', 'facilities')->get() as $item) {
+            DB::table('facilities')->insert([
                 'id' => $item->id,
                 'name' => $item->name,
                 'description' => $item->description,
@@ -44,8 +44,8 @@ return new class extends Migration
             ]);
         }
 
-        foreach (DB::table('inventory_items')->where('category', 'event_place')->get() as $item) {
-            DB::table('event_places')->insert([
+        foreach (DB::table('inventory_items')->where('category', 'event')->get() as $item) {
+            DB::table('events')->insert([
                 'id' => $item->id,
                 'name' => $item->name,
                 'description' => $item->description,
@@ -59,12 +59,12 @@ return new class extends Migration
             ]);
         }
 
-        DB::table('inventory_items')->whereIn('category', ['amenities', 'event_place'])->delete();
+        DB::table('inventory_items')->whereIn('category', ['facilities', 'event'])->delete();
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('event_places');
-        Schema::dropIfExists('amenities');
+        Schema::dropIfExists('events');
+        Schema::dropIfExists('facilities');
     }
 };

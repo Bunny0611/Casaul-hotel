@@ -37,11 +37,6 @@ class EventReservation extends Model
         return $this->belongsTo(Event::class);
     }
 
-    public function eventPlace()
-    {
-        return $this->event();
-    }
-
     public function payments()
     {
         return $this->morphMany(Payment::class, 'paymentable');

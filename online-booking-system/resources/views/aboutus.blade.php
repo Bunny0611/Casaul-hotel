@@ -46,7 +46,7 @@
         </div>
 
         <div class="about-values-grid">
-            <article class="about-value-card"><div class="about-value-icon"><i class="fas fa-bed"></i></div><div><h3>Comfort</h3><div class="about-rule"></div><p>Thoughtfully designed rooms and modern amenities for a relaxing stay.</p></div></article>
+            <article class="about-value-card"><div class="about-value-icon"><i class="fas fa-bed"></i></div><div><h3>Comfort</h3><div class="about-rule"></div><p>Thoughtfully designed rooms and modern facilities for a relaxing stay.</p></div></article>
             <article class="about-value-card"><div class="about-value-icon"><i class="fas fa-concierge-bell"></i></div><div><h3>Hospitality</h3><div class="about-rule"></div><p>A team committed to being attentive, warm, and genuinely helpful.</p></div></article>
             <article class="about-value-card"><div class="about-value-icon"><i class="fas fa-users"></i></div><div><h3>Community</h3><div class="about-rule"></div><p>We celebrate local culture and support the community we proudly serve.</p></div></article>
         </div>

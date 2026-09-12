@@ -14,8 +14,8 @@ return new class extends Migration
         }
 
         DB::transaction(function () {
-            DB::table('inventory_items')->where('category', 'amenities')->orderBy('id')->each(function ($item) {
-                DB::table('amenities')->updateOrInsert(
+            DB::table('inventory_items')->where('category', 'facilities')->orderBy('id')->each(function ($item) {
+                DB::table('facilities')->updateOrInsert(
                     ['name' => $item->name],
                     [
                         'description' => $item->description,
@@ -28,8 +28,8 @@ return new class extends Migration
                 );
             });
 
-            DB::table('inventory_items')->where('category', 'event_place')->orderBy('id')->each(function ($item) {
-                DB::table('event_places')->updateOrInsert(
+            DB::table('inventory_items')->where('category', 'event')->orderBy('id')->each(function ($item) {
+                DB::table('events')->updateOrInsert(
                     ['name' => $item->name],
                     [
                         'description' => $item->description,
@@ -44,7 +44,7 @@ return new class extends Migration
                 );
             });
 
-            DB::table('inventory_items')->whereIn('category', ['amenities', 'event_place'])->delete();
+            DB::table('inventory_items')->whereIn('category', ['facilities', 'event'])->delete();
         });
     }
 
