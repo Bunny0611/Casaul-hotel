@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
@@ -562,10 +563,10 @@ class AdminController extends Controller
             }
         });
 
-        $roomReservations = $roomReservations->sortByDesc('created_at')->values();
-        $facilitiesReservations = $facilitiesReservations->sortByDesc('created_at')->values();
-        $eventsReservations = $eventsReservations->sortByDesc('created_at')->values();
-        $diningReservations = $diningReservations->sortByDesc('created_at')->values();
+        $roomReservations = $this->paginateReservations($roomReservations->sortByDesc('created_at')->values(), 'rooms_page');
+        $facilitiesReservations = $this->paginateReservations($facilitiesReservations->sortByDesc('created_at')->values(), 'facilities_page');
+        $eventsReservations = $this->paginateReservations($eventsReservations->sortByDesc('created_at')->values(), 'events_page');
+        $diningReservations = $this->paginateReservations($diningReservations->sortByDesc('created_at')->values(), 'dining_page');
         
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
@@ -575,12 +576,73 @@ class AdminController extends Controller
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $diningTables = DiningTable::orderBy('table_no')->get();
 
-        // For backward compatibility, keep the old variable name
-        $reservations = $roomReservations;
+        // For backward compatibility, keep the old variable as a collection.
+        $reservations = $roomReservations->getCollection();
 
         return request()->routeIs('employee.reservation')
             ? view('employee.reservation', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningTables', 'diningMenus', 'diningSchedules'))
             : view('admin.reservations', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningMenus', 'diningSchedules'));
+    }
+
+    private function paginateReservations($reservations, string $pageName): LengthAwarePaginator
+    {
+        $perPage = 5;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage($pageName);
+
+        return new LengthAwarePaginator(
+            $reservations->forPage($currentPage, $perPage)->values(),
+            $reservations->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => request()->url(),
+                'query' => request()->query(),
+                'pageName' => $pageName,
+            ]
+        );
+    }
+
+    public function bulkDestroyReservations(Request $request)
+    {
+        $validated = $request->validate([
+            'category' => ['required', Rule::in(['rooms', 'facilities', 'event', 'dining'])],
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'min:1'],
+        ]);
+
+        $deleted = 0;
+        foreach ($validated['ids'] as $id) {
+            $reservation = match ($validated['category']) {
+                'rooms' => RoomReservation::find($id) ?? Reservation::find($id),
+                'event' => EventReservation::find($id) ?? Reservation::find($id),
+                'facilities' => FacilityReservation::find($id) ?? Reservation::find($id),
+                'dining' => DiningReservation::find($id) ?? Reservation::find($id),
+            };
+
+            if ($reservation instanceof Reservation) {
+                $legacyCategory = match (true) {
+                    $reservation->category === 'event' || $reservation->event_id => 'event',
+                    $reservation->category === 'facilities' || $reservation->facility_id => 'facilities',
+                    $reservation->category === 'dining' || $reservation->dining_id || $reservation->dining_area || $reservation->dining_schedule => 'dining',
+                    default => 'rooms',
+                };
+
+                if ($legacyCategory !== $validated['category']) {
+                    $reservation = null;
+                }
+            }
+
+            if ($reservation) {
+                $reservation->delete();
+                $deleted++;
+            }
+        }
+
+        $route = request()->routeIs('employee.reservations.bulk-destroy')
+            ? 'employee.reservation'
+            : 'admin.reservations';
+
+        return redirect()->route($route)->with('success', $deleted . ' reservation(s) deleted successfully.');
     }
 
     private function completeFinishedReservations(): void

@@ -39,7 +39,11 @@
             || !empty($reservation->dining_schedule)
             || (method_exists($reservation, 'diningItems') && $reservation->diningItems()->exists());
     });
-    $allReservationRows = collect([$roomReservations, $facilitiesReservations, $eventsReservations, $diningReservations])
+            $roomReservationRows = $roomReservations instanceof \Illuminate\Pagination\LengthAwarePaginator ? $roomReservations->getCollection() : $roomReservations;
+            $facilityReservationRows = $facilitiesReservations instanceof \Illuminate\Pagination\LengthAwarePaginator ? $facilitiesReservations->getCollection() : $facilitiesReservations;
+            $eventReservationRows = $eventsReservations instanceof \Illuminate\Pagination\LengthAwarePaginator ? $eventsReservations->getCollection() : $eventsReservations;
+            $diningReservationRows = $diningReservations instanceof \Illuminate\Pagination\LengthAwarePaginator ? $diningReservations->getCollection() : $diningReservations;
+            $allReservationRows = collect([$roomReservationRows, $facilityReservationRows, $eventReservationRows, $diningReservationRows])
         ->flatten(1)
         ->unique(fn ($row) => get_class($row) . ':' . $row->id)
         ->values();
@@ -185,32 +189,32 @@
 
     $stats = [
         'rooms' => [
-            'total' => $roomReservations->count(),
-            'pending' => $roomReservations->where('status', 'pending')->count(),
-            'confirmed' => $roomReservations->where('status', 'confirmed')->count(),
-            'completed' => $roomReservations->where('status', 'completed')->count(),
-            'cancelled' => $roomReservations->where('status', 'cancelled')->count(),
+            'total' => $roomReservationRows->count(),
+            'pending' => $roomReservationRows->where('status', 'pending')->count(),
+            'confirmed' => $roomReservationRows->where('status', 'confirmed')->count(),
+            'completed' => $roomReservationRows->where('status', 'completed')->count(),
+            'cancelled' => $roomReservationRows->where('status', 'cancelled')->count(),
         ],
         'facilities' => [
-            'total' => $facilitiesReservations->count(),
-            'pending' => $facilitiesReservations->where('status', 'pending')->count(),
-            'confirmed' => $facilitiesReservations->where('status', 'confirmed')->count(),
-            'completed' => $facilitiesReservations->where('status', 'completed')->count(),
-            'cancelled' => $facilitiesReservations->where('status', 'cancelled')->count(),
+            'total' => $facilityReservationRows->count(),
+            'pending' => $facilityReservationRows->where('status', 'pending')->count(),
+            'confirmed' => $facilityReservationRows->where('status', 'confirmed')->count(),
+            'completed' => $facilityReservationRows->where('status', 'completed')->count(),
+            'cancelled' => $facilityReservationRows->where('status', 'cancelled')->count(),
         ],
         'event' => [
-            'total' => $eventsReservations->count(),
-            'pending' => $eventsReservations->where('status', 'pending')->count(),
-            'confirmed' => $eventsReservations->where('status', 'confirmed')->count(),
-            'completed' => $eventsReservations->where('status', 'completed')->count(),
-            'cancelled' => $eventsReservations->where('status', 'cancelled')->count(),
+            'total' => $eventReservationRows->count(),
+            'pending' => $eventReservationRows->where('status', 'pending')->count(),
+            'confirmed' => $eventReservationRows->where('status', 'confirmed')->count(),
+            'completed' => $eventReservationRows->where('status', 'completed')->count(),
+            'cancelled' => $eventReservationRows->where('status', 'cancelled')->count(),
         ],
         'dining' => [
-            'total' => $diningReservations->count(),
-            'pending' => $diningReservations->where('status', 'pending')->count(),
-            'confirmed' => $diningReservations->where('status', 'confirmed')->count(),
-            'completed' => $diningReservations->where('status', 'completed')->count(),
-            'cancelled' => $diningReservations->where('status', 'cancelled')->count(),
+            'total' => $diningReservationRows->count(),
+            'pending' => $diningReservationRows->where('status', 'pending')->count(),
+            'confirmed' => $diningReservationRows->where('status', 'confirmed')->count(),
+            'completed' => $diningReservationRows->where('status', 'completed')->count(),
+            'cancelled' => $diningReservationRows->where('status', 'cancelled')->count(),
         ],
     ];
 @endphp
@@ -1229,6 +1233,14 @@
     <input type="hidden" name="category" id="reservationStatusCategory">
 </form>
 
+<div class="mt-4 space-y-3">
+    @foreach(['rooms' => $roomReservations, 'facilities' => $facilitiesReservations, 'event' => $eventsReservations, 'dining' => $diningReservations] as $paginationPanel => $pagination)
+        <div data-pagination-panel="{{ $paginationPanel }}" class="{{ $pagination->hasPages() && $paginationPanel === 'rooms' ? '' : 'hidden' }} rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            {{ $pagination->links('pagination.reservations') }}
+        </div>
+    @endforeach
+</div>
+
 <script>
     window.employeeCategoryAmountMap = @json($categoryAmountMap);
 
@@ -1259,6 +1271,9 @@
 
             document.querySelectorAll('[data-reservation-panel]').forEach((panel) => {
                 panel.classList.toggle('hidden', panel.dataset.reservationPanel !== tabKey);
+            });
+            document.querySelectorAll('[data-pagination-panel]').forEach((pagination) => {
+                pagination.classList.toggle('hidden', pagination.dataset.paginationPanel !== tabKey);
             });
 
             document.querySelectorAll('[data-reservation-fields]').forEach((fieldGroup) => {
@@ -1514,6 +1529,73 @@
 
     document.getElementById('reservationSearch')?.addEventListener('input', filterEmployeeReservations);
     document.getElementById('reservationStatusFilter')?.addEventListener('change', filterEmployeeReservations);
+
+    document.querySelectorAll('[data-reservation-panel]').forEach(panel => {
+        const category = panel.dataset.reservationPanel;
+        const rows = [...panel.querySelectorAll('.reservation-item')];
+        if (!rows.length) return;
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'flex flex-wrap items-center justify-end gap-3 border-b border-gray-200 bg-white px-6 py-4';
+        toolbar.innerHTML = `<span class="bulk-selected-count text-sm font-medium text-gray-500">0 selected</span><button type="button" class="bulk-delete-button hidden rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"><i class="fas fa-trash mr-2"></i>Delete Selected</button>`;
+        const table = panel.querySelector('table');
+        table?.parentElement?.parentElement?.prepend(toolbar);
+
+        const headerCell = table?.querySelector('thead tr th');
+        const selectAll = document.createElement('input');
+        selectAll.type = 'checkbox';
+        selectAll.className = 'bulk-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500';
+        selectAll.setAttribute('aria-label', 'Select all reservations on this page');
+        const selectAllCell = document.createElement('th');
+        selectAllCell.className = 'w-14 px-4 py-4 text-left';
+        selectAllCell.appendChild(selectAll);
+        headerCell?.parentElement?.insertBefore(selectAllCell, headerCell);
+
+        const selectedCount = toolbar.querySelector('.bulk-selected-count');
+        const deleteButton = toolbar.querySelector('.bulk-delete-button');
+        const updateSelection = () => {
+            const checkboxes = [...panel.querySelectorAll('.reservation-select')];
+            const selected = checkboxes.filter(checkbox => checkbox.checked);
+            selectedCount.textContent = `${selected.length} selected`;
+            deleteButton.classList.toggle('hidden', selected.length === 0);
+            selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
+        };
+
+        rows.forEach(row => {
+            const deleteForm = row.querySelector('form[action*="/reservations/"]');
+            const idMatch = deleteForm?.action.match(/\/reservations\/(\d+)/);
+            if (!idMatch) return;
+            const cell = row.querySelector('td');
+            if (!cell) return;
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.value = idMatch[1];
+            checkbox.className = 'reservation-select h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500';
+            checkbox.setAttribute('aria-label', 'Select reservation');
+            checkbox.addEventListener('change', updateSelection);
+            const checkboxCell = document.createElement('td');
+            checkboxCell.className = 'w-14 px-4 py-4 align-top';
+            checkboxCell.appendChild(checkbox);
+            cell.parentElement.insertBefore(checkboxCell, cell);
+        });
+
+        selectAll.addEventListener('change', () => {
+            const checkboxes = panel.querySelectorAll('.reservation-select');
+            checkboxes.forEach(checkbox => { checkbox.checked = selectAll.checked; });
+            updateSelection();
+        });
+
+        deleteButton.addEventListener('click', () => {
+            const selected = [...panel.querySelectorAll('.reservation-select:checked')].map(checkbox => checkbox.value);
+            if (!selected.length || !confirm(`Delete ${selected.length} selected reservation(s)?`)) return;
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ route('employee.reservations.bulk-destroy') }}";
+            form.innerHTML = `<input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="category" value="${category}">${selected.map(id => `<input type="hidden" name="ids[]" value="${id}">`).join('')}`;
+            document.body.appendChild(form);
+            form.submit();
+        });
+    });
 
     function formatMoney(value) {
         const amount = Number(value || 0);
