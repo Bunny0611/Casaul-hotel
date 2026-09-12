@@ -167,13 +167,15 @@
     .receipt-paid-by p, .receipt-booking p { margin:3px 0; color:#4b5563; font-size:13px; }
     .receipt-heading { margin:0; color:#07549a; font-size:32px; letter-spacing:.04em; }
     .receipt-booking { min-width:220px; }
-    .receipt-booking-details { margin:0 0 18px; }
-    .receipt-booking p { display:flex; justify-content:space-between; gap:18px; }
+    .receipt-booking-details { margin:0 0 20px; padding:16px 18px; border:1px solid #d9e5ef; border-radius:6px; background:#f8fbfe; }
+    .receipt-booking-details h4 { margin-bottom:12px; }
+    .receipt-booking p { display:flex; justify-content:space-between; gap:18px; margin:0; padding:7px 0; border-top:1px solid #e6eef5; }
+    .receipt-booking p:first-of-type { border-top:0; }
     .receipt-booking [hidden] { display:none !important; }
     .receipt-booking strong { color:#4b5563; font-weight:600; }
-    .receipt-reservation-details { margin-top:8px; }
-    .receipt-reservation-detail { display:flex; justify-content:space-between; gap:18px; margin:3px 0; }
-    .receipt-reservation-detail strong { text-align:right; }
+    .receipt-reservation-details { margin-top:0; }
+    .receipt-reservation-detail { display:flex; justify-content:space-between; gap:18px; margin:0; padding:7px 0; border-top:1px solid #e6eef5; }
+    .receipt-reservation-detail strong { color:#172033; text-align:right; }
     .receipt-close { position:absolute; top:-8px; right:-8px; border:0; background:transparent; color:#64748b; font-size:22px; cursor:pointer; }
     .receipt-content { color:#566176; font-size:12px; line-height:1.5; }
     .receipt-table { width:100%; border:1px solid #7fa9d0; border-radius:4px; border-spacing:0; overflow:hidden; }
@@ -181,6 +183,11 @@
     .receipt-table td { padding:9px 8px; border-top:1px solid #d9e5ef; color:#4b5563; font-size:12px; }
     .receipt-table th:not(:first-child), .receipt-table td:not(:first-child) { text-align:right; }
     .receipt-table .receipt-total-row td { border-top:2px solid #7fa9d0; color:#07549a; font-weight:800; }
+    .receipt-payment-summary { margin-top:20px; padding:16px 18px; border-top:3px solid #07549a; background:#f8fbfe; }
+    .receipt-payment-summary h4 { margin:0 0 8px; color:#07549a; font-size:14px; }
+    .receipt-payment-row { display:flex; justify-content:space-between; gap:18px; padding:6px 0; color:#4b5563; font-size:12px; }
+    .receipt-payment-row strong { color:#172033; text-align:right; }
+    .receipt-payment-row:last-child { margin-top:4px; padding-top:9px; border-top:1px solid #d9e5ef; font-weight:700; }
     .receipt-notes { margin-top:18px; }
     .receipt-notes h4 { margin:0 0 6px; color:#07549a; font-size:14px; }
     .receipt-notes p { margin:0; color:#4b5563; font-size:12px; }
@@ -971,11 +978,23 @@
                 <h4>Booking Details</h4>
                 <p id="receiptCheckInRow"><span id="receiptCheckInLabel">Check-in</span><strong id="receiptCheckIn">—</strong></p>
                 <p id="receiptCheckOutRow"><span id="receiptCheckOutLabel">Check-out</span><strong id="receiptCheckOut">—</strong></p>
-                <p id="receiptGuestsRow"><span>Guests</span><strong id="receiptGuests">2 Guests</strong></p>
-                <p id="receiptRoomRow"><span>Room</span><strong id="receiptRoom"></strong></p>
-                <div class="receipt-reservation-details" id="receiptReservationDetails"></div>
+                <p id="receiptGuestsRow"><span>Number of Guests</span><strong id="receiptGuests">2 Guests</strong></p>
+                <p id="receiptRoomRow"><span>Room</span><strong id="receiptRoom">—</strong></p>
+                <div class="receipt-reservation-details">
+                    <p><span>Facilities</span><strong id="receiptFacilities">None</strong></p>
+                    <p><span>Event</span><strong id="receiptEvent">None</strong></p>
+                    <p><span>Dining</span><strong id="receiptDining">0 items</strong></p>
+                    <p><span>Dining Table</span><strong id="receiptDiningTable">None</strong></p>
+                </div>
             </div>
             <div class="receipt-content" id="receiptContent"></div>
+            <div class="receipt-payment-summary">
+                <h4>Payment Summary</h4>
+                <div class="receipt-payment-row"><span>Total Amount</span><strong id="receiptTotalAmount">₱0</strong></div>
+                <div class="receipt-payment-row"><span>Amount Paid</span><strong id="receiptAmountPaid">₱0</strong></div>
+                <div class="receipt-payment-row"><span>Payment Method</span><strong id="receiptPaymentMethod">Cash / Pay at Hotel</strong></div>
+                <div class="receipt-payment-row"><span id="receiptBalanceLabel">Remaining Balance</span><strong id="receiptBalance">₱0</strong></div>
+            </div>
             <div class="receipt-notes">
                 <h4>Notes</h4>
                 <p>Thank you for choosing Casaul Hotel. We look forward to your next visit.</p>
@@ -1088,7 +1107,15 @@
         const receiptGuests = document.getElementById('receiptGuests');
         const receiptGuestsRow = document.getElementById('receiptGuestsRow');
         const receiptRoom = document.getElementById('receiptRoom');
-        const receiptReservationDetails = document.getElementById('receiptReservationDetails');
+            const receiptFacilities = document.getElementById('receiptFacilities');
+            const receiptEvent = document.getElementById('receiptEvent');
+            const receiptDining = document.getElementById('receiptDining');
+            const receiptDiningTable = document.getElementById('receiptDiningTable');
+            const receiptTotalAmount = document.getElementById('receiptTotalAmount');
+            const receiptAmountPaid = document.getElementById('receiptAmountPaid');
+            const receiptPaymentMethod = document.getElementById('receiptPaymentMethod');
+            const receiptBalanceLabel = document.getElementById('receiptBalanceLabel');
+            const receiptBalance = document.getElementById('receiptBalance');
         const receiptCheckInRow = document.getElementById('receiptCheckInRow');
         const receiptCheckOutRow = document.getElementById('receiptCheckOutRow');
         const receiptRoomRow = document.getElementById('receiptRoomRow');
@@ -2115,19 +2142,26 @@
             receiptCheckOutRow.hidden = !selectedRoom && !hasDateOrTime;
             receiptGuestsRow.hidden = !selectedRoom && !selectedEvent.length;
             receiptRoomRow.hidden = !selectedRoom;
-            const reservationDetails = [];
-            selectedFacilities.forEach(item => {
-                reservationDetails.push(['Facility', item.title]);
-            });
-            selectedDining.forEach(item => {
-                reservationDetails.push(['Dining', `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`]);
-            });
+            receiptFacilities.textContent = selectedFacilities.length
+                ? selectedFacilities.map(item => item.title).join(', ')
+                : 'None';
+            receiptEvent.textContent = selectedEvent.length
+                ? selectedEvent.map(item => item.title).join(', ')
+                : 'None';
+            const diningItemCount = selectedDining.reduce((total, item) => total + Number(item.quantity || 1), 0);
+            receiptDining.textContent = `${diningItemCount} ${diningItemCount === 1 ? 'item' : 'items'}`;
             const receiptDiningTables = [...new Set(selectedDining.map(item => item.table).filter(Boolean))];
-            if (receiptDiningTables.length) {
-                reservationDetails.push(['Dining Table', receiptDiningTables.join(', ')]);
-            }
-            receiptReservationDetails.innerHTML = reservationDetails.map(([label, value]) => `<p class="receipt-reservation-detail"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></p>`).join('');
+            receiptDiningTable.textContent = receiptDiningTables.length ? receiptDiningTables.join(', ') : 'None';
             receiptContent.innerHTML = `<table class="receipt-table"><thead><tr><th>Quantity</th><th>Description</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>${receiptItems.map(([quantity, description, unitPrice, amount]) => `<tr><td>${escapeHtml(quantity)}</td><td>${escapeHtml(description)}</td><td>${escapeHtml(unitPrice)}</td><td>${escapeHtml(amount)}</td></tr>`).join('')}<tr class="receipt-total-row"><td colspan="3">Total</td><td>${escapeHtml(confirmTotalAmount.textContent)}</td></tr></tbody></table>`;
+            const totalAmount = Number(String(confirmTotalAmount.textContent).replace(/[^\d.-]/g, '')) || 0;
+            const paymentInputId = selectedPaymentMethod === 'GCash' ? 'gcashPaymentAmount' : selectedPaymentMethod === 'Maya' ? 'mayaPaymentAmount' : selectedPaymentMethod === 'Credit / Debit Card' ? 'cardPaymentAmount' : selectedPaymentMethod === 'Bank Transfer' ? 'transferAmount' : null;
+            const amountPaid = paymentInputId ? getPaymentAmountValue(paymentInputId) : 0;
+            const balanceDifference = amountPaid - totalAmount;
+            receiptTotalAmount.textContent = confirmTotalAmount.textContent;
+            receiptAmountPaid.textContent = formatCurrencyValue(amountPaid);
+            receiptPaymentMethod.textContent = selectedPaymentMethod;
+            receiptBalanceLabel.textContent = balanceDifference >= 0 ? 'Change' : 'Remaining Balance';
+            receiptBalance.textContent = formatCurrencyValue(Math.abs(balanceDifference));
             receiptModal.classList.add('open');
             receiptModal.setAttribute('aria-hidden', 'false');
         });
