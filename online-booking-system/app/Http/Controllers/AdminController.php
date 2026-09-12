@@ -979,11 +979,48 @@ class AdminController extends Controller
             }
 
             if ($reservation instanceof RoomReservation) {
-                FacilityReservation::query()
-                    ->where('guest_email', $reservation->guest_email)
-                    ->whereDate('check_in', $reservation->check_in)
-                    ->whereNotIn('status', ['cancelled', 'completed'])
-                    ->update(['status' => $validated['status']]);
+                if ($validated['status'] === 'confirmed') {
+
+                    FacilityReservation::query()
+                        ->where('guest_email', $reservation->guest_email)
+                        ->whereDate('check_in', $reservation->check_in)
+                        ->whereNotIn('status', ['cancelled', 'completed'])
+                        ->update(['status' => 'confirmed']);
+
+                    EventReservation::query()
+                        ->where('guest_email', $reservation->guest_email)
+                        ->whereDate('check_in', $reservation->check_in)
+                        ->whereNotIn('status', ['cancelled', 'completed'])
+                        ->with('event')
+                        ->get()
+                        ->each(function (EventReservation $linkedReservation) {
+                            $linkedReservation->update(['status' => 'confirmed']);
+
+                            if (!$linkedReservation->event) {
+                                return;
+                            }
+
+                            $linkedReservation->event->update(['status' => 'reserved']);
+                        });
+
+                    DiningReservation::query()
+                        ->where('guest_email', $reservation->guest_email)
+                        ->whereDate('check_in', $reservation->check_in)
+                        ->whereNotIn('status', ['cancelled', 'completed'])
+                        ->get()
+                        ->each(function (DiningReservation $linkedReservation) {
+                            $linkedReservation->update(['status' => 'confirmed']);
+
+                            $tableNumbers = collect(explode(',', (string) $linkedReservation->dining_area))
+                                ->map(fn ($tableNumber) => trim($tableNumber))
+                                ->filter()
+                                ->values();
+
+                            if ($tableNumbers->isNotEmpty()) {
+                                DiningTable::whereIn('table_no', $tableNumbers)->update(['status' => 'reserved']);
+                            }
+                        });
+                }
             }
 
             // Only update room status for room reservations
