@@ -366,7 +366,7 @@
 
             </header>
 
-            <main class="flex-1 overflow-y-auto px-4 sm:px-6 pb-6 pt-3">
+            <main class="flex-1 overflow-y-auto px-4 sm:px-6 pb-0 pt-3">
 
                 @if(session('success'))
 
