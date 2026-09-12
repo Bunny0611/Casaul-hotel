@@ -1440,7 +1440,7 @@
                     ['fa-users', 'Guests', item.guests ? `${item.guests} guests` : ''],
                 ].filter(([, , value]) => value).map(([icon, label, value]) => `<div class="details-service-detail-row"><i class="fas ${icon}"></i><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join(''))
                 : '';
-            detailsEventAmount.textContent = hasEventSelection ? `Amount: ${formatCurrencyValue(selectedEvent.reduce((sum, item) => sum + Number(item.price || 0), 0))}` : '';
+            detailsEventAmount.textContent = hasEventSelection ? `Amount: ${formatCurrencyValue(selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0))}` : '';
             detailsEventStatus.textContent = hasEventSelection ? 'Status: Reserved' : '';
             detailsDiningTitle.textContent = hasDiningSelection
                 ? selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ')

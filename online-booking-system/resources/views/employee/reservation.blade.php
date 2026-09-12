@@ -1324,13 +1324,13 @@
             const selectedIds = selectedOptions
                 .filter(option => option.value !== 'upon_arriving')
                 .map(option => option.value);
-            const selectedQuantity = selectedOptions.reduce((sum, option) => {
+            const selectedQuantities = selectedOptions.map((option) => {
                 const qtyInput = document.querySelector(`[data-dining-menu-id="${option.value}"]`);
-                return sum + Number(qtyInput?.value || 1);
-            }, 0);
+                return Number(qtyInput?.value || 1);
+            });
 
             document.getElementById('diningSelectedMenuIds').value = selectedIds.join(',');
-            document.getElementById('diningSelectedMenuQuantity').value = selectedQuantity || '';
+            document.getElementById('diningSelectedMenuQuantity').value = selectedQuantities.join(',');
         }
 
         function renderSelectedDiningMenuItems() {
