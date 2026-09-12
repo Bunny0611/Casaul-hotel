@@ -286,8 +286,12 @@
                             $reservationReceiptLines = [];
                             $roomCharge = 0.0;
                             if ($reservation->room) {
-                                $nights = max(1, \Carbon\Carbon::parse($reservation->check_in)->diffInDays(\Carbon\Carbon::parse($reservation->check_out)));
-                                $roomCharge = (float) $reservation->room->price * $nights;
+                                $roomCharge = \App\Support\ReservationPricing::room(
+                                    $reservation->room,
+                                    $reservation->check_in,
+                                    $reservation->check_out,
+                                    (int) ($reservation->number_of_guests ?? 1)
+                                );
                                 $reservationReceiptLines[] = [
                                     'quantity' => 1,
                                     'description' => 'Room - ' . ($reservation->room->room_type ?? 'Room'),
@@ -296,28 +300,39 @@
                                 ];
                             }
 
-                            $amenityIds = $reservation->amenity_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->amenity_id)))) : [];
-                            foreach ($amenityIds as $amenityId) {
-                                $amenity = \App\Models\Amenity::find($amenityId);
-                                if ($amenity) {
+                            $facilityIds = $reservation->facility_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->facility_id)))) : [];
+                            foreach ($facilityIds as $facilityId) {
+                                $facility = \App\Models\Facility::find($facilityId);
+                                if ($facility) {
+                                    $facilityCharge = \App\Support\ReservationPricing::facilities(
+                                        collect([$facility]),
+                                        (int) ($reservation->facility_quantity ?? $reservation->quantity ?? 1),
+                                        $reservation->check_in,
+                                        $reservation->check_out
+                                    );
                                     $reservationReceiptLines[] = [
                                         'quantity' => 1,
-                                        'description' => 'Amenities - ' . $amenity->name,
-                                        'unitPrice' => '₱' . number_format((float) $amenity->price, 2),
-                                        'amount' => '₱' . number_format((float) $amenity->price, 2),
+                                        'description' => 'Facilities - ' . $facility->name,
+                                        'unitPrice' => '₱' . number_format($facilityCharge, 2),
+                                        'amount' => '₱' . number_format($facilityCharge, 2),
                                     ];
                                 }
                             }
 
-                            $eventIds = $reservation->event_place_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_place_id)))) : [];
+                            $eventIds = $reservation->event_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_id)))) : [];
                             foreach ($eventIds as $eventId) {
-                                $event = \App\Models\EventPlace::find($eventId);
+                                $event = \App\Models\Event::find($eventId);
                                 if ($event) {
+                                    $eventCharge = \App\Support\ReservationPricing::events(
+                                        collect([$event]),
+                                        (int) ($reservation->number_of_guests ?? 1),
+                                        max(1, \Carbon\Carbon::parse($reservation->event_start_time ?? $reservation->check_in_time ?? '00:00')->diffInHours(\Carbon\Carbon::parse($reservation->event_end_time ?? $reservation->check_out_time ?? '01:00')))
+                                    );
                                     $reservationReceiptLines[] = [
                                         'quantity' => 1,
                                         'description' => 'Event - ' . $event->name,
-                                        'unitPrice' => '₱' . number_format((float) $event->price, 2),
-                                        'amount' => '₱' . number_format((float) $event->price, 2),
+                                        'unitPrice' => '₱' . number_format($eventCharge, 2),
+                                        'amount' => '₱' . number_format($eventCharge, 2),
                                     ];
                                 }
                             }

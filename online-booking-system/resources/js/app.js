@@ -217,13 +217,6 @@ document.addEventListener('DOMContentLoaded', function () {
             switchBtn.textContent = isSignUp ? 'Sign in' : 'Sign up';
         });
 
-        googleBtn?.addEventListener('click', () => {
-            if (authMessage) {
-                authMessage.style.display = 'block';
-                authMessage.textContent = 'Google sign-in is coming soon. Please use email sign-in for now.';
-            }
-        });
-
         signupForm?.addEventListener('submit', () => {
             if (authMessage) {
                 authMessage.style.display = 'none';
@@ -259,8 +252,8 @@ document.addEventListener('DOMContentLoaded', function () {
             quick: ['Check Availability', 'View Rooms', 'Talk to Agent']
         },
         inquiries: {
-            text: 'I\'m here to answer any questions! 💬\n\nCommon topics:\n• 🕐 Check-in / Check-out times\n• 🅿️ Parking & transport\n• 🐾 Pet policy\n• 🍳 Breakfast & dining hours\n• 🧺 Room amenities\n\nWhat would you like to know more about?',
-            quick: ['Check-in/out Times', 'Amenities', 'Pet Policy', 'Dining']
+            text: 'I\'m here to answer any questions! 💬\n\nCommon topics:\n• 🕐 Check-in / Check-out times\n• 🅿️ Parking & transport\n• 🐾 Pet policy\n• 🍳 Breakfast & dining hours\n• 🧺 Room facilities\n\nWhat would you like to know more about?',
+            quick: ['Check-in/out Times', 'Facilities', 'Pet Policy', 'Dining']
         },
         availability: {
             text: 'Let me check room availability for you! 📅\n\nTo get started, please share:\n• Your desired dates\n• Number of guests\n• Preferred room type\n\nOr browse our available rooms directly below.',
@@ -435,7 +428,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 'send-email': 'contact',
                 'view-location': 'contact',
                 'check-in-out-times': 'inquiries',
-                'amenities': 'inquiries',
+                'facilities': 'inquiries',
                 'pet-policy': 'inquiries',
                 'dining': 'inquiries',
                 'weekend-escape': 'offers',

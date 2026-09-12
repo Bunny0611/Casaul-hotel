@@ -125,13 +125,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     const modalFields = {
-        amenity: {
-            modal: 'amenity-details-modal',
-            row: '[data-action="view-amenity"]',
+        facility: {
+            modal: 'facility-details-modal',
+            row: '[data-action="view-facility"]',
             fields: {
-                name: 'amenityName', type: 'amenityType', location: 'amenityLocation', capacity: 'amenityCapacity', status: 'amenityStatus', hours: 'amenityHours', description: 'amenityDescription', reservationStatus: 'reservationStatus', guest: 'guest', reservationId: 'reservationId', reservationDate: 'reservationDate', startTime: 'startTime', endTime: 'endTime', guests: 'guests', lastCleaned: 'lastCleaned', maintenance: 'maintenanceStatus', notes: 'notes'
+                name: 'facilityName', type: 'facilityType', location: 'facilityLocation', capacity: 'facilityCapacity', status: 'facilityStatus', hours: 'facilityHours', description: 'facilityDescription', reservationStatus: 'reservationStatus', guest: 'guest', reservationId: 'reservationId', reservationDate: 'reservationDate', startTime: 'startTime', endTime: 'endTime', guests: 'guests', lastCleaned: 'lastCleaned', maintenance: 'maintenanceStatus', notes: 'notes'
             },
-            ids: { name: 'amenity-detail-name', type: 'amenity-detail-type', location: 'amenity-detail-location', capacity: 'amenity-detail-capacity', status: 'amenity-detail-status', hours: 'amenity-detail-hours', description: 'amenity-detail-description', reservationStatus: 'amenity-detail-reservation-status', guest: 'amenity-detail-guest', reservationId: 'amenity-detail-reservation-id', reservationDate: 'amenity-detail-reservation-date', startTime: 'amenity-detail-start-time', endTime: 'amenity-detail-end-time', guests: 'amenity-detail-guests', lastCleaned: 'amenity-detail-last-cleaned', maintenance: 'amenity-detail-maintenance', notes: 'amenity-detail-notes' }
+            ids: { name: 'facility-detail-name', type: 'facility-detail-type', location: 'facility-detail-location', capacity: 'facility-detail-capacity', status: 'facility-detail-status', hours: 'facility-detail-hours', description: 'facility-detail-description', reservationStatus: 'facility-detail-reservation-status', guest: 'facility-detail-guest', reservationId: 'facility-detail-reservation-id', reservationDate: 'facility-detail-reservation-date', startTime: 'facility-detail-start-time', endTime: 'facility-detail-end-time', guests: 'facility-detail-guests', lastCleaned: 'facility-detail-last-cleaned', maintenance: 'facility-detail-maintenance', notes: 'facility-detail-notes' }
         },
         event: {
             modal: 'event-details-modal',

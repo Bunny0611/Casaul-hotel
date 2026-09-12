@@ -12,14 +12,14 @@ return new class extends Migration
             if (!Schema::hasColumn('reservations', 'category')) {
                 $table->string('category')->default('rooms')->after('id');
             }
-            if (!Schema::hasColumn('reservations', 'amenity_id')) {
-                $table->unsignedBigInteger('amenity_id')->nullable()->after('category');
+            if (!Schema::hasColumn('reservations', 'facility_id')) {
+                $table->unsignedBigInteger('facility_id')->nullable()->after('category');
             }
-            if (!Schema::hasColumn('reservations', 'event_place_id')) {
-                $table->unsignedBigInteger('event_place_id')->nullable()->after('amenity_id');
+            if (!Schema::hasColumn('reservations', 'event_id')) {
+                $table->unsignedBigInteger('event_id')->nullable()->after('facility_id');
             }
             if (!Schema::hasColumn('reservations', 'dining_id')) {
-                $table->unsignedBigInteger('dining_id')->nullable()->after('event_place_id');
+                $table->unsignedBigInteger('dining_id')->nullable()->after('event_id');
             }
         });
 
@@ -36,8 +36,8 @@ return new class extends Migration
             $table->unsignedBigInteger('room_id')->nullable(false)->change();
             $table->dropColumn([
                 'category',
-                'amenity_id',
-                'event_place_id',
+                'facility_id',
+                'event_id',
                 'dining_id',
             ]);
         });

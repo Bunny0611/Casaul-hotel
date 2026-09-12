@@ -30,35 +30,35 @@ return new class extends Migration
         // Migrate event reservations
         DB::statement("
             INSERT INTO event_reservations (
-                event_place_id, guest_name, guest_email, guest_phone,
+                event_id, guest_name, guest_email, guest_phone,
                 event_type, check_in, event_start_time, check_out, event_end_time,
                 number_of_guests, status, total_amount, payment_method,
                 payment_details, amount_paid, special_requests, created_at, updated_at
             )
             SELECT
-                event_place_id, guest_name, guest_email, guest_phone,
+                event_id, guest_name, guest_email, guest_phone,
                 event_type, check_in, event_start_time, check_out, event_end_time,
                 number_of_guests, status, total_amount, payment_method,
                 payment_details, amount_paid, special_requests, created_at, updated_at
             FROM reservations
-            WHERE category = 'event_place' AND event_place_id IS NOT NULL
+            WHERE category = 'event' AND event_id IS NOT NULL
         ");
 
-        // Migrate amenity reservations
+        // Migrate facility reservations
         DB::statement("
-            INSERT INTO amenity_reservations (
-                amenity_id, guest_name, guest_email, guest_phone,
-                check_in, amenity_start_time, check_out, amenity_end_time,
+            INSERT INTO facility_reservations (
+                facility_id, guest_name, guest_email, guest_phone,
+                check_in, facility_start_time, check_out, facility_end_time,
                 number_of_guests, status, total_amount, payment_method,
                 payment_details, amount_paid, special_requests, created_at, updated_at
             )
             SELECT
-                amenity_id, guest_name, guest_email, guest_phone,
-                check_in, amenity_start_time, check_out, amenity_end_time,
+                facility_id, guest_name, guest_email, guest_phone,
+                check_in, facility_start_time, check_out, facility_end_time,
                 number_of_guests, status, total_amount, payment_method,
                 payment_details, amount_paid, special_requests, created_at, updated_at
             FROM reservations
-            WHERE category = 'amenities' AND amenity_id IS NOT NULL
+            WHERE category = 'facilities' AND facility_id IS NOT NULL
         ");
 
         // Migrate dining reservations
@@ -87,7 +87,7 @@ return new class extends Migration
         // Clear the new tables
         DB::table('room_reservations')->truncate();
         DB::table('event_reservations')->truncate();
-        DB::table('amenity_reservations')->truncate();
+        DB::table('facility_reservations')->truncate();
         DB::table('dining_reservations')->truncate();
     }
 };

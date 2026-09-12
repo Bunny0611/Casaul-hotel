@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('event_places', function (Blueprint $table) {
+        Schema::table('events', function (Blueprint $table) {
             $table->time('available_from')->nullable()->after('location');
             $table->time('available_to')->nullable()->after('available_from');
         });
@@ -16,7 +16,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('event_places', function (Blueprint $table) {
+        Schema::table('events', function (Blueprint $table) {
             $table->dropColumn(['available_from', 'available_to']);
         });
     }

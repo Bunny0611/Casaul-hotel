@@ -46,7 +46,7 @@ class HomeController extends Controller
                 'tagline' => 'Sophisticated luxury for work and leisure.',
                 'image' => 'image/Royal-Suite-room.jpg',
                 'description' => 'The Executive Room is crafted for guests who want a more elevated experience, with generous space, refined finishes, and a tranquil atmosphere throughout the stay.',
-                'features' => ['Executive lounge access', 'Large workspace', 'Premium amenities', 'City view'],
+                'features' => ['Executive lounge access', 'Large workspace', 'Premium facilities', 'City view'],
             ],
             [
                 'slug' => 'presidential-room',
@@ -79,7 +79,7 @@ class HomeController extends Controller
     {
         $rooms = Room::where('status', 'available')->get();
 
-        $amenities = Facility::whereIn('status', ['available', 'limited'])
+        $facilities = Facility::whereIn('status', ['available', 'limited'])
             ->orderBy('name')
             ->get();
 
@@ -136,7 +136,7 @@ class HomeController extends Controller
             ])
             ->values();
 
-        return view('reservation', compact('rooms', 'amenities', 'events', 'dining', 'diningByCategory', 'diningSchedules', 'diningTables', 'diningReservations'));
+        return view('reservation', compact('rooms', 'facilities', 'events', 'dining', 'diningByCategory', 'diningSchedules', 'diningTables', 'diningReservations'));
     }
 
     public function dining()
@@ -343,7 +343,7 @@ class HomeController extends Controller
         } elseif ($hasDining) {
             $request->merge(['category' => 'dining']);
         } else {
-            // Default to room if no amenities, events, or dining selected
+            // Default to room if no facilities, events, or dining selected
             $request->merge(['category' => 'rooms']);
         }
 
@@ -987,7 +987,7 @@ class HomeController extends Controller
                     'price' => '₱' . number_format((float) $databaseRoom->price, 2),
                     'tagline' => 'Comfortable accommodation for a restful stay.',
                     'image' => $databaseRoom->image ? 'images/' . $databaseRoom->image : 'image/Royal-Suite-room.jpg',
-                    'description' => $databaseRoom->description ?? 'Enjoy a comfortable room with thoughtful amenities and a welcoming atmosphere.',
+                    'description' => $databaseRoom->description ?? 'Enjoy a comfortable room with thoughtful facilities and a welcoming atmosphere.',
                     'features' => ['Comfortable bedding', 'Private bath', 'High-speed Wi-Fi', 'Air conditioning'],
                 ];
             }

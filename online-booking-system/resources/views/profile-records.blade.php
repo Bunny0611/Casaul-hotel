@@ -526,8 +526,8 @@
     @else
         <div class="records-category-tabs" role="tablist" aria-label="Reservation categories">
             <button type="button" class="records-category-tab is-active" data-record-filter="rooms" role="tab" aria-selected="true">ROOMS</button>
-            <button type="button" class="records-category-tab" data-record-filter="amenities" role="tab" aria-selected="false">AMENITIES</button>
-            <button type="button" class="records-category-tab" data-record-filter="event-place" role="tab" aria-selected="false">EVENT PLACE</button>
+            <button type="button" class="records-category-tab" data-record-filter="facilities" role="tab" aria-selected="false">FACILITIES</button>
+            <button type="button" class="records-category-tab" data-record-filter="event" role="tab" aria-selected="false">EVENTS</button>
             <button type="button" class="records-category-tab" data-record-filter="dining" role="tab" aria-selected="false">DINING</button>
         </div>
         <div class="records-table-wrap">
@@ -548,8 +548,12 @@
                         @php
                             $reservationReceiptLines = [];
                             if ($reservation->room) {
-                                $nights = max(1, \Carbon\Carbon::parse($reservation->check_in)->diffInDays(\Carbon\Carbon::parse($reservation->check_out)));
-                                $roomCharge = (float) $reservation->room->price * $nights;
+                                $roomCharge = \App\Support\ReservationPricing::room(
+                                    $reservation->room,
+                                    $reservation->check_in,
+                                    $reservation->check_out,
+                                    (int) ($reservation->number_of_guests ?? 1)
+                                );
                                 $reservationReceiptLines[] = [
                                     'quantity' => 1,
                                     'description' => 'Room - ' . ($reservation->room->room_type ?? 'Room'),
@@ -558,28 +562,39 @@
                                 ];
                             }
 
-                            $amenityIds = $reservation->amenity_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->amenity_id)))) : [];
-                            foreach ($amenityIds as $amenityId) {
-                                $amenity = \App\Models\Amenity::find($amenityId);
-                                if ($amenity) {
+                            $facilityIds = $reservation->facility_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->facility_id)))) : [];
+                            foreach ($facilityIds as $facilityId) {
+                                $facility = \App\Models\Facility::find($facilityId);
+                                if ($facility) {
+                                    $facilityCharge = \App\Support\ReservationPricing::facilities(
+                                        collect([$facility]),
+                                        (int) ($reservation->facility_quantity ?? $reservation->quantity ?? 1),
+                                        $reservation->check_in,
+                                        $reservation->check_out
+                                    );
                                     $reservationReceiptLines[] = [
                                         'quantity' => 1,
-                                        'description' => 'Amenities - ' . $amenity->name,
-                                        'unitPrice' => '₱' . number_format((float) $amenity->price, 2),
-                                        'amount' => '₱' . number_format((float) $amenity->price, 2),
+                                        'description' => 'Facilities - ' . $facility->name,
+                                        'unitPrice' => '₱' . number_format($facilityCharge, 2),
+                                        'amount' => '₱' . number_format($facilityCharge, 2),
                                     ];
                                 }
                             }
 
-                            $eventIds = $reservation->event_place_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_place_id)))) : [];
+                            $eventIds = $reservation->event_id ? array_values(array_filter(array_map('trim', explode(',', (string) $reservation->event_id)))) : [];
                             foreach ($eventIds as $eventId) {
-                                $event = \App\Models\EventPlace::find($eventId);
+                                $event = \App\Models\Event::find($eventId);
                                 if ($event) {
+                                    $eventCharge = \App\Support\ReservationPricing::events(
+                                        collect([$event]),
+                                        (int) ($reservation->number_of_guests ?? 1),
+                                        max(1, \Carbon\Carbon::parse($reservation->event_start_time ?? $reservation->check_in_time ?? '00:00')->diffInHours(\Carbon\Carbon::parse($reservation->event_end_time ?? $reservation->check_out_time ?? '01:00')))
+                                    );
                                     $reservationReceiptLines[] = [
                                         'quantity' => 1,
                                         'description' => 'Event - ' . $event->name,
-                                        'unitPrice' => '₱' . number_format((float) $event->price, 2),
-                                        'amount' => '₱' . number_format((float) $event->price, 2),
+                                        'unitPrice' => '₱' . number_format($eventCharge, 2),
+                                        'amount' => '₱' . number_format($eventCharge, 2),
                                     ];
                                 }
                             }
@@ -617,18 +632,18 @@
                                     'price' => '₱' . number_format((float) $reservation->room->price, 2),
                                     'description' => $reservation->room->description,
                                 ] : null,
-                                'amenities' => $reservation->amenities->map(fn ($amenity) => [
-                                    'name' => $amenity->name,
-                                    'description' => $amenity->description,
-                                    'price' => '₱' . number_format((float) $amenity->price, 2),
+                                'facilities' => $reservation->facilities->map(fn ($facility) => [
+                                    'name' => $facility->name,
+                                    'description' => $facility->description,
+                                    'price' => '₱' . number_format((float) $facility->price, 2),
                                 ])->values(),
-                                'eventPlaces' => $reservation->eventPlaces->map(fn ($eventPlace) => [
-                                    'name' => $eventPlace->name,
-                                    'type' => $eventPlace->event_type,
-                                    'location' => $eventPlace->location,
-                                    'capacity' => $eventPlace->capacity,
-                                    'price' => '₱' . number_format((float) $eventPlace->price, 2),
-                                    'description' => $eventPlace->description,
+                                'events' => $reservation->events->map(fn ($event) => [
+                                    'name' => $event->name,
+                                    'type' => $event->event_type,
+                                    'location' => $event->location,
+                                    'capacity' => $event->capacity,
+                                    'price' => '₱' . number_format((float) $event->price, 2),
+                                    'description' => $event->description,
                                 ])->values(),
                                 'dining' => $reservation->diningItems->map(fn ($diningItem) => [
                                     'name' => $diningItem->diningMenu?->name,
@@ -662,11 +677,11 @@
                             if ($reservation->room_id || str_contains($reservationCategory, 'room')) {
                                 $recordCategories->push('rooms');
                             }
-                            if ($reservation->amenity_id || str_contains($reservationCategory, 'amen')) {
-                                $recordCategories->push('amenities');
+                            if ($reservation->facility_id || str_contains($reservationCategory, 'facilit')) {
+                                $recordCategories->push('facilities');
                             }
-                            if ($reservation->event_place_id || str_contains($reservationCategory, 'event')) {
-                                $recordCategories->push('event-place');
+                            if ($reservation->event_id || str_contains($reservationCategory, 'event')) {
+                                $recordCategories->push('event');
                             }
                             if ($reservation->dining_id || $reservation->diningItems->isNotEmpty() || str_contains($reservationCategory, 'dining')) {
                                 $recordCategories->push('dining');
@@ -676,8 +691,8 @@
                         @foreach($recordCategories as $recordCategory)
                             @php
                             $recordDetailNames = match ($recordCategory) {
-                                'amenities' => \App\Models\Amenity::whereIn('id', $amenityIds)->pluck('name')->all(),
-                                'event-place' => \App\Models\EventPlace::whereIn('id', $eventIds)->pluck('name')->all(),
+                                'facilities' => \App\Models\Facility::whereIn('id', $facilityIds)->pluck('name')->all(),
+                                'event' => \App\Models\Event::whereIn('id', $eventIds)->pluck('name')->all(),
                                 'dining' => $reservation->diningItems->map(fn ($item) => $item->diningMenu?->name)->filter()->values()->all(),
                                 default => [$reservation->room->room_type ?? 'Room'],
                             };
@@ -685,7 +700,7 @@
                             $recordDate = $recordCategory === 'dining' ? ($diningItem?->dining_date ?? $reservation->check_in) : $reservation->check_in;
                             $recordSchedule = $recordCategory === 'dining'
                                 ? collect([$diningItem?->dining_area, $diningItem?->dining_schedule])->filter()->implode(' | ')
-                                : ($recordCategory === 'amenities' ? ($reservation->check_in_time ?? '') : optional($reservation->check_out)->format('M d, Y'));
+                                : ($recordCategory === 'facilities' ? ($reservation->check_in_time ?? '') : optional($reservation->check_out)->format('M d, Y'));
                             @endphp
                             <tr class="records-table-row" data-record-category="{{ $recordCategory }}">
                             <td>{{ $index + 1 }}</td>
@@ -987,8 +1002,8 @@
         const activeCategory = selectedTab.dataset.recordFilter;
         const headingLabels = {
             rooms: ['Room', 'Check-in', 'Check-out'],
-            amenities: ['Amenity', 'Date', 'Time'],
-            'event-place': ['Event Place', 'Date', 'Schedule'],
+            facilities: ['Facility', 'Date', 'Time'],
+            event: ['Event', 'Date', 'Schedule'],
             dining: ['Dining', 'Date', 'Schedule'],
         }[activeCategory];
 
@@ -1070,12 +1085,12 @@
             const room = reservation.room ? `<div class="reservation-detail-section"><h4>Room</h4><div class="reservation-detail-grid">
                 ${field('Room type', reservation.room.type)}${field('Room number', reservation.room.number)}${field('Floor', reservation.room.floor)}${field('Capacity', reservation.room.capacity)}${field('Rate', reservation.room.price)}
                 </div><p>${escapeHtml(reservation.room.description || 'No room description.')}</p></div>` : '';
-            const amenities = `<div class="reservation-detail-section"><h4>Amenities</h4>${list(reservation.amenities, 'No amenities selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>`;
-            const eventPlaces = `<div class="reservation-detail-section"><h4>Event Place</h4>${list(reservation.eventPlaces, 'No event place selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.type, item.location, item.capacity ? `Capacity: ${item.capacity}` : ''].filter(Boolean).join(' | '))}</p><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>`;
+            const facilities = `<div class="reservation-detail-section"><h4>Facilities</h4>${list(reservation.facilities, 'No facilities selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>`;
+            const events = `<div class="reservation-detail-section"><h4>Events</h4>${list(reservation.events, 'No events selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.type, item.location, item.capacity ? `Capacity: ${item.capacity}` : ''].filter(Boolean).join(' | '))}</p><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>`;
             const dining = `<div class="reservation-detail-section"><h4>Dining</h4>${list(reservation.dining, 'No dining items selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)} x${escapeHtml(item.quantity)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.category, item.area, item.schedule, item.date].filter(Boolean).join(' | '))}</p></div>`)}</div>`;
             const payments = `<div class="reservation-detail-section"><h4>Payment</h4><div class="reservation-detail-grid">${field('Reservation method', reservation.paymentMethod)}${field('Payment details', reservation.paymentDetails)}${field('Amount paid', reservation.amountPaid)}${field('Total amount', reservation.total)}</div>${list(reservation.payments, 'No separate payment transactions recorded.', payment => `<div class="reservation-detail-item"><strong>${escapeHtml(payment.method)} - ${escapeHtml(payment.amount)}</strong><p>${escapeHtml([payment.date, payment.reference ? `Reference: ${payment.reference}` : '', payment.notes].filter(Boolean).join(' | '))}</p></div>`)}</div>`;
 
-            receiptContent.innerHTML = `<div class="reservation-detail-grid reservation-detail-grid--summary">${field('Status', reservation.status)}${field('Category', reservation.category)}${field('Phone', reservation.guestPhone)}${field('Check-in time', reservation.checkInTime)}${field('Check-out time', reservation.checkOutTime)}${field('Event type', reservation.eventType)}${field('Dining area', reservation.diningArea)}${field('Dining schedule', reservation.diningSchedule)}</div>${room}${amenities}${eventPlaces}${dining}${payments}`;
+            receiptContent.innerHTML = `<div class="reservation-detail-grid reservation-detail-grid--summary">${field('Status', reservation.status)}${field('Category', reservation.category)}${field('Phone', reservation.guestPhone)}${field('Check-in time', reservation.checkInTime)}${field('Check-out time', reservation.checkOutTime)}${field('Event type', reservation.eventType)}${field('Dining area', reservation.diningArea)}${field('Dining schedule', reservation.diningSchedule)}</div>${room}${facilities}${events}${dining}${payments}`;
             modal.classList.add('open');
             modal.setAttribute('aria-hidden', 'false');
             return;

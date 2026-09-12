@@ -26,31 +26,6 @@ class FacilityReservation extends Model
         return $this->belongsTo(Facility::class);
     }
 
-    public function amenity()
-    {
-        return $this->facility();
-    }
-
-    public function getAmenityIdAttribute()
-    {
-        return $this->getAttribute('facility_id');
-    }
-
-    public function getAmenityQuantityAttribute()
-    {
-        return $this->getAttribute('facility_quantity');
-    }
-
-    public function getAmenityStartTimeAttribute()
-    {
-        return $this->getAttribute('facility_start_time');
-    }
-
-    public function getAmenityEndTimeAttribute()
-    {
-        return $this->getAttribute('facility_end_time');
-    }
-
     public function payments()
     {
         return $this->morphMany(Payment::class, 'paymentable');

@@ -8,15 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('amenity_reservations', function (Blueprint $table) {
-            $table->unsignedInteger('amenity_quantity')->default(1)->after('amenity_id');
+        Schema::table('facility_reservations', function (Blueprint $table) {
+            $table->unsignedInteger('facility_quantity')->default(1)->after('facility_id');
         });
     }
 
     public function down(): void
     {
-        Schema::table('amenity_reservations', function (Blueprint $table) {
-            $table->dropColumn('amenity_quantity');
+        Schema::table('facility_reservations', function (Blueprint $table) {
+            $table->dropColumn('facility_quantity');
         });
     }
 };

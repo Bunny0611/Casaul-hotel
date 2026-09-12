@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('inventory_items', function (Blueprint $table) {
             $table->id();
-            $table->enum('category', ['amenities', 'event_place', 'dining']);
+            $table->enum('category', ['facilities', 'event', 'dining']);
             $table->string('name');
             $table->string('type')->nullable();
             $table->text('description')->nullable();

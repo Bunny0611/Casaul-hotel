@@ -131,8 +131,8 @@ class AdminController extends Controller
     public function rooms()
     {
         $rooms = Room::orderBy('room_number')->paginate(5);
-        $amenities = Facility::orderBy('name')->paginate(5, ['*'], 'facilities_page')->appends(['tab' => 'facilities']);
-        $eventPlaces = Event::orderBy('name')->paginate(5, ['*'], 'events_page')->appends(['tab' => 'events']);
+        $facilities = Facility::orderBy('name')->paginate(5, ['*'], 'facilities_page')->appends(['tab' => 'facilities']);
+        $events = Event::orderBy('name')->paginate(5, ['*'], 'events_page')->appends(['tab' => 'events']);
         $dining = DiningMenu::orderBy('name')->paginate(5, ['*'], 'dining_page')->appends(['tab' => 'dining']);
         $diningTables = DiningTable::orderBy('table_no')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
@@ -142,7 +142,7 @@ class AdminController extends Controller
             $activeTab = 'rooms';
         }
 
-        return view('admin.rooms', compact('rooms', 'amenities', 'eventPlaces', 'dining', 'diningTables', 'diningSchedules', 'activeTab'));
+        return view('admin.rooms', compact('rooms', 'facilities', 'events', 'dining', 'diningTables', 'diningSchedules', 'activeTab'));
     }
 
     public function diningOverview()
@@ -541,21 +541,21 @@ class AdminController extends Controller
         $this->completeFinishedReservations();
 
         $roomReservations = RoomReservation::with('room')->latest()->get();
-        $amenityReservations = FacilityReservation::with('facility')->latest()->get();
-        $eventPlaceReservations = EventReservation::with(['event', 'diningItems.diningMenu'])->latest()->get();
+        $facilitiesReservations = FacilityReservation::with('facility')->latest()->get();
+        $eventsReservations = EventReservation::with(['event', 'diningItems.diningMenu'])->latest()->get();
         $diningReservations = DiningReservation::with('diningItems.diningMenu')->latest()->get();
 
         $legacyReservations = Reservation::with(['room', 'facility', 'event', 'diningItems'])->latest()->get();
-        $legacyReservations->each(function ($reservation) use (&$roomReservations, &$amenityReservations, &$eventPlaceReservations, &$diningReservations) {
+        $legacyReservations->each(function ($reservation) use (&$roomReservations, &$facilitiesReservations, &$eventsReservations, &$diningReservations) {
             $category = $reservation->category;
             if ($category === 'rooms' || $reservation->room_id) {
                 $roomReservations->push($reservation);
             }
             if ($category === 'facilities' || $reservation->facility_id) {
-                $amenityReservations->push($reservation);
+                $facilitiesReservations->push($reservation);
             }
             if ($category === 'event' || $reservation->event_id) {
-                $eventPlaceReservations->push($reservation);
+                $eventsReservations->push($reservation);
             }
             if ($category === 'dining' || $reservation->dining_id || $reservation->dining_area || $reservation->dining_schedule) {
                 $diningReservations->push($reservation);
@@ -563,14 +563,14 @@ class AdminController extends Controller
         });
 
         $roomReservations = $roomReservations->sortByDesc('created_at')->values();
-        $amenityReservations = $amenityReservations->sortByDesc('created_at')->values();
-        $eventPlaceReservations = $eventPlaceReservations->sortByDesc('created_at')->values();
+        $facilitiesReservations = $facilitiesReservations->sortByDesc('created_at')->values();
+        $eventsReservations = $eventsReservations->sortByDesc('created_at')->values();
         $diningReservations = $diningReservations->sortByDesc('created_at')->values();
         
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
-        $amenities = Facility::orderBy('name')->get();
-        $eventPlaces = Event::orderBy('name')->get();
+        $facilities = Facility::orderBy('name')->get();
+        $events = Event::orderBy('name')->get();
         $diningMenus = DiningMenu::orderBy('name')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $diningTables = DiningTable::orderBy('table_no')->get();
@@ -579,8 +579,8 @@ class AdminController extends Controller
         $reservations = $roomReservations;
 
         return request()->routeIs('employee.reservation')
-            ? view('employee.reservation', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningTables', 'diningMenus', 'diningSchedules'))
-            : view('admin.reservations', compact('reservations', 'roomReservations', 'amenityReservations', 'eventPlaceReservations', 'diningReservations', 'rooms', 'inventoryItems', 'amenities', 'eventPlaces', 'diningMenus', 'diningSchedules'));
+            ? view('employee.reservation', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningTables', 'diningMenus', 'diningSchedules'))
+            : view('admin.reservations', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningMenus', 'diningSchedules'));
     }
 
     private function completeFinishedReservations(): void

@@ -154,10 +154,10 @@
             <button id="add-room-button" type="button" onclick="openAddRoomModal()" class="add-panel-button inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
                 <i class="fas fa-plus mr-2"></i>Add Room
             </button>
-            <button id="add-amenities-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
+            <button id="add-facilities-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
                 <i class="fas fa-plus mr-2"></i>Add Facility
             </button>
-            <button id="add-event-place-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
+            <button id="add-event-button" type="button" class="add-panel-button hidden inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700">
                 <i class="fas fa-plus mr-2"></i>Add Event
             </button>
         </div>
@@ -257,39 +257,39 @@
     <div data-panel="facilities" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
             <div></div>
-            <div class="flex items-center gap-3"><span id="amenitiesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('amenities')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected amenities"><i class="fas fa-trash"></i></button></div>
+            <div class="flex items-center gap-3"><span id="facilitiesSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('facilities')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected facilities"><i class="fas fa-trash"></i></button></div>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-[720px] w-full">
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllAmenitiesHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="facilities" onclick="toggleAllInventoryCheckboxes('facilities', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Facility Name</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllFacilitiesHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="facilities" onclick="toggleAllInventoryCheckboxes('facilities', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Facility Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Capacity / Quantity</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
                     </tr>
                 </thead>
-                <tbody id="amenities-list" class="divide-y divide-gray-200">
-                    @forelse($amenities as $item)
-                        @php($amenityStatus = strtolower($item->status ?? 'unavailable'))
-                        <tr class="transition-colors hover:bg-gray-50"><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-amenities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('amenities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full px-3 py-1 text-xs font-medium text-white {{ $amenityStatus === 'available' ? 'bg-green-500' : ($amenityStatus === 'limited' ? 'bg-yellow-500' : 'bg-red-500') }}">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "amenities")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit amenity"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "amenities")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change amenity status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=amenities" method="POST" onsubmit="return confirm('Delete this amenity?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete amenity"><i class="fas fa-trash"></i></button></form></div></td></tr>
+                <tbody id="facilities-list" class="divide-y divide-gray-200">
+                    @forelse($facilities as $item)
+                        @php($facilityStatus = strtolower($item->status ?? 'unavailable'))
+                        <tr class="transition-colors hover:bg-gray-50"><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-facilities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('facilities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full px-3 py-1 text-xs font-medium text-white {{ $facilityStatus === 'available' ? 'bg-green-500' : ($facilityStatus === 'limited' ? 'bg-yellow-500' : 'bg-red-500') }}">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "facilities")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit facility"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "facilities")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change facility status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=facilities" method="POST" onsubmit="return confirm('Delete this facility?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete facility"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @empty
                         <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-concierge-bell mb-4 text-4xl text-gray-300"></i><p>No facilities found. Add your first facility to get started.</p></td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        {{ $amenities->links('pagination.admin-rooms') }}
+        {{ $facilities->links('pagination.admin-rooms') }}
     </div>
 
     <div data-panel="events" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4"><div></div><div class="flex items-center gap-3"><span id="event_placeSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('event_place')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white" aria-label="Delete selected event places"><i class="fas fa-trash"></i></button></div></div>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4"><div></div><div class="flex items-center gap-3"><span id="eventSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkInventoryDelete('event')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white" aria-label="Delete selected events"><i class="fas fa-trash"></i></button></div></div>
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
                     <tr class="bg-gray-50">
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllEventPlaceHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="event_place" onclick="toggleAllInventoryCheckboxes('event_place', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Package Name</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllEventHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="event" onclick="toggleAllInventoryCheckboxes('event', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Maximum Guests</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Available Time</th>
@@ -297,14 +297,14 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
                     </tr>
                 </thead>
-                <tbody id="event-place-list" class="divide-y divide-gray-200">
-                    @foreach($eventPlaces as $item)
-                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event_place h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event_place')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->available_from && $item->available_to ? \Illuminate\Support\Carbon::parse($item->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($item->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "event_place")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event place"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "event_place")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event place status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=event_place" method="POST" onsubmit="return confirm('Delete this event place?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event place"><i class="fas fa-trash"></i></button></form></div></td></tr>
+                <tbody id="events-list" class="divide-y divide-gray-200">
+                    @foreach($events as $item)
+                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->available_from && $item->available_to ? \Illuminate\Support\Carbon::parse($item->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($item->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full bg-green-500 px-3 py-1 text-xs font-medium text-white">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "event")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "event")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=event" method="POST" onsubmit="return confirm('Delete this event?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
-        {{ $eventPlaces->links('pagination.admin-rooms') }}
+        {{ $events->links('pagination.admin-rooms') }}
     </div>
 
     <div data-panel="dining" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -482,9 +482,9 @@
     <div class="admin-modal-panel relative w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl"><button type="button" onclick="closeInventoryStatusModal()" class="absolute right-4 top-4 text-gray-500"><i class="fas fa-times text-xl"></i></button><h3 class="mb-4 text-2xl font-bold text-gray-800">Change Inventory Status</h3><form id="inventoryStatusForm" action="" method="POST" class="space-y-4">@csrf @method('PATCH')<select name="status" id="inventoryStatusSelect" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option></select><div class="flex justify-end gap-3"><button type="button" onclick="closeInventoryStatusModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700">Cancel</button><button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white">Update Status</button></div></form></div>
 </div>
 
-<div id="addAmenityModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+<div id="addFacilityModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
     <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
-        <button type="button" onclick="closeAmenityModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
+        <button type="button" onclick="closeFacilityModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
             <i class="fas fa-times text-xl"></i>
         </button>
 
@@ -492,11 +492,11 @@
             <h3 class="text-2xl font-bold text-gray-800">Add Facility</h3>
             <p class="mt-1 text-sm text-gray-500">Create a new facility option for guests.</p>
         </div>
-        @if($errors->any() && old('category') === 'amenities')
+        @if($errors->any() && old('category') === 'facilities')
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
         @endif
 
-        <form id="addAmenityForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
+        <form id="addFacilityForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <input type="hidden" name="category" value="facilities">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -538,16 +538,16 @@
                 </div>
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-                <button type="button" onclick="closeAmenityModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="button" onclick="closeFacilityModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
                 <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Facility</button>
             </div>
         </form>
     </div>
 </div>
 
-<div id="addEventPlaceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+<div id="addEventModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
     <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
-        <button type="button" onclick="closeEventPlaceModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
+        <button type="button" onclick="closeEventModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700">
             <i class="fas fa-times text-xl"></i>
         </button>
 
@@ -555,11 +555,11 @@
             <h3 class="text-2xl font-bold text-gray-800">Add Event &amp; Catering Service</h3>
             <p class="mt-1 text-sm text-gray-500">Create a new event or catering package for guests.</p>
         </div>
-        @if($errors->any() && old('category') === 'event_place')
+        @if($errors->any() && old('category') === 'event')
             <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
         @endif
 
-        <form id="addEventPlaceForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
+        <form id="addEventForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <input type="hidden" name="category" value="event">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -605,7 +605,7 @@
                 </div>
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-                <button type="button" onclick="closeEventPlaceModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
+                <button type="button" onclick="closeEventModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
                 <button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Add Event &amp; Catering Service</button>
             </div>
         </form>
@@ -1098,40 +1098,40 @@
         const typeInput = document.getElementById('editInventoryType');
         const fromField = document.getElementById('editInventoryFromField');
         const toField = document.getElementById('editInventoryToField');
-        const isEventPlace = category === 'event_place';
-        const isAmenity = category === 'amenities';
-        quantityField.classList.toggle('hidden', isEventPlace || isAmenity);
-        quantityInput.disabled = isEventPlace || isAmenity;
-        typeField.classList.toggle('hidden', isAmenity);
-        typeInput.disabled = isAmenity;
+        const isEvent = category === 'event';
+        const isFacility = category === 'facilities';
+        quantityField.classList.toggle('hidden', isEvent || isFacility);
+        quantityInput.disabled = isEvent || isFacility;
+        typeField.classList.toggle('hidden', isFacility);
+        typeInput.disabled = isFacility;
         const schedulingField = document.getElementById('editInventorySchedulingField');
         const schedulingInput = document.getElementById('editInventoryScheduling');
-        schedulingField.classList.toggle('hidden', isEventPlace);
-        schedulingInput.disabled = isEventPlace;
-        fromField.classList.toggle('hidden', isAmenity);
-        toField.classList.toggle('hidden', isAmenity);
+        schedulingField.classList.toggle('hidden', isEvent);
+        schedulingInput.disabled = isEvent;
+        fromField.classList.toggle('hidden', isFacility);
+        toField.classList.toggle('hidden', isFacility);
         const pricingBasis = document.getElementById('editInventoryPricingBasis');
-        pricingBasis.innerHTML = isEventPlace
+        pricingBasis.innerHTML = isEvent
             ? '<option value="Per Person">Per Person</option><option value="Per Hour">Per Hour</option>'
             : '<option value="Per Stay">Per Stay</option><option value="Per Person">Per Person</option><option value="Per Vehicle">Per Vehicle</option><option value="Per Stay + Per Vehicle">Per Stay + Per Vehicle</option><option value="Per Hour">Per Hour</option><option value="Per Day">Per Day</option><option value="Fixed Price">Fixed Price</option>';
-        const allowedPricingBasis = isEventPlace
+        const allowedPricingBasis = isEvent
             ? ['Per Person', 'Per Hour']
             : ['Per Stay', 'Per Person', 'Per Vehicle', 'Per Stay + Per Vehicle', 'Per Hour', 'Per Day', 'Fixed Price'];
         pricingBasis.value = allowedPricingBasis.includes(item.pricing_basis)
             ? item.pricing_basis
-            : (isEventPlace ? 'Per Person' : 'Per Stay');
+            : (isEvent ? 'Per Person' : 'Per Stay');
         const imageField = document.getElementById('editInventoryImageField');
         const imagePreview = document.getElementById('editInventoryImagePreview');
         const noImage = document.getElementById('editInventoryNoImage');
-        imageField.classList.toggle('hidden', !isEventPlace && !isAmenity);
-        imagePreview.classList.toggle('hidden', (!isEventPlace && !isAmenity) || !item.image);
-        noImage.classList.toggle('hidden', (!isEventPlace && !isAmenity) || Boolean(item.image));
-        document.getElementById('editInventoryNameLabel').textContent = isAmenity ? 'Amenity Name' : 'Name';
-        document.getElementById('editInventoryCapacityLabel').textContent = isAmenity && ['Per Vehicle', 'Per Stay + Per Vehicle'].includes(item.pricing_basis) ? 'Maximum Vehicles' : (isAmenity ? 'Capacity / Quantity' : 'Capacity / Maximum Guests');
-        document.getElementById('editInventoryStatusLabel').textContent = isAmenity ? 'Availability' : 'Status';
-        document.getElementById('editInventoryImageLabel').textContent = isAmenity ? 'Image (Optional)' : 'Event Place Photo';
+        imageField.classList.toggle('hidden', !isEvent && !isFacility);
+        imagePreview.classList.toggle('hidden', (!isEvent && !isFacility) || !item.image);
+        noImage.classList.toggle('hidden', (!isEvent && !isFacility) || Boolean(item.image));
+        document.getElementById('editInventoryNameLabel').textContent = isFacility ? 'Facility Name' : 'Name';
+        document.getElementById('editInventoryCapacityLabel').textContent = isFacility && ['Per Vehicle', 'Per Stay + Per Vehicle'].includes(item.pricing_basis) ? 'Maximum Vehicles' : (isFacility ? 'Capacity / Quantity' : 'Capacity / Maximum Guests');
+        document.getElementById('editInventoryStatusLabel').textContent = isFacility ? 'Availability' : 'Status';
+        document.getElementById('editInventoryImageLabel').textContent = isFacility ? 'Image (Optional)' : 'Event Photo';
         const statusInput = document.getElementById('editInventoryStatus');
-        statusInput.innerHTML = isAmenity
+        statusInput.innerHTML = isFacility
             ? '<option value="available">Available</option><option value="unavailable">Unavailable</option>'
             : '<option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option>';
         statusInput.value = item.status || 'available';
@@ -1167,26 +1167,26 @@
         document.getElementById('inventoryStatusModal').classList.remove('flex');
     }
 
-    function openAmenityModal() {
-        document.getElementById('addAmenityModal').classList.remove('hidden');
-        document.getElementById('addAmenityModal').classList.add('flex');
+    function openFacilityModal() {
+        document.getElementById('addFacilityModal').classList.remove('hidden');
+        document.getElementById('addFacilityModal').classList.add('flex');
     }
 
-    function closeAmenityModal() {
-        document.getElementById('addAmenityModal').classList.add('hidden');
-        document.getElementById('addAmenityModal').classList.remove('flex');
-        document.getElementById('addAmenityForm').reset();
+    function closeFacilityModal() {
+        document.getElementById('addFacilityModal').classList.add('hidden');
+        document.getElementById('addFacilityModal').classList.remove('flex');
+        document.getElementById('addFacilityForm').reset();
     }
 
-    function openEventPlaceModal() {
-        document.getElementById('addEventPlaceModal').classList.remove('hidden');
-        document.getElementById('addEventPlaceModal').classList.add('flex');
+    function openEventModal() {
+        document.getElementById('addEventModal').classList.remove('hidden');
+        document.getElementById('addEventModal').classList.add('flex');
     }
 
-    function closeEventPlaceModal() {
-        document.getElementById('addEventPlaceModal').classList.add('hidden');
-        document.getElementById('addEventPlaceModal').classList.remove('flex');
-        document.getElementById('addEventPlaceForm').reset();
+    function closeEventModal() {
+        document.getElementById('addEventModal').classList.add('hidden');
+        document.getElementById('addEventModal').classList.remove('flex');
+        document.getElementById('addEventForm').reset();
     }
 
     function openDiningModal() {
@@ -1349,8 +1349,8 @@
         const addModal = document.getElementById('addRoomModal');
         const editModal = document.getElementById('editRoomModal');
         const statusModal = document.getElementById('statusModal');
-        const amenityModal = document.getElementById('addAmenityModal');
-        const eventPlaceModal = document.getElementById('addEventPlaceModal');
+        const facilityModal = document.getElementById('addFacilityModal');
+        const eventModal = document.getElementById('addEventModal');
         const diningModal = document.getElementById('addDiningModal');
         const editDiningModal = document.getElementById('editDiningModal');
         const editInventoryModal = document.getElementById('editInventoryModal');
@@ -1361,8 +1361,8 @@
                 closeAddRoomModal();
                 closeEditRoomModal();
                 closeStatusModal();
-                closeAmenityModal();
-                closeEventPlaceModal();
+                closeFacilityModal();
+                closeEventModal();
                 closeDiningModal();
                 closeEditDiningModal();
                 closeEditInventoryModal();
@@ -1422,8 +1422,8 @@
             addButtons.forEach(function(button) {
                 const shouldShow =
                     (targetName === 'rooms' && button.id === 'add-room-button') ||
-                    (targetName === 'amenities' && button.id === 'add-amenities-button') ||
-                    (targetName === 'events' && button.id === 'add-event-place-button');
+                    (targetName === 'facilities' && button.id === 'add-facilities-button') ||
+                    (targetName === 'events' && button.id === 'add-event-button');
                 button.classList.toggle('hidden', !shouldShow);
             });
             if (targetName === 'dining') {
@@ -1476,8 +1476,8 @@
 
         document.getElementById('editDiningForm').addEventListener('submit', saveDiningEdit);
 
-        document.getElementById('add-amenities-button').addEventListener('click', openAmenityModal);
-        document.getElementById('add-event-place-button').addEventListener('click', openEventPlaceModal);
+        document.getElementById('add-facilities-button').addEventListener('click', openFacilityModal);
+        document.getElementById('add-event-button').addEventListener('click', openEventModal);
 
         updateSelectedCount();
         activateTab(@json($activeTab));
@@ -1485,7 +1485,7 @@
         @if($errors->any())
             @if(old('category'))
                 activateTab(@json(old('category') === 'event' ? 'events' : old('category')));
-                @if(old('category') === 'amenities') openAmenityModal(); @elseif(old('category') === 'event_place') openEventPlaceModal(); @elseif(old('category') === 'dining') openDiningModal(); @endif
+                @if(old('category') === 'facilities') openFacilityModal(); @elseif(old('category') === 'event') openEventModal(); @elseif(old('category') === 'dining') openDiningModal(); @endif
             @else
                 openAddRoomModal();
             @endif

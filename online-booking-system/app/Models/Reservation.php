@@ -59,29 +59,9 @@ class Reservation extends Model
         return $this->belongsTo(Facility::class);
     }
 
-    public function amenity()
-    {
-        return $this->facility();
-    }
-
     public function event()
     {
         return $this->belongsTo(Event::class);
-    }
-
-    public function eventPlace()
-    {
-        return $this->event();
-    }
-
-    public function getAmenityIdAttribute()
-    {
-        return $this->getAttribute('facility_id');
-    }
-
-    public function getEventPlaceIdAttribute()
-    {
-        return $this->getAttribute('event_id');
     }
 
     public function diningMenu()

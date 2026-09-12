@@ -59,7 +59,7 @@
     </section>
 
     <section class="accommodation-benefits" aria-label="Why guests love CASAUL Hotel">
-        <article><i class="fas fa-crown"></i><div><h3>Premium Amenities</h3><p>Enjoy world-class facilities and thoughtful in-room essentials.</p></div></article>
+        <article><i class="fas fa-crown"></i><div><h3>Premium Facilities</h3><p>Enjoy world-class facilities and thoughtful in-room essentials.</p></div></article>
         <article><i class="fas fa-users"></i><div><h3>Friendly Hospitality</h3><p>We take care of the details so your stay feels effortless.</p></div></article>
         <article><i class="fas fa-map-marker-alt"></i><div><h3>Prime Location</h3><p>Close to dining, attractions, and easy transport access.</p></div></article>
     </section>

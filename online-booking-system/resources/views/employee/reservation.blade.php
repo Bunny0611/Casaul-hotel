@@ -30,8 +30,8 @@
         return !empty($parts) ? implode(', ', $parts) : 'N/A';
     };
     $roomReservations = $roomReservations ?? $reservations->filter(fn ($reservation) => $reservation->room_id || $reservation->category === 'rooms');
-    $amenityReservations = $amenityReservations ?? $reservations->filter(fn ($reservation) => $reservation->amenity_id || $reservation->category === 'amenities');
-    $eventPlaceReservations = $eventPlaceReservations ?? $reservations->filter(fn ($reservation) => $reservation->event_place_id || $reservation->category === 'event_place');
+    $facilitiesReservations = $facilitiesReservations ?? $reservations->filter(fn ($reservation) => $reservation->facility_id || $reservation->category === 'facilities');
+    $eventsReservations = $eventsReservations ?? $reservations->filter(fn ($reservation) => $reservation->event_id || $reservation->category === 'event');
     $diningReservations = $diningReservations ?? $reservations->filter(function ($reservation) {
         return $reservation->category === 'dining'
             || !empty($reservation->dining_id)
@@ -39,10 +39,74 @@
             || !empty($reservation->dining_schedule)
             || (method_exists($reservation, 'diningItems') && $reservation->diningItems()->exists());
     });
-    $allReservationRows = collect([$roomReservations, $amenityReservations, $eventPlaceReservations, $diningReservations])
+    $allReservationRows = collect([$roomReservations, $facilitiesReservations, $eventsReservations, $diningReservations])
         ->flatten(1)
         ->unique(fn ($row) => get_class($row) . ':' . $row->id)
         ->values();
+    $allReservationRowsForDetails = $allReservationRows;
+    $allReservationRows = $allReservationRows->reject(function ($row) use ($allReservationRows) {
+        if ($row->getTable() !== 'reservations') {
+            return false;
+        }
+
+        $specializedTable = match ($row->category ?? null) {
+            'rooms' => 'room_reservations',
+            'facilities' => 'facility_reservations',
+            'event' => 'event_reservations',
+            'dining' => 'dining_reservations',
+            default => null,
+        };
+
+        return $specializedTable && $allReservationRows->contains(function ($candidate) use ($row, $specializedTable) {
+            return $candidate->getTable() === $specializedTable
+                && $candidate->guest_email === $row->guest_email
+                && optional($candidate->check_in)->toDateString() === optional($row->check_in)->toDateString()
+                && optional($candidate->check_out)->toDateString() === optional($row->check_out)->toDateString()
+                && abs((float) ($candidate->total_amount ?? 0) - (float) ($row->total_amount ?? 0)) < 0.01;
+        });
+    })->values();
+    $allReservationRows = $allReservationRows->reject(function ($row) use ($allReservationRows) {
+        if ($row->getTable() !== 'facility_reservations') {
+            return false;
+        }
+
+        return $allReservationRows->contains(function ($candidate) use ($row) {
+            return $candidate->getTable() === 'facility_reservations'
+                && $candidate->id > $row->id
+                && $candidate->guest_email === $row->guest_email
+                && (int) $candidate->facility_id === (int) $row->facility_id
+                && optional($candidate->check_in)->toDateString() === optional($row->check_in)->toDateString()
+                && optional($candidate->check_out)->toDateString() === optional($row->check_out)->toDateString()
+                && (int) ($candidate->facility_quantity ?? 1) === (int) ($row->facility_quantity ?? 1);
+        });
+    })->values();
+    $allReservationRows = $allReservationRows->reject(function ($row) use ($allReservationRows) {
+        if ($row->getTable() !== 'event_reservations') {
+            return false;
+        }
+
+        return $allReservationRows->contains(function ($candidate) use ($row) {
+            return $candidate->getTable() === 'event_reservations'
+                && $candidate->id > $row->id
+                && $candidate->guest_email === $row->guest_email
+                && (int) $candidate->event_id === (int) $row->event_id
+                && optional($candidate->check_in)->toDateString() === optional($row->check_in)->toDateString();
+        });
+    })->values();
+    $allReservationRows = $allReservationRows->reject(function ($row) use ($allReservationRows, $uniqueCsvValue) {
+        if ($row->getTable() !== 'dining_reservations') {
+            return false;
+        }
+
+        return $allReservationRows->contains(function ($candidate) use ($row, $uniqueCsvValue) {
+            return $candidate->getTable() === 'dining_reservations'
+                && $candidate->id > $row->id
+                && $candidate->guest_email === $row->guest_email
+                && optional($candidate->check_in)->toDateString() === optional($row->check_in)->toDateString()
+                && $uniqueCsvValue($candidate->dining_area) === $uniqueCsvValue($row->dining_area)
+                && $uniqueCsvValue($candidate->dining_schedule) === $uniqueCsvValue($row->dining_schedule);
+        });
+    })->values();
     $overallReservationSummary = function ($reservation) use ($allReservationRows) {
         $relatedRows = $allReservationRows->filter(function ($row) use ($reservation) {
             return $row->guest_email === $reservation->guest_email
@@ -59,13 +123,15 @@
         if (!$proof && preg_match('/Proof:\s*(https?:\/\/\S+|storage\/[^•|\s]+)/i', $paymentDetails, $matches)) {
             $proof = $matches[1];
         }
-        $paid = max(
-            (float) $relatedRows->max(fn ($row) => (float) ($row->amount_paid ?? 0)),
-            (float) $relatedRows->sum(fn ($row) => (float) $row->payments->sum('amount'))
-        );
+        $paid = (float) $relatedRows->sum(function ($row) {
+            $storedAmount = (float) ($row->amount_paid ?? 0);
+            $recordedPayments = (float) $row->payments->sum('amount');
+
+            return max($storedAmount, $recordedPayments);
+        });
         $categoryAmounts = [
             'rooms' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'room_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'rooms')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
-            'facilities' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'facility_reservations' || $row->getTable() === 'amenity_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'facilities')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
+            'facilities' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'facility_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'facilities')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
             'events' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'event_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'event')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
             'dining' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'dining_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'dining')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
         ];
@@ -84,11 +150,11 @@
             'payment_proof' => $proof,
         ];
     };
-    $categoryAmountMap = $allReservationRows->mapWithKeys(function ($row) use ($overallReservationSummary) {
+    $categoryAmountMap = $allReservationRowsForDetails->mapWithKeys(function ($row) use ($overallReservationSummary) {
         $category = match ($row->getTable()) {
             'room_reservations' => 'rooms',
-            'facility_reservations', 'amenity_reservations' => 'amenities',
-            'event_reservations' => 'event_place',
+            'facility_reservations' => 'facilities',
+            'event_reservations' => 'event',
             default => 'dining',
         };
         $summary = $overallReservationSummary($row);
@@ -99,18 +165,18 @@
             'Dining' => $summary['dining_amount'],
         ]];
     });
-    $roomSelectedServices = function ($roomReservation) use ($amenityReservations) {
+    $roomSelectedServices = function ($roomReservation) use ($facilitiesReservations) {
         $roomDate = $roomReservation->check_in ? \Carbon\Carbon::parse($roomReservation->check_in)->toDateString() : null;
 
-        return $amenityReservations
-            ->filter(function ($amenityReservation) use ($roomReservation, $roomDate) {
-                $amenityDate = $amenityReservation->check_in ? \Carbon\Carbon::parse($amenityReservation->check_in)->toDateString() : null;
-                return $amenityReservation->guest_email === $roomReservation->guest_email && $amenityDate === $roomDate;
+        return $facilitiesReservations
+            ->filter(function ($facilityReservation) use ($roomReservation, $roomDate) {
+                $facilityDate = $facilityReservation->check_in ? \Carbon\Carbon::parse($facilityReservation->check_in)->toDateString() : null;
+                return $facilityReservation->guest_email === $roomReservation->guest_email && $facilityDate === $roomDate;
             })
-            ->map(function ($amenityReservation) {
-                $name = $amenityReservation->amenity?->name ?? 'Amenity';
-                $quantity = $amenityReservation->amenity_quantity ?? $amenityReservation->quantity ?? 1;
-                return 'Amenity: ' . $name . ' (x' . $quantity . ')';
+            ->map(function ($facilityReservation) {
+                $name = $facilityReservation->facility?->name ?? 'Facility';
+                $quantity = $facilityReservation->facility_quantity ?? $facilityReservation->quantity ?? 1;
+                return 'Facility: ' . $name . ' (x' . $quantity . ')';
             })
             ->unique()
             ->values()
@@ -125,19 +191,19 @@
             'completed' => $roomReservations->where('status', 'completed')->count(),
             'cancelled' => $roomReservations->where('status', 'cancelled')->count(),
         ],
-        'amenities' => [
-            'total' => $amenityReservations->count(),
-            'pending' => $amenityReservations->where('status', 'pending')->count(),
-            'confirmed' => $amenityReservations->where('status', 'confirmed')->count(),
-            'completed' => $amenityReservations->where('status', 'completed')->count(),
-            'cancelled' => $amenityReservations->where('status', 'cancelled')->count(),
+        'facilities' => [
+            'total' => $facilitiesReservations->count(),
+            'pending' => $facilitiesReservations->where('status', 'pending')->count(),
+            'confirmed' => $facilitiesReservations->where('status', 'confirmed')->count(),
+            'completed' => $facilitiesReservations->where('status', 'completed')->count(),
+            'cancelled' => $facilitiesReservations->where('status', 'cancelled')->count(),
         ],
-        'event_place' => [
-            'total' => $eventPlaceReservations->count(),
-            'pending' => $eventPlaceReservations->where('status', 'pending')->count(),
-            'confirmed' => $eventPlaceReservations->where('status', 'confirmed')->count(),
-            'completed' => $eventPlaceReservations->where('status', 'completed')->count(),
-            'cancelled' => $eventPlaceReservations->where('status', 'cancelled')->count(),
+        'event' => [
+            'total' => $eventsReservations->count(),
+            'pending' => $eventsReservations->where('status', 'pending')->count(),
+            'confirmed' => $eventsReservations->where('status', 'confirmed')->count(),
+            'completed' => $eventsReservations->where('status', 'completed')->count(),
+            'cancelled' => $eventsReservations->where('status', 'cancelled')->count(),
         ],
         'dining' => [
             'total' => $diningReservations->count(),
@@ -163,8 +229,8 @@
     <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div class="flex flex-wrap gap-2">
             <button type="button" data-reservation-tab="rooms" class="reservation-tab inline-flex items-center rounded-full border border-orange-500 bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition">ROOMS</button>
-            <button type="button" data-reservation-tab="amenities" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">FACILITIES</button>
-            <button type="button" data-reservation-tab="event_place" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">EVENTS</button>
+            <button type="button" data-reservation-tab="facilities" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">FACILITIES</button>
+            <button type="button" data-reservation-tab="event" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">EVENTS</button>
             <button type="button" data-reservation-tab="dining" class="reservation-tab inline-flex items-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition">DINING</button>
         </div>
     </div>
@@ -378,27 +444,27 @@
         </div>
     </div>
 
-    <div id="amenitiesTab" data-reservation-panel="amenities" class="hidden space-y-4">
+    <div id="facilitiesTab" data-reservation-panel="facilities" class="hidden space-y-4">
         <div class="grid gap-4 md:grid-cols-5">
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Total</p>
-                <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['amenities']['total'] }}</p>
+                <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['facilities']['total'] }}</p>
             </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Pending</p>
-                <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['amenities']['pending'] }}</p>
+                <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['facilities']['pending'] }}</p>
             </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Confirmed</p>
-                <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['amenities']['confirmed'] }}</p>
+                <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['facilities']['confirmed'] }}</p>
             </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Completed</p>
-                <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['amenities']['completed'] }}</p>
+                <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['facilities']['completed'] }}</p>
             </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Cancelled</p>
-                <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['amenities']['cancelled'] }}</p>
+                <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['facilities']['cancelled'] }}</p>
             </div>
         </div>
 
@@ -418,13 +484,13 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
-                        @forelse($amenityReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->amenity?->name ?? '')) }}">
+                        @forelse($facilitiesReservations as $reservation)
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->facility?->name ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->amenity?->name ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->facility?->name ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $formatDate($reservation->check_in) }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->dining_schedule ?: $formatTime($reservation->check_in_time) }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->quantity ?? $reservation->guests ?? 'N/A' }}</td>
@@ -438,18 +504,18 @@
                                     <div class="relative flex items-center gap-2 text-sm">
                                         @php($reservationDetails = [
                                             'id' => $reservation->id,
-                                            'category' => 'amenities',
+                                            'category' => 'facilities',
                                             'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                             'status' => ucfirst($reservation->status),
                                             'guest_name' => $reservation->guest_name,
                                             'guest_email' => $reservation->guest_email,
                                             'guest_phone' => $reservation->guest_phone,
                                             'special_requests' => $reservation->special_requests ?: 'No special requests',
-                                            'amenity_name' => $reservation->amenity?->name ?? 'N/A',
+                                            'facility_name' => $reservation->facility?->name ?? 'N/A',
                                             'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
                                             'time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
                                             'quantity' => $reservation->quantity ?? $reservation->guests ?? 'N/A',
-                                            'selected_services' => $reservation->amenity ? ['Amenity: ' . $reservation->amenity->name] : [],
+                                            'selected_services' => $reservation->facility ? ['Facility: ' . $reservation->facility->name] : [],
                                             'amount_paid' => $reservation->amount_paid ?? 0,
                                             'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
                                             'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
@@ -488,7 +554,7 @@
             </div>
 
             <div class="space-y-4 p-4 md:hidden">
-                @forelse($amenityReservations as $reservation)
+                @forelse($facilitiesReservations as $reservation)
                     <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -500,7 +566,7 @@
                             </span>
                         </div>
                         <div class="mt-3 space-y-1 text-sm text-gray-600">
-                            <p><span class="font-medium text-gray-700">Amenity:</span> {{ $reservation->amenity?->name ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Facility:</span> {{ $reservation->facility?->name ?? 'N/A' }}</p>
                             <p><span class="font-medium text-gray-700">Date:</span> {{ $formatDate($reservation->check_in) }}</p>
                             <p><span class="font-medium text-gray-700">Time:</span> {{ $reservation->dining_schedule ?: $formatTime($reservation->check_in_time) }}</p>
                             <p><span class="font-medium text-gray-700">Guests:</span> {{ $reservation->quantity ?? $reservation->guests ?? 'N/A' }}</p>
@@ -509,18 +575,18 @@
                         <div class="mt-4 flex items-center gap-2">
                             @php($reservationDetails = [
                                 'id' => $reservation->id,
-                                'category' => 'amenities',
+                                'category' => 'facilities',
                                 'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                 'status' => ucfirst($reservation->status),
                                 'guest_name' => $reservation->guest_name,
                                 'guest_email' => $reservation->guest_email,
                                 'guest_phone' => $reservation->guest_phone,
                                 'special_requests' => $reservation->special_requests ?: 'No special requests',
-                                'amenity_name' => $reservation->amenity?->name ?? 'N/A',
+                                'facility_name' => $reservation->facility?->name ?? 'N/A',
                                 'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
                                 'time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
                                 'quantity' => $reservation->quantity ?? $reservation->guests ?? 'N/A',
-                                'selected_services' => $reservation->amenity ? ['Amenity: ' . $reservation->amenity->name] : [],
+                                'selected_services' => $reservation->facility ? ['Facility: ' . $reservation->facility->name] : [],
                                 'amount_paid' => $reservation->amount_paid ?? 0,
                                 'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
                                 'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
@@ -540,35 +606,35 @@
                 @empty
                     <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-500">
                         <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
-                        <p class="text-lg font-medium">No amenity reservations found.</p>
-                        <p class="mt-1 text-sm">Create your first amenity reservation to get started.</p>
+                        <p class="text-lg font-medium">No facility reservations found.</p>
+                        <p class="mt-1 text-sm">Create your first facility reservation to get started.</p>
                     </div>
                 @endforelse
             </div>
         </div>
     </div>
 
-    <div id="eventPlaceTab" data-reservation-panel="event_place" class="hidden space-y-4">
+    <div id="eventsTab" data-reservation-panel="event" class="hidden space-y-4">
         <div class="grid gap-4 md:grid-cols-5">
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Total</p>
-                <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['event_place']['total'] }}</p>
+                <p class="mt-2 text-2xl font-semibold text-gray-800">{{ $stats['event']['total'] }}</p>
             </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Pending</p>
-                <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['event_place']['pending'] }}</p>
+                <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $stats['event']['pending'] }}</p>
             </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Confirmed</p>
-                <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['event_place']['confirmed'] }}</p>
+                <p class="mt-2 text-2xl font-semibold text-green-600">{{ $stats['event']['confirmed'] }}</p>
             </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Completed</p>
-                <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['event_place']['completed'] }}</p>
+                <p class="mt-2 text-2xl font-semibold text-blue-600">{{ $stats['event']['completed'] }}</p>
             </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                 <p class="text-sm text-gray-500">Cancelled</p>
-                <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['event_place']['cancelled'] }}</p>
+                <p class="mt-2 text-2xl font-semibold text-red-600">{{ $stats['event']['cancelled'] }}</p>
             </div>
         </div>
 
@@ -589,13 +655,13 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
-                        @forelse($eventPlaceReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->eventPlace?->name ?? '')) }}">
+                        @forelse($eventsReservations as $reservation)
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->event?->name ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                                 </td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->eventPlace?->name ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event?->name ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_type ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $formatDate($reservation->check_in) }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $formatTime($reservation->event_start_time) }}</td>
@@ -610,21 +676,21 @@
                                     <div class="relative flex items-center gap-2 text-sm">
                                         @php($reservationDetails = [
                                             'id' => $reservation->id,
-                                            'category' => 'event_place',
+                                            'category' => 'event',
                                             'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                             'status' => ucfirst($reservation->status),
                                             'guest_name' => $reservation->guest_name,
                                             'guest_email' => $reservation->guest_email,
                                             'guest_phone' => $reservation->guest_phone,
                                             'special_requests' => $reservation->special_requests ?: 'No special requests',
-                                            'event_place' => $reservation->eventPlace?->name ?? 'N/A',
+                                            'event_name' => $reservation->event?->name ?? 'N/A',
                                             'event_type' => $reservation->event_type ?? 'N/A',
                                             'event_date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
                                             'event_start_time' => $reservation->event_start_time ? \Carbon\Carbon::parse($reservation->event_start_time)->format('g:i A') : 'N/A',
                                             'event_end_time' => $reservation->event_end_time ? \Carbon\Carbon::parse($reservation->event_end_time)->format('g:i A') : 'N/A',
                                             'event_duration' => $formatEventDuration($reservation->event_start_time, $reservation->event_end_time),
                                             'event_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
-                                            'selected_services' => $reservation->eventPlace ? ['Event Place: ' . $reservation->eventPlace->name . ($reservation->event_type ? ' — ' . $reservation->event_type : '')] : [],
+                                            'selected_services' => $reservation->event ? ['Event: ' . $reservation->event->name . ($reservation->event_type ? ' — ' . $reservation->event_type : '')] : [],
                                             'amount_paid' => $reservation->amount_paid ?? 0,
                                             'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
                                             'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
@@ -653,8 +719,8 @@
                             <tr>
                                 <td colspan="9" class="px-6 py-16 text-center text-gray-500">
                                     <i class="fas fa-calendar-times mb-4 text-4xl text-gray-300"></i>
-                                    <p class="text-lg font-medium">No event place reservations found.</p>
-                                    <p class="mt-1 text-sm">Create your first event place reservation to get started.</p>
+                                    <p class="text-lg font-medium">No event reservations found.</p>
+                                    <p class="mt-1 text-sm">Create your first event reservation to get started.</p>
                                 </td>
                             </tr>
                         @endforelse
@@ -663,7 +729,7 @@
             </div>
 
             <div class="space-y-4 p-4 md:hidden">
-                @forelse($eventPlaceReservations as $reservation)
+                @forelse($eventsReservations as $reservation)
                     <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -675,7 +741,7 @@
                             </span>
                         </div>
                         <div class="mt-3 space-y-1 text-sm text-gray-600">
-                            <p><span class="font-medium text-gray-700">Place:</span> {{ $reservation->eventPlace?->name ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Event:</span> {{ $reservation->event?->name ?? 'N/A' }}</p>
                             <p><span class="font-medium text-gray-700">Type:</span> {{ $reservation->event_type ?? 'N/A' }}</p>
                             <p><span class="font-medium text-gray-700">Date:</span> {{ $formatDate($reservation->check_in) }}</p>
                             <p><span class="font-medium text-gray-700">Start:</span> {{ $formatTime($reservation->event_start_time) }}</p>
@@ -685,21 +751,21 @@
                         <div class="mt-4 flex items-center gap-2">
                             @php($reservationDetails = [
                                 'id' => $reservation->id,
-                                'category' => 'event_place',
+                                'category' => 'event',
                                 'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                 'status' => ucfirst($reservation->status),
                                 'guest_name' => $reservation->guest_name,
                                 'guest_email' => $reservation->guest_email,
                                 'guest_phone' => $reservation->guest_phone,
                                 'special_requests' => $reservation->special_requests ?: 'No special requests',
-                                'event_place' => $reservation->eventPlace?->name ?? 'N/A',
+                                'event_name' => $reservation->event?->name ?? 'N/A',
                                 'event_type' => $reservation->event_type ?? 'N/A',
                                 'event_date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
                                 'event_start_time' => $reservation->event_start_time ? \Carbon\Carbon::parse($reservation->event_start_time)->format('g:i A') : 'N/A',
                                 'event_end_time' => $reservation->event_end_time ? \Carbon\Carbon::parse($reservation->event_end_time)->format('g:i A') : 'N/A',
                                 'event_duration' => $formatEventDuration($reservation->event_start_time, $reservation->event_end_time),
                                 'event_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
-                                'selected_services' => $reservation->eventPlace ? ['Event Place: ' . $reservation->eventPlace->name . ($reservation->event_type ? ' — ' . $reservation->event_type : '')] : [],
+                                'selected_services' => $reservation->event ? ['Event: ' . $reservation->event->name . ($reservation->event_type ? ' — ' . $reservation->event_type : '')] : [],
                                 'amount_paid' => $reservation->amount_paid ?? 0,
                                 'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
                                 'payment_details' => $reservation->payments->last()?->reference_number ? 'Reference: ' . $reservation->payments->last()->reference_number . ($reservation->payments->last()->notes ? ' • ' . $reservation->payments->last()->notes : '') : ($reservation->payments->last()?->notes ?: 'No additional payment details'),
@@ -967,31 +1033,31 @@
                     </select>
                     @error('room_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
-                <div class="hidden" data-reservation-fields="amenities">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Amenity</label>
-                    <select name="amenity_id" data-reservation-input="amenities" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="">Select an amenity</option>
-                        @foreach(($amenities ?? collect()) as $item)
+                <div class="hidden" data-reservation-fields="facilities">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Facility</label>
+                    <select name="facility_id" data-reservation-input="facilities" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select a facility</option>
+                        @foreach(($facilities ?? collect()) as $item)
                             <option value="{{ $item->id }}" data-price="{{ $item->price }}">{{ $item->name }} - ₱{{ number_format($item->price, 2) }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="hidden" data-reservation-fields="event_place">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Event Place</label>
-                    <select name="event_place_id" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="">Select an event place</option>
-                        @foreach(($eventPlaces ?? collect()) as $item)
+                <div class="hidden" data-reservation-fields="event">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Event</label>
+                    <select name="event_id" data-reservation-input="event" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select an event</option>
+                        @foreach(($events ?? collect()) as $item)
                             <option value="{{ $item->id }}">{{ $item->name }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="hidden" data-reservation-fields="event_place">
+                <div class="hidden" data-reservation-fields="event">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Event Date</label>
-                    <input type="date" id="eventDate" name="check_in" value="{{ old('check_in') }}" data-event-date data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="date" id="eventDate" name="check_in" value="{{ old('check_in') }}" data-event-date data-reservation-input="event" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
-                <div class="hidden" data-reservation-fields="event_place">
+                <div class="hidden" data-reservation-fields="event">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label>
-                    <select name="event_type" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <select name="event_type" data-reservation-input="event" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="">Select event type</option>
                         <option value="Wedding">Wedding</option>
                         <option value="Birthday">Birthday</option>
@@ -1000,21 +1066,21 @@
                         <option value="Other">Other</option>
                     </select>
                 </div>
-                <div class="hidden" data-reservation-fields="event_place">
+                <div class="hidden" data-reservation-fields="event">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Start Time</label>
-                    <input type="time" name="event_start_time" data-reservation-input="event_place" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="time" name="event_start_time" data-reservation-input="event" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
-                <div class="hidden" data-reservation-fields="event_place">
+                <div class="hidden" data-reservation-fields="event">
                     <label class="mb-1 block text-sm font-medium text-gray-700">End Time</label>
-                    <input type="time" id="employeeEventEndTime" name="event_end_time" data-reservation-input="event_place" required readonly class="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-gray-600 focus:outline-none">
+                    <input type="time" id="employeeEventEndTime" name="event_end_time" data-reservation-input="event" required readonly class="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-gray-600 focus:outline-none">
                 </div>
-                <div class="hidden" data-reservation-fields="event_place">
+                <div class="hidden" data-reservation-fields="event">
                     <label class="mb-1 block text-sm font-medium text-gray-700">How Many Hours?</label>
-                    <input type="number" id="employeeEventDuration" name="event_duration_hours" data-reservation-input="event_place" min="1" max="12" step="1" value="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="number" id="employeeEventDuration" name="event_duration_hours" data-reservation-input="event" min="1" max="12" step="1" value="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
-                <div class="hidden" data-reservation-fields="event_place">
+                <div class="hidden" data-reservation-fields="event">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Number of Guests</label>
-                    <input type="number" name="number_of_guests" data-reservation-input="event_place" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="number" name="number_of_guests" data-reservation-input="event" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <input type="hidden" name="check_out" value="{{ old('check_out', old('check_in')) }}" data-event-date-end>
                 </div>
                 <div class="hidden" data-reservation-fields="dining">
@@ -1108,30 +1174,30 @@
                     <input type="number" name="number_of_guests" value="{{ old('number_of_guests') }}" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     @error('number_of_guests')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
-                <div class="hidden md:col-span-2" data-amenity-reservation-field>
+            <div class="hidden md:col-span-2" data-facility-reservation-field>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label>
-                            <input type="number" id="employeeAmenityQuantity" name="amenity_quantity" min="1" value="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="number" id="employeeFacilityQuantity" name="facility_quantity" min="1" value="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">Amenity Date</label>
-                            <input type="date" id="amenityDate" name="check_in" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Facility Date</label>
+                            <input type="date" id="facilityDate" name="check_in" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">Start Time</label>
-                            <input type="time" id="amenityStartTime" name="check_in_time" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="time" id="facilityStartTime" name="check_in_time" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">Stay Duration (Hours)</label>
-                            <input type="number" id="amenityDurationHours" name="duration_hours" min="1" max="24" step="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="number" id="facilityDurationHours" name="duration_hours" min="1" max="24" step="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                         <div>
                             <label class="mb-1 block text-sm font-medium text-gray-700">Automatic End Time</label>
-                            <input type="time" id="amenityEndTime" name="check_out_time" readonly class="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-gray-600 focus:outline-none">
+                            <input type="time" id="facilityEndTime" name="check_out_time" readonly class="w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-gray-600 focus:outline-none">
                         </div>
                     </div>
-                    <input type="hidden" id="amenityEndDate" name="check_out">
+                    <input type="hidden" id="facilityEndDate" name="check_out">
                 </div>
             </div>
             <div>
@@ -1164,12 +1230,17 @@
 </form>
 
 <script>
+    window.employeeCategoryAmountMap = @json($categoryAmountMap);
+
+    function canonicalReservationCategory(category) {
+        return category || 'rooms';
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        const categoryAmountMap = @json($categoryAmountMap);
         const reservationTypeLabels = {
             rooms: 'Room',
-            amenities: 'Amenities',
-            event_place: 'Event Place',
+            facilities: 'Facilities',
+            event: 'Events',
             dining: 'Dining'
         };
 
@@ -1200,19 +1271,19 @@
             });
 
             document.querySelectorAll('[data-standard-reservation-field]').forEach((fieldGroup) => {
-                const isVisible = !['amenities', 'event_place', 'dining'].includes(tabKey);
+                const isVisible = !['facilities', 'event', 'dining'].includes(tabKey);
                 fieldGroup.classList.toggle('hidden', !isVisible);
                 fieldGroup.querySelectorAll('input, select, textarea').forEach((input) => {
                     input.disabled = !isVisible;
                 });
             });
 
-            document.querySelectorAll('[data-amenity-reservation-field]').forEach((fieldGroup) => {
-                const isVisible = tabKey === 'amenities';
+            document.querySelectorAll('[data-facility-reservation-field]').forEach((fieldGroup) => {
+                const isVisible = tabKey === 'facilities';
                 fieldGroup.classList.toggle('hidden', !isVisible);
                 fieldGroup.querySelectorAll('input').forEach((input) => {
                     input.disabled = !isVisible;
-                    input.required = isVisible && ['amenityDate', 'amenityStartTime', 'amenityDurationHours'].includes(input.id);
+                    input.required = isVisible && ['facilityDate', 'facilityStartTime', 'facilityDurationHours'].includes(input.id);
                 });
             });
 
@@ -1222,14 +1293,14 @@
                 const isDiningTab = tabKey === 'dining';
                 totalInput.disabled = !isDiningTab;
                 totalInput.required = isDiningTab;
-                totalInput.readOnly = ['amenities', 'dining'].includes(tabKey);
+                totalInput.readOnly = ['facilities', 'dining'].includes(tabKey);
             }
 
-            updateAmenityReservationTotal();
+            updateFacilityReservationTotal();
             updateDiningReservationTotal();
             document.getElementById('addReservationButtonText').textContent = `Add ${reservationType} Reservation`;
             document.getElementById('reservationModalTitle').textContent = `Add ${reservationType} Reservation`;
-            document.getElementById('reservationCategory').value = tabKey;
+            document.getElementById('reservationCategory').value = canonicalReservationCategory(tabKey);
         }
 
         function updateDiningReservationTotal() {
@@ -1347,20 +1418,20 @@
             }
         });
 
-        function updateAmenityReservationTotal() {
-            const amenitySelect = document.querySelector('[data-reservation-input="amenities"]');
-            const durationInput = document.getElementById('amenityDurationHours');
-            const endTimeInput = document.getElementById('amenityEndTime');
-            const endDateInput = document.getElementById('amenityEndDate');
+        function updateFacilityReservationTotal() {
+            const facilitySelect = document.querySelector('[data-reservation-input="facilities"]');
+            const durationInput = document.getElementById('facilityDurationHours');
+            const endTimeInput = document.getElementById('facilityEndTime');
+            const endDateInput = document.getElementById('facilityEndDate');
             const totalInput = document.getElementById('reservationTotalAmount');
-            const startTime = document.getElementById('amenityStartTime').value;
+            const startTime = document.getElementById('facilityStartTime').value;
             const duration = Number(durationInput.value || 0);
-            const selectedOption = amenitySelect.options[amenitySelect.selectedIndex];
+            const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
             const price = Number(selectedOption?.dataset.price || 0);
 
             totalInput.value = price && duration ? (price * duration).toFixed(2) : '';
             endTimeInput.value = '';
-            endDateInput.value = document.getElementById('amenityDate').value;
+            endDateInput.value = document.getElementById('facilityDate').value;
 
             if (startTime && duration > 0) {
                 const [hours, minutes] = startTime.split(':').map(Number);
@@ -1378,13 +1449,13 @@
             button.addEventListener('click', () => setActiveReservationTab(button.dataset.reservationTab));
         });
 
-        document.querySelector('[data-reservation-input="amenities"]')?.addEventListener('change', updateAmenityReservationTotal);
+        document.querySelector('[data-reservation-input="facilities"]')?.addEventListener('change', updateFacilityReservationTotal);
         document.querySelectorAll('.dining-menu-checkbox').forEach((checkbox) => {
             checkbox.addEventListener('change', renderSelectedDiningMenuItems);
         });
-        document.getElementById('amenityDate')?.addEventListener('input', updateAmenityReservationTotal);
-        document.getElementById('amenityStartTime')?.addEventListener('input', updateAmenityReservationTotal);
-        document.getElementById('amenityDurationHours')?.addEventListener('input', updateAmenityReservationTotal);
+        document.getElementById('facilityDate')?.addEventListener('input', updateFacilityReservationTotal);
+        document.getElementById('facilityStartTime')?.addEventListener('input', updateFacilityReservationTotal);
+        document.getElementById('facilityDurationHours')?.addEventListener('input', updateFacilityReservationTotal);
         const updateEmployeeEventEndTime = () => {
             const startInput = document.querySelector('[name="event_start_time"]');
             const durationInput = document.getElementById('employeeEventDuration');
@@ -1417,7 +1488,7 @@
             var actionTemplate = "{{ route('employee.reservations.status', ['id' => '__ID__']) }}";
             document.getElementById('reservationStatusForm').action = actionTemplate.replace('__ID__', id);
             document.getElementById('reservationStatus').value = status;
-            document.getElementById('reservationStatusCategory').value = document.querySelector('[data-reservation-tab].bg-orange-500')?.dataset.reservationTab || 'rooms';
+            document.getElementById('reservationStatusCategory').value = canonicalReservationCategory(document.querySelector('[data-reservation-tab].bg-orange-500')?.dataset.reservationTab);
             document.getElementById('reservationStatusForm').submit();
         }
     }
@@ -1542,15 +1613,15 @@
             { label: 'Room Rate', value: reservation.room_rate && reservation.room_rate !== 'N/A' ? formatMoney(reservation.room_rate) : 'N/A' },
         ];
 
-        const amenityEntries = [
-            { label: 'Amenity', value: reservation.amenity_name || 'N/A' },
+        const facilityEntries = [
+            { label: 'Facility', value: reservation.facility_name || 'N/A' },
             { label: 'Date', value: formatDateValue(reservation.date || reservation.check_in) },
             { label: 'Time', value: reservation.time || reservation.check_in_time || 'N/A' },
             { label: 'Quantity', value: reservation.quantity || 'N/A' },
         ];
 
         const eventEntries = [
-            { label: 'Event Place', value: reservation.event_place || 'N/A' },
+            { label: 'Event', value: reservation.event_name || 'N/A' },
             { label: 'Event Type', value: reservation.event_type || 'N/A' },
             { label: 'Event Date', value: formatDateValue(reservation.event_date || 'N/A') },
             { label: 'Start Time', value: reservation.event_start_time || 'N/A' },
@@ -1568,9 +1639,9 @@
 
         if (category === 'rooms') {
             detailsSections.push(renderDetailsCard('Room Information', roomEntries));
-        } else if (category === 'amenities') {
-            detailsSections.push(renderDetailsCard('Amenity Information', amenityEntries));
-        } else if (category === 'event_place') {
+        } else if (category === 'facilities') {
+            detailsSections.push(renderDetailsCard('Facility Information', facilityEntries));
+        } else if (category === 'event') {
             detailsSections.push(renderDetailsCard('Event Information', eventEntries));
         } else if (category === 'dining') {
             detailsSections.push(renderDetailsCard('Dining Information', diningEntries));
@@ -1584,9 +1655,15 @@
                 <ul class="space-y-2">${serviceList}</ul>
             </div>
         `);
-        const categoryAmountLabels = { rooms: 'Room', amenities: 'Facilities', event_place: 'Event', dining: 'Dining' };
-        detailsSections.push(renderDetailsCard('Reservation Amounts', [
-            { label: categoryAmountLabels[category] || 'Reservation', value: formatMoney(reservation.total_amount || 0) },
+        const categoryAmountLabels = { Room: 'Room', Facilities: 'Facilities', Event: 'Event', Dining: 'Dining' };
+        const categoryAmounts = reservation.category_amounts
+            || window.employeeCategoryAmountMap?.[`${category}:${reservation.id}`]
+            || {};
+        const amountEntries = Object.entries(categoryAmountLabels)
+            .filter(([label]) => Number(categoryAmounts[label] || 0) > 0)
+            .map(([label, displayLabel]) => ({ label: displayLabel, value: formatMoney(categoryAmounts[label]) }));
+        detailsSections.push(renderDetailsCard('Reservation Amounts', amountEntries.length ? amountEntries : [
+            { label: 'Reservation', value: formatMoney(reservation.total_amount || 0) },
         ]));
 
         const paymentDetails = parseEmployeePaymentDetails(reservation.payment_details);
@@ -1622,7 +1699,8 @@
 
     document.querySelectorAll('form[action*="/reservations/"]').forEach((form) => {
         form.addEventListener('submit', function () {
-            const category = this.closest('[data-reservation-panel]')?.dataset.reservationPanel;
+            const panelCategory = this.closest('[data-reservation-panel]')?.dataset.reservationPanel;
+            const category = canonicalReservationCategory(panelCategory);
             if (!category) return;
 
             let categoryInput = this.querySelector('input[name="category"]');
@@ -1645,7 +1723,7 @@
 
         if (!isEditing) {
             resetAddReservationForm();
-            document.getElementById('reservationCategory').value = activeTab;
+            document.getElementById('reservationCategory').value = canonicalReservationCategory(activeTab);
             document.getElementById('reservationModalTitle').textContent = 'Add Reservation';
         }
 
@@ -1668,7 +1746,7 @@
         form.action = "{{ route('employee.reservations.store') }}";
         const categoryInput = document.getElementById('reservationCategory');
         if (categoryInput) {
-            categoryInput.value = document.querySelector('[data-reservation-tab].bg-orange-500')?.dataset.reservationTab || 'rooms';
+            categoryInput.value = canonicalReservationCategory(document.querySelector('[data-reservation-tab].bg-orange-500')?.dataset.reservationTab);
         }
 
         const saveBtn = document.getElementById('saveReservationBtn');
@@ -1688,17 +1766,17 @@
             if (input) input.value = value ?? '';
         };
         const category = reservation.category
-            || (reservation.event_place_id ? 'event_place'
-            : (reservation.amenity_id ? 'amenities'
+            || (reservation.event_id ? 'event'
+            : (reservation.facility_id ? 'facilities'
             : (reservation.dining_area || reservation.dining_id ? 'dining' : 'rooms')));
 
         document.querySelector(`[data-reservation-tab="${category}"]`)?.click();
         setValue('[name="guest_name"]', reservation.guest_name);
         setValue('[name="guest_email"]', reservation.guest_email);
         setValue('[name="guest_phone"]', reservation.guest_phone);
-        setValue(`[data-reservation-fields="${category}"] [name="room_id"], [data-reservation-fields="${category}"] [name="event_place_id"], [data-reservation-fields="${category}"] [name="amenity_id"], [data-reservation-fields="${category}"] [name="dining_area"]`, reservation.room_id || reservation.event_place_id || reservation.amenity_id || reservation.dining_area);
+        setValue(`[data-reservation-fields="${category}"] [name="room_id"], [data-reservation-fields="${category}"] [name="event_id"], [data-reservation-fields="${category}"] [name="facility_id"], [data-reservation-fields="${category}"] [name="dining_area"]`, reservation.room_id || reservation.event_id || reservation.facility_id || reservation.dining_area);
 
-        if (category === 'event_place') {
+        if (category === 'event') {
             setValue('#eventDate', dateValue(reservation.check_in));
             setValue('[data-event-date-end]', dateValue(reservation.check_out || reservation.check_in));
             setValue('[name="event_type"]', reservation.event_type);
@@ -1710,7 +1788,7 @@
             const endMinutes = eventEnd ? (Number(eventEnd.slice(0, 2)) * 60 + Number(eventEnd.slice(3, 5))) : 0;
             const eventDuration = eventStart && eventEnd ? Math.max(1, Math.round(((endMinutes - startMinutes + 1440) % 1440) / 60)) : 1;
             setValue('#employeeEventDuration', eventDuration);
-            setValue('[data-reservation-fields="event_place"] [name="number_of_guests"]', reservation.number_of_guests);
+            setValue('[data-reservation-fields="event"] [name="number_of_guests"]', reservation.number_of_guests);
         } else if (category === 'dining') {
             setValue('#diningDate', dateValue(reservation.check_in));
             setValue('[data-dining-time-end]', timeValue(reservation.check_out_time || reservation.check_in_time));
@@ -1725,13 +1803,13 @@
                 checkbox.checked = diningIds.includes(checkbox.value);
                 checkbox.dispatchEvent(new Event('change'));
             });
-        } else if (category === 'amenities') {
-            setValue('#amenityDate', dateValue(reservation.check_in));
-            setValue('#amenityStartTime', timeValue(reservation.amenity_start_time || reservation.check_in_time));
-            setValue('#amenityEndTime', timeValue(reservation.amenity_end_time || reservation.check_out_time));
-            setValue('#amenityEndDate', dateValue(reservation.check_out || reservation.check_in));
-            setValue('#amenityDurationHours', reservation.duration_hours || '');
-            setValue('#employeeAmenityQuantity', reservation.amenity_quantity || reservation.quantity || '1');
+        } else if (category === 'facilities') {
+            setValue('#facilityDate', dateValue(reservation.check_in));
+            setValue('#facilityStartTime', timeValue(reservation.facility_start_time || reservation.check_in_time));
+            setValue('#facilityEndTime', timeValue(reservation.facility_end_time || reservation.check_out_time));
+            setValue('#facilityEndDate', dateValue(reservation.check_out || reservation.check_in));
+            setValue('#facilityDurationHours', reservation.duration_hours || '');
+            setValue('#employeeFacilityQuantity', reservation.facility_quantity || reservation.quantity || '1');
         } else {
             setValue('[data-standard-reservation-field] [name="check_in"]', dateValue(reservation.check_in));
             setValue('[data-standard-reservation-field] [name="check_in_time"]', timeValue(reservation.room_check_in_time || reservation.check_in_time));
@@ -1742,7 +1820,7 @@
 
         setValue('[name="total_amount"]', reservation.total_amount || 0);
         setValue('[name="special_requests"]', reservation.special_requests);
-        document.getElementById('reservationCategory').value = category;
+        document.getElementById('reservationCategory').value = canonicalReservationCategory(category);
         document.getElementById('reservationFormMethod').disabled = false;
         form.action = "{{ route('employee.reservations.update', ['id' => '__ID__']) }}".replace('__ID__', reservation.id);
         document.getElementById('reservationModalTitle').textContent = 'Edit Reservation';
