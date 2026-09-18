@@ -131,6 +131,325 @@ class AdminController extends Controller
         ));
     }
 
+    public function adminCalendar()
+    {
+        return $this->showCalendar('admin', 'admin.calendar');
+    }
+
+    public function employeeCalendar()
+    {
+        return $this->showCalendar('employee', 'employee.calendar');
+    }
+
+    protected function showCalendar(string $portal, string $view): \Illuminate\View\View
+    {
+        $baseDate = Carbon::parse(request('date', now()->format('Y-m-d')));
+        $calendarStart = Carbon::parse(request('start_date', $baseDate->copy()->startOfWeek(Carbon::MONDAY)->format('Y-m-d')));
+        $calendarEnd = $calendarStart->copy()->addDays(30);
+
+        $days = [];
+        $cursor = $calendarStart->copy();
+        while ($cursor->lessThanOrEqualTo($calendarEnd)) {
+            $days[] = $cursor->copy();
+            $cursor->addDay();
+        }
+
+        $rooms = Room::orderBy('room_number')->get();
+        $facilities = Facility::orderBy('name')->get();
+        $events = Event::orderBy('name')->get();
+        $diningTables = DiningTable::orderBy('table_no')->get();
+
+        $roomReservations = RoomReservation::with('room')
+            ->where(function ($query) use ($calendarStart, $calendarEnd) {
+                $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
+                    ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
+                    ->orWhere(function ($q) use ($calendarStart, $calendarEnd) {
+                        $q->where('check_in', '<=', $calendarStart->toDateString())
+                            ->where('check_out', '>=', $calendarEnd->toDateString());
+                    });
+            })
+            ->get();
+
+        // Older bookings remain in reservations after the table split. Include them
+        // only when the same booking is not already present in room_reservations.
+        $legacyRoomReservations = Reservation::with('room')
+            ->whereNotNull('room_id')
+            ->where(function ($query) use ($calendarStart, $calendarEnd) {
+                $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
+                    ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
+                    ->orWhere(function ($q) use ($calendarStart, $calendarEnd) {
+                        $q->where('check_in', '<=', $calendarStart->toDateString())
+                            ->where('check_out', '>=', $calendarEnd->toDateString());
+                    });
+            })
+            ->get();
+
+        $reservations = $roomReservations
+            ->concat($legacyRoomReservations)
+            ->values();
+
+        $roomTimeline = [];
+        $roomTimelineHeights = [];
+        foreach ($rooms as $room) {
+            $segments = [];
+            $roomBookings = $reservations->filter(fn ($reservation) => (int) $reservation->room_id === (int) $room->id);
+
+            foreach ($roomBookings as $reservation) {
+                $reservationStart = $reservation->check_in ? Carbon::parse($reservation->check_in) : $calendarStart->copy();
+                $reservationEnd = $reservation->check_out ? Carbon::parse($reservation->check_out) : $calendarStart->copy();
+                $effectiveStart = $reservationStart->copy()->max($calendarStart);
+                $effectiveEnd = $reservationEnd->copy()->min($calendarEnd);
+
+                if ($effectiveEnd->lt($effectiveStart)) {
+                    continue;
+                }
+
+                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
+
+                $segments[] = [
+                    'start' => $startIndex,
+                    'span' => $span,
+                    'guest' => $reservation->guest_name ?? 'Guest',
+                    'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
+                        'booked' => 'background: rgba(239, 68, 68, 0.28); border: 1px solid rgba(239, 68, 68, 0.4); color: #1f2937;',
+                        'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
+                        'checked-in' => 'background: rgba(14, 165, 233, 0.25); border: 1px solid rgba(14, 165, 233, 0.4); color: #0f172a;',
+                        'completed' => 'background: rgba(16, 185, 129, 0.24); border: 1px solid rgba(16, 185, 129, 0.35); color: #0f172a;',
+                        'cancelled' => 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.35); color: #1f2937;',
+                        default => 'background: rgba(251, 191, 36, 0.28); border: 1px solid rgba(251, 191, 36, 0.35); color: #1f2937;',
+                    },
+                ];
+            }
+
+            usort($segments, fn ($left, $right) => $left['start'] <=> $right['start']);
+            $laneEnds = [];
+            foreach ($segments as &$segment) {
+                $lane = 0;
+                while (isset($laneEnds[$lane]) && $segment['start'] < $laneEnds[$lane]) {
+                    $lane++;
+                }
+
+                $segment['lane'] = $lane;
+                $laneEnds[$lane] = $segment['start'] + $segment['span'];
+            }
+            unset($segment);
+
+            $roomTimeline[(int) $room->id] = $segments;
+            $roomTimelineHeights[(int) $room->id] = max(60, count($laneEnds) * 46 + 14);
+        }
+
+        $facilityRows = [];
+        $facilityTimeline = [];
+        foreach ($facilities as $facility) {
+            $facilityRows[] = [
+                'id' => $facility->id,
+                'name' => $facility->name,
+                'type' => $facility->pricing_basis ?: 'Facility',
+                'view' => 'facilities',
+            ];
+
+            $segments = [];
+            $facilityReservations = FacilityReservation::where('facility_id', $facility->id)
+                ->where(function ($query) use ($calendarStart, $calendarEnd) {
+                    $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
+                        ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
+                        ->orWhere(function ($q) use ($calendarStart, $calendarEnd) {
+                            $q->where('check_in', '<=', $calendarStart->toDateString())
+                                ->where('check_out', '>=', $calendarEnd->toDateString());
+                        });
+                })
+                ->get();
+
+            foreach ($facilityReservations as $reservation) {
+                $reservationStart = $reservation->check_in ? Carbon::parse($reservation->check_in) : $calendarStart->copy();
+                $reservationEnd = $reservation->check_out ? Carbon::parse($reservation->check_out) : $calendarStart->copy();
+                $effectiveStart = $reservationStart->copy()->max($calendarStart);
+                $effectiveEnd = $reservationEnd->copy()->min($calendarEnd);
+
+                if ($effectiveEnd->lt($effectiveStart)) {
+                    continue;
+                }
+
+                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
+
+                $segments[] = [
+                    'start' => $startIndex,
+                    'span' => $span,
+                    'guest' => $reservation->guest_name ?? $facility->name,
+                    'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
+                        'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
+                        'checked-in' => 'background: rgba(14, 165, 233, 0.25); border: 1px solid rgba(14, 165, 233, 0.4); color: #0f172a;',
+                        'completed' => 'background: rgba(16, 185, 129, 0.24); border: 1px solid rgba(16, 185, 129, 0.35); color: #0f172a;',
+                        'cancelled' => 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.35); color: #1f2937;',
+                        default => 'background: rgba(99, 102, 241, 0.24); border: 1px solid rgba(99, 102, 241, 0.35); color: #1f2937;',
+                    },
+                ];
+            }
+
+            $facilityTimeline[(int) $facility->id] = $segments;
+        }
+
+        $eventRows = [];
+        $eventTimeline = [];
+        foreach ($events as $event) {
+            $eventRows[] = [
+                'id' => $event->id,
+                'name' => $event->name,
+                'type' => $event->event_type ?: 'Event',
+                'view' => 'events',
+            ];
+
+            $segments = [];
+            $eventReservations = EventReservation::where('event_id', $event->id)
+                ->where(function ($query) use ($calendarStart, $calendarEnd) {
+                    $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
+                        ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
+                        ->orWhere(function ($q) use ($calendarStart, $calendarEnd) {
+                            $q->where('check_in', '<=', $calendarStart->toDateString())
+                                ->where('check_out', '>=', $calendarEnd->toDateString());
+                        });
+                })
+                ->get();
+
+            foreach ($eventReservations as $reservation) {
+                $reservationStart = $reservation->check_in ? Carbon::parse($reservation->check_in) : $calendarStart->copy();
+                $reservationEnd = $reservation->check_out ? Carbon::parse($reservation->check_out) : $calendarStart->copy();
+                $effectiveStart = $reservationStart->copy()->max($calendarStart);
+                $effectiveEnd = $reservationEnd->copy()->min($calendarEnd);
+
+                if ($effectiveEnd->lt($effectiveStart)) {
+                    continue;
+                }
+
+                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
+
+                $segments[] = [
+                    'start' => $startIndex,
+                    'span' => $span,
+                    'guest' => $reservation->guest_name ?? $event->name,
+                    'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
+                        'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
+                        'checked-in' => 'background: rgba(14, 165, 233, 0.25); border: 1px solid rgba(14, 165, 233, 0.4); color: #0f172a;',
+                        'completed' => 'background: rgba(16, 185, 129, 0.24); border: 1px solid rgba(16, 185, 129, 0.35); color: #0f172a;',
+                        'cancelled' => 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.35); color: #1f2937;',
+                        default => 'background: rgba(236, 72, 153, 0.22); border: 1px solid rgba(236, 72, 153, 0.35); color: #1f2937;',
+                    },
+                ];
+            }
+
+            $eventTimeline[(int) $event->id] = $segments;
+        }
+
+        $diningRows = [];
+        $diningTimeline = [];
+        foreach ($diningTables as $table) {
+            $diningRows[] = [
+                'id' => $table->id,
+                'name' => 'Table ' . $table->table_no,
+                'type' => $table->type ?: 'Dining',
+                'view' => 'dining',
+            ];
+
+            $segments = [];
+            $tableNumber = (string) $table->table_no;
+            $diningReservations = DiningReservation::whereNotIn('status', ['cancelled', 'completed'])
+                ->where(function ($query) use ($calendarStart, $calendarEnd) {
+                    $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
+                        ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
+                        ->orWhere(function ($q) use ($calendarStart, $calendarEnd) {
+                            $q->where('check_in', '<=', $calendarStart->toDateString())
+                                ->where('check_out', '>=', $calendarEnd->toDateString());
+                        });
+                })
+                ->get();
+
+            foreach ($diningReservations as $reservation) {
+                $tableNumbers = array_map('trim', explode(',', (string) ($reservation->dining_area ?? '')));
+                if (!in_array($tableNumber, $tableNumbers, true)) {
+                    continue;
+                }
+
+                $reservationStart = $reservation->check_in ? Carbon::parse($reservation->check_in) : $calendarStart->copy();
+                $reservationEnd = $reservation->check_out ? Carbon::parse($reservation->check_out) : $calendarStart->copy();
+                $effectiveStart = $reservationStart->copy()->max($calendarStart);
+                $effectiveEnd = $reservationEnd->copy()->min($calendarEnd);
+
+                if ($effectiveEnd->lt($effectiveStart)) {
+                    continue;
+                }
+
+                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
+
+                $segments[] = [
+                    'start' => $startIndex,
+                    'span' => $span,
+                    'guest' => $reservation->guest_name ?? 'Dining',
+                    'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
+                        'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
+                        'checked-in' => 'background: rgba(14, 165, 233, 0.25); border: 1px solid rgba(14, 165, 233, 0.4); color: #0f172a;',
+                        'completed' => 'background: rgba(16, 185, 129, 0.24); border: 1px solid rgba(16, 185, 129, 0.35); color: #0f172a;',
+                        'cancelled' => 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.35); color: #1f2937;',
+                        default => 'background: rgba(16, 185, 129, 0.22); border: 1px solid rgba(16, 185, 129, 0.35); color: #1f2937;',
+                    },
+                ];
+            }
+
+            $diningTimeline[(int) $table->id] = $segments;
+        }
+
+        $calendarTypeOptions = collect([$rooms, $facilities, $events, $diningTables])
+            ->flatten(1)
+            ->map(function ($item) {
+                $type = null;
+
+                if (isset($item->room_type)) {
+                    $type = $item->room_type;
+                } elseif (isset($item->pricing_basis)) {
+                    $type = $item->pricing_basis ?: 'Facility';
+                } elseif (isset($item->event_type)) {
+                    $type = $item->event_type ?: 'Event';
+                } elseif (isset($item->type)) {
+                    $type = $item->type ?: 'Dining';
+                }
+
+                return trim((string) $type);
+            })
+            ->filter(fn ($type) => $type !== '')
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return view($view, compact(
+            'portal',
+            'rooms',
+            'facilities',
+            'events',
+            'diningTables',
+            'facilityRows',
+            'facilityTimeline',
+            'eventRows',
+            'eventTimeline',
+            'diningRows',
+            'diningTimeline',
+            'calendarTypeOptions',
+            'days',
+            'baseDate',
+            'calendarStart',
+            'calendarEnd',
+            'roomTimeline',
+            'roomTimelineHeights'
+        ));
+    }
+
     public function rooms()
     {
         $rooms = Room::orderBy('room_number')->paginate(5);

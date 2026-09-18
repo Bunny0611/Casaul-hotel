@@ -240,6 +240,10 @@
                     <i class="fas fa-calendar-check w-6"></i>
                     <span>Reservation</span>
                 </a>
+                <a href="{{ route('employee.calendar') }}" class="nav-item px-5 py-3.5 {{ request()->routeIs('employee.calendar') ? 'active' : '' }}">
+                    <i class="fas fa-calendar-alt w-6"></i>
+                    <span>Calendar</span>
+                </a>
                 <a href="{{ route('employee.refunds') }}" class="nav-item px-5 py-3.5 {{ request()->routeIs('employee.refunds') ? 'active' : '' }}">
                     <i class="fas fa-rotate-left w-6"></i>
                     <span>Refund History</span>

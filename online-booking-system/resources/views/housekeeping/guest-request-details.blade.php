@@ -10,14 +10,19 @@
 
     <h1 style="margin:0 0 1rem; color:#2b3a4d; font-size:2rem;">Housekeeping Add-On Request</h1>
 
-    <div style="display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; align-items:center;">
-        <span style="background:#f0f4f8; padding:0.5rem 1rem; border-radius:8px; font-weight:600; display:inline-block;"><strong>{{ $requestData['requestId'] }}</strong> • {{ $requestData['guest'] }} • {{ $requestData['room'] }} • <span style="background:#06b6d4; color:white; padding:0.25rem 0.75rem; border-radius:4px; white-space:nowrap; display:inline-block;">{{ $requestData['status'] }}</span> • Priority: <span style="color:#ef4444; font-weight:700;">{{ $requestData['priority'] }}</span> • {{ $requestData['preferredTime'] }}</span>
+    <div style="display:grid; gap:0.75rem; padding:1rem 1.25rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; margin-bottom:1.5rem;">
+        <div><strong>Guest:</strong> {{ $requestData['guest'] }}</div>
+        <div><strong>Room:</strong> {{ $requestData['room'] }}</div>
+        <div><strong>Reservation:</strong> {{ $requestData['reservation'] }}</div>
+        <div><strong>Request Category:</strong> {{ $requestData['requestCategory'] }}</div>
+        <div><strong>Request:</strong> {{ $requestData['requestType'] }}</div>
+        <div><strong>Quantity:</strong> {{ $requestData['quantity'] }}</div>
+        <div><strong>Unit Price:</strong> {{ $requestData['unitPriceFormatted'] }}</div>
+        <div><strong>Subtotal:</strong> {{ $requestData['subtotalFormatted'] }}</div>
+        <div><strong>Status:</strong> {{ $requestData['statusLabel'] }}</div>
     </div>
 
     <div style="border-top:1px solid #edf0f3; padding-top:1rem;">
-        <h3 style="margin:0 0 .5rem; color:#2b3a4d;">Request Type</h3>
-        <p style="margin:0 0 1rem; font-size:1.1rem; font-weight:600; color:#172238;">{{ $requestData['requestType'] }}</p>
-
         <h3 style="margin:0 0 .5rem; color:#2b3a4d;">Guest Description</h3>
         <p style="margin:0; line-height:1.6; color:#475569;">{{ $requestData['description'] ?? 'No note provided' }}</p>
     </div>
