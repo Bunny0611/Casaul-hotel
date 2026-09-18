@@ -78,6 +78,9 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
+    Route::get('/reservations/{id}/status', function () {
+        return redirect()->route('employee.reservation')->with('error', 'Please use the reservation action menu to update the status.');
+    })->name('reservations.status.get');
     Route::post('/reservations/{id}/payments', [AdminController::class, 'storePayment'])->name('reservations.payments.store');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::post('/reservations/bulk-delete', [AdminController::class, 'bulkDestroyReservations'])->name('reservations.bulk-destroy');

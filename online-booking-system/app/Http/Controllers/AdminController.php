@@ -160,28 +160,16 @@ class AdminController extends Controller
         $diningTables = DiningTable::orderBy('table_no')->get();
 
         $roomReservations = RoomReservation::with('room')
-            ->where(function ($query) use ($calendarStart, $calendarEnd) {
-                $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
-                    ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
-                    ->orWhere(function ($q) use ($calendarStart, $calendarEnd) {
-                        $q->where('check_in', '<=', $calendarStart->toDateString())
-                            ->where('check_out', '>=', $calendarEnd->toDateString());
-                    });
-            })
+            ->whereDate('check_in', '<=', $calendarEnd->toDateString())
+            ->whereDate('check_out', '>=', $calendarStart->toDateString())
             ->get();
 
         // Older bookings remain in reservations after the table split. Include them
         // only when the same booking is not already present in room_reservations.
         $legacyRoomReservations = Reservation::with('room')
             ->whereNotNull('room_id')
-            ->where(function ($query) use ($calendarStart, $calendarEnd) {
-                $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
-                    ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
-                    ->orWhere(function ($q) use ($calendarStart, $calendarEnd) {
-                        $q->where('check_in', '<=', $calendarStart->toDateString())
-                            ->where('check_out', '>=', $calendarEnd->toDateString());
-                    });
-            })
+            ->whereDate('check_in', '<=', $calendarEnd->toDateString())
+            ->whereDate('check_out', '>=', $calendarStart->toDateString())
             ->get();
 
         $reservations = $roomReservations
@@ -204,7 +192,7 @@ class AdminController extends Controller
                     continue;
                 }
 
-                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $startIndex = $calendarStart->diffInDays($effectiveStart);
                 $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
 
                 $segments[] = [
@@ -212,6 +200,14 @@ class AdminController extends Controller
                     'span' => $span,
                     'guest' => $reservation->guest_name ?? 'Guest',
                     'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'details' => [
+                        'guest' => $reservation->guest_name ?? 'Guest',
+                        'room' => $room->room_number,
+                        'check_in' => $reservation->check_in ? Carbon::parse($reservation->check_in)->format('M d, Y') : 'N/A',
+                        'check_out' => $reservation->check_out ? Carbon::parse($reservation->check_out)->format('M d, Y') : 'N/A',
+                        'amount' => number_format((float) ($reservation->total_amount ?? 0), 2),
+                        'status' => ucfirst(strtolower((string) ($reservation->status ?? 'pending'))),
+                    ],
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'booked' => 'background: rgba(239, 68, 68, 0.28); border: 1px solid rgba(239, 68, 68, 0.4); color: #1f2937;',
                         'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
@@ -272,7 +268,7 @@ class AdminController extends Controller
                     continue;
                 }
 
-                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $startIndex = $calendarStart->diffInDays($effectiveStart);
                 $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
 
                 $segments[] = [
@@ -280,6 +276,16 @@ class AdminController extends Controller
                     'span' => $span,
                     'guest' => $reservation->guest_name ?? $facility->name,
                     'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'details' => [
+                        'guest' => $reservation->guest_name ?? 'Guest',
+                        'type' => 'Facility',
+                        'item' => $facility->name,
+                        'check_in' => $reservation->check_in ? Carbon::parse($reservation->check_in)->format('M d, Y') : 'N/A',
+                        'check_out' => $reservation->check_out ? Carbon::parse($reservation->check_out)->format('M d, Y') : 'N/A',
+                        'time' => $reservation->facility_start_time ?: 'Time not set',
+                        'amount' => number_format((float) ($reservation->total_amount ?? 0), 2),
+                        'status' => ucfirst(strtolower((string) ($reservation->status ?? 'pending'))),
+                    ],
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
                         'checked-in' => 'background: rgba(14, 165, 233, 0.25); border: 1px solid rgba(14, 165, 233, 0.4); color: #0f172a;',
@@ -325,7 +331,7 @@ class AdminController extends Controller
                     continue;
                 }
 
-                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $startIndex = $calendarStart->diffInDays($effectiveStart);
                 $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
 
                 $segments[] = [
@@ -333,6 +339,18 @@ class AdminController extends Controller
                     'span' => $span,
                     'guest' => $reservation->guest_name ?? $event->name,
                     'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'details' => [
+                        'guest' => $reservation->guest_name ?? 'Guest',
+                        'type' => 'Event',
+                        'item' => $event->name,
+                        'event_type' => $reservation->event_type ?: $event->event_type ?: 'Event',
+                        'check_in' => $reservation->check_in ? Carbon::parse($reservation->check_in)->format('M d, Y') : 'N/A',
+                        'check_out' => $reservation->check_out ? Carbon::parse($reservation->check_out)->format('M d, Y') : 'N/A',
+                        'start_time' => $reservation->event_start_time ?: 'Time not set',
+                        'end_time' => $reservation->event_end_time ?: 'Time not set',
+                        'amount' => number_format((float) ($reservation->total_amount ?? 0), 2),
+                        'status' => ucfirst(strtolower((string) ($reservation->status ?? 'pending'))),
+                    ],
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
                         'checked-in' => 'background: rgba(14, 165, 233, 0.25); border: 1px solid rgba(14, 165, 233, 0.4); color: #0f172a;',
@@ -384,7 +402,7 @@ class AdminController extends Controller
                     continue;
                 }
 
-                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $startIndex = $calendarStart->diffInDays($effectiveStart);
                 $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
 
                 $segments[] = [
@@ -392,6 +410,18 @@ class AdminController extends Controller
                     'span' => $span,
                     'guest' => $reservation->guest_name ?? 'Dining',
                     'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'details' => [
+                        'guest' => $reservation->guest_name ?? 'Guest',
+                        'type' => 'Dining',
+                        'item' => 'Table ' . $table->table_no,
+                        'dining_area' => $reservation->dining_area ?: 'Table not set',
+                        'check_in' => $reservation->check_in ? Carbon::parse($reservation->check_in)->format('M d, Y') : 'N/A',
+                        'check_out' => $reservation->check_out ? Carbon::parse($reservation->check_out)->format('M d, Y') : 'N/A',
+                        'time' => $reservation->dining_schedule ?: 'Time not set',
+                        'number_of_guests' => $reservation->quantity ?? $reservation->number_of_guests ?? 'N/A',
+                        'amount' => number_format((float) ($reservation->total_amount ?? 0), 2),
+                        'status' => ucfirst(strtolower((string) ($reservation->status ?? 'pending'))),
+                    ],
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
                         'checked-in' => 'background: rgba(14, 165, 233, 0.25); border: 1px solid rgba(14, 165, 233, 0.4); color: #0f172a;',
@@ -953,6 +983,15 @@ class AdminController extends Controller
                     'dining' => DiningReservation::find($id) ?? Reservation::find($id),
                 },
             };
+
+            // Older reservation pages may submit only the numeric ID. For room
+            // records, prefer the legacy reservation when that is where the row
+            // actually came from, without touching Darlene's separate booking.
+            if (!$reservation && $validated['category'] === 'rooms') {
+                $reservation = Reservation::whereKey($id)
+                    ->whereNotNull('room_id')
+                    ->first();
+            }
 
             if ($reservation instanceof Reservation) {
                 $legacyCategory = match (true) {
