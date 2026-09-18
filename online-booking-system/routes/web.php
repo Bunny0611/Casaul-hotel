@@ -64,6 +64,7 @@ Route::middleware(['auth:guest', 'verified', 'role:guest'])->group(function () {
     Route::delete('/guest/reservations/{reservation}', [HomeController::class, 'deleteReservation'])->name('guest.reservations.delete');
     Route::patch('/guest/reservations/{reservation}/cancel', [HomeController::class, 'cancelReservation'])->name('guest.reservations.cancel');
     Route::post('/guest/requests', [HomeController::class, 'storeGuestRequest'])->name('guest.requests.store');
+    Route::delete('/guest/requests/{guestRequest}', [HomeController::class, 'deleteGuestRequest'])->name('guest.requests.destroy');
 });
 
 // --- Employee Portal ---

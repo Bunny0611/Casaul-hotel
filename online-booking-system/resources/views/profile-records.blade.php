@@ -101,6 +101,135 @@
         transition: all 0.2s ease;
     }
 
+    .guest-request-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .guest-request-actions form {
+        display: inline-flex;
+        margin: 0;
+    }
+
+    .view-request,
+    .guest-request-delete {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        min-height: 36px;
+    }
+
+    .view-request {
+        border: 1px solid #d62839;
+        background: #fff;
+        color: #b91c1c;
+        box-shadow: 0 2px 8px rgba(182, 36, 58, 0.08);
+    }
+
+    .view-request:hover {
+        background: #fff3f4;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(182, 36, 58, 0.12);
+    }
+
+    .guest-request-delete {
+        border: 1px solid #f3b7be;
+        background: #fff1f2;
+        color: #b91c1c;
+    }
+
+    .guest-request-delete:hover {
+        background: #ffe4e6;
+        transform: translateY(-1px);
+    }
+
+    .guest-delete-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, 0.55);
+        z-index: 10000;
+        padding: 20px;
+    }
+
+    .guest-delete-modal.open {
+        display: flex;
+    }
+
+    .guest-delete-modal-card {
+        width: min(540px, 100%);
+        background: #ffffff;
+        border: 1px solid rgba(166, 28, 42, 0.12);
+        border-radius: 12px;
+        box-shadow: 0 18px 40px rgba(109, 20, 23, 0.14);
+        padding: 18px 20px 16px;
+        color: #3b1f2d;
+    }
+
+    .guest-delete-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+    }
+
+    .guest-delete-modal-text {
+        margin: 0;
+        font-size: 1.08rem;
+        font-weight: 600;
+        color: #3b1f2d;
+    }
+
+    .guest-delete-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 8px;
+    }
+
+    .guest-delete-confirm,
+    .guest-delete-cancel {
+        border: 1px solid #dfe7f2;
+        border-radius: 10px;
+        padding: 10px 22px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .guest-delete-confirm {
+        background: #a11d2d;
+        border-color: #a11d2d;
+        color: #ffffff;
+    }
+
+    .guest-delete-confirm:hover {
+        background: #8b1a27;
+        border-color: #8b1a27;
+    }
+
+    .guest-delete-cancel {
+        background: #fdf2f3;
+        color: #5f2230;
+        border-color: #f0c7ce;
+    }
+
+    .guest-delete-cancel:hover {
+        background: #fbe7ea;
+    }
+
     .reservation-view-btn {
         min-width: 128px;
         border: 1px solid #d62839;
@@ -353,6 +482,77 @@
         border-radius: 4px;
     }
 
+    .payment-detail-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr);
+        align-items: start;
+    }
+
+    .payment-detail-grid .reservation-detail-field {
+        min-width: 0;
+        align-items: flex-start;
+    }
+
+    .payment-detail-grid .reservation-detail-field strong {
+        max-width: 230px;
+    }
+
+    .payment-detail-grid .reservation-detail-field {
+        display: grid;
+        grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1.2fr);
+        gap: 12px;
+    }
+
+    .payment-detail-grid .reservation-detail-field strong {
+        max-width: none;
+        text-align: left;
+    }
+
+    .payment-fields {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .payment-field {
+        display: grid;
+        grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1.2fr);
+        gap: 12px;
+        padding: 7px 0;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .payment-field-label {
+        color: #64748b;
+    }
+
+    .payment-field-value {
+        color: #334155;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .payment-proof {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid #edf2f7;
+    }
+
+    .payment-proof-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #64748b;
+    }
+
+    .payment-proof img {
+        display: block;
+        width: min(320px, 100%);
+        max-height: 260px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        object-fit: contain;
+        background: #f8fafc;
+    }
+
     .reservation-detail-field {
         display: flex;
         justify-content: space-between;
@@ -377,6 +577,61 @@
 
     .reservation-detail-item strong {
         color: #334155;
+    }
+
+    .reservation-amounts-card,
+    .payment-summary-card {
+        margin-top: 18px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #f8fafc;
+    }
+
+    .reservation-amounts-card h4,
+    .payment-summary-card h4 {
+        margin: 0 0 12px;
+        color: #334155;
+        font-size: 14px;
+    }
+
+    .reservation-amount-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .reservation-amount-item {
+        min-width: 0;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .reservation-amount-item span {
+        display: block;
+        margin-bottom: 5px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .reservation-amount-item strong {
+        color: #1e293b;
+        font-size: 13px;
+    }
+
+    @media (max-width: 560px) {
+        .payment-detail-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .reservation-amount-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
     .reservation-detail-item > span {
@@ -504,17 +759,6 @@
         <a href="{{ route('guest.profile') }}" class="btn btn-back">&larr; Back to Profile</a>
     </div>
 
-    @if(session('success'))
-        <div class="reservation-alert reservation-alert--success" role="status">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if($errors->any())
-        <div class="reservation-alert" role="alert">
-            {{ $errors->first() }}
-        </div>
-    @endif
 
     @if($reservations->isEmpty())
         <div class="records-empty">
@@ -612,6 +856,17 @@
                                 }
                             }
 
+                            $diningArea = collect(explode(',', (string) $reservation->dining_area))
+                                ->map(fn ($value) => trim($value))
+                                ->filter()
+                                ->unique()
+                                ->implode(', ');
+                            $diningSchedule = collect(explode(',', (string) $reservation->dining_schedule))
+                                ->map(fn ($value) => trim($value))
+                                ->filter()
+                                ->unique()
+                                ->implode(', ');
+
                             $reservationDetails = [
                                 'id' => 'RES-' . str_pad($reservation->id, 4, '0', STR_PAD_LEFT),
                                 'guestName' => $reservation->guest_name,
@@ -667,8 +922,8 @@
                                 'total' => '₱' . number_format((float) $reservation->total_amount, 2),
                                 'specialRequests' => $reservation->special_requests,
                                 'eventType' => $reservation->event_type,
-                                'diningArea' => $reservation->dining_area,
-                                'diningSchedule' => $reservation->dining_schedule,
+                                'diningArea' => $diningArea,
+                                'diningSchedule' => $diningSchedule,
                             ];
                         @endphp
                         @php
@@ -701,6 +956,60 @@
                             $recordSchedule = $recordCategory === 'dining'
                                 ? collect([$diningItem?->dining_area, $diningItem?->dining_schedule])->filter()->implode(' | ')
                                 : ($recordCategory === 'facilities' ? ($reservation->check_in_time ?? '') : optional($reservation->check_out)->format('M d, Y'));
+                            $recordReceiptLines = collect($reservationReceiptLines)->filter(function ($line) use ($recordCategory) {
+                                return match ($recordCategory) {
+                                    'facilities' => str_starts_with($line['description'], 'Facilities -'),
+                                    'event' => str_starts_with($line['description'], 'Event -'),
+                                    'dining' => str_starts_with($line['description'], 'Dining -'),
+                                    default => str_starts_with($line['description'], 'Room -'),
+                                };
+                            })->values()->all();
+                            $recordTotal = collect($recordReceiptLines)->sum(function ($line) {
+                                return (float) str_replace(['₱', ','], '', $line['amount']);
+                            });
+                            $recordReservationDetails = $reservationDetails;
+                            $recordReservationDetails['category'] = $recordCategory;
+                            $recordReservationDetails['total'] = '₱' . number_format($recordTotal, 2);
+                            $recordReservationDetails['receiptLines'] = $recordReceiptLines;
+                            if ($recordCategory !== 'rooms') {
+                                $recordReservationDetails['room'] = null;
+                            }
+                            if ($recordCategory !== 'facilities') {
+                                $recordReservationDetails['facilities'] = [];
+                            }
+                            if ($recordCategory !== 'event') {
+                                $recordReservationDetails['events'] = [];
+                            }
+                            if ($recordCategory !== 'dining') {
+                                $recordReservationDetails['dining'] = [];
+                            }
+                            $paymentDetails = (string) ($reservation->payment_details ?? '');
+                            $paymentProofPath = null;
+                            $paymentFields = [];
+                            foreach (preg_split('/\s*•\s*/', $paymentDetails, -1, PREG_SPLIT_NO_EMPTY) as $paymentPart) {
+                                [$paymentLabel, $paymentValue] = array_pad(explode(':', $paymentPart, 2), 2, '');
+                                $paymentLabel = trim($paymentLabel);
+                                $paymentValue = trim($paymentValue);
+                                if ($paymentLabel === '' || $paymentValue === '') {
+                                    continue;
+                                }
+                                if (strtolower($paymentLabel) === 'proof') {
+                                    $paymentProofPath = $paymentValue;
+                                    continue;
+                                }
+                                $paymentFields[] = ['label' => $paymentLabel, 'value' => $paymentValue];
+                            }
+                            $recordReservationDetails['paymentDetails'] = $paymentDetails;
+                            $recordReservationDetails['paymentFields'] = $paymentFields;
+                            $paymentProofRelativePath = $paymentProofPath
+                                ? (str_starts_with($paymentProofPath, 'storage/')
+                                    ? substr($paymentProofPath, strlen('storage/'))
+                                    : 'payment-proofs/' . ltrim($paymentProofPath, '/'))
+                                : null;
+                            $paymentProofUrl = $paymentProofRelativePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($paymentProofRelativePath)
+                                ? asset('storage/' . $paymentProofRelativePath)
+                                : null;
+                            $recordReservationDetails['paymentProof'] = $paymentProofUrl;
                             @endphp
                             <tr class="records-table-row" data-record-category="{{ $recordCategory }}">
                             <td>{{ $index + 1 }}</td>
@@ -730,7 +1039,7 @@
                                         <button type="button"
                                             class="reservation-view-btn"
                                             data-view-receipt
-                                            data-reservation='@json($reservationDetails)'
+                                            data-reservation='@json($recordReservationDetails)'
                                             data-receipt-id="RES-{{ str_pad($reservation->id, 4, '0', STR_PAD_LEFT) }}"
                                             data-guest-name="{{ auth('guest')->user()->name }}"
                                             data-guest-email="{{ auth('guest')->user()->email }}"
@@ -758,7 +1067,7 @@
                                     </div>
                                 @elseif(in_array($reservation->status, ['pending', 'confirmed'], true))
                                     <div class="reservation-action-group">
-                                        <button type="button" class="reservation-view-btn" data-view-receipt data-reservation='@json($reservationDetails)'>View</button>
+                                        <button type="button" class="reservation-view-btn" data-view-receipt data-reservation='@json($recordReservationDetails)'>View</button>
                                         <div class="reservation-menu-wrap">
                                             <button type="button" class="reservation-menu-toggle" aria-label="More actions" aria-expanded="false">
                                                 <i class="fas fa-ellipsis-v"></i>
@@ -787,13 +1096,13 @@
                                     </div>
                                 @elseif($reservation->status === 'checked-in')
                                     <div class="reservation-action-group">
-                                        <button type="button" class="reservation-view-btn" data-view-receipt data-reservation='@json($reservationDetails)'>View</button>
+                                        <button type="button" class="reservation-view-btn" data-view-receipt data-reservation='@json($recordReservationDetails)'>View</button>
                                         <div class="reservation-menu-wrap">
                                             <button type="button" class="reservation-menu-toggle" aria-label="More actions" aria-expanded="false">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="reservation-menu hidden">
-                                                <button type="button" class="reservation-menu-item" data-view-receipt data-reservation='@json($reservationDetails)'>View Receipt</button>
+                                                <button type="button" class="reservation-menu-item" data-view-receipt data-reservation='@json($recordReservationDetails)'>View Receipt</button>
                                                 <form method="POST" action="{{ route('guest.reservations.delete', $reservation) }}" onsubmit="return confirm('Delete this checked-in reservation? This action cannot be undone.');">
                                                     @csrf
                                                     @method('DELETE')
@@ -805,7 +1114,7 @@
                                     </div>
                                 @elseif($reservation->status === 'cancelled')
                                     <div class="reservation-action-group">
-                                        <button type="button" class="reservation-view-btn" data-view-receipt data-reservation='@json($reservationDetails)'>View</button>
+                                        <button type="button" class="reservation-view-btn" data-view-receipt data-reservation='@json($recordReservationDetails)'>View</button>
                                         <div class="reservation-menu-wrap">
                                             <button type="button" class="reservation-menu-toggle" aria-label="More actions" aria-expanded="false">
                                                 <i class="fas fa-ellipsis-v"></i>
@@ -839,12 +1148,6 @@
             <p>Let us know what you need and our team will take care of it.</p>
         </div>
 
-        @if(session('request_success'))
-            <div class="reservation-alert reservation-alert--success" role="status">
-                {{ session('request_success') }} Request ID: REQ-{{ str_pad(session('request_id'), 4, '0', STR_PAD_LEFT) }}.
-            </div>
-        @endif
-
         @if(!$activeReservation)
             <div class="records-empty guest-request-unavailable">
                 <i class="fas fa-calendar-check"></i>
@@ -859,9 +1162,6 @@
                     <div><span>Room Number</span><strong>{{ $activeReservation->room->room_number ?? 'Assigned room' }}</strong></div>
                     <div><span>Reservation ID</span><strong>RES-{{ str_pad($activeReservation->id, 4, '0', STR_PAD_LEFT) }}</strong></div>
                 </div>
-                @if($errors->any())
-                    <div class="reservation-alert" role="alert">{{ $errors->first() }}</div>
-                @endif
                 <div class="guest-request-fields">
                     <div class="request-type-picker" data-request-type-picker>
                         <label for="request-type-search">Request Type</label>
@@ -945,7 +1245,16 @@
                                 <td>{{ $guestRequest->department }}</td>
                                 <td>{{ $guestRequest->priority }}</td>
                                 <td><span class="guest-request-status status-{{ $requestStatusClass }}">{{ $guestRequest->status }}</span></td>
-                                <td><button type="button" class="view-request guest-request-view" data-request-id="REQ-{{ str_pad($guestRequest->id, 4, '0', STR_PAD_LEFT) }}" data-request-type="{{ $guestRequest->request_type }}" data-description="{{ $guestRequest->description }}" data-room="{{ $guestRequest->room->room_number ?? '—' }}" data-reservation="{{ $guestRequest->reservation ? 'RES-' . str_pad($guestRequest->reservation->id, 4, '0', STR_PAD_LEFT) : ($guestRequest->reservation_key ? 'RES-' . str_pad((int) $guestRequest->reservation_key, 4, '0', STR_PAD_LEFT) : 'N/A') }}" data-request-category="{{ $guestRequest->department ?? 'Housekeeping' }}" data-quantity="{{ (int) ($guestRequest->quantity ?? 1) }}" data-unit-price="{{ '₱' . number_format((float) ($guestRequest->unit_price ?? 0), 2) }}" data-subtotal="{{ '₱' . number_format((float) ($guestRequest->subtotal ?? 0), 2) }}" data-submitted="{{ $guestRequest->submitted_at?->format('M d, Y g:i A') }}" data-priority="{{ $guestRequest->priority }}" data-status="{{ $guestRequest->status }}">View</button></td>
+                                <td>
+                                    <div class="guest-request-actions">
+                                        <button type="button" class="view-request guest-request-view" data-request-id="REQ-{{ str_pad($guestRequest->id, 4, '0', STR_PAD_LEFT) }}" data-request-type="{{ $guestRequest->request_type }}" data-description="{{ $guestRequest->description }}" data-room="{{ $guestRequest->room->room_number ?? '—' }}" data-reservation="{{ $guestRequest->reservation ? 'RES-' . str_pad($guestRequest->reservation->id, 4, '0', STR_PAD_LEFT) : ($guestRequest->reservation_key ? 'RES-' . str_pad((int) $guestRequest->reservation_key, 4, '0', STR_PAD_LEFT) : 'N/A') }}" data-request-category="{{ $guestRequest->department ?? 'Housekeeping' }}" data-quantity="{{ (int) ($guestRequest->quantity ?? 1) }}" data-unit-price="{{ '₱' . number_format((float) ($guestRequest->unit_price ?? 0), 2) }}" data-subtotal="{{ '₱' . number_format((float) ($guestRequest->subtotal ?? 0), 2) }}" data-submitted="{{ $guestRequest->submitted_at?->format('M d, Y g:i A') }}" data-priority="{{ $guestRequest->priority }}" data-status="{{ $guestRequest->status }}">View</button>
+                                        <form class="guest-delete-form" action="{{ route('guest.requests.destroy', $guestRequest) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="guest-request-delete">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -986,7 +1295,7 @@
             <p><span>Check-in</span><strong id="guest-receipt-checkin">—</strong></p>
             <p><span>Check-out</span><strong id="guest-receipt-checkout">—</strong></p>
             <p><span>Guests</span><strong id="guest-receipt-guests">2 Guests</strong></p>
-            <p><span>Room</span><strong id="guest-receipt-room">None</strong></p>
+            <p id="guest-receipt-room-row"><span>Room</span><strong id="guest-receipt-room">None</strong></p>
         </div>
         <div class="receipt-content" id="guest-receipt-content"></div>
         <div class="receipt-notes">
@@ -1013,6 +1322,18 @@
             <div><dt>Subtotal</dt><dd id="guest-request-subtotal"></dd></div>
             <div><dt>Status</dt><dd id="guest-request-status"></dd></div>
         </dl>
+    </div>
+</div>
+
+<div class="guest-delete-modal" id="guest-delete-modal" aria-hidden="true">
+    <div class="guest-delete-modal-card" role="dialog" aria-modal="true" aria-labelledby="guest-delete-modal-title">
+        <div class="guest-delete-modal-header">
+            <p class="guest-delete-modal-text" id="guest-delete-modal-title">Delete this request?</p>
+        </div>
+        <div class="guest-delete-modal-actions">
+            <button type="button" class="guest-delete-cancel">Cancel</button>
+            <button type="button" class="guest-delete-confirm">OK</button>
+        </div>
     </div>
 </div>
 
@@ -1069,6 +1390,7 @@
         const receiptCheckOut = document.getElementById('guest-receipt-checkout');
         const receiptGuests = document.getElementById('guest-receipt-guests');
         const receiptRoom = document.getElementById('guest-receipt-room');
+        const receiptRoomRow = document.getElementById('guest-receipt-room-row');
         const receiptContent = document.getElementById('guest-receipt-content');
         const reservationTitle = document.getElementById('guest-receipt-title');
         const reservationNotes = document.querySelector('#guest-receipt-modal .receipt-notes p');
@@ -1092,7 +1414,10 @@
             : `<p class="reservation-detail-empty">${escapeHtml(emptyLabel)}</p>`;
 
         if (reservation) {
-            reservationTitle.textContent = 'RESERVATION DETAILS';
+            const reservationCategory = ['rooms', 'facilities', 'event', 'dining'].includes(reservation.category)
+                ? reservation.category
+                : 'rooms';
+            reservationTitle.textContent = `${reservationCategory.toUpperCase()} RECEIPT`;
             guestName.textContent = reservation.guestName || 'Guest';
             guestEmail.textContent = reservation.guestEmail || '—';
             receiptNumber.textContent = reservation.id || 'RES-0000';
@@ -1101,17 +1426,38 @@
             receiptCheckOut.textContent = reservation.checkOut || '—';
             receiptGuests.textContent = reservation.guests ? `${reservation.guests} Guests` : '—';
             receiptRoom.textContent = reservation.room?.type || '—';
+            receiptRoomRow.hidden = reservationCategory !== 'rooms';
             reservationNotes.textContent = reservation.specialRequests || 'No special requests.';
 
-            const room = reservation.room ? `<div class="reservation-detail-section"><h4>Room</h4><div class="reservation-detail-grid">
+            const room = reservationCategory === 'rooms' && reservation.room ? `<div class="reservation-detail-section"><h4>Room</h4><div class="reservation-detail-grid">
                 ${field('Room type', reservation.room.type)}${field('Room number', reservation.room.number)}${field('Floor', reservation.room.floor)}${field('Capacity', reservation.room.capacity)}${field('Rate', reservation.room.price)}
                 </div><p>${escapeHtml(reservation.room.description || 'No room description.')}</p></div>` : '';
-            const facilities = `<div class="reservation-detail-section"><h4>Facilities</h4>${list(reservation.facilities, 'No facilities selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>`;
-            const events = `<div class="reservation-detail-section"><h4>Events</h4>${list(reservation.events, 'No events selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.type, item.location, item.capacity ? `Capacity: ${item.capacity}` : ''].filter(Boolean).join(' | '))}</p><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>`;
-            const dining = `<div class="reservation-detail-section"><h4>Dining</h4>${list(reservation.dining, 'No dining items selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)} x${escapeHtml(item.quantity)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.category, item.area, item.schedule, item.date].filter(Boolean).join(' | '))}</p></div>`)}</div>`;
-            const payments = `<div class="reservation-detail-section"><h4>Payment</h4><div class="reservation-detail-grid">${field('Reservation method', reservation.paymentMethod)}${field('Payment details', reservation.paymentDetails)}${field('Amount paid', reservation.amountPaid)}${field('Total amount', reservation.total)}</div>${list(reservation.payments, 'No separate payment transactions recorded.', payment => `<div class="reservation-detail-item"><strong>${escapeHtml(payment.method)} - ${escapeHtml(payment.amount)}</strong><p>${escapeHtml([payment.date, payment.reference ? `Reference: ${payment.reference}` : '', payment.notes].filter(Boolean).join(' | '))}</p></div>`)}</div>`;
+            const facilities = reservationCategory === 'facilities' ? `<div class="reservation-detail-section"><h4>Facilities</h4>${list(reservation.facilities, 'No facilities selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>` : '';
+            const events = reservationCategory === 'event' ? `<div class="reservation-detail-section"><h4>Events</h4>${list(reservation.events, 'No events selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.type, item.location, item.capacity ? `Capacity: ${item.capacity}` : ''].filter(Boolean).join(' | '))}</p><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>` : '';
+            const dining = reservationCategory === 'dining' ? `<div class="reservation-detail-section"><h4>Dining</h4>${list(reservation.dining, 'No dining items selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)} x${escapeHtml(item.quantity)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.category, item.area, item.schedule, item.date].filter(Boolean).join(' | '))}</p></div>`)}</div>` : '';
+            const receiptLines = reservation.receiptLines || [];
+            const reservationAmounts = `<div class="reservation-amounts-card"><h4>Reservation Amounts</h4><div class="reservation-amount-grid">${receiptLines.length
+                ? receiptLines.map(item => `<div class="reservation-amount-item"><span>${escapeHtml((item.description || 'Reservation').split(' - ')[0])}</span><strong>${escapeHtml(item.amount)}</strong></div>`).join('')
+                : `<div class="reservation-amount-item"><span>${escapeHtml(reservation.category || 'Reservation')}</span><strong>${escapeHtml(reservation.total)}</strong></div>`}</div></div>`;
+            const totalAmount = Number.parseFloat(String(reservation.total || '0').replace(/[^\d.-]/g, '')) || 0;
+            const amountPaid = Number.parseFloat(String(reservation.amountPaid || '0').replace(/[^\d.-]/g, '')) || 0;
+            const balanceDue = Math.max(0, totalAmount - amountPaid);
+            const formatAmount = amount => `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const paymentSummary = `<div class="payment-summary-card"><h4>Payment Summary</h4><div class="reservation-amount-grid"><div class="reservation-amount-item"><span>Grand Total</span><strong>${escapeHtml(reservation.total)}</strong></div><div class="reservation-amount-item"><span>Amount Paid</span><strong>${formatAmount(amountPaid)}</strong></div><div class="reservation-amount-item"><span>Balance Due</span><strong>${formatAmount(balanceDue)}</strong></div></div></div>`;
+            const paymentProof = reservation.paymentProof
+                ? `<div class="payment-proof"><span class="payment-proof-label">Payment proof</span><a href="${escapeHtml(reservation.paymentProof)}" target="_blank" rel="noopener"><img src="${escapeHtml(reservation.paymentProof)}" alt="Payment proof"></a></div>`
+                : '<p class="payment-proof-missing">Payment proof image is unavailable.</p>';
+            const paymentFields = reservation.paymentFields?.length
+                ? `<div class="payment-fields">${reservation.paymentFields.map(item => `<div class="payment-field"><span class="payment-field-label">${escapeHtml(item.label)}</span><strong class="payment-field-value">${escapeHtml(item.value)}</strong></div>`).join('')}</div>`
+                : `<div class="payment-fields">${field('Payment details', reservation.paymentDetails || '—')}</div>`;
+            const payments = `<div class="reservation-detail-section"><h4>Payment</h4><div class="reservation-detail-grid payment-detail-grid">${field('Reservation method', reservation.paymentMethod)}</div>${paymentFields}${paymentProof}${list(reservation.payments, 'No separate payment transactions recorded.', payment => `<div class="reservation-detail-item"><strong>${escapeHtml(payment.method)} - ${escapeHtml(payment.amount)}</strong><p>${escapeHtml([payment.date, payment.reference ? `Reference: ${payment.reference}` : '', payment.notes].filter(Boolean).join(' | '))}</p></div>`)}</div>`;
 
-            receiptContent.innerHTML = `<div class="reservation-detail-grid reservation-detail-grid--summary">${field('Status', reservation.status)}${field('Category', reservation.category)}${field('Phone', reservation.guestPhone)}${field('Check-in time', reservation.checkInTime)}${field('Check-out time', reservation.checkOutTime)}${field('Event type', reservation.eventType)}${field('Dining area', reservation.diningArea)}${field('Dining schedule', reservation.diningSchedule)}</div>${room}${facilities}${events}${dining}${payments}`;
+            const categoryDetails = reservationCategory === 'event'
+                ? `${field('Event type', reservation.eventType)}${field('Check-in time', reservation.checkInTime)}${field('Check-out time', reservation.checkOutTime)}`
+                : reservationCategory === 'dining'
+                    ? `${field('Dining area', reservation.diningArea)}${field('Dining schedule', reservation.diningSchedule)}`
+                    : '';
+            receiptContent.innerHTML = `<div class="reservation-detail-grid reservation-detail-grid--summary">${field('Status', reservation.status)}${field('Category', reservation.category)}${field('Phone', reservation.guestPhone)}${categoryDetails}</div>${room}${facilities}${events}${dining}${payments}`;
             modal.classList.add('open');
             modal.setAttribute('aria-hidden', 'false');
             return;
@@ -1377,6 +1723,42 @@
     }
     document.querySelector('.request-modal-close')?.addEventListener('click', closeGuestRequestModal);
     document.getElementById('guest-request-modal')?.addEventListener('click', function (event) { if (event.target === this) closeGuestRequestModal(); });
+
+    const guestDeleteModal = document.getElementById('guest-delete-modal');
+    const guestDeleteCancel = document.querySelector('.guest-delete-cancel');
+    const guestDeleteConfirm = document.querySelector('.guest-delete-confirm');
+    let pendingGuestDeleteForm = null;
+
+    document.querySelectorAll('.guest-delete-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            pendingGuestDeleteForm = form;
+            guestDeleteModal.classList.add('open');
+            guestDeleteModal.setAttribute('aria-hidden', 'false');
+        });
+    });
+
+    guestDeleteCancel?.addEventListener('click', function () {
+        guestDeleteModal.classList.remove('open');
+        guestDeleteModal.setAttribute('aria-hidden', 'true');
+        pendingGuestDeleteForm = null;
+    });
+
+    guestDeleteConfirm?.addEventListener('click', function () {
+        if (pendingGuestDeleteForm) {
+            guestDeleteModal.classList.remove('open');
+            guestDeleteModal.setAttribute('aria-hidden', 'true');
+            pendingGuestDeleteForm.submit();
+        }
+    });
+
+    guestDeleteModal?.addEventListener('click', function (event) {
+        if (event.target === this) {
+            this.classList.remove('open');
+            this.setAttribute('aria-hidden', 'true');
+            pendingGuestDeleteForm = null;
+        }
+    });
 </script>
 
 <script>

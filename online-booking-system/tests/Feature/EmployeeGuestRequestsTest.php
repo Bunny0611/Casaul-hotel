@@ -111,6 +111,30 @@ class EmployeeGuestRequestsTest extends TestCase
             ->assertSee('Need extra towels for the room.');
     }
 
+    public function test_guest_can_delete_their_own_request(): void
+    {
+        $guest = Guest::factory()->create();
+        $guestRequest = GuestRequest::create([
+            'guest_id' => $guest->id,
+            'reservation_id' => null,
+            'room_id' => null,
+            'request_type' => 'Extra Towels',
+            'description' => 'Need extra towels for the room.',
+            'department' => 'Housekeeping',
+            'priority' => 'Normal',
+            'preferred_time' => '15:00',
+            'status' => 'New',
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($guest, 'guest')
+            ->delete(route('guest.requests.destroy', $guestRequest))
+            ->assertRedirect(route('guest.records'))
+            ->assertSessionHas('success', 'Your request has been deleted.');
+
+        $this->assertDatabaseMissing('guest_requests', ['id' => $guestRequest->id]);
+    }
+
     public function test_guest_can_submit_multiple_housekeeping_requests_with_quantity(): void
     {
         $guest = Guest::factory()->create();

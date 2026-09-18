@@ -369,7 +369,7 @@ class HomeController extends Controller
             'special_requests' => 'nullable|string',
             'dining_id' => 'nullable|string',
             'dining_area' => 'nullable|string|max:100',
-            'dining_schedule' => 'nullable|string|max:100',
+            'dining_schedule' => 'nullable|string|max:255',
             'quantity' => 'nullable|integer|min:1',
             'duration_hours' => 'nullable|integer|min:1',
             'facility_id' => 'nullable|string',
@@ -414,7 +414,7 @@ class HomeController extends Controller
         if ($paymentProofFile) {
             $paymentProofPath = $paymentProofFile->store('payment-proofs', 'public');
             $validated['payment_details'] = preg_replace('/\s*•\s*Proof:\s*[^•]*/i', '', (string) ($validated['payment_details'] ?? ''));
-            $validated['payment_details'] = trim((string) $validated['payment_details']) . ' • Proof: storage/' . $paymentProofPath;
+            $validated['payment_details'] = trim((string) $validated['payment_details']) . ' • Proof: ' . \Illuminate\Support\Facades\Storage::disk('public')->url($paymentProofPath);
         }
 
         if (!empty($validated['facility_id'])) {
@@ -824,7 +824,63 @@ class HomeController extends Controller
             $reservation->setRelation('payments', $source->relationLoaded('payments') ? $source->getRelation('payments') : collect());
 
             return $reservation;
-        })->sortByDesc('created_at')->values();
+        })->sortByDesc('created_at')->values()->map(function (Reservation $reservation) {
+            $matchingRoomReservations = RoomReservation::with('room')
+                ->where('guest_email', $reservation->guest_email)
+                ->whereDate('check_in', $reservation->check_in)
+                ->whereDate('check_out', $reservation->check_out)
+                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                ->get();
+            $matchingFacilityReservations = FacilityReservation::with('facility')
+                ->where('guest_email', $reservation->guest_email)
+                ->whereDate('check_in', $reservation->check_in)
+                ->whereDate('check_out', $reservation->check_out)
+                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                ->get();
+            $matchingEventReservations = EventReservation::with('event')
+                ->where('guest_email', $reservation->guest_email)
+                ->whereDate('check_in', $reservation->check_in)
+                ->whereDate('check_out', $reservation->check_out)
+                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                ->get();
+            $matchingDiningReservations = DiningReservation::with('diningItems.diningMenu')
+                ->where('guest_email', $reservation->guest_email)
+                ->whereDate('check_in', $reservation->check_in)
+                ->whereDate('check_out', $reservation->check_out)
+                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                ->get();
+
+            if ($matchingRoomReservations->isEmpty()
+                && $matchingFacilityReservations->isEmpty()
+                && $matchingEventReservations->isEmpty()
+                && $matchingDiningReservations->isEmpty()) {
+                return $reservation;
+            }
+
+            if (!$reservation->room && $matchingRoomReservations->first()?->room) {
+                $reservation->setRelation('room', $matchingRoomReservations->first()->room);
+            }
+
+            $reservation->facility_id = $matchingFacilityReservations->pluck('facility_id')->filter()->implode(',');
+            $reservation->event_id = $matchingEventReservations->pluck('event_id')->filter()->implode(',');
+            $reservation->setRelation(
+                'diningItems',
+                $matchingDiningReservations->flatMap(fn ($diningReservation) => $diningReservation->diningItems)->values()
+            );
+            $reservation->total_amount = $matchingRoomReservations
+                ->concat($matchingFacilityReservations)
+                ->concat($matchingEventReservations)
+                ->concat($matchingDiningReservations)
+                ->sum(fn ($relatedReservation) => (float) $relatedReservation->total_amount);
+
+            return $reservation;
+        })->unique(function (Reservation $reservation) {
+            return implode('|', [
+                $reservation->guest_email,
+                optional($reservation->check_in)->format('Y-m-d'),
+                optional($reservation->check_out)->format('Y-m-d'),
+            ]);
+        })->values();
 
         return view('profile-receipts', compact('receipts'));
     }
@@ -868,6 +924,18 @@ class HomeController extends Controller
         $reservation->delete();
 
         return redirect()->route('guest.records')->with('success', 'Your reservation has been deleted.');
+    }
+
+    public function deleteGuestRequest(Request $request, GuestRequest $guestRequest)
+    {
+        $guest = Auth::guard('guest')->user();
+        abort_unless($guest, 403);
+
+        abort_unless($guestRequest->guest_id === $guest->id, 403, 'You can only delete your own requests.');
+
+        $guestRequest->delete();
+
+        return redirect()->route('guest.records')->with('success', 'Your request has been deleted.');
     }
 
     public function cancelReservation(Request $request, $reservation)

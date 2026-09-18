@@ -1525,7 +1525,7 @@
                 dining_date: item.date || diningDate?.value || null,
             })));
             reservationDiningArea.value = selectedDining.map(item => item.table).filter(Boolean).join(',');
-            reservationDiningSchedule.value = selectedDining.map(item => item.schedule).filter(Boolean).join(',');
+            reservationDiningSchedule.value = [...new Set(selectedDining.map(item => item.schedule).filter(Boolean))].join(',');
             reservationDiningQuantity.value = selectedDiningQuantity || '';
             reservationFacilityId.value = selectedFacilities.map(item => item.id).filter(Boolean).join(',');
             reservationFacilityQuantity.value = selectedFacilities[0]?.quantity || '';

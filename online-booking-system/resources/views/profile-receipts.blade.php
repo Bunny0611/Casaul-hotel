@@ -127,6 +127,52 @@
         font-weight: 600;
     }
 
+    .receipt-payment-details {
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid #d9e5ef;
+    }
+
+    .receipt-payment-details h4 {
+        margin: 0 0 8px;
+        color: #07549a;
+        font-size: 14px;
+    }
+
+    .receipt-payment-details p {
+        display: grid;
+        grid-template-columns: minmax(120px, 0.8fr) minmax(0, 1.2fr);
+        gap: 12px;
+        margin: 6px 0;
+        color: #4b5563;
+        font-size: 13px;
+    }
+
+    .receipt-payment-details strong {
+        overflow-wrap: anywhere;
+        color: #334155;
+    }
+
+    .receipt-payment-proof {
+        margin-top: 12px;
+    }
+
+    .receipt-payment-proof-label {
+        display: block;
+        margin-bottom: 8px;
+        color: #64748b;
+    }
+
+    .receipt-payment-proof img {
+        display: block;
+        width: min(360px, 100%);
+        max-height: 280px;
+        border: 1px solid #d9e5ef;
+        border-radius: 6px;
+        object-fit: contain;
+        background: #f8fafc;
+    }
+
     .receipt-close {
         position: absolute;
         top: -8px;
@@ -272,7 +318,7 @@
                     <tr>
                         <th>#</th>
                         <th>Receipt ID</th>
-                        <th>Room</th>
+                        <th>Category</th>
                         <th>Check-in</th>
                         <th>Check-out</th>
                         <th>Total</th>
@@ -349,14 +395,30 @@
                                     ];
                                 }
                             }
+                            $paymentProofUrl = null;
+                            if (preg_match('/(?:^|•)\s*Proof:\s*([^•\s]+)/i', (string) $reservation->payment_details, $paymentProofMatches)) {
+                                $paymentProofPath = $paymentProofMatches[1];
+                                $paymentProofUrl = str_starts_with($paymentProofPath, 'http')
+                                    ? $paymentProofPath
+                                    : asset(str_starts_with($paymentProofPath, 'storage/')
+                                        ? $paymentProofPath
+                                        : 'storage/payment-proofs/' . ltrim($paymentProofPath, '/'));
+                            }
+                            $receiptCategory = 'all';
+                            $categoryReceiptLines = $reservationReceiptLines;
+                            $categoryTotal = collect($categoryReceiptLines)->sum(fn ($line) => (float) str_replace(['₱', ','], '', $line['amount']));
+                            $categoryName = collect($categoryReceiptLines)
+                                ->map(fn ($line) => explode(' - ', $line['description'])[0])
+                                ->unique()
+                                ->implode(', ') ?: 'Reservation';
                         @endphp
                         <tr>
                             <td>{{ $index + 1 }}</td>
                             <td>RES-{{ str_pad($reservation->id, 4, '0', STR_PAD_LEFT) }}</td>
-                            <td>{{ $reservation->room->room_type ?? 'Room' }}</td>
+                            <td>{{ $categoryName }}</td>
                             <td>{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}</td>
                             <td>{{ \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y') }}</td>
-                            <td>₱{{ number_format($reservation->total_amount, 2) }}</td>
+                            <td>₱{{ number_format($categoryTotal, 2) }}</td>
                             <td>
                                 <span class="status-badge status-{{ $reservation->status }}">
                                     {{ ucfirst($reservation->status) }}
@@ -372,9 +434,13 @@
                                     data-check-in="{{ \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') }}"
                                     data-check-out="{{ \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y') }}"
                                     data-guests="{{ $reservation->number_of_guests ?? 2 }} Guests"
+                                    data-category="{{ $receiptCategory }}"
                                     data-room="{{ $reservation->room->room_type ?? 'Room' }}"
-                                    data-total="₱{{ number_format($reservation->total_amount, 2) }}"
-                                    data-line-items='@json($reservationReceiptLines)'>View Receipt</button>
+                                    data-total="₱{{ number_format($categoryTotal, 2) }}"
+                                    data-payment-method='@json($reservation->payment_method ?? "")'
+                                    data-payment-details='@json($reservation->payment_details ?? "")'
+                                    data-payment-proof='@json($paymentProofUrl)'
+                                    data-line-items='@json($categoryReceiptLines)'>View Receipt</button>
                             </td>
                         </tr>
                     @endforeach
@@ -415,7 +481,7 @@
             <p><span>Check-in</span><strong id="guest-receipt-checkin">—</strong></p>
             <p><span>Check-out</span><strong id="guest-receipt-checkout">—</strong></p>
             <p><span>Guests</span><strong id="guest-receipt-guests">2 Guests</strong></p>
-            <p><span>Room</span><strong id="guest-receipt-room">None</strong></p>
+            <p id="guest-receipt-room-row"><span>Room</span><strong id="guest-receipt-room">None</strong></p>
         </div>
         <div class="receipt-content" id="guest-receipt-content"></div>
         <div class="receipt-notes">
@@ -440,11 +506,35 @@
         const receiptCheckOut = document.getElementById('guest-receipt-checkout');
         const receiptGuests = document.getElementById('guest-receipt-guests');
         const receiptRoom = document.getElementById('guest-receipt-room');
+        const receiptRoomRow = document.getElementById('guest-receipt-room-row');
         const receiptContent = document.getElementById('guest-receipt-content');
 
         const totalValue = button.dataset.total || '₱0.00';
         const guestCount = button.dataset.guests || '2 Guests';
         const roomName = button.dataset.room || 'Room';
+        const receiptCategory = button.dataset.category || 'rooms';
+        const parseDataValue = (value, fallback = '') => {
+            try {
+                return JSON.parse(value);
+            } catch (error) {
+                return value || fallback;
+            }
+        };
+        const paymentMethod = parseDataValue(button.dataset.paymentMethod, '—') || '—';
+        const paymentDetails = parseDataValue(button.dataset.paymentDetails, '') || '';
+        const paymentProof = parseDataValue(button.dataset.paymentProof, '') || '';
+        const escapeHtml = (value) => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        let lineItems = [];
+        try {
+            lineItems = JSON.parse(button.dataset.lineItems || '[]');
+        } catch (error) {
+            lineItems = [];
+        }
 
         guestName.textContent = button.dataset.guestName || 'Guest';
         guestEmail.textContent = button.dataset.guestEmail || 'guest@example.com';
@@ -454,6 +544,19 @@
         receiptCheckOut.textContent = button.dataset.checkOut || '—';
         receiptGuests.textContent = guestCount;
         receiptRoom.textContent = roomName;
+        receiptRoomRow.hidden = receiptCategory !== 'rooms';
+        document.getElementById('guest-receipt-title').textContent = `${receiptCategory.toUpperCase()} RECEIPT`;
+        const paymentDetailRows = paymentDetails
+            .split('•')
+            .map(detail => detail.trim())
+            .filter(Boolean)
+            .map(detail => {
+                const separatorIndex = detail.indexOf(':');
+                const label = separatorIndex > -1 ? detail.slice(0, separatorIndex).trim() : 'Details';
+                const value = separatorIndex > -1 ? detail.slice(separatorIndex + 1).trim() : detail;
+                return `<p><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></p>`;
+            })
+            .join('');
 
         receiptContent.innerHTML = `
             <table class="receipt-table">
@@ -466,18 +569,24 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>Room - ${roomName}</td>
-                        <td>${totalValue}</td>
-                        <td>${totalValue}</td>
-                    </tr>
+                    ${lineItems.length ? lineItems.map(item => `<tr>
+                        <td>${escapeHtml(item.quantity ?? 1)}</td>
+                        <td>${escapeHtml(item.description ?? 'Reservation Item')}</td>
+                        <td>${escapeHtml(item.unitPrice ?? totalValue)}</td>
+                        <td>${escapeHtml(item.amount ?? totalValue)}</td>
+                    </tr>`).join('') : `<tr><td colspan="4">No ${escapeHtml(receiptCategory)} items selected.</td></tr>`}
                     <tr class="receipt-total-row">
                         <td colspan="3">Total</td>
                         <td>${totalValue}</td>
                     </tr>
                 </tbody>
             </table>
+            <div class="receipt-payment-details">
+                <h4>Payment</h4>
+                <p><span>Payment method</span><strong>${escapeHtml(paymentMethod)}</strong></p>
+                ${paymentDetailRows || '<p><span>Payment details</span><strong>—</strong></p>'}
+                ${paymentProof ? `<div class="receipt-payment-proof"><span class="receipt-payment-proof-label">Payment proof</span><a href="${escapeHtml(paymentProof)}" target="_blank" rel="noopener"><img src="${escapeHtml(paymentProof)}" alt="Payment proof"></a></div>` : ''}
+            </div>
         `;
 
         modal.classList.add('open');
