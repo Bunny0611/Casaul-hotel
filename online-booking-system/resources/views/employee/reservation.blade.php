@@ -1054,6 +1054,16 @@
                     <input type="text" name="guest_phone" value="{{ old('guest_phone') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     @error('guest_phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700" for="editReservationStatus">Status</label>
+                    <select id="editReservationStatus" name="status" disabled class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="checked-in">Checked-in</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
                 <div id="roomReservationField" data-reservation-fields="rooms">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Room</label>
                     <select name="room_id" data-required-for="rooms" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
@@ -1923,6 +1933,7 @@
 
         form.reset();
         methodInput.disabled = true;
+        document.getElementById('editReservationStatus').disabled = true;
         form.action = "{{ route('employee.reservations.store') }}";
         const categoryInput = document.getElementById('reservationCategory');
         if (categoryInput) {
@@ -1970,6 +1981,8 @@
         setValue('[name="guest_name"]', reservation.guest_name);
         setValue('[name="guest_email"]', reservation.guest_email);
         setValue('[name="guest_phone"]', reservation.guest_phone);
+        setValue('#editReservationStatus', reservation.status || 'pending');
+        document.getElementById('editReservationStatus').disabled = false;
         setValue(`[data-reservation-fields="${category}"] [name="room_id"], [data-reservation-fields="${category}"] [name="event_id"], [data-reservation-fields="${category}"] [name="facility_id"], [data-reservation-fields="${category}"] [name="dining_area"]`, reservation.room_id || reservation.event_id || reservation.facility_id || reservation.dining_area);
 
         if (category === 'event') {

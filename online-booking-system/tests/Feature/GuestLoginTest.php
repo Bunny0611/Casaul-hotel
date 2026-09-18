@@ -146,7 +146,7 @@ class GuestLoginTest extends TestCase
             'check_out' => now()->addDay()->toDateString(),
             'status' => 'pending',
             'total_amount' => 2500,
-            'amount_paid' => 0,
+            'amount_paid' => 1000,
         ]);
 
         $this->actingAs($guest, 'guest')
@@ -157,6 +157,13 @@ class GuestLoginTest extends TestCase
         $this->assertDatabaseHas('reservations', [
             'id' => $reservation->id,
             'status' => 'cancelled',
+        ]);
+        $this->assertDatabaseHas('refunds', [
+            'reservationable_type' => \App\Models\Reservation::class,
+            'reservationable_id' => $reservation->id,
+            'refund_amount' => 1000,
+            'reason' => 'Cancellation',
+            'status' => 'Pending',
         ]);
     }
 }

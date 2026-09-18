@@ -1308,14 +1308,22 @@ class AdminController extends Controller
             }
 
             if ($validated['status'] === 'cancelled' && $reservation->status !== 'cancelled') {
-                $bookingTotals = $this->overallReservationTotals($reservation);
+                $reservation->loadMissing('payments');
+                $originalTotal = round((float) ($reservation->total_amount ?? 0), 2);
+                $totalPaid = round(min(
+                    max(
+                        (float) ($reservation->amount_paid ?? 0),
+                        (float) $reservation->payments->sum('amount')
+                    ),
+                    max($originalTotal, 0)
+                ), 2);
                 $refundReason = $reservation->status === 'checked-in' ? 'Early Check-out' : 'Cancellation';
-                $refundAmount = $this->calculateRefundAmount($bookingTotals['total'], 0, $bookingTotals['paid']);
+                $refundAmount = $this->calculateRefundAmount($originalTotal, 0, $totalPaid);
                 $this->createRefundIfDue(
                     $reservation,
-                    $bookingTotals['total'],
+                    $originalTotal,
                     0,
-                    $bookingTotals['paid'],
+                    $totalPaid,
                     $refundReason
                 );
                 $refundMessage = $refundAmount > 0
@@ -1522,6 +1530,7 @@ class AdminController extends Controller
 
         $validated = $request->validate([
             'category' => ['required', 'in:rooms,facilities,event,dining'],
+            'status' => ['required', Rule::in(['pending', 'confirmed', 'checked-in', 'completed', 'cancelled'])],
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'facility_id' => ['nullable', 'required_if:category,facilities', 'exists:facilities,id'],
             'event_id' => ['nullable', 'required_if:category,event', 'exists:events,id'],
@@ -1712,13 +1721,36 @@ class AdminController extends Controller
     {
         abort_if($refund->status === 'Refunded', 422, 'This refund has already been marked as refunded.');
 
+        $validated = $request->validate([
+            'refund_payment_method' => ['nullable', Rule::in(['Cash', 'GCash', 'Maya', 'Bank Transfer', 'Credit/Debit Card'])],
+            'refund_reference_number' => ['nullable', 'string', 'max:255', Rule::requiredIf(fn () => filled($request->input('refund_payment_method')) && $request->input('refund_payment_method') !== 'Cash')],
+            'refund_receipt' => ['nullable', 'image', 'max:5120', Rule::requiredIf(fn () => filled($request->input('refund_payment_method')) && $request->input('refund_payment_method') !== 'Cash')],
+        ]);
+
+        $paymentMethod = $validated['refund_payment_method'] ?? 'Cash';
+
+        if ($request->hasFile('refund_receipt')) {
+            $validated['refund_receipt'] = $request->file('refund_receipt')->store('refund-receipts', 'public');
+        }
+
         $refund->update([
             'status' => 'Refunded',
             'processed_by' => $request->user()->id,
             'refund_date' => now()->toDateString(),
+            'refund_payment_method' => $paymentMethod,
+            'refund_reference_number' => $validated['refund_reference_number'] ?? null,
+            'refund_receipt' => $validated['refund_receipt'] ?? null,
         ]);
 
         return redirect()->back()->with('success', 'Refund marked as refunded successfully.');
+    }
+
+    public function destroyRefund(Request $request, Refund $refund)
+    {
+        $refund->delete();
+
+        $routePrefix = $request->routeIs('employee.*') ? 'employee.' : 'admin.';
+        return redirect()->route($routePrefix . 'refunds')->with('success', 'Refund deleted successfully.');
     }
 
     private function overallReservationTotals($reservation): array
@@ -1813,11 +1845,33 @@ class AdminController extends Controller
 
     public function employeeGuestRequests()
     {
-        $requestQuery = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
+        $baseQuery = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
             ->where('department', 'Employee')
             ->latest('submitted_at');
+        $allRequests = (clone $baseQuery)->get();
+        $requestQuery = clone $baseQuery;
+
+        if (request('search')) {
+            $search = request('search');
+            $requestId = preg_match('/^REQ-?(\d+)$/i', $search, $matches) ? (int) $matches[1] : null;
+            $requestQuery->where(function ($query) use ($search, $requestId) {
+                $query->where('request_type', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('guest', fn ($guestQuery) => $guestQuery->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('room', fn ($roomQuery) => $roomQuery->where('room_number', 'like', "%{$search}%"))
+                    ->orWhereHas('reservation', fn ($reservationQuery) => $reservationQuery->where('guest_name', 'like', "%{$search}%"));
+
+                if ($requestId !== null) {
+                    $query->orWhere('id', $requestId);
+                }
+            });
+        }
+
+        if (request('status') && request('status') !== 'All Status') {
+            $requestQuery->where('status', request('status'));
+        }
+
         $requests = $requestQuery->paginate(5)->withQueryString();
-        $allRequests = (clone $requestQuery)->get();
         $employees = Staff::where('role', 'employee')->orderBy('name')->get();
 
         return view('employee.guest-requests', compact('requests', 'allRequests', 'employees'));

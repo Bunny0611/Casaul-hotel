@@ -73,6 +73,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/calendar', [AdminController::class, 'employeeCalendar'])->name('calendar');
     Route::get('/reservation', [AdminController::class, 'reservations'])->name('reservation');
     Route::get('/refunds', [AdminController::class, 'refundHistory'])->name('refunds');
+    Route::delete('/refunds/{refund}', [AdminController::class, 'destroyRefund'])->name('refunds.destroy');
     Route::patch('/refunds/{refund}/mark-refunded', [AdminController::class, 'markRefunded'])->name('refunds.mark-refunded');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
@@ -208,6 +209,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::delete('/rooms/{id}', [AdminController::class, 'destroyRoom'])->name('rooms.destroy');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations');
     Route::get('/refunds', [AdminController::class, 'refundHistory'])->name('refunds');
+    Route::delete('/refunds/{refund}', [AdminController::class, 'destroyRefund'])->name('refunds.destroy');
     Route::patch('/refunds/{refund}/mark-refunded', [AdminController::class, 'markRefunded'])->name('refunds.mark-refunded');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
