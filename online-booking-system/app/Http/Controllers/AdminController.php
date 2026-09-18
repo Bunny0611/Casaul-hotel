@@ -568,6 +568,7 @@ class AdminController extends Controller
 
     public function storeInventoryItem(Request $request)
     {
+        $eventTimeOptions = collect(range(8, 22))->map(fn ($hour) => sprintf('%02d:00', $hour))->all();
         $validated = $request->validate([
             'category' => ['required', 'in:facilities,event,dining'],
             'name' => ['required', 'string', 'max:255'],
@@ -580,11 +581,19 @@ class AdminController extends Controller
             'status' => ['required', 'string', 'max:50'],
             'location' => ['nullable', 'string', 'max:255'],
             'capacity' => ['nullable', 'integer', 'min:1'],
-            'available_from' => ['nullable', 'date_format:H:i'],
-            'available_to' => ['nullable', 'date_format:H:i'],
+            'available_from' => ['required_if:category,event', 'nullable', 'date_format:H:i', Rule::in($eventTimeOptions)],
+            'available_to' => ['required_if:category,event', 'nullable', 'date_format:H:i', 'after:available_from', Rule::in($eventTimeOptions)],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
         ]);
+        if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
+            $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
+            $availableHours = Carbon::parse($validated['available_from'])->diffInHours(Carbon::parse($validated['available_to']));
+            if ((int) $validated['duration_hours'] > $availableHours) {
+                return back()->withErrors(['duration_hours' => 'Duration cannot exceed the selected availability window.'])->withInput();
+            }
+        }
         $validated['status'] = strtolower($validated['status']);
 
         $catalogModel = match ($validated['category']) {
@@ -612,6 +621,7 @@ class AdminController extends Controller
                 'price' => $validated['price'], 'capacity' => $validated['capacity'] ?? null,
                 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'location' => $validated['location'] ?? null,
                 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null,
+                'duration_hours' => $validated['duration_hours'] ?? 4,
                 'status' => $validated['status'], 'image' => $validated['image'] ?? null,
             ]),
             default => DiningMenu::create([
@@ -679,6 +689,7 @@ class AdminController extends Controller
     {
         $category = $request->input('category');
         $item = $category === 'facilities' ? Facility::findOrFail($id) : ($category === 'event' ? Event::findOrFail($id) : DiningMenu::findOrFail($id));
+        $eventTimeOptions = collect(range(8, 22))->map(fn ($hour) => sprintf('%02d:00', $hour))->all();
         $validated = $request->validate([
             'category' => ['required', 'in:facilities,event,dining'],
             'name' => ['required', 'string', 'max:255'],
@@ -691,11 +702,19 @@ class AdminController extends Controller
             'status' => ['required', 'string', 'max:50'],
             'location' => ['nullable', 'string', 'max:255'],
             'capacity' => ['nullable', 'integer', 'min:1'],
-            'available_from' => ['nullable', 'date_format:H:i'],
-            'available_to' => ['nullable', 'date_format:H:i'],
+            'available_from' => ['required_if:category,event', 'nullable', 'date_format:H:i', Rule::in($eventTimeOptions)],
+            'available_to' => ['required_if:category,event', 'nullable', 'date_format:H:i', 'after:available_from', Rule::in($eventTimeOptions)],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
         ]);
+        if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
+            $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
+            $availableHours = Carbon::parse($validated['available_from'])->diffInHours(Carbon::parse($validated['available_to']));
+            if ((int) $validated['duration_hours'] > $availableHours) {
+                return back()->withErrors(['duration_hours' => 'Duration cannot exceed the selected availability window.'])->withInput();
+            }
+        }
         $validated['status'] = strtolower($validated['status']);
 
         $model = $category === 'facilities' ? Facility::class : ($category === 'event' ? Event::class : DiningMenu::class);
@@ -710,7 +729,7 @@ class AdminController extends Controller
         $item->update($category === 'facilities'
             ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? $item->scheduling_requirement ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
             : ($category === 'event'
-                ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
+                ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'duration_hours' => $validated['duration_hours'] ?? $item->duration_hours ?? 4, 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
                 : $validated));
 
         return redirect()->route('admin.rooms')->with('success', 'Inventory item updated successfully.');

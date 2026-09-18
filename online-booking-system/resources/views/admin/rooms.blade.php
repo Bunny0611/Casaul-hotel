@@ -459,6 +459,7 @@
                 <div id="editInventoryTypeField"><label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label><select id="editInventoryType" name="event_type" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Birthday</option><option>Wedding</option></select></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label><input id="editInventoryPrice" name="price" type="number" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label><select id="editInventoryPricingBasis" name="pricing_basis" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Stay + Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option><option>Per Event</option></select></div>
+                <div id="editInventoryDurationField" class="hidden"><label id="editInventoryDurationLabel" class="mb-1 block text-sm font-medium text-gray-700">Duration (hours)</label><input id="editInventoryDuration" name="duration_hours" type="number" min="1" max="24" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div><label id="editInventoryCapacityLabel" class="mb-1 block text-sm font-medium text-gray-700">Capacity / Maximum Guests</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div id="editInventorySchedulingField"><label class="mb-1 block text-sm font-medium text-gray-700">Scheduling Requirement</label><select id="editInventoryScheduling" name="scheduling_requirement" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>No Additional Schedule</option><option>Date Required</option><option>Date &amp; Time Required</option></select></div>
                 <div id="editInventoryQuantityField"><label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label><input id="editInventoryQuantity" name="quantity" type="number" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
@@ -585,7 +586,11 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label>
-                    <select name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option selected>Per Person</option><option>Per Hour</option></select>
+                    <select id="eventPricingBasis" name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option selected>Per Person</option><option>Per Hour</option></select>
+                </div>
+                <div>
+                    <label id="eventDurationLabel" class="mb-1 block text-sm font-medium text-gray-700">Fixed Duration (hours)</label>
+                    <input id="eventDurationHours" type="number" name="duration_hours" value="4" min="1" max="24" required class="w-full rounded-lg border border-gray-300 px-3 py-2">
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Maximum Guests</label>
@@ -593,11 +598,19 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Available From</label>
-                    <input type="time" name="available_from" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <select id="eventAvailableFrom" name="available_from" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        @for($hour = 8; $hour <= 22; $hour++)
+                            <option value="{{ sprintf('%02d:00', $hour) }}">{{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}</option>
+                        @endfor
+                    </select>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Available To</label>
-                    <input type="time" name="available_to" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <select id="eventAvailableTo" name="available_to" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        @for($hour = 8; $hour <= 22; $hour++)
+                            <option value="{{ sprintf('%02d:00', $hour) }}" {{ $hour === 22 ? 'selected' : '' }}>{{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}</option>
+                        @endfor
+                    </select>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
@@ -1094,6 +1107,8 @@
         document.getElementById('editInventoryPrice').value = item.price || 0;
         const quantityField = document.getElementById('editInventoryQuantityField');
         const quantityInput = document.getElementById('editInventoryQuantity');
+        const durationField = document.getElementById('editInventoryDurationField');
+        const durationInput = document.getElementById('editInventoryDuration');
         const typeField = document.getElementById('editInventoryTypeField');
         const typeInput = document.getElementById('editInventoryType');
         const fromField = document.getElementById('editInventoryFromField');
@@ -1102,6 +1117,10 @@
         const isFacility = category === 'facilities';
         quantityField.classList.toggle('hidden', isEvent || isFacility);
         quantityInput.disabled = isEvent || isFacility;
+        durationField.classList.toggle('hidden', !isEvent);
+        durationInput.disabled = !isEvent;
+        durationInput.value = item.duration_hours || 4;
+        document.getElementById('editInventoryDurationLabel').textContent = item.pricing_basis === 'Per Hour' ? 'Maximum Duration (hours)' : 'Fixed Duration (hours)';
         typeField.classList.toggle('hidden', isFacility);
         typeInput.disabled = isFacility;
         const schedulingField = document.getElementById('editInventorySchedulingField');
@@ -1179,6 +1198,7 @@
     }
 
     function openEventModal() {
+        configureEventDurationFields();
         document.getElementById('addEventModal').classList.remove('hidden');
         document.getElementById('addEventModal').classList.add('flex');
     }
@@ -1187,6 +1207,32 @@
         document.getElementById('addEventModal').classList.add('hidden');
         document.getElementById('addEventModal').classList.remove('flex');
         document.getElementById('addEventForm').reset();
+    }
+
+    function configureEventDurationFields() {
+        const pricingBasis = document.getElementById('eventPricingBasis');
+        const durationInput = document.getElementById('eventDurationHours');
+        const durationLabel = document.getElementById('eventDurationLabel');
+        if (!pricingBasis || !durationInput || !durationLabel) return;
+
+        const isPerHour = pricingBasis.value === 'Per Hour';
+        durationLabel.textContent = isPerHour ? 'Maximum Duration (hours)' : 'Fixed Duration (hours)';
+        durationInput.readOnly = false;
+    }
+
+    function configureEventAvailabilityTimes() {
+        const from = document.getElementById('eventAvailableFrom');
+        const to = document.getElementById('eventAvailableTo');
+        if (!from || !to) return;
+
+        const fromMinutes = Number(from.value.slice(0, 2)) * 60;
+        to.querySelectorAll('option').forEach(option => {
+            option.disabled = Number(option.value.slice(0, 2)) * 60 <= fromMinutes;
+        });
+        if (to.selectedOptions[0]?.disabled) {
+            const firstAvailable = [...to.options].find(option => !option.disabled);
+            to.value = firstAvailable ? firstAvailable.value : '';
+        }
     }
 
     function openDiningModal() {
@@ -1478,6 +1524,9 @@
 
         document.getElementById('add-facilities-button').addEventListener('click', openFacilityModal);
         document.getElementById('add-event-button').addEventListener('click', openEventModal);
+        document.getElementById('eventPricingBasis').addEventListener('change', configureEventDurationFields);
+        document.getElementById('eventAvailableFrom').addEventListener('change', configureEventAvailabilityTimes);
+        configureEventAvailabilityTimes();
 
         updateSelectedCount();
         activateTab(@json($activeTab));

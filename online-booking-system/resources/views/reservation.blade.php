@@ -584,7 +584,7 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
-                        <article class="reservation-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}">
+                        <article class="reservation-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}" data-available-from="{{ $event->available_from ?: '08:00' }}" data-available-to="{{ $event->available_to ?: '22:00' }}" data-duration-hours="{{ $event->duration_hours ?: 4 }}">
                             <img src="{{ $event->image ? asset('storage/' . $event->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $event->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $event->name }}</h4>
@@ -596,7 +596,12 @@
                                     <div class="event-time-row">
                                         <div>
                                             <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
-                                            <input id="eventStart-{{ $event->id }}" class="field-input event-start-time" type="time" lang="en-US">
+                                            <select id="eventStart-{{ $event->id }}" class="field-input event-start-time">
+                                                <option value="">Select start time</option>
+                                                @for($hour = 8; $hour <= 22; $hour++)
+                                                    <option value="{{ sprintf('%02d:00', $hour) }}">{{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}</option>
+                                                @endfor
+                                            </select>
                                         </div>
                                         <div>
                                             <label class="field-label" for="eventEnd-{{ $event->id }}">End Time</label>
@@ -604,7 +609,7 @@
                                         </div>
                                     </div>
                                     <label class="field-label" for="eventDuration-{{ $event->id }}">How Many Hours?</label>
-                                    <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="12" step="1" value="1">
+                                    <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="{{ $event->duration_hours ?: 4 }}" step="1" value="{{ $event->duration_hours ?: 4 }}" {{ strtolower($event->pricing_basis ?? '') === 'per person' ? 'readonly' : '' }}>
                                     <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests (max {{ $event->capacity }})</label>
                                     <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric">
                                 </div>
@@ -1017,6 +1022,7 @@
     <input type="hidden" name="check_out_time" id="reservationCheckOutTime">
     <input type="hidden" name="event_start_time" id="reservationEventStartTime">
     <input type="hidden" name="event_end_time" id="reservationEventEndTime">
+    <input type="hidden" name="duration_hours" id="reservationEventDuration">
     <input type="hidden" name="guest_name" id="reservationGuestName" value="{{ $guest?->name ?? 'Guest' }}">
     <input type="hidden" name="guest_email" id="reservationGuestEmail" value="{{ $guest?->email ?? 'guest@example.com' }}">
     <input type="hidden" name="guest_phone" id="reservationGuestPhone" value="{{ $guest?->contact_no ?? '0000000000' }}">
@@ -1070,6 +1076,7 @@
         const reservationCheckOutTime = document.getElementById('reservationCheckOutTime');
         const reservationEventStartTime = document.getElementById('reservationEventStartTime');
         const reservationEventEndTime = document.getElementById('reservationEventEndTime');
+        const reservationEventDuration = document.getElementById('reservationEventDuration');
         const reservationGuestName = document.getElementById('reservationGuestName');
         const reservationGuestEmail = document.getElementById('reservationGuestEmail');
         const reservationGuestPhone = document.getElementById('reservationGuestPhone');
@@ -1516,6 +1523,7 @@
             reservationCheckOutTime.value = bookingEndTime;
             reservationEventStartTime.value = selectedEventStartTime;
             reservationEventEndTime.value = selectedEventEndTime;
+            reservationEventDuration.value = selectedEvent[0]?.durationHours || '';
             reservationDiningId.value = selectedDining.map(item => item.id).filter(Boolean).join(',');
             reservationDiningItems.value = JSON.stringify(selectedDining.map(item => ({
                 dining_id: item.id,
@@ -1811,7 +1819,11 @@
         const updateEventEndTime = (card) => {
             const startTime = card.querySelector('.event-start-time')?.value || '';
             const durationInput = card.querySelector('.event-duration');
-            const durationHours = Math.max(1, Math.min(12, Number(durationInput?.value || 1)));
+            const pricingBasis = String(card.dataset.pricingBasis || '').toLowerCase();
+            const configuredDuration = Math.max(1, Number(card.dataset.durationHours || 4));
+            const durationHours = pricingBasis === 'per person'
+                ? configuredDuration
+                : Math.max(1, Math.min(configuredDuration, Number(durationInput?.value || 1)));
             const endTimeInput = card.querySelector('.event-end-time');
             if (!endTimeInput) {
                 return '';
@@ -1834,21 +1846,49 @@
             return endTime;
         };
 
+        const configureEventTimeOptions = (card) => {
+            const startInput = card.querySelector('.event-start-time');
+            const durationInput = card.querySelector('.event-duration');
+            if (!startInput || !durationInput) return;
+
+            const fromMinutes = Number(card.dataset.availableFrom.slice(0, 2)) * 60 + Number(card.dataset.availableFrom.slice(3, 5));
+            const toMinutes = Number(card.dataset.availableTo.slice(0, 2)) * 60 + Number(card.dataset.availableTo.slice(3, 5));
+            const pricingBasis = String(card.dataset.pricingBasis || '').toLowerCase();
+            const configuredDuration = Math.max(1, Number(card.dataset.durationHours || 4));
+            const durationHours = pricingBasis === 'per person'
+                ? configuredDuration
+                : Math.max(1, Math.min(configuredDuration, Number(durationInput.value || 1)));
+
+            durationInput.max = String(configuredDuration);
+            durationInput.value = durationHours;
+            startInput.querySelectorAll('option[value]').forEach(option => {
+                const [hours, minutes] = option.value.split(':').map(Number);
+                const startMinutes = hours * 60 + minutes;
+                option.disabled = startMinutes < fromMinutes || startMinutes + (durationHours * 60) > toMinutes;
+            });
+            if (startInput.selectedOptions[0]?.disabled) {
+                startInput.value = '';
+            }
+        };
+
         document.querySelectorAll('.event-date, .event-start-time, .event-duration, .event-guests').forEach(input => {
             input.addEventListener('change', function () {
                 const card = this.closest('.reservation-card');
                 const eventItem = selectedEvent.find(item => item.id === card.dataset.eventId);
+                configureEventTimeOptions(card);
                 const endTime = updateEventEndTime(card);
                 if (eventItem) {
                     eventItem.guests = normalizeEventGuestCount(card.querySelector('.event-guests'), card);
                     eventItem.date = card.querySelector('.event-date')?.value || '';
                     eventItem.startTime = card.querySelector('.event-start-time')?.value || '';
                     eventItem.endTime = endTime;
-                    eventItem.durationHours = Math.max(1, Math.min(12, Number(card.querySelector('.event-duration')?.value || 1)));
+                    eventItem.durationHours = Number(card.querySelector('.event-duration')?.value || 1);
                     updateSummary();
                 }
             });
         });
+
+        document.querySelectorAll('.reservation-card[data-category="event"]').forEach(configureEventTimeOptions);
 
         document.getElementById('diningDate').addEventListener('change', function () {
             selectedDining.forEach(item => {
@@ -1954,7 +1994,7 @@
                             date: card.querySelector('.event-date')?.value || '',
                             startTime: card.querySelector('.event-start-time')?.value || '',
                             endTime: card.querySelector('.event-end-time')?.value || '',
-                            durationHours: Math.max(1, Math.min(12, Number(card.querySelector('.event-duration')?.value || 1))),
+                            durationHours: Number(card.querySelector('.event-duration')?.value || card.dataset.durationHours || 4),
                         });
                         this.textContent = 'Selected';
                     } else {

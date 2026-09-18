@@ -8,7 +8,7 @@ class Event extends Model
 {
     protected $table = 'events';
 
-    protected $fillable = ['event_type', 'name', 'description', 'price', 'pricing_basis', 'capacity', 'location', 'available_from', 'available_to', 'status', 'image'];
+    protected $fillable = ['event_type', 'name', 'description', 'price', 'pricing_basis', 'capacity', 'location', 'available_from', 'available_to', 'duration_hours', 'status', 'image'];
 
-    protected $casts = ['price' => 'decimal:2'];
+    protected $casts = ['price' => 'decimal:2', 'duration_hours' => 'integer'];
 }

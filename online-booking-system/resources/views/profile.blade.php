@@ -15,6 +15,22 @@
         </div>
     @endif
 
+    @if(session('status'))
+        <div class="reservation-alert reservation-alert--success">
+            {{ session('status') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="reservation-alert reservation-alert--error">
+            <ul>
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="profile-shell">
         <div class="profile-card">
             <div class="profile-avatar">
@@ -28,7 +44,52 @@
                 @endif
                 <p class="profile-meta"><i class="fas fa-id-badge"></i> Guest Account</p>
             </div>
+            <button type="button" class="profile-edit-trigger" id="profileEditTrigger" aria-controls="profileEditForm" aria-expanded="{{ $errors->any() ? 'true' : 'false' }}">
+                <i class="fas fa-pen"></i>
+                <span>Edit Profile</span>
+            </button>
         </div>
+
+        <form method="POST" action="{{ route('profile.update') }}" class="profile-edit-card{{ $errors->any() ? ' is-open' : '' }}" id="profileEditForm">
+            @csrf
+            @method('PUT')
+            <div class="profile-edit-heading">
+                <div>
+                    <p class="eyebrow">Account details</p>
+                    <h2>Edit your information</h2>
+                </div>
+                <i class="fas fa-user-edit" aria-hidden="true"></i>
+            </div>
+
+            <div class="profile-form-grid">
+                <label>
+                    Full name
+                    <input type="text" name="name" value="{{ old('name', auth('guest')->user()->name) }}" required autocomplete="name">
+                </label>
+                <label>
+                    Email address
+                    <input type="email" name="email" value="{{ old('email', auth('guest')->user()->email) }}" required autocomplete="email">
+                </label>
+                <label>
+                    Contact number
+                    <input type="text" name="contact_no" value="{{ old('contact_no', auth('guest')->user()->contact_no) }}" maxlength="30" autocomplete="tel">
+                </label>
+            </div>
+
+            <div class="profile-password-heading">Change password <span>Leave blank to keep your current password.</span></div>
+            <div class="profile-form-grid">
+                <label>
+                    New password
+                    <input type="password" name="password" minlength="6" autocomplete="new-password">
+                </label>
+                <label>
+                    Confirm new password
+                    <input type="password" name="password_confirmation" minlength="6" autocomplete="new-password">
+                </label>
+            </div>
+
+            <button type="submit" class="profile-save-btn"><i class="fas fa-save"></i> Save Changes</button>
+        </form>
 
         <div class="profile-actions">
             <a href="{{ route('guest.records') }}" class="profile-action-btn">
@@ -52,5 +113,18 @@
         </div>
     </div>
 </div>
+
+<script>
+    const profileEditTrigger = document.getElementById('profileEditTrigger');
+    const profileEditForm = document.getElementById('profileEditForm');
+
+    profileEditTrigger?.addEventListener('click', function () {
+        const isOpen = profileEditForm.classList.toggle('is-open');
+        profileEditTrigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (isOpen) {
+            profileEditForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+</script>
 
 @endsection
