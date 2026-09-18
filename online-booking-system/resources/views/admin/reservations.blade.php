@@ -395,7 +395,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($roomReservations as $reservation)
-                        <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
+                        <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
                             <td class="reservation-actions-cell px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -463,7 +463,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($facilitiesReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->facility?->name ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->facility?->name ?? '')) }}">
                             <td class="reservation-actions-cell px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -531,7 +531,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($eventsReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->event?->name ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->event?->name ?? '')) }}">
                             <td class="reservation-actions-cell px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -599,7 +599,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($diningReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->dining_area ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->dining_area ?? '')) }}">
                             <td class="reservation-actions-cell px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -872,7 +872,7 @@
         };
 
         rows.forEach(row => {
-            const id = row.querySelector('form[action*="/reservations/"]')?.action.match(/\/reservations\/(\d+)/)?.[1];
+            const id = row.dataset.reservationId;
             const source = row.dataset.source;
             if (!id || !source) return;
             const cell = row.querySelector('td');
