@@ -179,6 +179,8 @@ class EmployeeGuestRequestsTest extends TestCase
             'preferred_time' => '15:00',
             'status' => 'New',
             'quantity' => 2,
+            'unit_price' => 80,
+            'subtotal' => 160,
             'submitted_at' => $submittedAt,
         ]);
 
@@ -193,6 +195,8 @@ class EmployeeGuestRequestsTest extends TestCase
             'preferred_time' => '15:00',
             'status' => 'New',
             'quantity' => 1,
+            'unit_price' => 200,
+            'subtotal' => 200,
             'submitted_at' => $submittedAt,
         ]);
 
@@ -202,5 +206,76 @@ class EmployeeGuestRequestsTest extends TestCase
         $response->assertOk();
         $this->assertCount(1, $response->original->getData()['requests']);
         $this->assertStringContainsString('Extra Towels', $response->original->getData()['requests']->first()->request_type);
+        $requestData = $response->original->getData()['requestData']->first();
+        $this->assertSame('Varies', $requestData['unitPriceFormatted']);
+        $this->assertSame(360.0, (float) $requestData['subtotal']);
+    }
+
+    public function test_billable_add_ons_are_price_tagged_and_added_to_the_room_reservation_total(): void
+    {
+        $housekeepingStaff = Staff::factory()->create(['role' => 'housekeeping']);
+        $guest = Guest::factory()->create();
+        $room = \App\Models\Room::create([
+            'room_number' => '205',
+            'room_type' => 'Deluxe',
+            'price' => 2200,
+            'floor' => '2',
+            'status' => 'occupied',
+            'capacity' => 2,
+        ]);
+
+        $reservation = \App\Models\RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => $guest->name,
+            'guest_email' => $guest->email,
+            'guest_phone' => '09123456789',
+            'check_in' => now()->toDateString(),
+            'check_out' => now()->addDay()->toDateString(),
+            'number_of_guests' => 2,
+            'status' => 'checked-in',
+            'total_amount' => 2200,
+            'amount_paid' => 0,
+        ]);
+
+        $this->actingAs($guest, 'guest')
+            ->post(route('guest.requests.store'), [
+                'request_items' => json_encode([
+                    ['type' => 'Extra Towels', 'quantity' => 2],
+                ]),
+                'description' => 'Need extra towels.',
+                'priority' => 'Normal',
+                'preferred_time' => '15:30',
+            ])
+            ->assertRedirect(route('guest.records'));
+
+        $guestRequest = GuestRequest::query()->where('guest_id', $guest->id)->firstOrFail();
+        $this->assertSame(80.0, (float) $guestRequest->unit_price);
+        $this->assertSame(160.0, (float) $guestRequest->subtotal);
+        $this->assertTrue((bool) $guestRequest->is_billable);
+        $this->assertSame('App\\Models\\RoomReservation', $guestRequest->reservation_type);
+        $this->assertSame($reservation->id, $guestRequest->reservation_key);
+
+        $this->actingAs($housekeepingStaff)
+            ->get(route('housekeeping.guest-requests'))
+            ->assertOk()
+            ->assertSee('80.00')
+            ->assertSee('160.00');
+
+        $this->actingAs($housekeepingStaff)
+            ->get(route('housekeeping.guest-requests.show', $guestRequest))
+            ->assertOk()
+            ->assertSee('80.00')
+            ->assertSee('160.00');
+
+        $this->actingAs($housekeepingStaff)
+            ->patch(route('housekeeping.guest-requests.update', $guestRequest->id), [
+                'status' => 'Completed',
+                'notes' => 'Added towels to the room.',
+            ])
+            ->assertOk();
+
+        $reservation->refresh();
+        $this->assertSame(2360.0, (float) $reservation->total_amount);
+        $this->assertSame('posted', $guestRequest->fresh()->billing_status);
     }
 }

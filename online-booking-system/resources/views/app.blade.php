@@ -89,7 +89,19 @@
                         @php
                             $guestHasReceiptAccess = \App\Models\Reservation::where('guest_email', auth('guest')->user()->email)
                                 ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
-                                ->exists();
+                                ->exists()
+                                || \App\Models\RoomReservation::where('guest_email', auth('guest')->user()->email)
+                                    ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                                    ->exists()
+                                || \App\Models\EventReservation::where('guest_email', auth('guest')->user()->email)
+                                    ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                                    ->exists()
+                                || \App\Models\FacilityReservation::where('guest_email', auth('guest')->user()->email)
+                                    ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                                    ->exists()
+                                || \App\Models\DiningReservation::where('guest_email', auth('guest')->user()->email)
+                                    ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                                    ->exists();
                         @endphp
                         @if($guestHasReceiptAccess)
                             <a href="{{ route('guest.receipts') }}" class="profile-menu-item" role="menuitem">

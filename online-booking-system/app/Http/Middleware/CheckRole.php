@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckRole
@@ -15,9 +16,12 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        $user = $request->user($role === 'guest' ? 'guest' : 'web');
+        $guard = $role === 'guest' ? 'guest' : 'web';
+        $user = $request->user($guard)
+            ?? $request->user()
+            ?? Auth::guard($guard)->user();
 
-        if (!$user || $user->role !== $role) {
+        if (!$user || !isset($user->role) || $user->role !== $role) {
             abort(403, 'Unauthorized access. You do not have permission to view this page.');
         }
 

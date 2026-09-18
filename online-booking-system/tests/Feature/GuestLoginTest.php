@@ -68,6 +68,41 @@ class GuestLoginTest extends TestCase
         $response->assertDontSee('id="guest-signin-trigger"');
     }
 
+    public function test_checked_in_room_reservation_makes_receipts_visible_in_profile_menu(): void
+    {
+        $guest = \App\Models\Guest::factory()->create([
+            'name' => 'Checked In Guest',
+            'email' => 'checkedin@example.com',
+        ]);
+
+        $room = \App\Models\Room::create([
+            'room_number' => '205',
+            'room_type' => 'Deluxe',
+            'price' => 2500,
+            'floor' => '2',
+            'status' => 'occupied',
+            'capacity' => 2,
+        ]);
+
+        \App\Models\RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => $guest->name,
+            'guest_email' => $guest->email,
+            'guest_phone' => '09123456789',
+            'check_in' => now()->toDateString(),
+            'check_out' => now()->addDay()->toDateString(),
+            'number_of_guests' => 2,
+            'status' => 'checked-in',
+            'total_amount' => 3500,
+            'amount_paid' => 0,
+        ]);
+
+        $response = $this->actingAs($guest, 'guest')->get(route('home'));
+
+        $response->assertOk();
+        $response->assertSee('My Receipts');
+    }
+
     public function test_invalid_guest_signup_returns_validation_errors_to_homepage(): void
     {
         $response = $this->from(route('home'))->post(route('guest.register.submit'), [

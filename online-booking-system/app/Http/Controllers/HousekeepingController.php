@@ -277,15 +277,19 @@ class HousekeepingController extends Controller
             return md5(implode('|', $signature));
         })->map(function ($group) {
             $first = $group->first();
+            $reservation = $first->reservation ?: $this->resolveReservationForGuestRequest($first);
 
             return (object) [
                 'id' => $first->id,
                 'guest_id' => $first->guest_id,
                 'reservation_id' => $first->reservation_id,
+                'reservation_key' => $first->reservation_key,
                 'room_id' => $first->room_id,
                 'guest' => $first->guest,
                 'room' => $first->room,
-                'reservation' => $first->reservation,
+                'reservation' => $reservation,
+                'unit_price' => $first->unit_price,
+                'subtotal' => $group->sum(fn ($item) => (float) ($item->subtotal ?? ((float) ($item->unit_price ?? 0) * (int) ($item->quantity ?? 1)))),
                 'request_type' => $group->pluck('request_type')->unique()->implode(', '),
                 'description' => $first->description,
                 'department' => $first->department,
@@ -297,6 +301,10 @@ class HousekeepingController extends Controller
                 'items' => $group->map(fn ($item) => [
                     'request_type' => $item->request_type,
                     'quantity' => (int) ($item->quantity ?? 1),
+                    'unit_price' => (float) ($item->unit_price ?? 0),
+                    'unit_price_formatted' => '₱' . number_format((float) ($item->unit_price ?? 0), 2),
+                    'subtotal' => (float) ($item->subtotal ?? ((float) ($item->unit_price ?? 0) * (int) ($item->quantity ?? 1))),
+                    'subtotal_formatted' => '₱' . number_format((float) ($item->subtotal ?? ((float) ($item->unit_price ?? 0) * (int) ($item->quantity ?? 1))), 2),
                     'status' => $item->status,
                     'guest_note' => $item->description ?: 'No note provided',
                 ])->values()->all(),
@@ -305,13 +313,70 @@ class HousekeepingController extends Controller
 
         $requests = $groupedRequests;
 
+        $requestData = $groupedRequests->map(function ($group) {
+            $first = $group;
+            $quantity = (int) ($group->quantity ?? 1);
+            $unitPrice = (float) ($first->unit_price ?? 0.0);
+            $subtotal = (float) ($first->subtotal ?? ($unitPrice * $quantity));
+            $itemPrices = collect($first->items ?? [])
+                ->pluck('unit_price')
+                ->map(fn ($price) => (float) $price)
+                ->unique()
+                ->values();
+            $unitPriceLabel = $itemPrices->count() > 1
+                ? 'Varies'
+                : '₱' . number_format($unitPrice, 2);
+            $reservationKey = $first->reservation_key ?? ($first->reservation?->id ?? null);
+            $statusLabel = match (strtolower((string) ($first->status ?? 'New'))) {
+                'new' => 'Pending',
+                'in progress' => 'In Progress',
+                'delivered' => 'Delivered',
+                'completed' => 'Completed',
+                default => ucfirst((string) ($first->status ?? 'New')),
+            };
+
+            return [
+                'id' => $first->id,
+                'requestId' => 'REQ-' . str_pad($first->id, 4, '0', STR_PAD_LEFT),
+                'guest' => $first->guest?->name ?? $first->reservation?->guest_name ?? 'Guest',
+                'room' => $first->room?->room_number ?? '—',
+                'reservation' => $first->reservation ? 'RES-' . str_pad($first->reservation->id, 4, '0', STR_PAD_LEFT) : ($reservationKey ? 'RES-' . str_pad((int) $reservationKey, 4, '0', STR_PAD_LEFT) : 'N/A'),
+                'requestCategory' => $first->department ?? 'Housekeeping',
+                'requestType' => $first->request_type,
+                'description' => $first->description,
+                'guestNote' => $first->description ?: 'No note provided',
+                'specialRequest' => $first->description ?: 'No special request.',
+                'quantity' => $quantity,
+                'unitPrice' => $unitPrice,
+                'unitPriceFormatted' => $unitPriceLabel,
+                'subtotal' => $subtotal,
+                'subtotalFormatted' => '₱' . number_format($subtotal, 2),
+                'status' => $first->status ?? 'New',
+                'statusLabel' => $statusLabel,
+                'checkIn' => $first->reservation?->check_in ? $first->reservation->check_in->format('M d, Y') : '—',
+                'checkOut' => $first->reservation?->check_out ? $first->reservation->check_out->format('M d, Y') : '—',
+                'nights' => $first->reservation ? (($first->reservation->nights ?? '1') . ' Nights') : '—',
+                'preferredTime' => $first->preferred_time ? date('g:i A', strtotime($first->preferred_time)) : 'Not specified',
+                'estimatedArrivalTime' => $first->preferred_time ? date('g:i A', strtotime($first->preferred_time)) : '—',
+                'submitted' => $first->submitted_at ? $first->submitted_at->format('M d, Y \a\t g:i A') : '—',
+                'submittedShort' => $first->submitted_at ? $first->submitted_at->format('M d, Y') : '—',
+                'priority' => $first->priority,
+                'items' => $group->items ?? [[
+                    'request_type' => $first->request_type,
+                    'quantity' => $quantity,
+                    'status' => $first->status ?? 'New',
+                    'guest_note' => $first->description ?: 'No note provided',
+                ]],
+            ];
+        })->values();
+
         $stats = [
             'pending' => $groupedRequests->whereIn('status', ['New', 'In Progress'])->count(),
             'resolved' => $groupedRequests->where('status', 'Completed')->count(),
             'total' => $groupedRequests->count(),
         ];
 
-        return view('housekeeping.guest-requests', compact('requests', 'groupedRequests', 'stats'));
+        return view('housekeeping.guest-requests', compact('requests', 'groupedRequests', 'requestData', 'stats'));
     }
 
     public function guestRequestDetails($id)
@@ -320,29 +385,47 @@ class HousekeepingController extends Controller
             ->where('department', 'Housekeeping')
             ->findOrFail($id);
 
+        $statusLabel = match (strtolower((string) $request->status)) {
+            'new' => 'Pending',
+            'in progress' => 'In Progress',
+            'delivered' => 'Delivered',
+            'completed' => 'Completed',
+            default => ucfirst((string) $request->status),
+        };
+
+        $unitPrice = (float) ($request->unit_price ?? 0);
+        $quantity = (int) ($request->quantity ?? 1);
+        $subtotal = (float) ($request->subtotal ?? ($unitPrice * $quantity));
+
         $requestData = [
             'id' => $request->id,
             'requestId' => 'REQ-' . str_pad($request->id, 4, '0', STR_PAD_LEFT),
-            'reservation' => $request->reservation ? 'RES-' . str_pad($request->reservation->id, 4, '0', STR_PAD_LEFT) : 'N/A',
+            'reservation' => $request->reservation ? 'RES-' . str_pad($request->reservation->id, 4, '0', STR_PAD_LEFT) : ($request->reservation_key ? 'RES-' . str_pad((int) $request->reservation_key, 4, '0', STR_PAD_LEFT) : 'N/A'),
             'guest' => $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest',
-            'room' => $request->room ? ($request->room->room_type ? $request->room->room_type . ' - ' . $request->room->room_number : $request->room->room_number) : 'Room info unavailable',
+            'room' => $request->room ? ($request->room->room_number ?: ($request->room->room_type ? $request->room->room_type : 'Room')) : ($request->room_id ? 'Room ' . $request->room_id : 'Room info unavailable'),
             'checkIn' => $request->reservation?->check_in ? $request->reservation->check_in->format('M d, Y') : '—',
             'checkOut' => $request->reservation?->check_out ? $request->reservation->check_out->format('M d, Y') : '—',
             'nights' => $request->reservation ? (($request->reservation->nights ?? '1') . ' Nights') : '—',
             'status' => $request->status,
+            'statusLabel' => $statusLabel,
             'requestType' => $request->request_type,
+            'requestCategory' => $request->department ?? 'Housekeeping',
             'description' => $request->description,
             'preferredTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : 'Not specified',
             'priority' => $request->priority,
             'submitted' => $request->submitted_at ? $request->submitted_at->format('M d, Y \a\t g:i A') : '—',
             'submittedShort' => $request->submitted_at ? $request->submitted_at->format('M d, Y') : '—',
-            'quantity' => (int) ($request->quantity ?? 1),
+            'quantity' => $quantity,
+            'unitPrice' => $unitPrice,
+            'unitPriceFormatted' => '₱' . number_format($unitPrice, 2),
+            'subtotal' => $subtotal,
+            'subtotalFormatted' => '₱' . number_format($subtotal, 2),
             'guestNote' => $request->description ?: 'No note provided',
             'specialRequest' => $request->description ?: 'No special request.',
             'estimatedArrivalTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : '—',
             'items' => [[
                 'request_type' => $request->request_type,
-                'quantity' => (int) ($request->quantity ?? 1),
+                'quantity' => $quantity,
                 'status' => $request->status,
                 'guest_note' => $request->description ?: 'No note provided',
             ]],
@@ -354,7 +437,7 @@ class HousekeepingController extends Controller
     public function updateGuestRequest(Request $request, $id)
     {
         $guestRequest = GuestRequest::findOrFail($id);
-        
+
         $validated = $request->validate([
             'notes' => 'nullable|string',
             'status' => 'nullable|string|in:New,In Progress,Delivered,Completed',
@@ -366,6 +449,18 @@ class HousekeepingController extends Controller
 
         if (isset($validated['status'])) {
             $guestRequest->status = $validated['status'];
+
+            if ($validated['status'] === 'Completed' && $guestRequest->is_billable && $guestRequest->billing_status !== 'posted') {
+                $reservation = $this->resolveReservationForGuestRequest($guestRequest);
+                if ($reservation) {
+                    $currentTotal = (float) ($reservation->total_amount ?? 0);
+                    $reservation->update([
+                        'total_amount' => $currentTotal + (float) $guestRequest->subtotal,
+                    ]);
+                    $guestRequest->billing_status = 'posted';
+                    $guestRequest->billing_posted_at = now();
+                }
+            }
         }
 
         $guestRequest->save();
@@ -375,6 +470,16 @@ class HousekeepingController extends Controller
             'message' => 'Guest request updated successfully',
             'data' => $guestRequest,
         ]);
+    }
+
+    protected function resolveReservationForGuestRequest(GuestRequest $guestRequest)
+    {
+        if ($guestRequest->reservation_type === 'App\\Models\\RoomReservation' && $guestRequest->reservation_key) {
+            return \App\Models\RoomReservation::find($guestRequest->reservation_key);
+        }
+
+        return \App\Models\Reservation::find($guestRequest->reservation_id)
+            ?? \App\Models\RoomReservation::find($guestRequest->reservation_key);
     }
 
     public function markGuestRequestDelivered(Request $request, $id)

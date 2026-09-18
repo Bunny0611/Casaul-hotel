@@ -15,6 +15,10 @@ return new class extends Migration
             return;
         }
 
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         DB::statement("ALTER TABLE rooms MODIFY status ENUM('OC', 'OD', 'VR', 'VC', 'VD', 'HSD', 'HSUC', 'OOO', 'BLO', 'NS', 'SO', 'HU', 'DND', 'available', 'occupied', 'reserved', 'maintenance', 'blocked', 'out_of_order') NOT NULL DEFAULT 'VR'");
         DB::statement("ALTER TABLE rooms MODIFY cleaning_status ENUM('clean', 'dirty', 'in_progress', 'ready', 'blocked', 'out_of_order') NOT NULL DEFAULT 'clean'");
     }
@@ -25,6 +29,10 @@ return new class extends Migration
     public function down(): void
     {
         if (! Schema::hasTable('rooms')) {
+            return;
+        }
+
+        if (DB::getDriverName() !== 'mysql') {
             return;
         }
 

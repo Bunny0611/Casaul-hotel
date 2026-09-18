@@ -10,7 +10,8 @@
         'total' => 0,
     ];
 
-    $requestData = ($groupedRequests ?? ($requests ?? collect()))->map(function ($request) {
+    if (! isset($requestData)) {
+        $requestData = ($groupedRequests ?? ($requests ?? collect()))->map(function ($request) {
         $items = is_array($request->items ?? null) ? $request->items : [[
             'request_type' => $request->request_type,
             'quantity' => (int) ($request->quantity ?? 1),
@@ -18,7 +19,7 @@
             'guest_note' => $request->description ?: 'No note provided',
         ]];
 
-        return [
+            return [
             'id' => $request->id,
             'requestId' => 'REQ-' . str_pad($request->id, 4, '0', STR_PAD_LEFT),
             'reservation' => $request->reservation ? 'RES-' . str_pad($request->reservation->id, 4, '0', STR_PAD_LEFT) : 'N/A',
@@ -39,8 +40,9 @@
             'specialRequest' => $request->description ?: 'No special request.',
             'estimatedArrivalTime' => $request->preferred_time ? date('g:i A', strtotime($request->preferred_time)) : '—',
             'items' => $items,
-        ];
-    })->values()->all();
+            ];
+        })->values()->all();
+    }
 @endphp
 
 <style>
@@ -473,13 +475,13 @@
     .summary-card { height: fit-content; }
     .summary-total { display: flex; align-items: center; gap: 12px; padding: 15px; margin-bottom: 15px; background: #f8fafc; border-radius: 10px; }
     .summary-total i { color: #2563eb; font-size: 24px; }
-    .summary-total strong { display: block; color: #273449; font-size: 20px; }
-    .summary-total span { color: #475569; font-size: 10px; }
-    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #edf0f2; color: #475569; font-size: 11px; }
+    .summary-total strong { display: block; color: #273449; font-size: 24px; }
+    .summary-total span { color: #475569; font-size: 12px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #edf0f2; color: #475569; font-size: 13px; }
     .summary-row b { color: #273449; }
     .summary-info { padding: 12px 0; border-bottom: 1px solid #edf0f2; }
-    .summary-info label { display: block; color: #8a94a6; font-size: 10px; text-transform: uppercase; }
-    .summary-info strong { display: block; margin-top: 5px; color: #273449; font-size: 11px; }
+    .summary-info label { display: block; color: #8a94a6; font-size: 11px; text-transform: uppercase; }
+    .summary-info strong { display: block; margin-top: 5px; color: #273449; font-size: 13px; line-height: 1.45; }
     .details-back { display: inline-block; margin-bottom: 14px; padding: 0; color: #718096; background: none; border: 0; font-family: inherit; font-size: 12px; cursor: pointer; }
 
     .request-table-footer {
@@ -1089,16 +1091,21 @@
                     </div>
                 </div>
                 <div class="details-card specific-request-content">
-                    <h3><i class="far fa-calendar-alt"></i> Reservation Information</h3>
+                    <h3><i class="fas fa-list-alt"></i> Guest Request Details</h3>
                     <div class="reservation-grid">
-                        <div><span class="detail-label">Reservation ID</span><span id="detailReservationId" class="detail-value">—</span></div>
-                        <div><span class="detail-label">Guest Name</span><span id="detailGuestName" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Guest</span><span id="detailGuest" class="detail-value">—</span></div>
                         <div><span class="detail-label">Room</span><span id="detailRoom" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Reservation</span><span id="detailReservationId" class="detail-value">—</span></div>
                     </div>
                     <div class="reservation-grid">
-                        <div><span class="detail-label">Check-in</span><span id="detailCheckIn" class="detail-value">—</span></div>
-                        <div><span class="detail-label">Check-out</span><span id="detailCheckOut" class="detail-value">—</span></div>
-                        <div><span class="detail-label">Nights / Guests</span><span id="detailNights" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Request Category</span><span id="detailRequestCategory" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Request</span><span id="detailRequestType" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Status</span><span id="detailStatus" class="detail-value">—</span></div>
+                    </div>
+                    <div class="reservation-grid">
+                        <div><span class="detail-label">Quantity</span><span id="detailQuantity" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Unit Price</span><span id="detailUnitPrice" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Subtotal</span><span id="detailSubtotal" class="detail-value">—</span></div>
                     </div>
                 </div>
 
@@ -1106,7 +1113,7 @@
                     <h3><i class="fas fa-concierge-bell"></i> Requested Add-Ons</h3>
                     <div class="request-table-wrap">
                         <table class="addon-table">
-                            <thead><tr><th>Add-On Item</th><th>Quantity</th><th>Guest Note</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Add-On Item</th><th>Quantity</th><th>Amount</th><th>Status</th></tr></thead>
                             <tbody id="requestedAddOnsTableBody">
                                 <tr>
                                     <td colspan="4">
@@ -1141,7 +1148,7 @@
                 <div class="summary-info"><label>Requested On</label><strong id="summaryRequestedOn">—</strong></div>
                 <div class="summary-info"><label>Requested By</label><strong id="summaryGuestName">Guest<br><small>(Guest)</small></strong></div>
                 <div class="summary-info"><label>Related Booking</label><strong id="summaryBooking">—</strong></div>
-                <button type="button" class="details-action" style="width:100%;margin-top:15px" onclick="openRequestDetails()">View Reservation Details <i class="fas fa-arrow-right"></i></button>
+                <button type="button" class="details-action" style="width:100%;margin-top:15px" onclick="openRequestDetails()">View All Requests <i class="fas fa-arrow-right"></i></button>
             </aside>
         </div>
     </div>
@@ -1357,19 +1364,24 @@ function openGuestRequest(requestId) {
         description.textContent = 'View and manage this guest\'s requested add-ons and facilities.';
         status.innerHTML = '<i class="far fa-clock"></i> Status: ' + (localStorage.getItem('housekeeping-request-status-' + request.requestId) || request.status);
 
-        document.getElementById('detailReservationId').textContent = request.reservation;
-        document.getElementById('detailGuestName').textContent = request.guest;
+        const requestStatus = request.statusLabel || request.status || 'Pending';
+
+        document.getElementById('detailGuest').textContent = request.guest;
         document.getElementById('detailRoom').textContent = request.room;
-        document.getElementById('detailCheckIn').textContent = request.checkIn;
-        document.getElementById('detailCheckOut').textContent = request.checkOut;
-        document.getElementById('detailNights').innerHTML = request.nights;
+        document.getElementById('detailReservationId').textContent = request.reservation;
+        document.getElementById('detailRequestCategory').textContent = request.requestCategory || 'Housekeeping';
+        document.getElementById('detailRequestType').textContent = request.requestType;
+        document.getElementById('detailQuantity').textContent = request.quantity ?? 1;
+        document.getElementById('detailUnitPrice').textContent = request.unitPriceFormatted || '₱0.00';
+        document.getElementById('detailSubtotal').textContent = request.subtotalFormatted || '₱0.00';
+        document.getElementById('detailStatus').textContent = requestStatus;
 
         const addOnBody = document.getElementById('requestedAddOnsTableBody');
         if (addOnBody) {
             const items = Array.isArray(request.items) && request.items.length ? request.items : [{
                 request_type: request.requestType,
                 quantity: request.quantity ?? 1,
-                guest_note: request.guestNote || 'No note provided',
+                subtotal_formatted: request.subtotalFormatted || '₱0.00',
                 status: request.status,
             }];
 
@@ -1377,7 +1389,7 @@ function openGuestRequest(requestId) {
                 <tr>
                     <td>${item.request_type || request.requestType}</td>
                     <td>${item.quantity ?? request.quantity ?? 1}</td>
-                    <td>${item.guest_note || request.guestNote || 'No note provided'}</td>
+                    <td>${item.subtotal_formatted || request.subtotalFormatted || '₱0.00'}</td>
                     <td><span class="status-badge ${String(item.status || request.status).toLowerCase().replace(/\s+/g, '-')}">${item.status || request.status}</span></td>
                 </tr>
             `).join('');
@@ -1395,7 +1407,7 @@ function openGuestRequest(requestId) {
 
         document.getElementById('summaryRequestedOn').textContent = request.submittedShort || '—';
         document.getElementById('summaryGuestName').innerHTML = request.guest + '<br><small>(Guest)</small>';
-        document.getElementById('summaryBooking').innerHTML = request.room + '<br>' + request.checkIn + ' - ' + request.checkOut;
+        document.getElementById('summaryBooking').innerHTML = request.room + '<br><small>' + request.reservation + '</small><br><small>' + request.checkIn + ' - ' + request.checkOut + '</small>';
         document.getElementById('housekeepingNotes').value = '';
         const summaryRow = document.querySelector('.details-card.summary-card');
         if (summaryRow) {

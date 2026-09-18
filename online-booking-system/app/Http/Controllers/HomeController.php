@@ -777,11 +777,43 @@ class HomeController extends Controller
         $guest = Auth::guard('guest')->user();
         abort_unless($guest, 403);
 
-        $receipts = Reservation::with('room')
-            ->where('guest_email', $guest->email)
-            ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $receipts = collect([
+            Reservation::with(['room', 'diningItems.diningMenu', 'payments'])
+                ->where('guest_email', $guest->email)
+                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                ->get(),
+            RoomReservation::with(['room', 'payments'])
+                ->where('guest_email', $guest->email)
+                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                ->get()
+                ->each(fn ($reservation) => $reservation->category = 'rooms'),
+            EventReservation::with(['event', 'diningItems.diningMenu', 'payments'])
+                ->where('guest_email', $guest->email)
+                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                ->get()
+                ->each(fn ($reservation) => $reservation->category = 'event'),
+            FacilityReservation::with(['facility', 'payments'])
+                ->where('guest_email', $guest->email)
+                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                ->get()
+                ->each(fn ($reservation) => $reservation->category = 'facilities'),
+            DiningReservation::with(['diningItems.diningMenu', 'payments'])
+                ->where('guest_email', $guest->email)
+                ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
+                ->get()
+                ->each(fn ($reservation) => $reservation->category = 'dining'),
+        ])->flatten(1)->map(function ($source) {
+            $reservation = new Reservation();
+            $reservation->forceFill($source->getAttributes());
+            $reservation->setAttribute('category', $source->category ?? 'rooms');
+            $reservation->setRelation('room', $source->relationLoaded('room') && $source->getRelation('room') ? $source->getRelation('room') : null);
+            $reservation->setRelation('facilities', $source->relationLoaded('facility') && $source->facility ? collect([$source->facility]) : collect());
+            $reservation->setRelation('events', $source->relationLoaded('event') && $source->event ? collect([$source->event]) : collect());
+            $reservation->setRelation('diningItems', $source->relationLoaded('diningItems') ? $source->getRelation('diningItems') : collect());
+            $reservation->setRelation('payments', $source->relationLoaded('payments') ? $source->getRelation('payments') : collect());
+
+            return $reservation;
+        })->sortByDesc('created_at')->values();
 
         return view('profile-receipts', compact('receipts'));
     }
@@ -877,6 +909,16 @@ class HomeController extends Controller
             'Late Checkout', 'Early Check-in', 'Dining/Food Request',
             'Transportation Request', 'Other Request',
         ]);
+        $billableRequestPrices = [
+            'Extra Towels' => 80.00,
+            'Extra Pillows' => 50.00,
+            'Extra Blanket' => 120.00,
+            'Toiletries' => 80.00,
+            'Room Cleaning' => 200.00,
+            'Change Bedsheets' => 150.00,
+            'Other Housekeeping Request' => 100.00,
+            'Dining/Food Request' => 250.00,
+        ];
 
         $validated = $request->validate([
             'request_items' => ['required', 'json'],
@@ -902,10 +944,16 @@ class HomeController extends Controller
                 continue;
             }
 
+            $unitPrice = (float) ($billableRequestPrices[$type] ?? 0.00);
+            $subtotal = $unitPrice * $quantity;
+
             $validItems[] = [
                 'request_type' => $type,
                 'quantity' => $quantity,
                 'department' => in_array($type, $housekeepingTypes, true) ? 'Housekeeping' : 'Employee',
+                'unit_price' => $unitPrice,
+                'subtotal' => $subtotal,
+                'is_billable' => $unitPrice > 0,
             ];
         }
 
@@ -915,9 +963,15 @@ class HomeController extends Controller
 
         $createdIds = [];
         foreach ($validItems as $item) {
+            $legacyReservationId = $reservation->getAttribute('request_reservation_id');
+            $reservationType = $reservation->getAttribute('reservation_type')
+                ?? ($reservation instanceof \App\Models\RoomReservation ? 'App\\Models\\RoomReservation' : get_class($reservation));
+            $reservationKey = $reservation->getAttribute('reservation_key') ?? $reservation->id;
+            $requestReservationId = $reservationType === 'App\\Models\\RoomReservation' ? null : $legacyReservationId;
+
             $guestRequest = GuestRequest::create([
                 'guest_id' => $guest->id,
-                'reservation_id' => $reservation->getAttribute('request_reservation_id'),
+                'reservation_id' => $requestReservationId,
                 'room_id' => $reservation->room_id,
                 'request_type' => $item['request_type'],
                 'description' => $validated['description'],
@@ -926,6 +980,12 @@ class HomeController extends Controller
                 'preferred_time' => $validated['preferred_time'] ?? null,
                 'status' => 'New',
                 'quantity' => $item['quantity'],
+                'unit_price' => $item['unit_price'],
+                'subtotal' => $item['subtotal'],
+                'is_billable' => $item['is_billable'],
+                'billing_status' => $item['is_billable'] ? 'pending' : 'not_required',
+                'reservation_type' => $reservationType,
+                'reservation_key' => $reservationKey,
                 'submitted_at' => now(),
             ]);
 
@@ -969,6 +1029,8 @@ class HomeController extends Controller
         $activeReservation = new Reservation();
         $activeReservation->forceFill($roomReservation->getAttributes());
         $activeReservation->setAttribute('request_reservation_id', null);
+        $activeReservation->setAttribute('reservation_type', 'App\\Models\\RoomReservation');
+        $activeReservation->setAttribute('reservation_key', $roomReservation->id);
         $activeReservation->setRelation('room', $roomReservation->room);
 
         return $activeReservation;
