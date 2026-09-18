@@ -324,7 +324,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($roomReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -516,7 +516,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($facilitiesReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->facility?->name ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->facility?->name ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -687,7 +687,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($eventsReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->event?->name ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->event?->name ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -873,7 +873,7 @@
                                 $qty = $item->quantity ?? 1;
                                 return $mealName . ' (x' . $qty . ')';
                             })->values()->all())
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->dining_area ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->dining_area ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -1599,14 +1599,14 @@
         };
 
         rows.forEach(row => {
-            const deleteForm = row.querySelector('form[action*="/reservations/"]');
-            const idMatch = deleteForm?.action.match(/\/reservations\/(\d+)/);
-            if (!idMatch) return;
+            const id = row.querySelector('form[action*="/reservations/"]')?.action.match(/\/reservations\/(\d+)/)?.[1];
+            const source = row.dataset.source;
+            if (!id || !source) return;
             const cell = row.querySelector('td');
             if (!cell) return;
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.value = idMatch[1];
+            checkbox.value = `${source}:${id}`;
             checkbox.className = 'reservation-select h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500';
             checkbox.setAttribute('aria-label', 'Select reservation');
             checkbox.addEventListener('change', updateSelection);

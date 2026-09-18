@@ -928,16 +928,30 @@ class AdminController extends Controller
         $validated = $request->validate([
             'category' => ['required', Rule::in(['rooms', 'facilities', 'event', 'dining'])],
             'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['integer', 'distinct', 'min:1'],
+            'ids.*' => ['string', 'distinct', 'regex:/^(?:[1-9][0-9]*|(?:reservations|room_reservations|facility_reservations|event_reservations|dining_reservations):[1-9][0-9]*)$/'],
         ]);
 
         $deleted = 0;
-        foreach ($validated['ids'] as $id) {
-            $reservation = match ($validated['category']) {
-                'rooms' => RoomReservation::find($id) ?? Reservation::find($id),
-                'event' => EventReservation::find($id) ?? Reservation::find($id),
-                'facilities' => FacilityReservation::find($id) ?? Reservation::find($id),
-                'dining' => DiningReservation::find($id) ?? Reservation::find($id),
+        foreach ($validated['ids'] as $reference) {
+            if (str_contains($reference, ':')) {
+                [$source, $id] = explode(':', $reference, 2);
+            } else {
+                $source = null;
+                $id = $reference;
+            }
+
+            $reservation = match ($source) {
+                'room_reservations' => RoomReservation::find($id),
+                'event_reservations' => EventReservation::find($id),
+                'facility_reservations' => FacilityReservation::find($id),
+                'dining_reservations' => DiningReservation::find($id),
+                'reservations' => Reservation::find($id),
+                default => match ($validated['category']) {
+                    'rooms' => RoomReservation::find($id) ?? Reservation::find($id),
+                    'event' => EventReservation::find($id) ?? Reservation::find($id),
+                    'facilities' => FacilityReservation::find($id) ?? Reservation::find($id),
+                    'dining' => DiningReservation::find($id) ?? Reservation::find($id),
+                },
             };
 
             if ($reservation instanceof Reservation) {
