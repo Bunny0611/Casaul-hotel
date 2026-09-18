@@ -69,6 +69,7 @@ Route::middleware(['auth:guest', 'verified', 'role:guest'])->group(function () {
 Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
     Route::redirect('/', '/employee/dashboard')->name('index');
     Route::get('/dashboard', [AdminController::class, 'employeeDashboard'])->name('dashboard');
+    Route::get('/calendar', [AdminController::class, 'employeeCalendar'])->name('calendar');
     Route::get('/reservation', [AdminController::class, 'reservations'])->name('reservation');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
@@ -157,6 +158,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
 // --- Protected Admin Routes (requires authentication) ---
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/calendar', [AdminController::class, 'adminCalendar'])->name('calendar');
     Route::get('/rooms', [AdminController::class, 'rooms'])->name('rooms');
     Route::get('/dining', [AdminController::class, 'diningOverview'])->name('dining');
     Route::get('/dining/tables', [AdminController::class, 'diningTables'])->name('dining.tables');

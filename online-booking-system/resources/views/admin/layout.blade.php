@@ -156,6 +156,10 @@
                     <i class="fas fa-calendar-check w-6"></i>
                     <span>Reservations</span>
                 </a>
+                <a href="{{ route('admin.calendar') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/calendar') ? 'active' : '' }}">
+                    <i class="fas fa-calendar-alt w-6"></i>
+                    <span>Calendar</span>
+                </a>
                 <a href="{{ route('admin.rooms') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/rooms') ? 'active' : '' }}">
                     <i class="fas fa-bed w-6"></i>
                     <span>Rooms</span>
