@@ -113,6 +113,32 @@
         });
     })->values();
     $overallReservationSummary = function ($reservation) use ($allReservationRows) {
+        $chargedAddOns = \App\Models\GuestRequest::with('reservation')
+            ->where('is_billable', true)
+            ->where('billing_status', 'posted')
+            ->get()
+            ->filter(function ($guestRequest) use ($reservation) {
+                $matchesReservationKey = $guestRequest->reservation_type === \App\Models\RoomReservation::class
+                    && (int) $guestRequest->reservation_key === (int) $reservation->id;
+                $matchesLegacyReservation = $guestRequest->reservation
+                    && $guestRequest->reservation->guest_email === $reservation->guest_email
+                    && optional($guestRequest->reservation->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
+
+                return $matchesReservationKey || $matchesLegacyReservation;
+            })
+            ->map(function ($guestRequest) {
+                $quantity = max((int) ($guestRequest->quantity ?? 1), 1);
+                $unitPrice = (float) ($guestRequest->unit_price ?? 0);
+
+                return [
+                    'name' => $guestRequest->request_type,
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'subtotal' => (float) ($guestRequest->subtotal ?? ($unitPrice * $quantity)),
+                    'charged_at' => $guestRequest->billing_posted_at?->toISOString(),
+                ];
+            })
+            ->values();
         $relatedRows = $allReservationRows->filter(function ($row) use ($reservation) {
             return $row->guest_email === $reservation->guest_email
                 && optional($row->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
@@ -138,7 +164,11 @@
             'events' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'event_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'event')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
             'dining' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'dining_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'dining')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
         ];
-        $grandTotal = array_sum($categoryAmounts);
+        $addOnTotal = round((float) $chargedAddOns->sum('subtotal'), 2);
+        if ($reservation->getTable() === 'room_reservations' && $addOnTotal > 0) {
+            $categoryAmounts['rooms'] = max($categoryAmounts['rooms'] - $addOnTotal, 0);
+        }
+        $grandTotal = round(array_sum($categoryAmounts) + $addOnTotal, 2);
         $paid = min($paid, $grandTotal);
         $recordedPayments = $relatedRows->flatMap(fn ($row) => $row->payments->map(function ($payment) {
             return [
@@ -155,6 +185,8 @@
             'facilities_amount' => $categoryAmounts['facilities'],
             'event_amount' => $categoryAmounts['events'],
             'dining_amount' => $categoryAmounts['dining'],
+            'add_on_total' => $addOnTotal,
+            'charged_add_ons' => $chargedAddOns->all(),
             'grand_total' => $grandTotal,
             'amount_paid' => $paid,
             'balance_due' => max($grandTotal - $paid, 0),
@@ -191,6 +223,20 @@
         return [$category . ':' . $row->id => [
             'guest_payment_details' => $summary['guest_payment_details'],
             'recorded_payments' => $summary['recorded_payments'],
+        ]];
+    });
+    $employeeChargedAddOnMap = $allReservationRowsForDetails->mapWithKeys(function ($row) use ($overallReservationSummary) {
+        $category = match ($row->getTable()) {
+            'room_reservations' => 'rooms',
+            'facility_reservations' => 'facilities',
+            'event_reservations' => 'event',
+            default => 'dining',
+        };
+        $summary = $overallReservationSummary($row);
+
+        return [$category . ':' . $row->id => [
+            'items' => $summary['charged_add_ons'],
+            'total' => $summary['add_on_total'],
         ]];
     });
     $roomSelectedServices = function ($roomReservation) use ($facilitiesReservations) {
@@ -865,7 +911,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($diningReservations as $reservation)
-                            @php($reservationDiningItems = $reservation->diningItems()->with('diningMenu')->get())
+                            @php($reservationDiningItems = method_exists($reservation, 'diningItems') ? $reservation->diningItems()->with('diningMenu')->get() : collect())
                             @php($reservationMealNames = $reservationDiningItems->map(fn ($item) => $item->diningMenu?->name ?? 'Meal Item')->filter()->unique()->values()->all())
                             @php($reservationMealText = !empty($reservationMealNames) ? implode(', ', $reservationMealNames) : ($reservation->diningMenu ? $reservation->diningMenu->name : 'N/A'))
                             @php($reservationMealDetails = $reservationDiningItems->map(function ($item) {
@@ -953,7 +999,7 @@
                                 {{ ucfirst($reservation->status) }}
                             </span>
                         </div>
-                        @php($reservationDiningItems = $reservation->diningItems()->with('diningMenu')->get())
+                        @php($reservationDiningItems = method_exists($reservation, 'diningItems') ? $reservation->diningItems()->with('diningMenu')->get() : collect())
                         @php($reservationMealNames = $reservationDiningItems->map(fn ($item) => $item->diningMenu?->name ?? 'Meal Item')->filter()->unique()->values()->all())
                         @php($reservationMealText = !empty($reservationMealNames) ? implode(', ', $reservationMealNames) : ($reservation->diningMenu ? $reservation->diningMenu->name : 'N/A'))
                         @php($reservationMealDetails = $reservationDiningItems->map(function ($item) {
@@ -1282,6 +1328,7 @@
 <script>
     window.employeeCategoryAmountMap = @json($categoryAmountMap);
     window.employeePaymentMap = @json($employeePaymentMap);
+    window.employeeChargedAddOnMap = @json($employeeChargedAddOnMap);
 
     function canonicalReservationCategory(category) {
         return category || 'rooms';
@@ -1789,9 +1836,35 @@
         const categoryAmounts = reservation.category_amounts
             || window.employeeCategoryAmountMap?.[`${category}:${reservation.id}`]
             || {};
+        const chargedAddOnRecord = window.employeeChargedAddOnMap?.[`${category}:${reservation.id}`] || { items: [], total: 0 };
+        const chargedAddOns = Array.isArray(chargedAddOnRecord.items) ? chargedAddOnRecord.items : [];
+        const chargedAddOnRows = chargedAddOns.length
+            ? chargedAddOns.map((addOn) => `
+                <div class="flex items-center justify-between gap-4 border-b border-gray-200 py-2 last:border-b-0">
+                    <div>
+                        <div class="text-sm font-semibold text-gray-800">${escapeHtml(addOn.name)}</div>
+                        <div class="text-xs text-gray-500">${escapeHtml(addOn.quantity)} x ${formatMoney(addOn.unit_price)}</div>
+                    </div>
+                    <div class="text-sm font-semibold text-gray-800">${formatMoney(addOn.subtotal)}</div>
+                </div>
+            `).join('')
+            : '<p class="text-sm text-gray-600">No charged add-ons.</p>';
+        detailsSections.push(`
+            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <h4 class="mb-3 text-base font-semibold text-gray-800">Charged Add-On Services</h4>
+                <div>${chargedAddOnRows}</div>
+                <div class="mt-3 flex items-center justify-between border-t border-gray-300 pt-3 text-sm font-semibold text-gray-800">
+                    <span>Add-On Total</span>
+                    <span>${formatMoney(chargedAddOnRecord.total || 0)}</span>
+                </div>
+            </div>
+        `);
         const amountEntries = Object.entries(categoryAmountLabels)
             .filter(([label]) => Number(categoryAmounts[label] || 0) > 0)
             .map(([label, displayLabel]) => ({ label: displayLabel, value: formatMoney(categoryAmounts[label]) }));
+        if (Number(chargedAddOnRecord.total || 0) > 0) {
+            amountEntries.push({ label: 'Add-On Total', value: formatMoney(chargedAddOnRecord.total) });
+        }
         detailsSections.push(renderDetailsCard('Reservation Amounts', amountEntries.length ? amountEntries : [
             { label: 'Reservation', value: formatMoney(reservation.total_amount || 0) },
         ]));

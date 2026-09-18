@@ -636,7 +636,7 @@ class HomeController extends Controller
             ])->all());
         }
 
-        if (!empty($diningSelections)) {
+        if (!empty($diningSelections) && method_exists($reservation, 'diningItems')) {
             $reservation->diningItems()->createMany($diningSelections);
         }
 

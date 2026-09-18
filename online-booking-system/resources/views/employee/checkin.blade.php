@@ -435,7 +435,7 @@
                     <tbody>
                         @forelse($checkIns as $reservation)
                             @php($checkInPaid = max((float) ($reservation->amount_paid ?? 0), (float) $reservation->payments->sum('amount')))
-                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-time="{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-guests="{{ $reservation->number_of_guests ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-total="{{ number_format($reservation->overall_total_amount, 2, '.', '') }}" data-paid="{{ number_format($reservation->overall_amount_paid, 2, '.', '') }}" data-balance="{{ number_format($reservation->overall_balance_due, 2, '.', '') }}" data-payment-status="{{ $reservation->overall_amount_paid >= $reservation->overall_total_amount && $reservation->overall_total_amount > 0 ? 'Paid' : 'Unpaid' }}">
+                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-time="{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-guests="{{ $reservation->number_of_guests ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-total="{{ number_format($reservation->overall_total_amount, 2, '.', '') }}" data-room-total="{{ number_format($reservation->room_total_amount, 2, '.', '') }}" data-addon-total="{{ number_format($reservation->add_on_total_amount, 2, '.', '') }}" data-paid="{{ number_format($reservation->overall_amount_paid, 2, '.', '') }}" data-balance="{{ number_format($reservation->overall_balance_due, 2, '.', '') }}" data-payment-status="{{ $reservation->overall_amount_paid >= $reservation->overall_total_amount && $reservation->overall_total_amount > 0 ? 'Paid' : 'Unpaid' }}" data-add-ons='@json($reservation->employee_add_ons)'>
                                 <td class="py-3 pr-3 whitespace-nowrap text-sm font-semibold text-slate-800">RES-{{ $reservation->id }}</td>
                                 <td class="py-3 pr-3 text-sm text-slate-700">{{ $reservation->guest_name }}</td>
                                 <td class="py-3 pr-3 whitespace-nowrap">
@@ -475,7 +475,7 @@
                     <tbody>
                         @forelse($checkOuts as $reservation)
                             @php($paid = max((float) ($reservation->amount_paid ?? 0), (float) $reservation->payments->sum('amount')))
-                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-check-in-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-check-out-date="{{ $reservation->check_out?->format('Y-m-d') }}" data-time="{{ ($reservation->check_out_time ?: $reservation->check_in_time) ? \Illuminate\Support\Carbon::parse($reservation->check_out_time ?: $reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-total="{{ number_format($reservation->overall_total_amount, 2, '.', '') }}" data-paid="{{ number_format($reservation->overall_amount_paid, 2, '.', '') }}" data-balance="{{ number_format($reservation->overall_balance_due, 2, '.', '') }}" data-status="{{ ucfirst($reservation->status) }}">
+                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-check-in-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-check-out-date="{{ $reservation->check_out?->format('Y-m-d') }}" data-time="{{ ($reservation->check_out_time ?: $reservation->check_in_time) ? \Illuminate\Support\Carbon::parse($reservation->check_out_time ?: $reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-total="{{ number_format($reservation->overall_total_amount, 2, '.', '') }}" data-room-total="{{ number_format($reservation->room_total_amount, 2, '.', '') }}" data-addon-total="{{ number_format($reservation->add_on_total_amount, 2, '.', '') }}" data-paid="{{ number_format($reservation->overall_amount_paid, 2, '.', '') }}" data-balance="{{ number_format($reservation->overall_balance_due, 2, '.', '') }}" data-status="{{ ucfirst($reservation->status) }}" data-add-ons='@json($reservation->employee_add_ons)'>
                                 <td class="py-3 pr-3 whitespace-nowrap text-sm font-semibold text-slate-800">RES-{{ $reservation->id }}</td>
                                 <td class="py-3 pr-3 text-sm text-slate-700">{{ $reservation->guest_name }}</td>
                                 <td class="py-3 pr-3 whitespace-nowrap">
@@ -594,6 +594,10 @@
                 <span class="modal-detail-label">Room Type:</span>
                 <span class="modal-detail-value" id="checkOutRoomType"></span>
             </div>
+            <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <h5 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Add-On Services</h5>
+                <div id="checkOutAddOns" class="space-y-3"></div>
+            </div>
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Check-in Date:</span>
                 <span class="modal-detail-value" id="checkOutCheckInDate"></span>
@@ -607,7 +611,15 @@
                 <span class="modal-detail-value" id="checkOutTime"></span>
             </div>
             <div class="modal-detail-row">
-                <span class="modal-detail-label">Total Amount:</span>
+                <span class="modal-detail-label">Room Total:</span>
+                <span class="modal-detail-value" id="checkOutRoomTotal"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Add-On Total:</span>
+                <span class="modal-detail-value" id="checkOutAddOnTotal"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Grand Total:</span>
                 <span class="modal-detail-value" id="checkOutTotal"></span>
             </div>
             <div class="modal-detail-row">
@@ -761,6 +773,47 @@
         });
     }
 
+    function escapeCheckoutValue(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function renderCheckoutAddOns(row) {
+        const container = document.getElementById('checkOutAddOns');
+        let addOns = [];
+
+        try {
+            addOns = JSON.parse(row.dataset.addOns || '[]');
+        } catch (error) {
+            addOns = [];
+        }
+
+        if (!Array.isArray(addOns) || addOns.length === 0) {
+            container.innerHTML = '<p class="text-sm text-slate-500">No billable add-ons</p>';
+            return;
+        }
+
+        container.innerHTML = addOns.map((addOn) => {
+            const quantity = Number(addOn.quantity || 0);
+            const unitPrice = Number(addOn.unit_price || 0);
+            const subtotal = Number(addOn.subtotal || (quantity * unitPrice));
+
+            return `
+                <div class="flex items-center justify-between gap-4 border-b border-slate-200 pb-3 last:border-b-0 last:pb-0">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-700">${escapeCheckoutValue(addOn.request_type)}</p>
+                        <p class="text-xs text-slate-500">${quantity} x ${formatCurrency(unitPrice)}</p>
+                    </div>
+                    <strong class="text-sm text-slate-800">${formatCurrency(subtotal)}</strong>
+                </div>
+            `;
+        }).join('');
+    }
+
     function openCheckOutModal(row) {
         window.currentCheckOutRow = row;
         window.currentPaymentRow = row;
@@ -775,8 +828,13 @@
         document.getElementById('checkOutCheckInDate').textContent = formatReservationDate(row.dataset.checkInDate);
         document.getElementById('checkOutDate').textContent = formatReservationDate(row.dataset.checkOutDate);
         document.getElementById('checkOutTime').textContent = row.dataset.time || 'N/A';
+        renderCheckoutAddOns(row);
+        const roomTotal = Number(row.dataset.roomTotal || 0);
+        const addOnTotal = Number(row.dataset.addonTotal || 0);
         const total = Number(row.dataset.total || 0);
         const paid = Number(row.dataset.paid || 0);
+        document.getElementById('checkOutRoomTotal').textContent = formatCurrency(roomTotal);
+        document.getElementById('checkOutAddOnTotal').textContent = formatCurrency(addOnTotal);
         document.getElementById('checkOutTotal').textContent = formatCurrency(total);
         document.getElementById('checkOutPaid').textContent = formatCurrency(paid);
         document.getElementById('checkOutBalance').textContent = formatCurrency(Number(row.dataset.balance ?? Math.max(total - paid, 0)));

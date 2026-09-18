@@ -1288,7 +1288,7 @@ class AdminController extends Controller
             }
 
             $reservation = DiningReservation::create($validated);
-            if (!empty($diningSelections)) {
+            if (!empty($diningSelections) && method_exists($reservation, 'diningItems')) {
                 $reservation->diningItems()->createMany($diningSelections);
             }
         }
@@ -1508,8 +1508,37 @@ class AdminController extends Controller
                         && optional($row->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
                 })
                 : collect([$reservation]);
+            $chargeableAddOns = $isRoomBooking
+                ? GuestRequest::with('reservation')
+                    ->where('is_billable', true)
+                    ->where('status', 'Completed')
+                    ->where(function ($query) {
+                        $query->whereNull('billing_status')
+                            ->orWhere('billing_status', '!=', 'posted');
+                    })
+                    ->lockForUpdate()
+                    ->get()
+                    ->filter(function (GuestRequest $guestRequest) use ($reservation) {
+                        $matchesReservationKey = $guestRequest->reservation_type === RoomReservation::class
+                            && (int) $guestRequest->reservation_key === (int) $reservation->id;
+                        $matchesLegacyReservation = $guestRequest->reservation
+                            && $guestRequest->reservation->guest_email === $reservation->guest_email
+                            && optional($guestRequest->reservation->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
+
+                        return $matchesReservationKey || $matchesLegacyReservation;
+                    })
+                : collect();
             $total = $isRoomBooking
-                ? (float) $relatedRows->sum(fn ($row) => (float) ($row->total_amount ?? 0))
+                ? round(
+                    (float) $reservation->total_amount
+                    + (float) $chargeableAddOns->sum(function (GuestRequest $guestRequest) {
+                            return round(
+                                (float) ($guestRequest->unit_price ?? 0) * max((int) ($guestRequest->quantity ?? 1), 1),
+                                2
+                            );
+                        }),
+                    2
+                )
                 : (float) $reservation->total_amount;
             $paid = max(
                 (float) $relatedRows->max(fn ($row) => (float) ($row->amount_paid ?? 0)),
@@ -1532,6 +1561,15 @@ class AdminController extends Controller
             $reservation->update([
                 'amount_paid' => $newPaid,
             ]);
+
+            if ($newBalance === 0.0 && $chargeableAddOns->isNotEmpty()) {
+                $chargeableAddOns->each(function (GuestRequest $guestRequest) {
+                    $guestRequest->update([
+                        'billing_status' => 'posted',
+                        'billing_posted_at' => now(),
+                    ]);
+                });
+            }
 
             return [
                 'total' => $total,
@@ -1591,7 +1629,6 @@ class AdminController extends Controller
             'total_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['nullable', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
-            'amount_paid' => ['nullable', 'numeric', 'min:0'],
             'special_requests' => ['nullable', 'string'],
             'dining_id' => ['nullable', 'string'],
             'dining_items' => ['nullable', 'json'],
@@ -1631,13 +1668,6 @@ class AdminController extends Controller
             'dining' => ReservationPricing::dining($diningSelections),
         };
 
-        if (array_key_exists('amount_paid', $validated)
-            && $validated['amount_paid'] !== null
-            && (float) $validated['amount_paid'] > $calculatedTotal) {
-            throw ValidationException::withMessages([
-                'amount_paid' => 'The amount paid cannot exceed the recalculated reservation total.',
-            ]);
-        }
         $validated['total_amount'] = $calculatedTotal;
 
         if (!empty($validated['dining_id'])) {
@@ -1651,7 +1681,7 @@ class AdminController extends Controller
             $validated['dining_id'] = implode(',', $diningIdList);
         }
 
-        $attributes = collect($validated)->except('category')->all();
+        $attributes = collect($validated)->except(['category', 'amount_paid'])->all();
         if ($validated['category'] === 'rooms') {
             $attributes['room_check_in_time'] = $validated['check_in_time'] ?? null;
             $attributes['room_check_out_time'] = $validated['check_out_time'] ?? null;
@@ -1684,7 +1714,7 @@ class AdminController extends Controller
                 ? 'Reservation updated successfully! Balance Due: ₱' . number_format($balanceDue, 2) . '.'
                 : 'Reservation updated successfully!');
 
-        if (!empty($diningSelections)) {
+        if (!empty($diningSelections) && method_exists($reservation, 'diningItems')) {
             $reservation->diningItems()->delete();
             $reservation->diningItems()->createMany($diningSelections);
         }
