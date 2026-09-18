@@ -74,6 +74,11 @@ class Reservation extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function refunds()
+    {
+        return $this->morphMany(Refund::class, 'reservationable');
+    }
+
     public function housekeepingTasks()
     {
         return $this->hasMany(HousekeepingTask::class);

@@ -1,6 +1,9 @@
 @extends('admin.layout')
 
 @section('content')
+<div class="mb-4 flex justify-end">
+    <a href="{{ route('admin.refunds') }}" class="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"><i class="fas fa-rotate-left mr-2"></i>Refund History</a>
+</div>
 <style>
     .reservation-management-page {
         font-size: 16px;
@@ -108,6 +111,7 @@
             'dining' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'dining_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'dining')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
         ];
         $grandTotal = array_sum($categoryAmounts);
+        $paid = min($paid, $grandTotal);
 
         return [
             'room_amount' => $categoryAmounts['rooms'],
@@ -711,6 +715,7 @@
         const proof = String(value || '').trim();
         if (!proof) return '';
         if (/^(https?:\/\/|data:image\/|\/)/i.test(proof)) return proof;
+        if (!/^storage\//i.test(proof) && !proof.includes('/')) return '';
         return `{{ asset('storage') }}/${proof.replace(/^storage\//i, '')}`;
     }
 

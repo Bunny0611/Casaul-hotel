@@ -128,12 +128,10 @@
         if (!$proof && preg_match('/Proof:\s*(https?:\/\/\S+|storage\/[^•|\s]+)/i', $paymentDetails, $matches)) {
             $proof = $matches[1];
         }
-        $paid = (float) $relatedRows->sum(function ($row) {
-            $storedAmount = (float) ($row->amount_paid ?? 0);
-            $recordedPayments = (float) $row->payments->sum('amount');
-
-            return max($storedAmount, $recordedPayments);
-        });
+        $paid = max(
+            (float) $relatedRows->max(fn ($row) => (float) ($row->amount_paid ?? 0)),
+            (float) $relatedRows->sum(fn ($row) => (float) $row->payments->sum('amount'))
+        );
         $categoryAmounts = [
             'rooms' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'room_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'rooms')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
             'facilities' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'facility_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'facilities')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
@@ -141,6 +139,16 @@
             'dining' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'dining_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'dining')->sum(fn ($row) => (float) ($row->total_amount ?? 0)),
         ];
         $grandTotal = array_sum($categoryAmounts);
+        $paid = min($paid, $grandTotal);
+        $recordedPayments = $relatedRows->flatMap(fn ($row) => $row->payments->map(function ($payment) {
+            return [
+                'amount' => (float) $payment->amount,
+                'method' => $payment->payment_method ?: 'N/A',
+                'date' => $payment->payment_date?->format('F j, Y') ?? 'N/A',
+                'reference' => $payment->reference_number ?: 'N/A',
+                'notes' => $payment->notes ?: 'N/A',
+            ];
+        }))->values()->all();
 
         return [
             'room_amount' => $categoryAmounts['rooms'],
@@ -151,8 +159,10 @@
             'amount_paid' => $paid,
             'balance_due' => max($grandTotal - $paid, 0),
             'payment_method' => $paymentRow?->payment_method ?: ($latestPayment?->payment_method ?? 'N/A'),
+            'guest_payment_details' => $paymentDetails ?: 'No guest payment details submitted.',
             'reference_number' => $reference ?: 'N/A',
             'payment_proof' => $proof,
+            'recorded_payments' => $recordedPayments,
         ];
     };
     $categoryAmountMap = $allReservationRowsForDetails->mapWithKeys(function ($row) use ($overallReservationSummary) {
@@ -168,6 +178,19 @@
             'Facilities' => $summary['facilities_amount'],
             'Event' => $summary['event_amount'],
             'Dining' => $summary['dining_amount'],
+        ]];
+    });
+    $employeePaymentMap = $allReservationRowsForDetails->mapWithKeys(function ($row) use ($overallReservationSummary) {
+        $category = match ($row->getTable()) {
+            'room_reservations' => 'rooms',
+            'facility_reservations' => 'facilities',
+            'event_reservations' => 'event',
+            default => 'dining',
+        };
+        $summary = $overallReservationSummary($row);
+        return [$category . ':' . $row->id => [
+            'guest_payment_details' => $summary['guest_payment_details'],
+            'recorded_payments' => $summary['recorded_payments'],
         ]];
     });
     $roomSelectedServices = function ($roomReservation) use ($facilitiesReservations) {
@@ -226,9 +249,12 @@
             <h2 class="text-2xl font-bold text-gray-800">Reservation Management</h2>
             <p class="mt-1 text-sm text-gray-500">Manage guest bookings, update statuses, and create new reservations from one place.</p>
         </div>
-        <button id="addReservationButton" type="button" onclick="openAddReservationModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700" style="display: inline-flex !important; visibility: visible !important; opacity: 1 !important;">
-            <i class="fas fa-plus mr-2"></i><span id="addReservationButtonText">Add Room Reservation</span>
-        </button>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('employee.refunds') }}" class="inline-flex items-center justify-center rounded-lg border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"><i class="fas fa-rotate-left mr-2"></i>Refund History</a>
+            <button id="addReservationButton" type="button" onclick="openAddReservationModal()" class="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:from-orange-600 hover:to-orange-700" style="display: inline-flex !important; visibility: visible !important; opacity: 1 !important;">
+                <i class="fas fa-plus mr-2"></i><span id="addReservationButtonText">Add Room Reservation</span>
+            </button>
+        </div>
     </div>
 
     <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -1132,6 +1158,7 @@
                                 </div>
                             </div>
                             <input type="hidden" name="dining_id" id="diningSelectedMenuIds" value="">
+                            <input type="hidden" name="dining_items" id="diningSelectedMenuItemsPayload" value="">
                             <input type="hidden" name="quantity" id="diningSelectedMenuQuantity" value="">
                         </div>
                         <div>
@@ -1244,6 +1271,7 @@
 
 <script>
     window.employeeCategoryAmountMap = @json($categoryAmountMap);
+    window.employeePaymentMap = @json($employeePaymentMap);
 
     function canonicalReservationCategory(category) {
         return category || 'rooms';
@@ -1346,6 +1374,14 @@
             });
 
             document.getElementById('diningSelectedMenuIds').value = selectedIds.join(',');
+            document.getElementById('diningSelectedMenuItemsPayload').value = JSON.stringify(selectedOptions
+                .filter(option => option.value !== 'upon_arriving')
+                .map(option => ({
+                    dining_id: option.value,
+                    quantity: Number(document.querySelector(`[data-dining-menu-id="${option.value}"]`)?.value || 1),
+                    dining_area: document.querySelector('[name="dining_area"]')?.value || null,
+                    dining_schedule: document.querySelector('[name="dining_schedule"]')?.value || null,
+                })));
             document.getElementById('diningSelectedMenuQuantity').value = selectedQuantities.join(',');
         }
 
@@ -1661,6 +1697,7 @@
         const proof = String(value || '').trim();
         if (!proof) return '';
         if (/^(https?:\/\/|data:image\/|\/)/i.test(proof)) return proof;
+        if (!/^storage\//i.test(proof) && !proof.includes('/')) return '';
         return `{{ asset('storage') }}/${proof.replace(/^storage\//i, '')}`;
     }
 
@@ -1749,17 +1786,77 @@
             { label: 'Reservation', value: formatMoney(reservation.total_amount || 0) },
         ]));
 
-        const paymentDetails = parseEmployeePaymentDetails(reservation.payment_details);
+        const paymentRecord = window.employeePaymentMap?.[`${category}:${reservation.id}`] || {};
+        const guestPaymentDetails = reservation.guest_payment_details || paymentRecord.guest_payment_details || reservation.payment_details || '';
+        const paymentDetails = parseEmployeePaymentDetails(guestPaymentDetails);
+        const recordedPayments = Array.isArray(reservation.recorded_payments)
+            ? reservation.recorded_payments
+            : (Array.isArray(paymentRecord.recorded_payments) ? paymentRecord.recorded_payments : []);
         const paymentProofUrl = resolveEmployeePaymentProof(reservation.overall_payment_proof || reservation.payment_proof || paymentDetails.proof);
-        const paymentEntries = [
+        const paymentSummaryEntries = [
             { label: 'Grand Total', value: formatMoney(reservation.grand_total || reservation.total_amount || 0) },
             { label: 'Amount Paid', value: formatMoney(reservation.overall_amount_paid || 0) },
             { label: 'Balance Due', value: formatMoney(reservation.balance_due || 0) },
-            { label: 'Payment Method', value: reservation.overall_payment_method || reservation.payment_method || 'N/A' },
-            { label: 'Reference Number', value: reservation.overall_reference_number || paymentDetails.referenceNumber || 'N/A' },
         ];
-        detailsSections.push(renderDetailsCard('Payment Details', paymentEntries));
-        detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">Payment Proof</h4>${paymentProofUrl ? `<a href="${escapeHtml(paymentProofUrl)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${escapeHtml(paymentProofUrl)}" alt="Payment proof" class="max-h-72 w-full rounded-xl border border-gray-200 bg-white object-contain p-2" /></a>` : '<p class="text-sm text-gray-600">No payment proof uploaded.</p>'}</div>`);
+        detailsSections.push(renderDetailsCard('Payment Summary', paymentSummaryEntries));
+
+        const guestPaymentEntries = [
+            { label: 'Payment Method', value: reservation.payment_method || 'N/A' },
+            { label: 'Account Name', value: paymentDetails.accountName || 'N/A' },
+            { label: 'Account Number', value: paymentDetails.accountNumber || 'N/A' },
+            { label: 'Submitted Amount', value: paymentDetails.amount || 'N/A' },
+            { label: 'Guest Reference', value: paymentDetails.referenceNumber || 'N/A' },
+        ];
+        detailsSections.push(`
+            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <h4 class="mb-3 text-base font-semibold text-gray-800">Guest Payment Upon Reservation</h4>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    ${guestPaymentEntries.map((entry) => `
+                        <div class="rounded-xl border border-gray-200 bg-white p-3">
+                            <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">${escapeHtml(entry.label)}</div>
+                            <div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(entry.value)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="mt-4 rounded-xl border border-gray-200 bg-white p-3">
+                    <div class="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Proof of Payment</div>
+                    ${paymentProofUrl
+                        ? `<a href="${escapeHtml(paymentProofUrl)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${escapeHtml(paymentProofUrl)}" alt="Guest payment proof" class="max-h-72 w-full rounded-xl border border-gray-200 bg-white object-contain p-2" /></a>`
+                        : '<p class="text-sm text-gray-600">No guest payment proof uploaded.</p>'}
+                </div>
+            </div>
+        `);
+        const recordedPaymentCards = recordedPayments.length
+            ? recordedPayments.map((payment, index) => {
+                const fields = [
+                    ['Amount', formatMoney(payment.amount)],
+                    ['Method', payment.method && payment.method !== 'N/A' ? payment.method : 'N/A'],
+                    ['Date', payment.date && payment.date !== 'N/A' ? payment.date : 'N/A'],
+                ];
+                if (payment.reference && payment.reference !== 'N/A') fields.push(['Reference', payment.reference]);
+                if (payment.notes && payment.notes !== 'N/A') fields.push(['Notes', payment.notes]);
+
+                return `
+                    <div class="rounded-2xl border border-gray-200 bg-white p-4">
+                        <div class="mb-3 text-sm font-semibold text-gray-800">Payment ${index + 1}</div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            ${fields.map(([label, value]) => `
+                                <div class="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                                    <div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">${escapeHtml(label)}</div>
+                                    <div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(value)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('')
+            : '<div class="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600">No front-desk payment recorded.</div>';
+        detailsSections.push(`
+            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <h4 class="mb-3 text-base font-semibold text-gray-800">Front Desk Recorded Payments</h4>
+                <div class="space-y-3">${recordedPaymentCards}</div>
+            </div>
+        `);
 
         document.getElementById('employeeDetailsBody').innerHTML = detailsSections.join('');
 
@@ -1843,7 +1940,23 @@
     function editReservation(reservation) {
         const form = document.getElementById('addReservationForm');
         const timeValue = value => value ? String(value).slice(0, 5) : '';
-        const dateValue = value => value ? String(value).slice(0, 10) : '';
+        const dateValue = value => {
+            if (!value) {
+                return '';
+            }
+
+            const text = String(value);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+                return text;
+            }
+
+            const parsed = new Date(text);
+            if (Number.isNaN(parsed.getTime())) {
+                return text.slice(0, 10);
+            }
+
+            return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+        };
         const setValue = (selector, value) => {
             const input = form.querySelector(selector);
             if (input) input.value = value ?? '';

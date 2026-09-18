@@ -28,6 +28,8 @@ use App\Models\DiningSchedule;
 use App\Models\DiningMenu;
 use App\Models\ReservationDiningItem;
 use App\Models\GuestRequest;
+use App\Models\Payment;
+use App\Models\Refund;
 use App\Support\ReservationPricing;
 
 class AdminController extends Controller
@@ -788,6 +790,8 @@ class AdminController extends Controller
         $validated = $request->validate([
             'category' => ['required', 'in:rooms,facilities,event,dining'],
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
+            'facility_id' => ['nullable', 'required_if:category,facilities', 'exists:facilities,id'],
+            'event_id' => ['nullable', 'required_if:category,event', 'exists:events,id'],
             'guest_name' => ['required', 'string', 'max:255'],
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:20'],
@@ -807,8 +811,6 @@ class AdminController extends Controller
             'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
-            'facility_id' => ['nullable', 'required_if:category,facilities', 'exists:facilities,id'],
-            'event_id' => ['nullable', 'required_if:category,event', 'exists:events,id'],
             'dining_id' => ['nullable', 'string'],
             'duration_hours' => ['nullable', 'required_if:category,facilities', 'integer', 'min:1', 'max:24'],
             'special_requests' => ['nullable', 'string'],
@@ -873,6 +875,14 @@ class AdminController extends Controller
             'dining' => $diningTotal,
         };
 
+        $amountPaid = (float) ($validated['amount_paid'] ?? 0);
+        if ($amountPaid > (float) $validated['total_amount']) {
+            throw ValidationException::withMessages([
+                'amount_paid' => 'The amount paid cannot exceed the calculated reservation total.',
+            ]);
+        }
+        $validated['amount_paid'] = round($amountPaid, 2);
+
         if ($category === 'rooms') {
             $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
             $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
@@ -923,7 +933,9 @@ class AdminController extends Controller
             'category' => ['nullable', 'in:rooms,facilities,event,dining'],
         ]);
 
-        DB::transaction(function () use ($id, $validated) {
+        $refundMessage = null;
+
+        DB::transaction(function () use ($id, $validated, &$refundMessage) {
             $reservationType = match ($validated['category'] ?? null) {
                 'rooms' => 'room',
                 'event' => 'event',
@@ -960,6 +972,22 @@ class AdminController extends Controller
                         'status' => 'The reservation must be paid in full before checkout.',
                     ]);
                 }
+            }
+
+            if ($validated['status'] === 'cancelled' && $reservation->status !== 'cancelled') {
+                $paymentTotals = $this->reservationPaymentTotals($reservation);
+                $refundReason = $reservation->status === 'checked-in' ? 'Early Check-out' : 'Cancellation';
+                $refundAmount = round(max($paymentTotals['paid'], 0), 2);
+                $this->createRefundIfDue(
+                    $reservation,
+                    (float) $reservation->total_amount,
+                    0,
+                    $paymentTotals['paid'],
+                    $refundReason
+                );
+                $refundMessage = $refundAmount > 0
+                    ? ' Refund Due: ₱' . number_format($refundAmount, 2) . ' (Pending).'
+                    : '';
             }
 
             $reservation->update(['status' => $validated['status']]);
@@ -1068,7 +1096,7 @@ class AdminController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Reservation status updated successfully!');
+        return redirect()->back()->with('success', 'Reservation status updated successfully!' . ($refundMessage ?? ''));
     }
 
     public function storePayment(Request $request, $id)
@@ -1088,8 +1116,27 @@ class AdminController extends Controller
             
             abort_if(!$reservation, 404, 'Reservation not found');
             
-            $paid = (float) $reservation->payments()->sum('amount');
-            $balance = round((float) $reservation->total_amount - $paid, 2);
+            $isRoomBooking = $reservation instanceof RoomReservation;
+            $relatedRows = $isRoomBooking
+                ? collect([
+                    ...RoomReservation::with('payments')->get(),
+                    ...FacilityReservation::with('payments')->get(),
+                    ...EventReservation::with('payments')->get(),
+                    ...DiningReservation::with('payments')->get(),
+                ])->filter(function ($row) use ($reservation) {
+                    return $row->guest_email === $reservation->guest_email
+                        && optional($row->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
+                })
+                : collect([$reservation]);
+            $total = $isRoomBooking
+                ? (float) $relatedRows->sum(fn ($row) => (float) ($row->total_amount ?? 0))
+                : (float) $reservation->total_amount;
+            $paid = max(
+                (float) $relatedRows->max(fn ($row) => (float) ($row->amount_paid ?? 0)),
+                (float) $relatedRows->sum(fn ($row) => (float) $row->payments->sum('amount'))
+            );
+            $paid = min($paid, $total);
+            $balance = round($total - $paid, 2);
             if ((float) $validated['amount'] > $balance) {
                 abort(422, 'Payment amount cannot exceed the balance due.');
             }
@@ -1101,16 +1148,16 @@ class AdminController extends Controller
             $reservation->payments()->save($payment);
             
             $newPaid = round($paid + (float) $payment->amount, 2);
-            $newBalance = max(round((float) $reservation->total_amount - $newPaid, 2), 0);
+            $newBalance = max(round($total - $newPaid, 2), 0);
             $reservation->update([
                 'amount_paid' => $newPaid,
             ]);
 
             return [
-                'total' => (float) $reservation->total_amount,
+                'total' => $total,
                 'paid' => $newPaid,
                 'balance' => $newBalance,
-                'status' => $newBalance === 0.0 ? 'Paid' : 'Partially Paid',
+                'status' => $newBalance === 0.0 ? 'Paid' : ($newPaid > 0 ? 'Partially Paid' : 'Unpaid'),
             ];
         });
 
@@ -1143,6 +1190,8 @@ class AdminController extends Controller
         $validated = $request->validate([
             'category' => ['required', 'in:rooms,facilities,event,dining'],
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
+            'facility_id' => ['nullable', 'required_if:category,facilities', 'exists:facilities,id'],
+            'event_id' => ['nullable', 'required_if:category,event', 'exists:events,id'],
             'guest_name' => ['required', 'string', 'max:255'],
             'guest_email' => ['required', 'email', 'max:255'],
             'guest_phone' => ['required', 'string', 'max:20'],
@@ -1158,12 +1207,13 @@ class AdminController extends Controller
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
             'event_end_time' => ['nullable', 'date_format:H:i'],
-            'total_amount' => ['required', 'numeric', 'min:0'],
+            'total_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['nullable', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
-            'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0'],
             'special_requests' => ['nullable', 'string'],
             'dining_id' => ['nullable', 'string'],
+            'dining_items' => ['nullable', 'json'],
         ]);
 
         $reservation = match ($validated['category']) {
@@ -1172,6 +1222,41 @@ class AdminController extends Controller
             'facilities' => FacilityReservation::findOrFail($id),
             'dining' => DiningReservation::findOrFail($id),
         };
+
+        $originalTotal = (float) $reservation->total_amount;
+        $paymentTotals = $this->reservationPaymentTotals($reservation);
+
+        $calculatedTotal = match ($validated['category']) {
+            'rooms' => ReservationPricing::room(
+                Room::findOrFail($validated['room_id'] ?? $reservation->room_id),
+                $validated['check_in'],
+                $validated['check_out'],
+                (int) ($validated['number_of_guests'] ?? 1)
+            ),
+            'facilities' => ReservationPricing::facilities(
+                collect([Facility::findOrFail($validated['facility_id'] ?? $reservation->facility_id)]),
+                (int) ($validated['facility_quantity'] ?? $reservation->facility_quantity ?? 1),
+                $validated['check_in'],
+                $validated['check_out']
+            ),
+            'event' => ReservationPricing::events(
+                collect([Event::findOrFail($validated['event_id'] ?? $reservation->event_id)]),
+                (int) ($validated['number_of_guests'] ?? 1),
+                !empty($validated['event_start_time']) && !empty($validated['event_end_time'])
+                    ? max(1, Carbon::parse($validated['event_start_time'])->diffInHours(Carbon::parse($validated['event_end_time'])))
+                    : 1
+            ),
+            'dining' => ReservationPricing::dining($diningSelections),
+        };
+
+        if (array_key_exists('amount_paid', $validated)
+            && $validated['amount_paid'] !== null
+            && (float) $validated['amount_paid'] > $calculatedTotal) {
+            throw ValidationException::withMessages([
+                'amount_paid' => 'The amount paid cannot exceed the recalculated reservation total.',
+            ]);
+        }
+        $validated['total_amount'] = $calculatedTotal;
 
         if (!empty($validated['dining_id'])) {
             $diningIdList = collect(explode(',', $validated['dining_id']))
@@ -1198,14 +1283,30 @@ class AdminController extends Controller
 
         $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
 
+        $this->createRefundIfDue(
+            $reservation,
+            $originalTotal,
+            (float) $validated['total_amount'],
+            $paymentTotals['paid'],
+            $paymentTotals['paid'] > (float) $validated['total_amount'] ? 'Reservation Change' : null
+        );
+
+        $refundDue = round(max($paymentTotals['paid'] - (float) $validated['total_amount'], 0), 2);
+        $balanceDue = round(max((float) $validated['total_amount'] - $paymentTotals['paid'], 0), 2);
+        $updateMessage = $refundDue > 0
+            ? 'Reservation updated successfully! Refund Due: ₱' . number_format($refundDue, 2) . ' (Pending).'
+            : ($balanceDue > 0
+                ? 'Reservation updated successfully! Balance Due: ₱' . number_format($balanceDue, 2) . '.'
+                : 'Reservation updated successfully!');
+
         if (!empty($diningSelections)) {
             $reservation->diningItems()->delete();
             $reservation->diningItems()->createMany($diningSelections);
         }
 
         return $request->routeIs('employee.reservations.update')
-            ? redirect()->route('employee.reservation')->with('success', 'Reservation updated successfully!')
-            : redirect()->route('admin.reservations')->with('success', 'Reservation updated successfully!');
+            ? redirect()->route('employee.reservation')->with('success', $updateMessage)
+            : redirect()->route('admin.reservations')->with('success', $updateMessage);
     }
 
     public function destroyReservation(Request $request, $id)
@@ -1260,6 +1361,62 @@ class AdminController extends Controller
         return $request->routeIs('employee.reservations.destroy')
             ? redirect()->route('employee.reservation')->with('success', 'Reservation deleted successfully!')
             : redirect()->route('admin.reservations')->with('success', 'Reservation deleted successfully!');
+    }
+
+    public function refundHistory(Request $request)
+    {
+        $refunds = Refund::with(['reservationable', 'processedBy'])->latest('refund_date')->latest('id')->get();
+        $routePrefix = $request->routeIs('employee.*') ? 'employee.' : 'admin.';
+
+        return view($routePrefix . 'refund', compact('refunds', 'routePrefix'));
+    }
+
+    public function markRefunded(Request $request, Refund $refund)
+    {
+        abort_if($refund->status === 'Refunded', 422, 'This refund has already been marked as refunded.');
+
+        $refund->update([
+            'status' => 'Refunded',
+            'processed_by' => $request->user()->id,
+            'refund_date' => now()->toDateString(),
+        ]);
+
+        return redirect()->back()->with('success', 'Refund marked as refunded successfully.');
+    }
+
+    private function reservationPaymentTotals($reservation): array
+    {
+        $reservation->loadMissing('payments');
+        $paidFromPayments = (float) $reservation->payments->sum('amount');
+        $paidFromReservation = (float) ($reservation->amount_paid ?? 0);
+
+        return [
+            'paid' => round(max($paidFromReservation, $paidFromPayments), 2),
+        ];
+    }
+
+    private function createRefundIfDue($reservation, float $originalTotal, float $finalTotal, float $totalPaid, ?string $reason): void
+    {
+        if (!$reason) {
+            return;
+        }
+
+        $refundAmount = round(max($totalPaid - $finalTotal, 0), 2);
+        if ($refundAmount <= 0) {
+            return;
+        }
+
+        $reservation->refunds()->create([
+            'guest_name' => $reservation->guest_name,
+            'original_total' => round($originalTotal, 2),
+            'final_total' => round($finalTotal, 2),
+            'total_paid' => round($totalPaid, 2),
+            'refund_amount' => $refundAmount,
+            'reason' => $reason,
+            'refund_date' => now()->toDateString(),
+            'status' => 'Pending',
+            'processed_by' => auth()->id(),
+        ]);
     }
 
     public function guests()

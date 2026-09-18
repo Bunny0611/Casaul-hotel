@@ -41,6 +41,11 @@ class RoomReservation extends Model
         return $this->morphMany(Payment::class, 'paymentable');
     }
 
+    public function refunds()
+    {
+        return $this->morphMany(Refund::class, 'reservationable');
+    }
+
     public function getCheckInTimeAttribute($value)
     {
         return $this->attributes['room_check_in_time'] ?? $value;

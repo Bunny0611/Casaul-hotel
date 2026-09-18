@@ -362,7 +362,9 @@ class HomeController extends Controller
             'total_amount' => 'required|numeric|min:0',
             'payment_method' => ['nullable', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
-            'payment_proof' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'gcash_payment_proof' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'maya_payment_proof' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
+            'bank_payment_proof' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'special_requests' => 'nullable|string',
             'dining_id' => 'nullable|string',
@@ -375,6 +377,7 @@ class HomeController extends Controller
             'event_id' => 'nullable|string',
             'event_type' => 'nullable|string|max:100',
             'number_of_guests' => 'nullable|integer|min:1',
+            'room_number_of_guests' => 'nullable|integer|min:1',
             'submission_token' => 'nullable|string|max:100',
         ]);
 
@@ -401,8 +404,15 @@ class HomeController extends Controller
             $validated['amount_paid'] = 0;
         }
 
-        if ($request->hasFile('payment_proof')) {
-            $paymentProofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
+        $paymentProofFile = match ($validated['payment_method']) {
+            'GCash' => $request->file('gcash_payment_proof'),
+            'Maya' => $request->file('maya_payment_proof'),
+            'Bank Transfer' => $request->file('bank_payment_proof'),
+            default => null,
+        };
+
+        if ($paymentProofFile) {
+            $paymentProofPath = $paymentProofFile->store('payment-proofs', 'public');
             $validated['payment_details'] = preg_replace('/\s*•\s*Proof:\s*[^•]*/i', '', (string) ($validated['payment_details'] ?? ''));
             $validated['payment_details'] = trim((string) $validated['payment_details']) . ' • Proof: storage/' . $paymentProofPath;
         }
@@ -481,8 +491,9 @@ class HomeController extends Controller
         $facilities = Facility::whereIn('id', $facilityIds)->get();
         $events = Event::whereIn('id', $eventIds)->get();
         $room = !empty($validated['room_id']) ? Room::findOrFail($validated['room_id']) : null;
+        $roomGuestCount = (int) ($validated['room_number_of_guests'] ?? $validated['number_of_guests']);
         $roomTotal = $room
-            ? ReservationPricing::room($room, $validated['check_in'], $validated['check_out'], $validated['number_of_guests'])
+            ? ReservationPricing::room($room, $validated['check_in'], $validated['check_out'], $roomGuestCount)
             : 0;
         $facilityTotal = ReservationPricing::facilities(
             $facilities,
@@ -590,7 +601,7 @@ class HomeController extends Controller
                     'room_check_in_time' => $validated['check_in_time'] ?? null,
                     'check_out' => $validated['check_out'],
                     'room_check_out_time' => $validated['check_out_time'] ?? null,
-                    'number_of_guests' => $validated['number_of_guests'],
+                    'number_of_guests' => $roomGuestCount,
                     'status' => 'pending',
                     'total_amount' => $roomTotal,
                     'payment_method' => $validated['payment_method'],
@@ -656,7 +667,7 @@ class HomeController extends Controller
                 'room_check_in_time' => $validated['check_in_time'] ?? null,
                 'check_out' => $validated['check_out'],
                 'room_check_out_time' => $validated['check_out_time'] ?? null,
-                'number_of_guests' => $validated['number_of_guests'],
+                'number_of_guests' => $roomGuestCount,
                 'status' => 'pending',
                 'total_amount' => $roomTotal,
                 'payment_method' => $validated['payment_method'],

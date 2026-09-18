@@ -20,12 +20,14 @@
     $stats = [
         'rooms' => [
             'total' => $rooms->count(),
-            'available' => $rooms->where('status', 'available')->count(),
+            'available' => $rooms->filter(fn ($room) => $room->status === 'available'
+                && in_array($room->cleaning_status, ['clean', 'ready'], true))->count(),
             'reserved' => $rooms->where('status', 'reserved')->count(),
             'occupied' => $rooms->where('status', 'occupied')->count(),
             'dirty' => $rooms->where('cleaning_status', 'dirty')->count(),
             'cleaning' => $rooms->where('cleaning_status', 'in_progress')->count(),
-            'maintenance' => $rooms->where('status', 'maintenance')->count(),
+            'maintenance' => $rooms->filter(fn ($room) => in_array($room->status, ['maintenance', 'out_of_order'], true)
+                || $room->cleaning_status === 'out_of_order')->count(),
         ],
         'facilities' => [
             'total' => $facilities->count(),

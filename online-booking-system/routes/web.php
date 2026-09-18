@@ -15,6 +15,7 @@ use App\Models\DiningSchedule;
 use App\Models\DiningMenu;
 use App\Models\DiningReservation;
 use App\Models\EventReservation;
+use App\Models\FacilityReservation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
 
@@ -70,6 +71,8 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::redirect('/', '/employee/dashboard')->name('index');
     Route::get('/dashboard', [AdminController::class, 'employeeDashboard'])->name('dashboard');
     Route::get('/reservation', [AdminController::class, 'reservations'])->name('reservation');
+    Route::get('/refunds', [AdminController::class, 'refundHistory'])->name('refunds');
+    Route::patch('/refunds/{refund}/mark-refunded', [AdminController::class, 'markRefunded'])->name('refunds.mark-refunded');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
@@ -88,6 +91,32 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
             ->whereDate('check_out', today())
             ->latest()
             ->get();
+
+        $relatedReservations = collect([
+            ...RoomReservation::with('payments')->get(),
+            ...FacilityReservation::with('payments')->get(),
+            ...EventReservation::with('payments')->get(),
+            ...DiningReservation::with('payments')->get(),
+        ]);
+        $attachOverallAmounts = function ($reservations) use ($relatedReservations) {
+            return $reservations->each(function ($reservation) use ($relatedReservations) {
+                $relatedRows = $relatedReservations->filter(function ($row) use ($reservation) {
+                    return $row->guest_email === $reservation->guest_email
+                        && optional($row->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
+                });
+                $total = (float) $relatedRows->sum(fn ($row) => (float) ($row->total_amount ?? 0));
+                $paid = max(
+                    (float) $relatedRows->max(fn ($row) => (float) ($row->amount_paid ?? 0)),
+                    (float) $relatedRows->sum(fn ($row) => (float) $row->payments->sum('amount'))
+                );
+                $reservation->overall_total_amount = $total;
+                $reservation->overall_amount_paid = min($paid, $total);
+                $reservation->overall_balance_due = max($total - $reservation->overall_amount_paid, 0);
+            });
+        };
+
+        $attachOverallAmounts($checkIns);
+        $attachOverallAmounts($checkOuts);
 
         $occupiedRooms = Room::where('status', 'occupied')->count();
         $availableRooms = Room::where('status', 'available')->count();
@@ -176,6 +205,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::match(['post', 'delete'], '/dining/bulk-delete', [AdminController::class, 'bulkDestroyDining'])->name('dining.bulkDestroy');
     Route::delete('/rooms/{id}', [AdminController::class, 'destroyRoom'])->name('rooms.destroy');
     Route::get('/reservations', [AdminController::class, 'reservations'])->name('reservations');
+    Route::get('/refunds', [AdminController::class, 'refundHistory'])->name('refunds');
+    Route::patch('/refunds/{refund}/mark-refunded', [AdminController::class, 'markRefunded'])->name('refunds.mark-refunded');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');

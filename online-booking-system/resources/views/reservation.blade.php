@@ -905,7 +905,7 @@
                         <div class="payment-field"><label for="gcashNumber">GCash Number</label><input id="gcashNumber" type="tel" placeholder="09XX XXX XXXX"></div>
                         <div class="payment-field"><label for="gcashReferenceNumber">Reference Number</label><input id="gcashReferenceNumber" type="text" placeholder="Enter reference number"></div>
                         <div class="payment-field"><label for="gcashPaymentAmount">Payment Amount</label><input id="gcashPaymentAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
-                        <div class="payment-field full-width"><label for="gcashPaymentProof">Upload Payment Proof</label><input id="gcashPaymentProof" name="payment_proof" form="reservationForm" type="file" accept="image/*"></div>
+                        <div class="payment-field full-width"><label for="gcashPaymentProof">Upload Payment Proof</label><input id="gcashPaymentProof" name="gcash_payment_proof" form="reservationForm" type="file" accept="image/*"></div>
                     </div>
                 </div>
                 <div class="payment-method-panel" data-payment-panel="Maya" hidden>
@@ -915,7 +915,7 @@
                         <div class="payment-field"><label for="mayaNumber">Maya Number</label><input id="mayaNumber" type="tel" placeholder="09XX XXX XXXX"></div>
                         <div class="payment-field"><label for="mayaReferenceNumber">Reference Number</label><input id="mayaReferenceNumber" type="text" placeholder="Enter reference number"></div>
                         <div class="payment-field"><label for="mayaPaymentAmount">Payment Amount</label><input id="mayaPaymentAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
-                        <div class="payment-field full-width"><label for="mayaPaymentProof">Upload Payment Proof</label><input id="mayaPaymentProof" name="payment_proof" form="reservationForm" type="file" accept="image/*"></div>
+                        <div class="payment-field full-width"><label for="mayaPaymentProof">Upload Payment Proof</label><input id="mayaPaymentProof" name="maya_payment_proof" form="reservationForm" type="file" accept="image/*"></div>
                     </div>
                 </div>
                 <div class="payment-method-panel" data-payment-panel="Credit / Debit Card" hidden>
@@ -936,7 +936,7 @@
                         <div class="payment-field"><label for="bankReferenceNumber">Reference Number</label><input id="bankReferenceNumber" type="text" placeholder="Enter reference number"></div>
                         <div class="payment-field"><label for="transferDate">Transfer Date</label><input id="transferDate" type="date"></div>
                         <div class="payment-field"><label for="transferAmount">Amount Transferred</label><input id="transferAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
-                        <div class="payment-field"><label for="bankPaymentProof">Upload Payment Proof</label><input id="bankPaymentProof" name="payment_proof" form="reservationForm" type="file" accept="image/*"></div>
+                        <div class="payment-field"><label for="bankPaymentProof">Upload Payment Proof</label><input id="bankPaymentProof" name="bank_payment_proof" form="reservationForm" type="file" accept="image/*"></div>
                     </div>
                 </div>
             </div>
@@ -1033,6 +1033,7 @@
     <input type="hidden" name="event_id" id="reservationEventId">
     <input type="hidden" name="event_type" id="reservationEventType">
     <input type="hidden" name="number_of_guests" id="reservationEventGuests">
+    <input type="hidden" name="room_number_of_guests" id="reservationRoomGuests">
 </form>
 
 <script>
@@ -1530,9 +1531,12 @@
             reservationFacilityQuantity.value = selectedFacilities[0]?.quantity || '';
             reservationEventId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
             reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
-            reservationEventGuests.value = selectedRoom
-                ? selectedRoomCapacity + selectedExtraGuests
-                : (selectedEventGuests || '');
+            reservationEventGuests.value = selectedEvent.length
+                ? (selectedEventGuests || '')
+                : (selectedRoom ? selectedRoomCapacity + selectedExtraGuests : '');
+            reservationRoomGuests.value = selectedRoom
+                ? (selectedRoomCapacity + selectedExtraGuests)
+                : '';
             reservationTotalAmount.value = total;
             reservationCheckIn.value = bookingDate;
             reservationCheckOut.value = bookingEndDate;

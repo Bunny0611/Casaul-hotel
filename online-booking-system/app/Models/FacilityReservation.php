@@ -30,4 +30,9 @@ class FacilityReservation extends Model
     {
         return $this->morphMany(Payment::class, 'paymentable');
     }
+
+    public function refunds()
+    {
+        return $this->morphMany(Refund::class, 'reservationable');
+    }
 }

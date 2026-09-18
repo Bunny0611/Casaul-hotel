@@ -156,6 +156,10 @@
                     <i class="fas fa-calendar-check w-6"></i>
                     <span>Reservations</span>
                 </a>
+                <a href="{{ route('admin.refunds') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/refunds') ? 'active' : '' }}">
+                    <i class="fas fa-rotate-left w-6"></i>
+                    <span>Refund History</span>
+                </a>
                 <a href="{{ route('admin.rooms') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/rooms') ? 'active' : '' }}">
                     <i class="fas fa-bed w-6"></i>
                     <span>Rooms</span>
