@@ -464,8 +464,14 @@ class HomeController extends Controller
         if ($guest = Auth::guard('guest')->user()) {
             $validated['guest_name'] = $guest->name;
             $validated['guest_email'] = $guest->email;
-            $validated['guest_phone'] = $guest->contact_no;
+            $validated['guest_phone'] = filled($guest->contact_no)
+                ? $guest->contact_no
+                : ($validated['guest_phone'] ?? '');
         }
+
+        // Some existing guest accounts do not have a saved contact number.
+        // Keep the non-null reservation columns compatible with those accounts.
+        $validated['guest_phone'] = (string) ($validated['guest_phone'] ?? '');
 
         $submissionToken = $validated['submission_token'] ?? null;
         if ($submissionToken && $request->session()->has('reservation_submission_' . $submissionToken)) {

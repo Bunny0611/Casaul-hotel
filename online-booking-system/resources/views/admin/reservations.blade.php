@@ -251,12 +251,6 @@
 @endphp
 
 <div class="reservation-management-page animate-fade-in space-y-6">
-    @if(session('success'))
-        <div class="rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-            <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
-        </div>
-    @endif
-
     <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm sm:p-6">
         <div>
             <h2 class="text-2xl font-bold text-gray-800">Reservation Management</h2>
