@@ -1308,14 +1308,14 @@ class AdminController extends Controller
             }
 
             if ($validated['status'] === 'cancelled' && $reservation->status !== 'cancelled') {
-                $paymentTotals = $this->reservationPaymentTotals($reservation);
+                $bookingTotals = $this->overallReservationTotals($reservation);
                 $refundReason = $reservation->status === 'checked-in' ? 'Early Check-out' : 'Cancellation';
-                $refundAmount = round(max($paymentTotals['paid'], 0), 2);
+                $refundAmount = $this->calculateRefundAmount($bookingTotals['total'], 0, $bookingTotals['paid']);
                 $this->createRefundIfDue(
                     $reservation,
-                    (float) $reservation->total_amount,
+                    $bookingTotals['total'],
                     0,
-                    $paymentTotals['paid'],
+                    $bookingTotals['paid'],
                     $refundReason
                 );
                 $refundMessage = $refundAmount > 0
@@ -1556,8 +1556,9 @@ class AdminController extends Controller
             'dining' => DiningReservation::findOrFail($id),
         };
 
-        $originalTotal = (float) $reservation->total_amount;
-        $paymentTotals = $this->reservationPaymentTotals($reservation);
+        $beforeTotals = $this->overallReservationTotals($reservation);
+        $originalTotal = $beforeTotals['total'];
+        $paymentTotals = ['paid' => $beforeTotals['paid']];
 
         $calculatedTotal = match ($validated['category']) {
             'rooms' => ReservationPricing::room(
@@ -1616,16 +1617,19 @@ class AdminController extends Controller
 
         $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
 
+        $afterTotals = $this->overallReservationTotals($reservation->fresh());
+        $finalTotal = $afterTotals['total'];
+
         $this->createRefundIfDue(
             $reservation,
             $originalTotal,
-            (float) $validated['total_amount'],
+            $finalTotal,
             $paymentTotals['paid'],
-            $paymentTotals['paid'] > (float) $validated['total_amount'] ? 'Reservation Change' : null
+            $finalTotal < $originalTotal ? 'Reservation Change' : null
         );
 
-        $refundDue = round(max($paymentTotals['paid'] - (float) $validated['total_amount'], 0), 2);
-        $balanceDue = round(max((float) $validated['total_amount'] - $paymentTotals['paid'], 0), 2);
+        $refundDue = $this->calculateRefundAmount($originalTotal, $finalTotal, $paymentTotals['paid']);
+        $balanceDue = round(max($finalTotal - $paymentTotals['paid'], 0), 2);
         $updateMessage = $refundDue > 0
             ? 'Reservation updated successfully! Refund Due: ₱' . number_format($refundDue, 2) . ' (Pending).'
             : ($balanceDue > 0
@@ -1717,15 +1721,50 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Refund marked as refunded successfully.');
     }
 
-    private function reservationPaymentTotals($reservation): array
+    private function overallReservationTotals($reservation): array
     {
-        $reservation->loadMissing('payments');
-        $paidFromPayments = (float) $reservation->payments->sum('amount');
-        $paidFromReservation = (float) ($reservation->amount_paid ?? 0);
+        $rows = collect([
+            ...RoomReservation::with('payments')->get(),
+            ...FacilityReservation::with('payments')->get(),
+            ...EventReservation::with('payments')->get(),
+            ...DiningReservation::with('payments')->get(),
+        ])->filter(function ($row) use ($reservation) {
+            if (!isset($row->guest_email) || !isset($row->check_in)) {
+                return false;
+            }
+
+            return $row->guest_email === $reservation->guest_email
+                && optional($row->check_in)->toDateString() === optional($reservation->check_in)->toDateString()
+                && !in_array($row->status, ['cancelled', 'completed'], true);
+        })->values();
+
+        if ($rows->isEmpty()) {
+            $rows = collect([$reservation]);
+        }
+
+        $total = (float) $rows->sum(fn ($row) => (float) ($row->total_amount ?? 0));
+        $paid = (float) $rows->sum(function ($row) {
+            $row->loadMissing('payments');
+            $rowPaid = (float) ($row->amount_paid ?? 0);
+            $paymentPaid = (float) ($row->payments?->sum('amount') ?? 0);
+
+            return max($rowPaid, $paymentPaid);
+        });
 
         return [
-            'paid' => round(max($paidFromReservation, $paidFromPayments), 2),
+            'total' => round($total, 2),
+            'paid' => round(min(max($paid, 0), max($total, 0)), 2),
         ];
+    }
+
+    private function calculateRefundAmount(float $originalTotal, float $finalTotal, float $totalPaid): float
+    {
+        $reduction = max($originalTotal - $finalTotal, 0);
+        if ($reduction <= 0) {
+            return 0.0;
+        }
+
+        return round(min(max($totalPaid, 0), $reduction), 2);
     }
 
     private function createRefundIfDue($reservation, float $originalTotal, float $finalTotal, float $totalPaid, ?string $reason): void
@@ -1734,7 +1773,7 @@ class AdminController extends Controller
             return;
         }
 
-        $refundAmount = round(max($totalPaid - $finalTotal, 0), 2);
+        $refundAmount = $this->calculateRefundAmount($originalTotal, $finalTotal, $totalPaid);
         if ($refundAmount <= 0) {
             return;
         }
