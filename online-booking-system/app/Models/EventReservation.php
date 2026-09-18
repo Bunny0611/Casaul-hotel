@@ -11,6 +11,7 @@ class EventReservation extends Model
     protected $casts = [
         'check_in' => 'date',
         'check_out' => 'date',
+        'duration_hours' => 'integer',
     ];
 
     protected $fillable = [
@@ -23,6 +24,7 @@ class EventReservation extends Model
         'event_start_time',
         'check_out',
         'event_end_time',
+        'duration_hours',
         'number_of_guests',
         'status',
         'total_amount',

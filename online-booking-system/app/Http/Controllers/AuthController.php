@@ -272,14 +272,21 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $isStaff = Auth::guard('web')->check();
         $isGuest = Auth::guard('guest')->check();
 
-        Auth::guard($isGuest ? 'guest' : 'web')->logout();
+        if ($isStaff) {
+            Auth::guard('web')->logout();
+        }
+
+        if ($isGuest) {
+            Auth::guard('guest')->logout();
+        }
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route($isGuest ? 'home' : 'login');
+        return redirect()->route($isStaff ? 'login' : 'home');
     }
 }
 

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 
 class ProfileController extends Controller
 {
@@ -12,7 +11,7 @@ class ProfileController extends Controller
     {
         abort_unless(Auth::guard('guest')->check(), 403);
 
-        return view('profile.edit');
+        return view('profile');
     }
 
     public function update(Request $request)
@@ -23,18 +22,21 @@ class ProfileController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required', 'email', 'max:255', 'unique:guest_users,email,'.$user->id, 'unique:staff_users,email'],
+            'contact_no' => 'nullable|string|max:30',
             'password' => 'nullable|string|min:6|confirmed',
         ]);
 
         $user->name = $data['name'];
         $user->email = $data['email'];
+        $user->contact_no = $data['contact_no'] ?? null;
 
         if (!empty($data['password'])) {
-            $user->password = Hash::make($data['password']);
+            $user->password = $data['password'];
         }
 
         $user->save();
+        Auth::guard('guest')->login($user, true);
 
-        return redirect()->route('profile.edit')->with('status', 'Profile updated.');
+        return view('profile')->with('status', 'Profile updated.');
     }
 }
