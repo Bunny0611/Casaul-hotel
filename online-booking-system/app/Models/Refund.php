@@ -9,6 +9,7 @@ class Refund extends Model
     protected $fillable = [
         'guest_name', 'original_total', 'final_total', 'total_paid',
         'refund_amount', 'reason', 'refund_date', 'status', 'processed_by',
+        'refund_payment_method', 'refund_reference_number', 'refund_receipt',
     ];
 
     protected $casts = [

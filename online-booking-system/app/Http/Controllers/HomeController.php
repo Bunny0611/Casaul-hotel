@@ -464,8 +464,14 @@ class HomeController extends Controller
         if ($guest = Auth::guard('guest')->user()) {
             $validated['guest_name'] = $guest->name;
             $validated['guest_email'] = $guest->email;
-            $validated['guest_phone'] = $guest->contact_no;
+            $validated['guest_phone'] = filled($guest->contact_no)
+                ? $guest->contact_no
+                : ($validated['guest_phone'] ?? '');
         }
+
+        // Some existing guest accounts do not have a saved contact number.
+        // Keep the non-null reservation columns compatible with those accounts.
+        $validated['guest_phone'] = (string) ($validated['guest_phone'] ?? '');
 
         $submissionToken = $validated['submission_token'] ?? null;
         if ($submissionToken && $request->session()->has('reservation_submission_' . $submissionToken)) {
@@ -961,15 +967,39 @@ class HomeController extends Controller
             return redirect()->route('guest.records')->withErrors(['reservation' => 'This reservation cannot be cancelled.']);
         }
 
-        $reservation->update(['status' => 'cancelled']);
+        DB::transaction(function () use ($reservation) {
+            $wasCheckedIn = $reservation->status === 'checked-in';
+            $reservation->loadMissing('payments');
 
-        if ($reservation->status === 'checked-in') {
-            $reservation->loadMissing('room');
-            $reservation->room?->update([
-                'status' => 'available',
-                'cleaning_status' => 'dirty',
-            ]);
-        }
+            $totalPaid = max(
+                (float) ($reservation->amount_paid ?? 0),
+                (float) $reservation->payments->sum('amount')
+            );
+            $refundAmount = round(min(max($totalPaid, 0), max((float) ($reservation->total_amount ?? 0), 0)), 2);
+
+            if ($refundAmount > 0) {
+                $reservation->refunds()->create([
+                    'guest_name' => $reservation->guest_name,
+                    'original_total' => round((float) $reservation->total_amount, 2),
+                    'final_total' => 0,
+                    'total_paid' => round($totalPaid, 2),
+                    'refund_amount' => $refundAmount,
+                    'reason' => $wasCheckedIn ? 'Early Check-out' : 'Cancellation',
+                    'refund_date' => now()->toDateString(),
+                    'status' => 'Pending',
+                ]);
+            }
+
+            $reservation->update(['status' => 'cancelled']);
+
+            if ($wasCheckedIn) {
+                $reservation->loadMissing('room');
+                $reservation->room?->update([
+                    'status' => 'available',
+                    'cleaning_status' => 'dirty',
+                ]);
+            }
+        });
 
         return redirect()->route('guest.records')->with('success', 'Your reservation has been cancelled successfully.');
     }

@@ -324,7 +324,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($roomReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -516,7 +516,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($facilitiesReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->facility?->name ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->facility?->name ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -687,7 +687,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($eventsReservations as $reservation)
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->event?->name ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->event?->name ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -873,7 +873,7 @@
                                 $qty = $item->quantity ?? 1;
                                 return $mealName . ' (x' . $qty . ')';
                             })->values()->all())
-                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->dining_area ?? '')) }}">
+                            <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->dining_area ?? '')) }}">
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                     <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
@@ -1053,6 +1053,16 @@
                     <label class="mb-1 block text-sm font-medium text-gray-700">Guest Phone</label>
                     <input type="text" name="guest_phone" value="{{ old('guest_phone') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                     @error('guest_phone')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700" for="editReservationStatus">Status</label>
+                    <select id="editReservationStatus" name="status" disabled class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="checked-in">Checked-in</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
                 </div>
                 <div id="roomReservationField" data-reservation-fields="rooms">
                     <label class="mb-1 block text-sm font-medium text-gray-700">Room</label>
@@ -1256,7 +1266,7 @@
 
 <form id="reservationStatusForm" action="" method="POST">
     @csrf
-    <input type="hidden" name="_method" value="PATCH">
+    @method('PATCH')
     <input type="hidden" name="status" id="reservationStatus">
     <input type="hidden" name="category" id="reservationStatusCategory">
 </form>
@@ -1599,14 +1609,14 @@
         };
 
         rows.forEach(row => {
-            const deleteForm = row.querySelector('form[action*="/reservations/"]');
-            const idMatch = deleteForm?.action.match(/\/reservations\/(\d+)/);
-            if (!idMatch) return;
+            const id = row.dataset.reservationId;
+            const source = row.dataset.source;
+            if (!id || !source) return;
             const cell = row.querySelector('td');
             if (!cell) return;
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.value = idMatch[1];
+            checkbox.value = `${source}:${id}`;
             checkbox.className = 'reservation-select h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500';
             checkbox.setAttribute('aria-label', 'Select reservation');
             checkbox.addEventListener('change', updateSelection);
@@ -1923,6 +1933,7 @@
 
         form.reset();
         methodInput.disabled = true;
+        document.getElementById('editReservationStatus').disabled = true;
         form.action = "{{ route('employee.reservations.store') }}";
         const categoryInput = document.getElementById('reservationCategory');
         if (categoryInput) {
@@ -1970,6 +1981,8 @@
         setValue('[name="guest_name"]', reservation.guest_name);
         setValue('[name="guest_email"]', reservation.guest_email);
         setValue('[name="guest_phone"]', reservation.guest_phone);
+        setValue('#editReservationStatus', reservation.status || 'pending');
+        document.getElementById('editReservationStatus').disabled = false;
         setValue(`[data-reservation-fields="${category}"] [name="room_id"], [data-reservation-fields="${category}"] [name="event_id"], [data-reservation-fields="${category}"] [name="facility_id"], [data-reservation-fields="${category}"] [name="dining_area"]`, reservation.room_id || reservation.event_id || reservation.facility_id || reservation.dining_area);
 
         if (category === 'event') {

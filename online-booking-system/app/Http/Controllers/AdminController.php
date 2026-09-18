@@ -160,28 +160,16 @@ class AdminController extends Controller
         $diningTables = DiningTable::orderBy('table_no')->get();
 
         $roomReservations = RoomReservation::with('room')
-            ->where(function ($query) use ($calendarStart, $calendarEnd) {
-                $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
-                    ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
-                    ->orWhere(function ($q) use ($calendarStart, $calendarEnd) {
-                        $q->where('check_in', '<=', $calendarStart->toDateString())
-                            ->where('check_out', '>=', $calendarEnd->toDateString());
-                    });
-            })
+            ->whereDate('check_in', '<=', $calendarEnd->toDateString())
+            ->whereDate('check_out', '>=', $calendarStart->toDateString())
             ->get();
 
         // Older bookings remain in reservations after the table split. Include them
         // only when the same booking is not already present in room_reservations.
         $legacyRoomReservations = Reservation::with('room')
             ->whereNotNull('room_id')
-            ->where(function ($query) use ($calendarStart, $calendarEnd) {
-                $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
-                    ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
-                    ->orWhere(function ($q) use ($calendarStart, $calendarEnd) {
-                        $q->where('check_in', '<=', $calendarStart->toDateString())
-                            ->where('check_out', '>=', $calendarEnd->toDateString());
-                    });
-            })
+            ->whereDate('check_in', '<=', $calendarEnd->toDateString())
+            ->whereDate('check_out', '>=', $calendarStart->toDateString())
             ->get();
 
         $reservations = $roomReservations
@@ -204,7 +192,7 @@ class AdminController extends Controller
                     continue;
                 }
 
-                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $startIndex = $calendarStart->diffInDays($effectiveStart);
                 $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
 
                 $segments[] = [
@@ -212,6 +200,14 @@ class AdminController extends Controller
                     'span' => $span,
                     'guest' => $reservation->guest_name ?? 'Guest',
                     'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'details' => [
+                        'guest' => $reservation->guest_name ?? 'Guest',
+                        'room' => $room->room_number,
+                        'check_in' => $reservation->check_in ? Carbon::parse($reservation->check_in)->format('M d, Y') : 'N/A',
+                        'check_out' => $reservation->check_out ? Carbon::parse($reservation->check_out)->format('M d, Y') : 'N/A',
+                        'amount' => number_format((float) ($reservation->total_amount ?? 0), 2),
+                        'status' => ucfirst(strtolower((string) ($reservation->status ?? 'pending'))),
+                    ],
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'booked' => 'background: rgba(239, 68, 68, 0.28); border: 1px solid rgba(239, 68, 68, 0.4); color: #1f2937;',
                         'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
@@ -272,7 +268,7 @@ class AdminController extends Controller
                     continue;
                 }
 
-                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $startIndex = $calendarStart->diffInDays($effectiveStart);
                 $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
 
                 $segments[] = [
@@ -280,6 +276,16 @@ class AdminController extends Controller
                     'span' => $span,
                     'guest' => $reservation->guest_name ?? $facility->name,
                     'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'details' => [
+                        'guest' => $reservation->guest_name ?? 'Guest',
+                        'type' => 'Facility',
+                        'item' => $facility->name,
+                        'check_in' => $reservation->check_in ? Carbon::parse($reservation->check_in)->format('M d, Y') : 'N/A',
+                        'check_out' => $reservation->check_out ? Carbon::parse($reservation->check_out)->format('M d, Y') : 'N/A',
+                        'time' => $reservation->facility_start_time ?: 'Time not set',
+                        'amount' => number_format((float) ($reservation->total_amount ?? 0), 2),
+                        'status' => ucfirst(strtolower((string) ($reservation->status ?? 'pending'))),
+                    ],
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
                         'checked-in' => 'background: rgba(14, 165, 233, 0.25); border: 1px solid rgba(14, 165, 233, 0.4); color: #0f172a;',
@@ -325,7 +331,7 @@ class AdminController extends Controller
                     continue;
                 }
 
-                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $startIndex = $calendarStart->diffInDays($effectiveStart);
                 $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
 
                 $segments[] = [
@@ -333,6 +339,18 @@ class AdminController extends Controller
                     'span' => $span,
                     'guest' => $reservation->guest_name ?? $event->name,
                     'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'details' => [
+                        'guest' => $reservation->guest_name ?? 'Guest',
+                        'type' => 'Event',
+                        'item' => $event->name,
+                        'event_type' => $reservation->event_type ?: $event->event_type ?: 'Event',
+                        'check_in' => $reservation->check_in ? Carbon::parse($reservation->check_in)->format('M d, Y') : 'N/A',
+                        'check_out' => $reservation->check_out ? Carbon::parse($reservation->check_out)->format('M d, Y') : 'N/A',
+                        'start_time' => $reservation->event_start_time ?: 'Time not set',
+                        'end_time' => $reservation->event_end_time ?: 'Time not set',
+                        'amount' => number_format((float) ($reservation->total_amount ?? 0), 2),
+                        'status' => ucfirst(strtolower((string) ($reservation->status ?? 'pending'))),
+                    ],
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
                         'checked-in' => 'background: rgba(14, 165, 233, 0.25); border: 1px solid rgba(14, 165, 233, 0.4); color: #0f172a;',
@@ -384,7 +402,7 @@ class AdminController extends Controller
                     continue;
                 }
 
-                $startIndex = $effectiveStart->diffInDays($calendarStart);
+                $startIndex = $calendarStart->diffInDays($effectiveStart);
                 $span = max(1, $effectiveStart->diffInDays($effectiveEnd) + 1);
 
                 $segments[] = [
@@ -392,6 +410,18 @@ class AdminController extends Controller
                     'span' => $span,
                     'guest' => $reservation->guest_name ?? 'Dining',
                     'status' => strtolower((string) ($reservation->status ?? 'pending')),
+                    'details' => [
+                        'guest' => $reservation->guest_name ?? 'Guest',
+                        'type' => 'Dining',
+                        'item' => 'Table ' . $table->table_no,
+                        'dining_area' => $reservation->dining_area ?: 'Table not set',
+                        'check_in' => $reservation->check_in ? Carbon::parse($reservation->check_in)->format('M d, Y') : 'N/A',
+                        'check_out' => $reservation->check_out ? Carbon::parse($reservation->check_out)->format('M d, Y') : 'N/A',
+                        'time' => $reservation->dining_schedule ?: 'Time not set',
+                        'number_of_guests' => $reservation->quantity ?? $reservation->number_of_guests ?? 'N/A',
+                        'amount' => number_format((float) ($reservation->total_amount ?? 0), 2),
+                        'status' => ucfirst(strtolower((string) ($reservation->status ?? 'pending'))),
+                    ],
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'confirmed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
                         'checked-in' => 'background: rgba(14, 165, 233, 0.25); border: 1px solid rgba(14, 165, 233, 0.4); color: #0f172a;',
@@ -928,17 +958,40 @@ class AdminController extends Controller
         $validated = $request->validate([
             'category' => ['required', Rule::in(['rooms', 'facilities', 'event', 'dining'])],
             'ids' => ['required', 'array', 'min:1'],
-            'ids.*' => ['integer', 'distinct', 'min:1'],
+            'ids.*' => ['string', 'distinct', 'regex:/^(?:[1-9][0-9]*|(?:reservations|room_reservations|facility_reservations|event_reservations|dining_reservations):[1-9][0-9]*)$/'],
         ]);
 
         $deleted = 0;
-        foreach ($validated['ids'] as $id) {
-            $reservation = match ($validated['category']) {
-                'rooms' => RoomReservation::find($id) ?? Reservation::find($id),
-                'event' => EventReservation::find($id) ?? Reservation::find($id),
-                'facilities' => FacilityReservation::find($id) ?? Reservation::find($id),
-                'dining' => DiningReservation::find($id) ?? Reservation::find($id),
+        foreach ($validated['ids'] as $reference) {
+            if (str_contains($reference, ':')) {
+                [$source, $id] = explode(':', $reference, 2);
+            } else {
+                $source = null;
+                $id = $reference;
+            }
+
+            $reservation = match ($source) {
+                'room_reservations' => RoomReservation::find($id),
+                'event_reservations' => EventReservation::find($id),
+                'facility_reservations' => FacilityReservation::find($id),
+                'dining_reservations' => DiningReservation::find($id),
+                'reservations' => Reservation::find($id),
+                default => match ($validated['category']) {
+                    'rooms' => RoomReservation::find($id) ?? Reservation::find($id),
+                    'event' => EventReservation::find($id) ?? Reservation::find($id),
+                    'facilities' => FacilityReservation::find($id) ?? Reservation::find($id),
+                    'dining' => DiningReservation::find($id) ?? Reservation::find($id),
+                },
             };
+
+            // Older reservation pages may submit only the numeric ID. For room
+            // records, prefer the legacy reservation when that is where the row
+            // actually came from, without touching Darlene's separate booking.
+            if (!$reservation && $validated['category'] === 'rooms') {
+                $reservation = Reservation::whereKey($id)
+                    ->whereNotNull('room_id')
+                    ->first();
+            }
 
             if ($reservation instanceof Reservation) {
                 $legacyCategory = match (true) {
@@ -1294,14 +1347,22 @@ class AdminController extends Controller
             }
 
             if ($validated['status'] === 'cancelled' && $reservation->status !== 'cancelled') {
-                $paymentTotals = $this->reservationPaymentTotals($reservation);
+                $reservation->loadMissing('payments');
+                $originalTotal = round((float) ($reservation->total_amount ?? 0), 2);
+                $totalPaid = round(min(
+                    max(
+                        (float) ($reservation->amount_paid ?? 0),
+                        (float) $reservation->payments->sum('amount')
+                    ),
+                    max($originalTotal, 0)
+                ), 2);
                 $refundReason = $reservation->status === 'checked-in' ? 'Early Check-out' : 'Cancellation';
-                $refundAmount = round(max($paymentTotals['paid'], 0), 2);
+                $refundAmount = $this->calculateRefundAmount($originalTotal, 0, $totalPaid);
                 $this->createRefundIfDue(
                     $reservation,
-                    (float) $reservation->total_amount,
+                    $originalTotal,
                     0,
-                    $paymentTotals['paid'],
+                    $totalPaid,
                     $refundReason
                 );
                 $refundMessage = $refundAmount > 0
@@ -1508,6 +1569,7 @@ class AdminController extends Controller
 
         $validated = $request->validate([
             'category' => ['required', 'in:rooms,facilities,event,dining'],
+            'status' => ['required', Rule::in(['pending', 'confirmed', 'checked-in', 'completed', 'cancelled'])],
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'facility_id' => ['nullable', 'required_if:category,facilities', 'exists:facilities,id'],
             'event_id' => ['nullable', 'required_if:category,event', 'exists:events,id'],
@@ -1542,8 +1604,9 @@ class AdminController extends Controller
             'dining' => DiningReservation::findOrFail($id),
         };
 
-        $originalTotal = (float) $reservation->total_amount;
-        $paymentTotals = $this->reservationPaymentTotals($reservation);
+        $beforeTotals = $this->overallReservationTotals($reservation);
+        $originalTotal = $beforeTotals['total'];
+        $paymentTotals = ['paid' => $beforeTotals['paid']];
 
         $calculatedTotal = match ($validated['category']) {
             'rooms' => ReservationPricing::room(
@@ -1602,16 +1665,19 @@ class AdminController extends Controller
 
         $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
 
+        $afterTotals = $this->overallReservationTotals($reservation->fresh());
+        $finalTotal = $afterTotals['total'];
+
         $this->createRefundIfDue(
             $reservation,
             $originalTotal,
-            (float) $validated['total_amount'],
+            $finalTotal,
             $paymentTotals['paid'],
-            $paymentTotals['paid'] > (float) $validated['total_amount'] ? 'Reservation Change' : null
+            $finalTotal < $originalTotal ? 'Reservation Change' : null
         );
 
-        $refundDue = round(max($paymentTotals['paid'] - (float) $validated['total_amount'], 0), 2);
-        $balanceDue = round(max((float) $validated['total_amount'] - $paymentTotals['paid'], 0), 2);
+        $refundDue = $this->calculateRefundAmount($originalTotal, $finalTotal, $paymentTotals['paid']);
+        $balanceDue = round(max($finalTotal - $paymentTotals['paid'], 0), 2);
         $updateMessage = $refundDue > 0
             ? 'Reservation updated successfully! Refund Due: ₱' . number_format($refundDue, 2) . ' (Pending).'
             : ($balanceDue > 0
@@ -1694,24 +1760,82 @@ class AdminController extends Controller
     {
         abort_if($refund->status === 'Refunded', 422, 'This refund has already been marked as refunded.');
 
+        $validated = $request->validate([
+            'refund_payment_method' => ['nullable', Rule::in(['Cash', 'GCash', 'Maya', 'Bank Transfer', 'Credit/Debit Card'])],
+            'refund_reference_number' => ['nullable', 'string', 'max:255', Rule::requiredIf(fn () => filled($request->input('refund_payment_method')) && $request->input('refund_payment_method') !== 'Cash')],
+            'refund_receipt' => ['nullable', 'image', 'max:5120', Rule::requiredIf(fn () => filled($request->input('refund_payment_method')) && $request->input('refund_payment_method') !== 'Cash')],
+        ]);
+
+        $paymentMethod = $validated['refund_payment_method'] ?? 'Cash';
+
+        if ($request->hasFile('refund_receipt')) {
+            $validated['refund_receipt'] = $request->file('refund_receipt')->store('refund-receipts', 'public');
+        }
+
         $refund->update([
             'status' => 'Refunded',
             'processed_by' => $request->user()->id,
             'refund_date' => now()->toDateString(),
+            'refund_payment_method' => $paymentMethod,
+            'refund_reference_number' => $validated['refund_reference_number'] ?? null,
+            'refund_receipt' => $validated['refund_receipt'] ?? null,
         ]);
 
         return redirect()->back()->with('success', 'Refund marked as refunded successfully.');
     }
 
-    private function reservationPaymentTotals($reservation): array
+    public function destroyRefund(Request $request, Refund $refund)
     {
-        $reservation->loadMissing('payments');
-        $paidFromPayments = (float) $reservation->payments->sum('amount');
-        $paidFromReservation = (float) ($reservation->amount_paid ?? 0);
+        $refund->delete();
+
+        $routePrefix = $request->routeIs('employee.*') ? 'employee.' : 'admin.';
+        return redirect()->route($routePrefix . 'refunds')->with('success', 'Refund deleted successfully.');
+    }
+
+    private function overallReservationTotals($reservation): array
+    {
+        $rows = collect([
+            ...RoomReservation::with('payments')->get(),
+            ...FacilityReservation::with('payments')->get(),
+            ...EventReservation::with('payments')->get(),
+            ...DiningReservation::with('payments')->get(),
+        ])->filter(function ($row) use ($reservation) {
+            if (!isset($row->guest_email) || !isset($row->check_in)) {
+                return false;
+            }
+
+            return $row->guest_email === $reservation->guest_email
+                && optional($row->check_in)->toDateString() === optional($reservation->check_in)->toDateString()
+                && !in_array($row->status, ['cancelled', 'completed'], true);
+        })->values();
+
+        if ($rows->isEmpty()) {
+            $rows = collect([$reservation]);
+        }
+
+        $total = (float) $rows->sum(fn ($row) => (float) ($row->total_amount ?? 0));
+        $paid = (float) $rows->sum(function ($row) {
+            $row->loadMissing('payments');
+            $rowPaid = (float) ($row->amount_paid ?? 0);
+            $paymentPaid = (float) ($row->payments?->sum('amount') ?? 0);
+
+            return max($rowPaid, $paymentPaid);
+        });
 
         return [
-            'paid' => round(max($paidFromReservation, $paidFromPayments), 2),
+            'total' => round($total, 2),
+            'paid' => round(min(max($paid, 0), max($total, 0)), 2),
         ];
+    }
+
+    private function calculateRefundAmount(float $originalTotal, float $finalTotal, float $totalPaid): float
+    {
+        $reduction = max($originalTotal - $finalTotal, 0);
+        if ($reduction <= 0) {
+            return 0.0;
+        }
+
+        return round(min(max($totalPaid, 0), $reduction), 2);
     }
 
     private function createRefundIfDue($reservation, float $originalTotal, float $finalTotal, float $totalPaid, ?string $reason): void
@@ -1720,7 +1844,7 @@ class AdminController extends Controller
             return;
         }
 
-        $refundAmount = round(max($totalPaid - $finalTotal, 0), 2);
+        $refundAmount = $this->calculateRefundAmount($originalTotal, $finalTotal, $totalPaid);
         if ($refundAmount <= 0) {
             return;
         }
@@ -1760,11 +1884,33 @@ class AdminController extends Controller
 
     public function employeeGuestRequests()
     {
-        $requestQuery = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
+        $baseQuery = GuestRequest::with(['guest', 'reservation.room', 'room', 'assignedEmployee'])
             ->where('department', 'Employee')
             ->latest('submitted_at');
+        $allRequests = (clone $baseQuery)->get();
+        $requestQuery = clone $baseQuery;
+
+        if (request('search')) {
+            $search = request('search');
+            $requestId = preg_match('/^REQ-?(\d+)$/i', $search, $matches) ? (int) $matches[1] : null;
+            $requestQuery->where(function ($query) use ($search, $requestId) {
+                $query->where('request_type', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('guest', fn ($guestQuery) => $guestQuery->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('room', fn ($roomQuery) => $roomQuery->where('room_number', 'like', "%{$search}%"))
+                    ->orWhereHas('reservation', fn ($reservationQuery) => $reservationQuery->where('guest_name', 'like', "%{$search}%"));
+
+                if ($requestId !== null) {
+                    $query->orWhere('id', $requestId);
+                }
+            });
+        }
+
+        if (request('status') && request('status') !== 'All Status') {
+            $requestQuery->where('status', request('status'));
+        }
+
         $requests = $requestQuery->paginate(5)->withQueryString();
-        $allRequests = (clone $requestQuery)->get();
         $employees = Staff::where('role', 'employee')->orderBy('name')->get();
 
         return view('employee.guest-requests', compact('requests', 'allRequests', 'employees'));

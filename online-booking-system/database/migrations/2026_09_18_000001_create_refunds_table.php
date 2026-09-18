@@ -24,7 +24,7 @@ return new class extends Migration
             $table->enum('reason', ['Early Check-out', 'Reservation Change', 'Cancellation']);
             $table->date('refund_date');
             $table->enum('status', ['Pending', 'Refunded'])->default('Pending');
-            $table->foreignId('processed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('processed_by')->nullable()->constrained('staff_users')->nullOnDelete();
             $table->timestamps();
 
             $table->index(['reservationable_type', 'reservationable_id']);

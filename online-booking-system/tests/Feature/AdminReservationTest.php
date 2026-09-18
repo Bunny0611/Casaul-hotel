@@ -13,6 +13,16 @@ class AdminReservationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_refund_formula_uses_paid_amount_and_reduction_amount(): void
+    {
+        $controller = new \App\Http\Controllers\AdminController();
+        $method = new \ReflectionMethod($controller, 'calculateRefundAmount');
+        $method->setAccessible(true);
+
+        $this->assertSame(2500.0, $method->invoke($controller, 18000.0, 15500.0, 10000.0));
+        $this->assertSame(2500.0, $method->invoke($controller, 18000.0, 15500.0, 25000.0));
+    }
+
     public function test_admin_can_create_a_reservation(): void
     {
         $admin = Staff::factory()->create(['role' => 'admin']);

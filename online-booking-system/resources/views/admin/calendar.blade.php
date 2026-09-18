@@ -188,8 +188,24 @@
         text-overflow: ellipsis;
         box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
         z-index: 1;
+        cursor: pointer;
     }
 
+    .calendar-detail-popover {
+        position: fixed;
+        display: none;
+        min-width: 220px;
+        max-width: 280px;
+        padding: 0.85rem;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+        color: #334155;
+        z-index: 60;
+    }
+
+    .calendar-detail-popover.show { display: block; }
     .calendar-legend {
         background: #f8fafc;
         border-top: 1px solid #e5e7eb;
@@ -337,7 +353,7 @@
                     @endforeach
 
                     @foreach($roomTimeline[$room->id] ?? [] as $segment)
-                        <div class="calendar-reservation" data-status="{{ $segment['status'] }}" title="{{ ucfirst($segment['status']) }}" style="top: {{ 10 + (($segment['lane'] ?? 0) * 42) }}px; left: {{ ($segment['start'] / count($days)) * 100 }}%; width: {{ (($segment['span'] / count($days)) * 100) }}%; {{ $segment['style'] }}">
+                        <div class="calendar-reservation" data-status="{{ $segment['status'] }}" data-start="{{ $segment['start'] }}" data-span="{{ $segment['span'] }}" data-details="{{ json_encode($segment['details']) }}" title="View booking details" style="top: {{ 10 + (($segment['lane'] ?? 0) * 42) }}px; {{ $segment['style'] }}">
                             {{ $segment['guest'] }}
                         </div>
                     @endforeach
@@ -351,7 +367,7 @@
                     @endforeach
 
                     @foreach($facilityTimeline[$facility['id']] ?? [] as $segment)
-                        <div class="calendar-reservation" style="left: {{ ($segment['start'] / count($days)) * 100 }}%; width: {{ (($segment['span'] / count($days)) * 100) }}%; {{ $segment['style'] }}">
+                        <div class="calendar-reservation" data-status="{{ $segment['status'] }}" data-start="{{ $segment['start'] }}" data-span="{{ $segment['span'] }}" data-details="{{ json_encode($segment['details']) }}" title="View booking details" style="{{ $segment['style'] }}">
                             {{ $segment['guest'] }}
                         </div>
                     @endforeach
@@ -365,7 +381,7 @@
                     @endforeach
 
                     @foreach($eventTimeline[$event['id']] ?? [] as $segment)
-                        <div class="calendar-reservation" style="left: {{ ($segment['start'] / count($days)) * 100 }}%; width: {{ (($segment['span'] / count($days)) * 100) }}%; {{ $segment['style'] }}">
+                        <div class="calendar-reservation" data-status="{{ $segment['status'] }}" data-start="{{ $segment['start'] }}" data-span="{{ $segment['span'] }}" data-details="{{ json_encode($segment['details']) }}" title="View booking details" style="{{ $segment['style'] }}">
                             {{ $segment['guest'] }}
                         </div>
                     @endforeach
@@ -379,7 +395,7 @@
                     @endforeach
 
                     @foreach($diningTimeline[$table['id']] ?? [] as $segment)
-                        <div class="calendar-reservation" style="left: {{ ($segment['start'] / count($days)) * 100 }}%; width: {{ (($segment['span'] / count($days)) * 100) }}%; {{ $segment['style'] }}">
+                        <div class="calendar-reservation" data-status="{{ $segment['status'] }}" data-start="{{ $segment['start'] }}" data-span="{{ $segment['span'] }}" data-details="{{ json_encode($segment['details']) }}" title="View booking details" style="{{ $segment['style'] }}">
                             {{ $segment['guest'] }}
                         </div>
                     @endforeach
@@ -396,6 +412,8 @@
     </div>
 </div>
 
+<div class="calendar-detail-popover" data-calendar-detail-popover></div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const dropdowns = document.querySelectorAll('[data-dropdown]');
@@ -410,6 +428,11 @@
             const rangeValue = document.querySelector('[data-dropdown="viewMode"] .dropdown-label')?.textContent.trim() || 'Weekly';
             const visibleDays = { Weekly: 7, Monthly: 31 };
             const maxVisible = visibleDays[rangeValue] || 7;
+            const gridColumns = `repeat(${maxVisible}, minmax(72px, 1fr))`;
+
+            document.querySelectorAll('.calendar-days, .calendar-timeline-row').forEach((grid) => {
+                grid.style.gridTemplateColumns = gridColumns;
+            });
 
             document.querySelectorAll('.calendar-day-header').forEach((header, index) => {
                 header.style.display = index < maxVisible ? 'flex' : 'none';
@@ -419,6 +442,13 @@
                 row.querySelectorAll('.calendar-cell').forEach((cell, index) => {
                     cell.style.display = index < maxVisible ? 'block' : 'none';
                 });
+            });
+
+            document.querySelectorAll('.calendar-reservation[data-start]').forEach((bar) => {
+                const start = Number(bar.dataset.start);
+                const span = Number(bar.dataset.span);
+                bar.style.left = `${(start / maxVisible) * 100}%`;
+                bar.style.width = `${(span / maxVisible) * 100}%`;
             });
 
             const normalizedView = roomView.toLowerCase();
@@ -479,6 +509,31 @@
         });
 
         document.addEventListener('click', closeAllMenus);
+
+        const detailPopover = document.querySelector('[data-calendar-detail-popover]');
+        document.querySelectorAll('.calendar-reservation[data-details]').forEach((bar) => {
+            bar.addEventListener('click', function (event) {
+                event.stopPropagation();
+                const details = JSON.parse(this.dataset.details);
+                const detailRows = details.type === 'Facility'
+                    ? `<div><b>Guest:</b> ${details.guest}</div><div><b>Facility:</b> ${details.item}</div><div><b>Date:</b> ${details.check_in}</div><div><b>Time:</b> ${details.time}</div><div><b>Amount:</b> ₱${details.amount}</div><div><b>Status:</b> ${details.status}</div>`
+                    : details.type === 'Event'
+                        ? `<div><b>Guest:</b> ${details.guest}</div><div><b>Event:</b> ${details.item}</div><div><b>Event Type:</b> ${details.event_type}</div><div><b>Event Date:</b> ${details.check_in}</div><div><b>Start Time:</b> ${details.start_time}</div><div><b>End Time:</b> ${details.end_time}</div><div><b>Amount:</b> ₱${details.amount}</div><div><b>Status:</b> ${details.status}</div>`
+                        : details.type === 'Dining'
+                            ? `<div><b>Guest:</b> ${details.guest}</div><div><b>Dining:</b> ${details.item}</div><div><b>Dining Area/Table:</b> ${details.dining_area}</div><div><b>Date:</b> ${details.check_in}</div><div><b>Time:</b> ${details.time}</div><div><b>Number of Guests:</b> ${details.number_of_guests}</div><div><b>Amount:</b> ₱${details.amount}</div><div><b>Status:</b> ${details.status}</div>`
+                            : `<div><b>Room:</b> ${details.room}</div><div><b>Check-in:</b> ${details.check_in}</div><div><b>Check-out:</b> ${details.check_out}</div><div><b>Amount:</b> ₱${details.amount}</div><div><b>Status:</b> ${details.status}</div>`;
+                detailPopover.innerHTML = `<div class="mb-2 flex items-center justify-between gap-3"><strong class="text-sm text-slate-900">Booking Details</strong><button type="button" data-close-calendar-detail class="text-slate-400 hover:text-slate-700">&times;</button></div><div class="space-y-1 text-xs">${detailRows}</div>`;
+                const rect = this.getBoundingClientRect();
+                detailPopover.style.left = `${Math.min(rect.left, window.innerWidth - 295)}px`;
+                detailPopover.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 190)}px`;
+                detailPopover.classList.add('show');
+            });
+        });
+        document.addEventListener('click', function (event) {
+            if (event.target.closest('[data-close-calendar-detail]') || !event.target.closest('.calendar-reservation[data-details]')) {
+                detailPopover?.classList.remove('show');
+            }
+        });
         applyCalendarFilter();
     });
 </script>
