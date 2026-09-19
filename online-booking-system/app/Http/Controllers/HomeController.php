@@ -819,11 +819,11 @@ class HomeController extends Controller
             $groupStatus = $statuses->sortBy(fn ($status) => $statusOrder[$status] ?? 0)->first();
 
             $first->setAttribute('group_count', $group->count());
+            $first->setAttribute('group_request_id', 'REQ-' . str_pad($first->id, 4, '0', STR_PAD_LEFT));
             $first->setAttribute('group_status', $groupStatus ?: 'New');
             $first->setAttribute('group_priority', $priorities->count() === 1 ? $priorities->first() : 'Mixed');
             $first->setAttribute('group_items', $group->map(function (GuestRequest $item) {
                 return [
-                    'id' => 'REQ-' . str_pad($item->id, 4, '0', STR_PAD_LEFT),
                     'request_type' => $item->request_type,
                     'status' => $item->status,
                     'priority' => $item->priority,
