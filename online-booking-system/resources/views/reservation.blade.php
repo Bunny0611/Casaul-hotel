@@ -1050,6 +1050,8 @@
     <input type="hidden" name="event_type" id="reservationEventType">
     <input type="hidden" name="number_of_guests" id="reservationEventGuests">
     <input type="hidden" name="room_number_of_guests" id="reservationRoomGuests">
+    <input type="hidden" name="adult_guests" id="reservationAdultGuests">
+    <input type="hidden" name="kid_guests" id="reservationKidGuests">
 </form>
 
 <script>
@@ -1102,6 +1104,8 @@
         const reservationEventId = document.getElementById('reservationEventId');
         const reservationEventType = document.getElementById('reservationEventType');
         const reservationEventGuests = document.getElementById('reservationEventGuests');
+        const reservationAdultGuests = document.getElementById('reservationAdultGuests');
+        const reservationKidGuests = document.getElementById('reservationKidGuests');
         const diningSchedule = document.getElementById('diningSchedule');
         const diningTable = document.getElementById('diningTable');
         const diningDate = document.getElementById('diningDate');
@@ -1564,6 +1568,8 @@
             reservationRoomGuests.value = selectedRoom
                 ? (selectedRoomCapacity + selectedExtraGuests)
                 : '';
+            reservationAdultGuests.value = selectedRoom ? selectedAdults : '';
+            reservationKidGuests.value = selectedRoom ? selectedKids : '';
             reservationTotalAmount.value = total;
             reservationCheckIn.value = bookingDate;
             reservationCheckOut.value = bookingEndDate;

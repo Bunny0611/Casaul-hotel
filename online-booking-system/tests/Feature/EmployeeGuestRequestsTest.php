@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Guest;
 use App\Models\GuestRequest;
+use App\Models\Room;
 use App\Models\Staff;
 use Tests\TestCase;
 
@@ -135,6 +136,54 @@ class EmployeeGuestRequestsTest extends TestCase
         $this->assertDatabaseMissing('guest_requests', ['id' => $guestRequest->id]);
     }
 
+    public function test_guest_records_group_requests_by_room_and_exact_submission_time(): void
+    {
+        $guest = Guest::factory()->create();
+        $room = \App\Models\Room::create([
+            'room_number' => '107',
+            'room_type' => 'Deluxe',
+            'price' => 2000,
+            'floor' => '1',
+            'status' => 'occupied',
+            'capacity' => 2,
+        ]);
+        $submittedAt = now()->setMicrosecond(0);
+
+        foreach ([
+            ['request_type' => 'Extra Towels', 'status' => 'Delivered'],
+            ['request_type' => 'Extra Pillows', 'status' => 'Delivered'],
+        ] as $requestData) {
+            GuestRequest::create(array_merge($requestData, [
+                'guest_id' => $guest->id,
+                'room_id' => $room->id,
+                'department' => 'Housekeeping',
+                'description' => 'Please prepare this request.',
+                'priority' => 'Normal',
+                'submitted_at' => $submittedAt,
+            ]));
+        }
+
+        GuestRequest::create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'request_type' => 'Extra Blanket',
+            'department' => 'Housekeeping',
+            'description' => 'Please prepare this request.',
+            'priority' => 'Normal',
+            'status' => 'New',
+            'submitted_at' => $submittedAt->copy()->addSecond(),
+        ]);
+
+        $response = $this->actingAs($guest, 'guest')->get(route('guest.records'));
+
+        $response->assertOk()
+            ->assertSee('2 Guest Requests')
+            ->assertSee('Extra Towels')
+            ->assertSee('Extra Pillows')
+            ->assertSee('Extra Blanket');
+        $this->assertSame(2, substr_count($response->getContent(), 'class="view-request guest-request-view"'));
+    }
+
     public function test_guest_can_submit_multiple_housekeeping_requests_with_quantity(): void
     {
         $guest = Guest::factory()->create();
@@ -233,6 +282,64 @@ class EmployeeGuestRequestsTest extends TestCase
         $requestData = $response->original->getData()['requestData']->first();
         $this->assertSame('Varies', $requestData['unitPriceFormatted']);
         $this->assertSame(360.0, (float) $requestData['subtotal']);
+    }
+
+    public function test_housekeeping_group_stays_together_when_delivered(): void
+    {
+        $housekeepingStaff = Staff::factory()->create(['role' => 'housekeeping']);
+        $guest = Guest::factory()->create();
+        $room = Room::create([
+            'room_number' => '107',
+            'room_type' => 'Standard',
+            'price' => 2200,
+            'floor' => '1',
+            'status' => 'occupied',
+            'capacity' => 2,
+        ]);
+        $submittedAt = now();
+
+        $firstRequest = GuestRequest::create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'request_type' => 'Extra Towels',
+            'description' => 'Towels please.',
+            'department' => 'Housekeeping',
+            'priority' => 'Normal',
+            'status' => 'New',
+            'submitted_at' => $submittedAt,
+        ]);
+
+        GuestRequest::create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'request_type' => 'Extra Pillows',
+            'description' => 'Pillows please.',
+            'department' => 'Housekeeping',
+            'priority' => 'High',
+            'status' => 'In Progress',
+            'submitted_at' => $submittedAt,
+        ]);
+
+        $response = $this->actingAs($housekeepingStaff)
+            ->get(route('housekeeping.guest-requests'));
+
+        $response->assertOk();
+        $this->assertCount(1, $response->original->getData()['requests']);
+        $this->assertCount(2, $response->original->getData()['requestData']->first()['items']);
+
+        $this->actingAs($housekeepingStaff)
+            ->postJson(route('housekeeping.guest-requests.mark-delivered', $firstRequest->id))
+            ->assertOk()
+            ->assertJson(['success' => true]);
+
+        $this->assertSame('Delivered', $firstRequest->fresh()->status);
+        $this->assertSame('Delivered', GuestRequest::where('request_type', 'Extra Pillows')->first()->status);
+
+        $response = $this->actingAs($housekeepingStaff)
+            ->get(route('housekeeping.guest-requests'));
+
+        $this->assertCount(1, $response->original->getData()['requests']);
+        $this->assertSame('Delivered', $response->original->getData()['requestData']->first()['status']);
     }
 
     public function test_billable_add_ons_are_price_tagged_and_added_to_the_room_reservation_total(): void

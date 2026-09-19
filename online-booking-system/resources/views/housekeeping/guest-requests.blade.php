@@ -1095,7 +1095,7 @@
                     <div class="reservation-grid">
                         <div><span class="detail-label">Guest</span><span id="detailGuest" class="detail-value">—</span></div>
                         <div><span class="detail-label">Room</span><span id="detailRoom" class="detail-value">—</span></div>
-                        <div><span class="detail-label">Reservation</span><span id="detailReservationId" class="detail-value">—</span></div>
+                        <div><span class="detail-label">Request ID</span><span id="detailReservationId" class="detail-value">—</span></div>
                     </div>
                     <div class="reservation-grid">
                         <div><span class="detail-label">Request Category</span><span id="detailRequestCategory" class="detail-value">—</span></div>
@@ -1368,7 +1368,7 @@ function openGuestRequest(requestId) {
 
         document.getElementById('detailGuest').textContent = request.guest;
         document.getElementById('detailRoom').textContent = request.room;
-        document.getElementById('detailReservationId').textContent = request.reservation;
+        document.getElementById('detailReservationId').textContent = request.requestId;
         document.getElementById('detailRequestCategory').textContent = request.requestCategory || 'Housekeeping';
         document.getElementById('detailRequestType').textContent = request.requestType;
         document.getElementById('detailQuantity').textContent = request.quantity ?? 1;

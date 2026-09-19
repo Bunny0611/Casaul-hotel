@@ -378,6 +378,8 @@ class HomeController extends Controller
             'event_type' => 'nullable|string|max:100',
             'number_of_guests' => 'nullable|integer|min:1',
             'room_number_of_guests' => 'nullable|integer|min:1',
+            'adult_guests' => 'nullable|integer|min:0',
+            'kid_guests' => 'nullable|integer|min:0',
             'submission_token' => 'nullable|string|max:100',
         ]);
 
@@ -519,7 +521,14 @@ class HomeController extends Controller
         $room = !empty($validated['room_id']) ? Room::findOrFail($validated['room_id']) : null;
         $roomGuestCount = (int) ($validated['room_number_of_guests'] ?? $validated['number_of_guests']);
         $roomTotal = $room
-            ? ReservationPricing::room($room, $validated['check_in'], $validated['check_out'], $roomGuestCount)
+            ? ReservationPricing::room(
+                $room,
+                $validated['check_in'],
+                $validated['check_out'],
+                $roomGuestCount,
+                isset($validated['adult_guests']) ? (int) $validated['adult_guests'] : null,
+                isset($validated['kid_guests']) ? (int) $validated['kid_guests'] : null
+            )
             : 0;
         $facilityTotal = ReservationPricing::facilities(
             $facilities,
@@ -806,6 +815,38 @@ class HomeController extends Controller
             ->latest('submitted_at')
             ->get();
 
+        $guestRequests = $guestRequests->groupBy(function (GuestRequest $guestRequest) {
+            $room = $guestRequest->room_id ?? $guestRequest->room?->room_number ?? 'room';
+            $submittedAt = $guestRequest->submitted_at?->toDateTimeString() ?? 'submitted-at';
+
+            return $room . '|' . $submittedAt;
+        })->map(function ($group) {
+            $first = $group->first();
+            $statuses = $group->pluck('status')->unique()->values();
+            $priorities = $group->pluck('priority')->unique()->values();
+            $statusOrder = ['New' => 1, 'In Progress' => 2, 'Delivered' => 3, 'Completed' => 4];
+            $groupStatus = $statuses->sortBy(fn ($status) => $statusOrder[$status] ?? 0)->first();
+
+            $first->setAttribute('group_count', $group->count());
+            $first->setAttribute('group_request_id', 'REQ-' . str_pad($first->id, 4, '0', STR_PAD_LEFT));
+            $first->setAttribute('group_status', $groupStatus ?: 'New');
+            $first->setAttribute('group_priority', $priorities->count() === 1 ? $priorities->first() : 'Mixed');
+            $first->setAttribute('group_items', $group->map(function (GuestRequest $item) {
+                return [
+                    'request_type' => $item->request_type,
+                    'status' => $item->status,
+                    'priority' => $item->priority,
+                    'description' => $item->description,
+                    'quantity' => (int) ($item->quantity ?? 1),
+                    'unit_price' => (float) ($item->unit_price ?? 0),
+                    'subtotal' => (float) ($item->subtotal ?? ((float) ($item->unit_price ?? 0) * (int) ($item->quantity ?? 1))),
+                    'submitted_at' => $item->submitted_at?->format('M d, Y g:i A'),
+                ];
+            })->values()->all());
+
+            return $first;
+        })->values();
+
         return view('profile-records', compact('reservations', 'activeReservation', 'guestRequests'));
     }
 
@@ -989,12 +1030,7 @@ class HomeController extends Controller
 
         DB::transaction(function () use ($reservation) {
             $wasCheckedIn = $reservation->status === 'checked-in';
-            $reservation->loadMissing('payments');
-
-            $totalPaid = max(
-                (float) ($reservation->amount_paid ?? 0),
-                (float) $reservation->payments->sum('amount')
-            );
+            $totalPaid = $this->overallReservationPaid($reservation);
             $refundAmount = round(min(max($totalPaid, 0), max((float) ($reservation->total_amount ?? 0), 0)), 2);
 
             if ($refundAmount > 0) {
@@ -1022,6 +1058,29 @@ class HomeController extends Controller
         });
 
         return redirect()->route('guest.records')->with('success', 'Your reservation has been cancelled successfully.');
+    }
+
+    private function overallReservationPaid($reservation): float
+    {
+        $relatedRows = collect([
+            ...RoomReservation::with('payments')->get(),
+            ...FacilityReservation::with('payments')->get(),
+            ...EventReservation::with('payments')->get(),
+            ...DiningReservation::with('payments')->get(),
+            ...Reservation::with('payments')->get(),
+        ])->filter(function ($row) use ($reservation) {
+            return $row->guest_email === $reservation->guest_email
+                && optional($row->check_in)->toDateString() === optional($reservation->check_in)->toDateString()
+                && !in_array($row->status, ['cancelled', 'completed'], true);
+        });
+
+        $total = (float) $relatedRows->sum(fn ($row) => (float) ($row->total_amount ?? 0));
+        $paid = max(
+            (float) $relatedRows->max(fn ($row) => (float) ($row->amount_paid ?? 0)),
+            (float) $relatedRows->sum(fn ($row) => (float) $row->payments->sum('amount'))
+        );
+
+        return round(min(max($paid, 0), max($total, 0)), 2);
     }
 
     public function storeGuestRequest(Request $request)

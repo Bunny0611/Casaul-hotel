@@ -19,8 +19,31 @@ class AdminReservationTest extends TestCase
         $method = new \ReflectionMethod($controller, 'calculateRefundAmount');
         $method->setAccessible(true);
 
-        $this->assertSame(2500.0, $method->invoke($controller, 18000.0, 15500.0, 10000.0));
-        $this->assertSame(2500.0, $method->invoke($controller, 18000.0, 15500.0, 25000.0));
+        $this->assertSame(500.0, $method->invoke($controller, 3000.0, 2500.0, 3000.0));
+        $this->assertSame(0.0, $method->invoke($controller, 3000.0, 2500.0, 2000.0));
+        $this->assertSame(0.0, $method->invoke($controller, 3000.0, 3500.0, 3000.0));
+        $this->assertSame(0.0, $method->invoke($controller, 3000.0, 2500.0, 0.0));
+    }
+
+    public function test_room_pricing_uses_separate_adult_and_kid_rates(): void
+    {
+        $room = Room::create([
+            'room_number' => '104',
+            'room_type' => 'Deluxe Room',
+            'price' => 1000,
+            'floor' => '1st',
+            'status' => 'available',
+            'capacity' => 2,
+        ]);
+
+        $this->assertSame(
+            5925.0,
+            \App\Support\ReservationPricing::room($room, '2026-09-19', '2026-09-22', 4, 1, 1)
+        );
+        $this->assertSame(
+            1975.0,
+            \App\Support\ReservationPricing::room($room, '2026-09-19', '2026-09-20', 4, 1, 1)
+        );
     }
 
     public function test_admin_can_create_a_reservation(): void
