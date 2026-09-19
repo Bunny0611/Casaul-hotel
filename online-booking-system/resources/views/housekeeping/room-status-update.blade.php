@@ -831,12 +831,19 @@
                             <span class="custom-select-caret">▾</span>
                         </button>
                         <div class="custom-select-menu" role="listbox">
-                            <button type="button" class="custom-option selected" data-value="clean">Clean</button>
-                            <button type="button" class="custom-option" data-value="dirty">Dirty</button>
-                            <button type="button" class="custom-option" data-value="in_progress">In Progress</button>
-                            <button type="button" class="custom-option" data-value="ready">Ready</button>
+                            <button type="button" class="custom-option selected" data-value="VC">VC - Vacant Clean</button>
+                            <button type="button" class="custom-option" data-value="VD">VD - Vacant Dirty</button>
+                            <button type="button" class="custom-option" data-value="OC">OC - Occupied Clean</button>
+                            <button type="button" class="custom-option" data-value="OD">OD - Occupied Dirty</button>
+                            <button type="button" class="custom-option" data-value="OOO">OOO - Out of Order</button>
+                            <button type="button" class="custom-option" data-value="BLO">BLO - Blocked</button>
+                            <button type="button" class="custom-option" data-value="NS">NS - No Show</button>
+                            <button type="button" class="custom-option" data-value="SO">SO - Slept Out</button>
+                            <button type="button" class="custom-option" data-value="HU">HU - House Use</button>
+                            <button type="button" class="custom-option" data-value="DND">DND - Do Not Disturb</button>
+                            <button type="button" class="custom-option" data-value="VR">VR - Vacant Ready</button>
                         </div>
-                        <input type="hidden" id="update_status" name="cleaning_status" value="clean">
+                        <input type="hidden" id="update_status" name="room_status" value="VC">
                     </div>
                 </div>
                 <div class="modal-note"><i class="fas fa-lightbulb"></i><span>Make sure the new status accurately reflects the actual condition of the room.</span></div>
@@ -1048,7 +1055,7 @@ function openStatusModal(roomId, roomNumber, roomType, currentStatus, currentCle
     }
 
     if (updateStatusInput) {
-        const mappedValue = cleaningStatusValueMap[currentCleaningStatus] || 'clean';
+        const mappedValue = roomStatusValueMap[currentStatus] || 'VC';
         setCustomSelectValue(updateStatusInput.closest('.custom-select'), mappedValue);
     }
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
 use App\Http\Controllers\ProfileController;
@@ -29,6 +30,7 @@ Route::middleware(['auth:guest', 'verified', 'role:guest'])->group(function () {
     Route::post('/reservation', [HomeController::class, 'storeReservation'])->name('reservation.store');
 });
 Route::post('/send-message', [HomeController::class, 'sendMessage'])->name('send.message');
+Route::post('/chatbot/message', [ChatbotController::class, 'message'])->name('chatbot.message');
 Route::view('/offers', 'offers')->name('offers');
 Route::view('/gallery', 'gallery')->name('gallery');
 Route::get('/dining', [HomeController::class, 'dining'])->name('dining');
@@ -87,7 +89,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::post('/reservations/bulk-delete', [AdminController::class, 'bulkDestroyReservations'])->name('reservations.bulk-destroy');
     Route::get('/checkin', function () {
-        $checkIns = RoomReservation::with('room')
+        $checkIns = RoomReservation::with(['room', 'payments'])
             ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
             ->whereDate('check_in', today())
             ->latest()
@@ -108,10 +110,6 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
         $employeeAddOns = GuestRequest::with('reservation')
             ->where('is_billable', true)
             ->where('status', 'Completed')
-            ->where(function ($query) {
-                $query->whereNull('billing_status')
-                    ->orWhere('billing_status', '!=', 'posted');
-            })
             ->get();
         $prepareEmployeeAddOns = function ($reservation) use ($employeeAddOns) {
             return $employeeAddOns
@@ -173,7 +171,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
                         return $addOn;
                     })
                     ->values();
-                $roomTotal = round((float) ($reservation->total_amount ?? 0), 2);
+                $roomTotal = round((float) ($reservation->overall_total_amount ?? $reservation->total_amount ?? 0), 2);
                 $addOnTotal = round((float) $employeeAddOns->sum('subtotal'), 2);
                 $grandTotal = round($roomTotal + $addOnTotal, 2);
 
@@ -198,6 +196,41 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     })->name('checkin');
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
+        $activeRoomReservations = RoomReservation::query()
+            ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
+            ->whereDate('check_out', '>=', today())
+            ->orderByDesc('check_in')
+            ->get()
+            ->groupBy('room_id')
+            ->map(fn ($reservations) => $reservations->first());
+        $activeHousekeepingTasks = \App\Models\HousekeepingTask::with('assignedStaff')
+            ->whereIn('status', ['pending', 'in_progress'])
+            ->latest()
+            ->get()
+            ->groupBy('room_id')
+            ->map(fn ($tasks) => $tasks->first());
+        $reservedRoomIds = RoomReservation::query()
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->whereDate('check_out', '>=', today())
+            ->pluck('room_id')
+            ->filter()
+            ->unique();
+        $rooms->each(function ($room) use ($reservedRoomIds) {
+            $roomStatusCode = HousekeepingController::roomStatusCode($room);
+            $room->employee_status_code = $roomStatusCode;
+            $room->employee_status_label = $reservedRoomIds->contains($room->id)
+                ? 'Reserved'
+                : HousekeepingController::employeeStatusLabel($roomStatusCode);
+        });
+        $rooms->each(function ($room) use ($activeRoomReservations, $activeHousekeepingTasks) {
+            $reservation = $activeRoomReservations->get($room->id);
+            $task = $activeHousekeepingTasks->get($room->id);
+            $room->detail_guest = $reservation?->guest_name ?: '—';
+            $room->detail_checkin = $reservation?->check_in?->format('Y-m-d') ?: '—';
+            $room->detail_checkout = $reservation?->check_out?->format('Y-m-d') ?: '—';
+            $room->detail_housekeeper = $task?->assignedStaff?->name ?: '—';
+            $room->detail_notes = $room->description ?: ($task?->notes ?: '—');
+        });
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();
         $facilities = \App\Models\Facility::orderBy('name')->get();
         $events = \App\Models\Event::orderBy('name')->get();
@@ -244,6 +277,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
 
         return view('employee.room-status', compact('rooms', 'inventoryItems', 'facilities', 'events', 'diningTables', 'dining', 'diningSchedules'));
     })->name('room-status');
+    Route::patch('/rooms/{id}/status', [HousekeepingController::class, 'updateStatus'])->name('rooms.status');
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
     Route::get('/guest-requests/{id}', [AdminController::class, 'employeeGuestRequest'])->name('guest-requests.show');
     Route::patch('/guest-requests/{id}', [AdminController::class, 'updateEmployeeGuestRequest'])->name('guest-requests.update');

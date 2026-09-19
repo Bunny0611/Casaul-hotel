@@ -242,38 +242,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const quickBtns   = document.querySelectorAll('.quick-reply');
     const iconOpen    = document.getElementById('chat-icon-open');
     const iconClose   = document.getElementById('chat-icon-close');
+    const formEl      = document.getElementById('message-form');
+    const chatbotUrl  = formEl ? formEl.dataset.chatbotEndpoint : null;
 
     let isOpen = false;
 
- 
-    const botResponses = {
-        book: {
-            text: 'I\'d be happy to help you book a room! 🏨\n\nCould you please tell me:\n• Your preferred check-in and check-out dates\n• Number of guests\n• Room type preference (Deluxe, Executive, or Presidential Suite)',
-            quick: ['Check Availability', 'View Rooms', 'Talk to Agent']
-        },
-        inquiries: {
-            text: 'I\'m here to answer any questions! 💬\n\nCommon topics:\n• 🕐 Check-in / Check-out times\n• 🅿️ Parking & transport\n• 🐾 Pet policy\n• 🍳 Breakfast & dining hours\n• 🧺 Room facilities\n\nWhat would you like to know more about?',
-            quick: ['Check-in/out Times', 'Facilities', 'Pet Policy', 'Dining']
-        },
-        availability: {
-            text: 'Let me check room availability for you! 📅\n\nTo get started, please share:\n• Your desired dates\n• Number of guests\n• Preferred room type\n\nOr browse our available rooms directly below.',
-            quick: ['View All Rooms', 'Special Offers', 'Call Us']
-        },
-        offers: {
-            text: 'Check out our current special offers! 🎉\n\n• 🌙 <b>Weekend Escape</b> — Save up to 30% on weekend bookings.\n• 👨‍👩‍👧‍👦 <b>Family Package</b> — Kids stay free with complimentary breakfast.\n• ❤️ <b>Romantic Getaway</b> — Special touches for couples.\n\nTap an offer below to learn more or book now!',
-            quick: ['Weekend Escape', 'Family Package', 'Romantic Getaway', 'Book Now']
-        },
-        contact: {
-            text: 'You can reach us through any of these channels: 📞\n\n📍 <b>Address:</b> Casaul Hotel, Main Street\n📞 <b>Phone:</b> +63 (2) 1234 5678\n📧 <b>Email:</b> reservations@casaulhotel.com\n🌐 <b>Website:</b> www.casaulhotel.com\n\nOur front desk is available 24/7 for any urgent assistance!',
-            quick: ['Call Now', 'Send Email', 'View Location', 'Book a Room']
-        },
-        fallback: {
-            text: 'Thank you for your message! 🙏\n\nFor quick assistance, please choose one of the options below, or give us a call at <b>+63 (2) 1234 5678</b>.\n\nHow else can I help you today?',
-            quick: ['Book a Room', 'Inquiries', 'Check Availability', 'Special Offers', 'Contact Us']
-        }
-    };
-
-   
     function scrollToBottom() {
         requestAnimationFrame(() => {
             messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -348,17 +321,48 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function botReply(responseKey) {
-        const response = botResponses[responseKey] || botResponses.fallback;
-        const typingEl = showTypingIndicator();
+    async function sendChatbotMessage(message) {
+        if (!chatbotUrl) {
+            return 'Thank you for your message. Please contact our front desk for assistance.';
+        }
 
-       
-        const delay = 800 + Math.random() * 700;
+        const csrfToken = formEl ? formEl.querySelector('input[name="_token"]')?.value || '' : '';
+
+        try {
+            const response = await fetch(chatbotUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    message: message,
+                    name: 'Guest',
+                    email: 'guest@example.com'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Chatbot request failed');
+            }
+
+            const data = await response.json();
+            return data.reply || 'Thank you for your message. Please contact our front desk for assistance.';
+        } catch (error) {
+            console.error('Chatbot request error:', error);
+            return 'Thank you for your message. Please contact our front desk for assistance.';
+        }
+    }
+
+    function botReplyFromServer(replyText) {
+        const typingEl = showTypingIndicator();
+        const delay = 500 + Math.random() * 400;
 
         setTimeout(() => {
             typingEl.remove();
-            addMessage(response.text, 'bot', true);
-            updateQuickReplies(response.quick || botResponses.fallback.quick);
+            addMessage(replyText, 'bot', true);
+            updateQuickReplies(['Book a Room', 'Inquiries', 'Check Availability', 'Special Offers', 'Contact Us']);
         }, delay);
     }
 
@@ -368,78 +372,14 @@ document.addEventListener('DOMContentLoaded', function () {
         addMessage(message, 'user');
         inputEl.value = '';
 
-        const lower = message.toLowerCase();
-        let action = 'fallback';
-
-        if (lower.includes('book') || lower.includes('room') || lower.includes('reservation')) {
-            action = 'book';
-        } else if (lower.includes('inquiry') || lower.includes('question') || lower.includes('info')) {
-            action = 'inquiries';
-        } else if (lower.includes('available') || lower.includes('availability') || lower.includes('date')) {
-            action = 'availability';
-        } else if (lower.includes('offer') || lower.includes('deal') || lower.includes('promo') || lower.includes('special') || lower.includes('discount')) {
-            action = 'offers';
-        } else if (lower.includes('contact') || lower.includes('phone') || lower.includes('email') || lower.includes('call') || lower.includes('address') || lower.includes('location')) {
-            action = 'contact';
-        }
-
-        botReply(action);
+        sendChatbotMessage(message).then((reply) => {
+            botReplyFromServer(reply);
+        });
     }
 
    
     function handleQuickReply(label, action) {
-        addMessage(label, 'user');
-
-        
-        const lower = label.toLowerCase();
-        let responseKey = 'fallback';
-
-        if (lower.includes('book') || lower.includes('room')) {
-            responseKey = 'book';
-        } else if (lower.includes('inquir')) {
-            responseKey = 'inquiries';
-        } else if (lower.includes('available') || lower.includes('availability')) {
-            responseKey = 'availability';
-        } else if (lower.includes('offer') || lower.includes('deal') || lower.includes('weekend') || lower.includes('family') || lower.includes('romantic') || lower.includes('special')) {
-            responseKey = 'offers';
-        } else if (lower.includes('contact') || lower.includes('call') || lower.includes('email') || lower.includes('address') || lower.includes('location') || lower.includes('agent')) {
-            responseKey = 'contact';
-        } else if (lower.includes('view') || lower.includes('explore') || lower.includes('all')) {
-           
-            responseKey = 'offers';
-        } else if (lower.includes('check') || lower.includes('time') || lower.includes('pet') || lower.includes('amenit') || lower.includes('dining') || lower.includes('breakfast')) {
-            responseKey = 'inquiries';
-        } else {
-            
-            const actionMap = {
-                'book': 'book',
-                'book-a-room': 'book',
-                'inquiries': 'inquiries',
-                'availability': 'availability',
-                'check-availability': 'availability',
-                'offers': 'offers',
-                'special-offers': 'offers',
-                'contact': 'contact',
-                'contact-us': 'contact',
-                'view-rooms': 'book',
-                'view-all-rooms': 'book',
-                'talk-to-agent': 'contact',
-                'call-now': 'contact',
-                'send-email': 'contact',
-                'view-location': 'contact',
-                'check-in-out-times': 'inquiries',
-                'facilities': 'inquiries',
-                'pet-policy': 'inquiries',
-                'dining': 'inquiries',
-                'weekend-escape': 'offers',
-                'family-package': 'offers',
-                'romantic-getaway': 'offers',
-                'book-now': 'book'
-            };
-            responseKey = actionMap[action] || 'fallback';
-        }
-
-        botReply(responseKey);
+        sendUserMessage(label);
     }
 
    

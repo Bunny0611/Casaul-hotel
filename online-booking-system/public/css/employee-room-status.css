@@ -284,6 +284,19 @@ body {
 .status-badge.dirty { background: var(--dirty); }
 .status-badge.cleaning { background: var(--cleaning); }
 .status-badge.maintenance { background: var(--maintenance); }
+.status-badge.vr,
+.status-badge.vc { background: var(--available); }
+.status-badge.vd { background: var(--dirty); }
+.status-badge.oc { background: var(--occupied); }
+.status-badge.od { background: #7f1d1d; }
+.status-badge.ooo { background: var(--maintenance); }
+.status-badge.blo { background: var(--unavailable); }
+.status-badge.ns,
+.status-badge.so,
+.status-badge.hu,
+.status-badge.dnd { background: #475569; }
+.status-badge.hsuc { background: #15803d; }
+.status-badge.hsd { background: #92400e; }
 
 .housekeeping-pill {
     display: inline-flex;
@@ -295,6 +308,12 @@ body {
     font-weight: 700;
     background: #f3f4f6;
     color: #374151;
+}
+
+.housekeeping-pill {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #1f2937;
 }
 
 .action-group {
