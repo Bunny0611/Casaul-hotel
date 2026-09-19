@@ -105,7 +105,8 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        white-space: nowrap;
     }
 
     .guest-request-actions form {
@@ -126,6 +127,8 @@
         cursor: pointer;
         transition: all 0.2s ease;
         min-height: 36px;
+        padding: 7px 11px;
+        font-size: 0.78rem;
     }
 
     .view-request {
@@ -150,6 +153,46 @@
     .guest-request-delete:hover {
         background: #ffe4e6;
         transform: translateY(-1px);
+    }
+
+    .guest-request-items {
+        display: grid;
+        gap: 10px;
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .guest-request-item {
+        display: grid;
+        gap: 4px;
+        padding: 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #334155;
+        line-height: 1.4;
+    }
+
+    .guest-request-item strong {
+        color: #111827;
+    }
+
+    .guest-request-item span {
+        color: #64748b;
+        font-size: 0.86rem;
+    }
+
+    #guest-request-modal {
+        overflow-y: auto;
+        padding: 16px;
+        box-sizing: border-box;
+    }
+
+    #guest-request-modal .request-modal-card {
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+        box-sizing: border-box;
     }
 
     .guest-delete-modal {
@@ -1236,18 +1279,33 @@
                     <thead><tr><th>Request ID</th><th>Request Type</th><th>Room</th><th>Date Submitted</th><th>Department</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead>
                     <tbody>
                         @foreach($guestRequests as $guestRequest)
-                            @php($requestStatusClass = \Illuminate\Support\Str::slug($guestRequest->status))
+                            @php
+                                $requestStatus = $guestRequest->group_status ?? $guestRequest->status;
+                                $requestPriority = $guestRequest->group_priority ?? $guestRequest->priority;
+                                $requestItems = $guestRequest->group_items ?? [[
+                                    'id' => 'REQ-' . str_pad($guestRequest->id, 4, '0', STR_PAD_LEFT),
+                                    'request_type' => $guestRequest->request_type,
+                                    'status' => $guestRequest->status,
+                                    'priority' => $guestRequest->priority,
+                                    'description' => $guestRequest->description,
+                                    'quantity' => (int) ($guestRequest->quantity ?? 1),
+                                    'unit_price' => (float) ($guestRequest->unit_price ?? 0),
+                                    'subtotal' => (float) ($guestRequest->subtotal ?? 0),
+                                    'submitted_at' => $guestRequest->submitted_at?->format('M d, Y g:i A'),
+                                ]];
+                                $requestStatusClass = \Illuminate\Support\Str::slug($requestStatus);
+                            @endphp
                             <tr>
                                 <td>REQ-{{ str_pad($guestRequest->id, 4, '0', STR_PAD_LEFT) }}</td>
-                                <td>{{ $guestRequest->request_type }}</td>
+                                <td>{{ ($guestRequest->group_count ?? 1) > 1 ? $guestRequest->group_count . ' Guest Requests' : $guestRequest->request_type }}</td>
                                 <td>{{ $guestRequest->room->room_number ?? '—' }}</td>
                                 <td>{{ $guestRequest->submitted_at?->format('M d, Y g:i A') }}</td>
                                 <td>{{ $guestRequest->department }}</td>
-                                <td>{{ $guestRequest->priority }}</td>
-                                <td><span class="guest-request-status status-{{ $requestStatusClass }}">{{ $guestRequest->status }}</span></td>
+                                <td>{{ $requestPriority }}</td>
+                                <td><span class="guest-request-status status-{{ $requestStatusClass }}">{{ $requestStatus }}</span></td>
                                 <td>
                                     <div class="guest-request-actions">
-                                        <button type="button" class="view-request guest-request-view" data-request-id="REQ-{{ str_pad($guestRequest->id, 4, '0', STR_PAD_LEFT) }}" data-request-type="{{ $guestRequest->request_type }}" data-description="{{ $guestRequest->description }}" data-room="{{ $guestRequest->room->room_number ?? '—' }}" data-reservation="{{ $guestRequest->reservation ? 'RES-' . str_pad($guestRequest->reservation->id, 4, '0', STR_PAD_LEFT) : ($guestRequest->reservation_key ? 'RES-' . str_pad((int) $guestRequest->reservation_key, 4, '0', STR_PAD_LEFT) : 'N/A') }}" data-request-category="{{ $guestRequest->department ?? 'Housekeeping' }}" data-quantity="{{ (int) ($guestRequest->quantity ?? 1) }}" data-unit-price="{{ '₱' . number_format((float) ($guestRequest->unit_price ?? 0), 2) }}" data-subtotal="{{ '₱' . number_format((float) ($guestRequest->subtotal ?? 0), 2) }}" data-submitted="{{ $guestRequest->submitted_at?->format('M d, Y g:i A') }}" data-priority="{{ $guestRequest->priority }}" data-status="{{ $guestRequest->status }}">View</button>
+                                        <button type="button" class="view-request guest-request-view" data-request-id="REQ-{{ str_pad($guestRequest->id, 4, '0', STR_PAD_LEFT) }}" data-request-type="{{ $guestRequest->request_type }}" data-description="{{ $guestRequest->description }}" data-room="{{ $guestRequest->room->room_number ?? '—' }}" data-reservation="{{ $guestRequest->reservation ? 'RES-' . str_pad($guestRequest->reservation->id, 4, '0', STR_PAD_LEFT) : ($guestRequest->reservation_key ? 'RES-' . str_pad((int) $guestRequest->reservation_key, 4, '0', STR_PAD_LEFT) : 'N/A') }}" data-request-category="{{ $guestRequest->department ?? 'Housekeeping' }}" data-quantity="{{ (int) ($guestRequest->quantity ?? 1) }}" data-unit-price="{{ '₱' . number_format((float) ($guestRequest->unit_price ?? 0), 2) }}" data-subtotal="{{ '₱' . number_format((float) ($guestRequest->subtotal ?? 0), 2) }}" data-submitted="{{ $guestRequest->submitted_at?->format('M d, Y g:i A') }}" data-priority="{{ $requestPriority }}" data-status="{{ $requestStatus }}" data-items="{{ json_encode($requestItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}">View</button>
                                         <form class="guest-delete-form" action="{{ route('guest.requests.destroy', $guestRequest) }}" method="POST">
                                             @csrf
                                             @method('DELETE')
@@ -1322,6 +1380,7 @@
             <div><dt>Subtotal</dt><dd id="guest-request-subtotal"></dd></div>
             <div><dt>Status</dt><dd id="guest-request-status"></dd></div>
         </dl>
+        <div class="guest-request-items" id="guest-request-items"></div>
     </div>
 </div>
 
@@ -1635,11 +1694,26 @@
             document.getElementById('guest-request-room').textContent = button.dataset.room || '—';
             document.getElementById('guest-request-reservation').textContent = button.dataset.reservation || 'N/A';
             document.getElementById('guest-request-category').textContent = button.dataset.requestCategory || 'Housekeeping';
-            document.getElementById('guest-request-type').textContent = button.dataset.requestType || '—';
-            document.getElementById('guest-request-quantity').textContent = button.dataset.quantity || '1';
-            document.getElementById('guest-request-unit-price').textContent = button.dataset.unitPrice || '₱0.00';
-            document.getElementById('guest-request-subtotal').textContent = button.dataset.subtotal || '₱0.00';
+            const items = JSON.parse(button.dataset.items || '[]');
+            const isGrouped = items.length > 1;
+            const totalQuantity = items.reduce(function (total, item) {
+                return total + Number(item.quantity || 1);
+            }, 0);
+            const totalSubtotal = items.reduce(function (total, item) {
+                return total + Number(item.subtotal || 0);
+            }, 0);
+            document.getElementById('guest-request-type').textContent = isGrouped ? items.length + ' Guest Requests' : (button.dataset.requestType || '—');
+            document.getElementById('guest-request-quantity').textContent = isGrouped ? totalQuantity : (button.dataset.quantity || '1');
+            document.getElementById('guest-request-unit-price').textContent = isGrouped ? 'Varies' : (button.dataset.unitPrice || '₱0.00');
+            document.getElementById('guest-request-subtotal').textContent = isGrouped ? '₱' + totalSubtotal.toFixed(2) : (button.dataset.subtotal || '₱0.00');
             document.getElementById('guest-request-status').textContent = displayStatus;
+            document.getElementById('guest-request-items').innerHTML = items.map(function (item) {
+                const itemStatus = item.status === 'New' ? 'Pending' : (item.status || 'Pending');
+                return '<div class="guest-request-item"><strong>' + item.id + ' · ' + item.request_type + '</strong>'
+                    + '<span>Status: ' + itemStatus + ' · Priority: ' + (item.priority || 'Normal') + '</span>'
+                    + '<span>Submitted: ' + (item.submitted_at || '—') + ' · Quantity: ' + (item.quantity || 1) + ' · Subtotal: ₱' + Number(item.subtotal || 0).toFixed(2) + '</span>'
+                    + (item.description ? '<span>Details: ' + item.description + '</span>' : '') + '</div>';
+            }).join('');
             document.getElementById('guest-request-modal').classList.add('open');
             document.getElementById('guest-request-modal').setAttribute('aria-hidden', 'false');
         });

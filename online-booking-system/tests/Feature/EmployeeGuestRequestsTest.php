@@ -135,6 +135,54 @@ class EmployeeGuestRequestsTest extends TestCase
         $this->assertDatabaseMissing('guest_requests', ['id' => $guestRequest->id]);
     }
 
+    public function test_guest_records_group_requests_by_room_and_exact_submission_time(): void
+    {
+        $guest = Guest::factory()->create();
+        $room = \App\Models\Room::create([
+            'room_number' => '107',
+            'room_type' => 'Deluxe',
+            'price' => 2000,
+            'floor' => '1',
+            'status' => 'occupied',
+            'capacity' => 2,
+        ]);
+        $submittedAt = now()->setMicrosecond(0);
+
+        foreach ([
+            ['request_type' => 'Extra Towels', 'status' => 'Delivered'],
+            ['request_type' => 'Extra Pillows', 'status' => 'Delivered'],
+        ] as $requestData) {
+            GuestRequest::create(array_merge($requestData, [
+                'guest_id' => $guest->id,
+                'room_id' => $room->id,
+                'department' => 'Housekeeping',
+                'description' => 'Please prepare this request.',
+                'priority' => 'Normal',
+                'submitted_at' => $submittedAt,
+            ]));
+        }
+
+        GuestRequest::create([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'request_type' => 'Extra Blanket',
+            'department' => 'Housekeeping',
+            'description' => 'Please prepare this request.',
+            'priority' => 'Normal',
+            'status' => 'New',
+            'submitted_at' => $submittedAt->copy()->addSecond(),
+        ]);
+
+        $response = $this->actingAs($guest, 'guest')->get(route('guest.records'));
+
+        $response->assertOk()
+            ->assertSee('2 Guest Requests')
+            ->assertSee('Extra Towels')
+            ->assertSee('Extra Pillows')
+            ->assertSee('Extra Blanket');
+        $this->assertSame(2, substr_count($response->getContent(), 'class="view-request guest-request-view"'));
+    }
+
     public function test_guest_can_submit_multiple_housekeeping_requests_with_quantity(): void
     {
         $guest = Guest::factory()->create();

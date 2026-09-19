@@ -210,6 +210,68 @@ class EmployeeAddOnBillingTest extends TestCase
         ]);
     }
 
+    public function test_delivered_guest_request_moves_into_existing_employee_charged_add_on_section_once(): void
+    {
+        $employee = User::factory()->create(['role' => 'employee']);
+        $housekeeping = User::factory()->create(['role' => 'housekeeping']);
+        $room = Room::create([
+            'room_number' => '110',
+            'room_type' => 'Standard',
+            'price' => 2500,
+            'floor' => '1',
+            'status' => 'occupied',
+            'cleaning_status' => 'clean',
+            'capacity' => 2,
+        ]);
+        $reservation = RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => 'Delivered Guest',
+            'guest_email' => 'delivered@example.com',
+            'guest_phone' => '09123456789',
+            'check_in' => today(),
+            'check_out' => today(),
+            'number_of_guests' => 1,
+            'status' => 'checked-in',
+            'total_amount' => 2500,
+            'amount_paid' => 0,
+        ]);
+        $guestRequest = $this->makeGuestRequest($reservation, [
+            'request_type' => 'Extra Towels',
+            'unit_price' => 80,
+            'subtotal' => 80,
+            'is_billable' => true,
+            'status' => 'New',
+        ]);
+
+        $this->actingAs($employee)->get(route('employee.checkin'))
+            ->assertDontSee('Extra Towels');
+
+        $this->actingAs($housekeeping)->postJson(
+            route('housekeeping.guest-requests.mark-delivered', $guestRequest->id)
+        )->assertOk()->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('guest_requests', [
+            'id' => $guestRequest->id,
+            'status' => 'Delivered',
+            'billing_status' => 'posted',
+        ]);
+        $this->assertDatabaseHas('room_reservations', [
+            'id' => $reservation->id,
+            'total_amount' => 2580,
+        ]);
+
+        $this->actingAs($housekeeping)->postJson(
+            route('housekeeping.guest-requests.mark-delivered', $guestRequest->id)
+        )->assertOk();
+
+        $this->assertDatabaseCount('guest_requests', 1);
+        $this->actingAs($employee)->get(route('employee.reservation'))
+            ->assertOk()
+            ->assertSee('Charged Add-On Services')
+            ->assertSee('Extra Towels')
+            ->assertSee('"total":80', false);
+    }
+
     private function makeGuestRequest(RoomReservation $reservation, array $attributes): GuestRequest
     {
         return GuestRequest::create(array_merge([

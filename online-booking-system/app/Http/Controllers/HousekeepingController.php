@@ -450,16 +450,8 @@ class HousekeepingController extends Controller
         if (isset($validated['status'])) {
             $guestRequest->status = $validated['status'];
 
-            if ($validated['status'] === 'Completed' && $guestRequest->is_billable && $guestRequest->billing_status !== 'posted') {
-                $reservation = $this->resolveReservationForGuestRequest($guestRequest);
-                if ($reservation) {
-                    $currentTotal = (float) ($reservation->total_amount ?? 0);
-                    $reservation->update([
-                        'total_amount' => $currentTotal + (float) $guestRequest->subtotal,
-                    ]);
-                    $guestRequest->billing_status = 'posted';
-                    $guestRequest->billing_posted_at = now();
-                }
+            if (in_array($validated['status'], ['Delivered', 'Completed'], true)) {
+                $this->postGuestRequestBilling($guestRequest);
             }
         }
 
@@ -482,10 +474,30 @@ class HousekeepingController extends Controller
             ?? \App\Models\RoomReservation::find($guestRequest->reservation_key);
     }
 
+    protected function postGuestRequestBilling(GuestRequest $guestRequest): void
+    {
+        if (!$guestRequest->is_billable || $guestRequest->billing_status === 'posted') {
+            return;
+        }
+
+        $reservation = $this->resolveReservationForGuestRequest($guestRequest);
+        if ($reservation) {
+            $reservation->update([
+                'total_amount' => round(
+                    (float) ($reservation->total_amount ?? 0) + (float) ($guestRequest->subtotal ?? 0),
+                    2
+                ),
+            ]);
+            $guestRequest->billing_status = 'posted';
+            $guestRequest->billing_posted_at = now();
+        }
+    }
+
     public function markGuestRequestDelivered(Request $request, $id)
     {
         $guestRequest = GuestRequest::findOrFail($id);
         $guestRequest->status = 'Delivered';
+        $this->postGuestRequestBilling($guestRequest);
         $guestRequest->save();
 
         return response()->json([

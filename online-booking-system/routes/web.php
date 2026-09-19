@@ -109,7 +109,8 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
         ]);
         $employeeAddOns = GuestRequest::with('reservation')
             ->where('is_billable', true)
-            ->where('status', 'Completed')
+            ->whereIn('status', ['Delivered', 'Completed'])
+            ->where('billing_status', 'pending')
             ->get();
         $prepareEmployeeAddOns = function ($reservation) use ($employeeAddOns) {
             return $employeeAddOns
