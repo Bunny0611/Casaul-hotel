@@ -16,6 +16,7 @@ use App\Models\DiningMenu;
 use App\Models\DiningReservation;
 use App\Models\EventReservation;
 use App\Models\FacilityReservation;
+use App\Models\GuestRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
 
@@ -100,10 +101,47 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
 
         $relatedReservations = collect([
             ...RoomReservation::with('payments')->get(),
-            ...FacilityReservation::with('payments')->get(),
-            ...EventReservation::with('payments')->get(),
-            ...DiningReservation::with('payments')->get(),
+            ...FacilityReservation::with(['payments', 'facility'])->get(),
+            ...EventReservation::with(['payments', 'event'])->get(),
+            ...DiningReservation::with(['payments', 'diningItems.diningMenu'])->get(),
         ]);
+        $employeeAddOns = GuestRequest::with('reservation')
+            ->where('is_billable', true)
+            ->where('status', 'Completed')
+            ->where(function ($query) {
+                $query->whereNull('billing_status')
+                    ->orWhere('billing_status', '!=', 'posted');
+            })
+            ->get();
+        $prepareEmployeeAddOns = function ($reservation) use ($employeeAddOns) {
+            return $employeeAddOns
+                ->filter(function (GuestRequest $guestRequest) use ($reservation) {
+                    $matchesReservationKey = $guestRequest->reservation_type === RoomReservation::class
+                        && (int) $guestRequest->reservation_key === (int) $reservation->id;
+                    $matchesLegacyReservation = $guestRequest->reservation
+                        && $guestRequest->reservation->guest_email === $reservation->guest_email
+                        && optional($guestRequest->reservation->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
+
+                    return $matchesReservationKey || $matchesLegacyReservation;
+                })
+                ->map(function (GuestRequest $guestRequest) {
+                    return [
+                        'guest_request_id' => $guestRequest->id,
+                        'reservation_id' => $guestRequest->reservation_key ?: $guestRequest->reservation_id,
+                        'request_type' => $guestRequest->request_type,
+                        'quantity' => (int) ($guestRequest->quantity ?? 1),
+                        'unit_price' => (float) $guestRequest->unit_price,
+                        'subtotal' => (float) $guestRequest->subtotal,
+                        'status' => $guestRequest->status,
+                        'billing_status' => $guestRequest->billing_status,
+                        'requested_at' => $guestRequest->submitted_at?->toISOString(),
+                        'completed_at' => $guestRequest->completed_at?->toISOString(),
+                        'billing_posted_at' => $guestRequest->billing_posted_at?->toISOString(),
+                    ];
+                })
+                ->values()
+                ->all();
+        };
         $attachOverallAmounts = function ($reservations) use ($relatedReservations) {
             return $reservations->each(function ($reservation) use ($relatedReservations) {
                 $relatedRows = $relatedReservations->filter(function ($row) use ($reservation) {
@@ -121,8 +159,37 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
             });
         };
 
+        $attachEmployeeAddOns = function ($reservations) use ($prepareEmployeeAddOns) {
+            return $reservations->each(function ($reservation) use ($prepareEmployeeAddOns) {
+                $employeeAddOns = collect($prepareEmployeeAddOns($reservation))
+                    ->map(function (array $addOn) {
+                        $quantity = max((int) ($addOn['quantity'] ?? 1), 1);
+                        $unitPrice = (float) ($addOn['unit_price'] ?? 0);
+
+                        $addOn['quantity'] = $quantity;
+                        $addOn['unit_price'] = $unitPrice;
+                        $addOn['subtotal'] = round($quantity * $unitPrice, 2);
+
+                        return $addOn;
+                    })
+                    ->values();
+                $roomTotal = round((float) ($reservation->total_amount ?? 0), 2);
+                $addOnTotal = round((float) $employeeAddOns->sum('subtotal'), 2);
+                $grandTotal = round($roomTotal + $addOnTotal, 2);
+
+                $reservation->employee_add_ons = $employeeAddOns->all();
+                $reservation->room_total_amount = $roomTotal;
+                $reservation->add_on_total_amount = $addOnTotal;
+                $reservation->overall_total_amount = $grandTotal;
+                $reservation->overall_amount_paid = min((float) ($reservation->overall_amount_paid ?? 0), $grandTotal);
+                $reservation->overall_balance_due = max($grandTotal - $reservation->overall_amount_paid, 0);
+            });
+        };
+
         $attachOverallAmounts($checkIns);
         $attachOverallAmounts($checkOuts);
+        $attachEmployeeAddOns($checkIns);
+        $attachEmployeeAddOns($checkOuts);
 
         $occupiedRooms = Room::where('status', 'occupied')->count();
         $availableRooms = Room::where('status', 'available')->count();
@@ -218,6 +285,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
+    Route::post('/reservations/{id}/payments', [AdminController::class, 'storePayment'])->name('reservations.payments.store');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::post('/reservations/bulk-delete', [AdminController::class, 'bulkDestroyReservations'])->name('reservations.bulk-destroy');
     Route::get('/guests', [AdminController::class, 'guests'])->name('guests');

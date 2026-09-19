@@ -229,7 +229,7 @@
             ];
             $details['selected_services'] = $reservation->event ? ['Event: ' . $reservation->event->name . ($reservation->event_type ? ' — ' . $reservation->event_type : '')] : [];
         } else {
-            $reservationMealDetails = $reservation->diningItems
+            $reservationMealDetails = method_exists($reservation, 'diningItems') ? $reservation->diningItems
                 ->map(function ($item) {
                     $mealName = $item->diningMenu?->name ?? 'Meal Item';
                     return $mealName . ' (x' . ($item->quantity ?? 1) . ')';
