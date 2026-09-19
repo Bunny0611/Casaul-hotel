@@ -212,7 +212,7 @@ class AdminController extends Controller
                         'booked' => 'background: rgba(239, 68, 68, 0.28); border: 1px solid rgba(239, 68, 68, 0.4); color: #1f2937;',
                         'confirmed' => 'background: rgba(16, 185, 129, 0.24); border: 1px solid rgba(16, 185, 129, 0.4); color: #0f172a;',
                         'checked-in' => 'background: rgba(234, 88, 12, 0.32); border: 1px solid rgba(234, 88, 12, 0.5); color: #7c2d12;',
-                        'pending' => 'background: rgba(253, 186, 116, 0.34); border: 1px solid rgba(253, 186, 116, 0.55); color: #9a3412;',
+                        'pending' => 'background: rgba(248, 232, 5, 0.28); border: 1px solid rgba(248, 232, 5, 0.55); color: #713f12;',
                         'completed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
                         'cancelled' => 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.35); color: #1f2937;',
                         default => 'background: rgba(251, 191, 36, 0.28); border: 1px solid rgba(251, 191, 36, 0.35); color: #1f2937;',
@@ -290,7 +290,7 @@ class AdminController extends Controller
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'confirmed' => 'background: rgba(16, 185, 129, 0.24); border: 1px solid rgba(16, 185, 129, 0.4); color: #0f172a;',
                         'checked-in' => 'background: rgba(234, 88, 12, 0.32); border: 1px solid rgba(234, 88, 12, 0.5); color: #7c2d12;',
-                        'pending' => 'background: rgba(253, 186, 116, 0.34); border: 1px solid rgba(253, 186, 116, 0.55); color: #9a3412;',
+                        'pending' => 'background: rgba(248, 232, 5, 0.28); border: 1px solid rgba(248, 232, 5, 0.55); color: #713f12;',
                         'completed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
                         'cancelled' => 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.35); color: #1f2937;',
                         default => 'background: rgba(99, 102, 241, 0.24); border: 1px solid rgba(99, 102, 241, 0.35); color: #1f2937;',
@@ -356,7 +356,7 @@ class AdminController extends Controller
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'confirmed' => 'background: rgba(16, 185, 129, 0.24); border: 1px solid rgba(16, 185, 129, 0.4); color: #0f172a;',
                         'checked-in' => 'background: rgba(234, 88, 12, 0.32); border: 1px solid rgba(234, 88, 12, 0.5); color: #7c2d12;',
-                        'pending' => 'background: rgba(253, 186, 116, 0.34); border: 1px solid rgba(253, 186, 116, 0.55); color: #9a3412;',
+                        'pending' => 'background: rgba(248, 232, 5, 0.28); border: 1px solid rgba(248, 232, 5, 0.55); color: #713f12;',
                         'completed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
                         'cancelled' => 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.35); color: #1f2937;',
                         default => 'background: rgba(236, 72, 153, 0.22); border: 1px solid rgba(236, 72, 153, 0.35); color: #1f2937;',
@@ -428,7 +428,7 @@ class AdminController extends Controller
                     'style' => match (strtolower((string) ($reservation->status ?? 'pending'))) {
                         'confirmed' => 'background: rgba(16, 185, 129, 0.24); border: 1px solid rgba(16, 185, 129, 0.4); color: #0f172a;',
                         'checked-in' => 'background: rgba(234, 88, 12, 0.32); border: 1px solid rgba(234, 88, 12, 0.5); color: #7c2d12;',
-                        'pending' => 'background: rgba(253, 186, 116, 0.34); border: 1px solid rgba(253, 186, 116, 0.55); color: #9a3412;',
+                        'pending' => 'background: rgba(248, 232, 5, 0.28); border: 1px solid rgba(248, 232, 5, 0.55); color: #713f12;',
                         'completed' => 'background: rgba(59, 130, 246, 0.28); border: 1px solid rgba(59, 130, 246, 0.4); color: #1f2937;',
                         'cancelled' => 'background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.35); color: #1f2937;',
                         default => 'background: rgba(16, 185, 129, 0.22); border: 1px solid rgba(16, 185, 129, 0.35); color: #1f2937;',

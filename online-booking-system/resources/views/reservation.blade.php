@@ -121,6 +121,7 @@
     .panel-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:14px; }
     .field-label { display:block; margin-bottom:5px; color:#3c465a; font-size:10px; font-weight:700; }
     .field-input { width:100%; min-height:34px; box-sizing:border-box; border:1px solid #e1e5ec; border-radius:7px; padding:7px 10px; color:#8993a6; background:#fff; font-size:10px; }
+    .room-guest-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
     .reservation-card-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
     .reservation-card { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid #edf0f4; border-radius:8px; background:#fff; box-shadow:0 2px 5px rgba(24,36,64,.04); }
     .reservation-card img { width:100%; height:88px; flex:0 0 88px; object-fit:cover; }
@@ -509,8 +510,9 @@
                 <div class="reservation-card-grid">
                     @foreach($rooms as $room)
                         @php($extraGuestPrice = str_contains(strtolower($room->room_type), 'standard') ? 500 : 650)
+                        @php($kidGuestPrice = $extraGuestPrice / 2)
                         @php($roomCapacity = max(1, (int) ($room->capacity ?? 2)))
-                        <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}">
+                        <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}" data-kid-guest-price="{{ $kidGuestPrice }}">
                             <img src="{{ $room->image ? asset(str_starts_with($room->image, 'rooms/') ? 'storage/' . $room->image : $room->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $room->room_type }}</h4>
@@ -519,13 +521,21 @@
                                     <span><i class="fas fa-bed"></i>1 Queen Bed</span>
                                 </div>
                                 <p>{{ $room->description ?? 'Premium stay with comfortable bedding and modern facilities.' }}</p>
-                                <label class="field-label" for="extraGuests-{{ $room->id }}">Add a Person</label>
-                                <select id="extraGuests-{{ $room->id }}" class="field-input room-extra-guests">
-                                    <option value="0" selected>No extra persons</option>
-                                    @for($extraGuests = 1; $extraGuests <= 4; $extraGuests++)
-                                        <option value="{{ $extraGuests }}">{{ $extraGuests }} {{ $extraGuests === 1 ? 'Person' : 'Persons' }} (₱{{ number_format($extraGuestPrice * $extraGuests, 0) }})</option>
-                                    @endfor
-                                </select>
+                                <label class="field-label">Add Persons</label>
+                                <div class="room-guest-options">
+                                    <select id="adultGuests-{{ $room->id }}" class="field-input room-extra-guests" data-guest-type="adult" aria-label="Additional adults">
+                                        <option value="0" selected>Adults: 0</option>
+                                        @for($extraAdults = 1; $extraAdults <= 4; $extraAdults++)
+                                            <option value="{{ $extraAdults }}">Adults: {{ $extraAdults }} (₱{{ number_format($extraGuestPrice * $extraAdults, 0) }})</option>
+                                        @endfor
+                                    </select>
+                                    <select id="kidGuests-{{ $room->id }}" class="field-input room-extra-guests" data-guest-type="kid" aria-label="Additional kids">
+                                        <option value="0" selected>Kids: 0</option>
+                                        @for($extraKids = 1; $extraKids <= 4; $extraKids++)
+                                            <option value="{{ $extraKids }}">Kids: {{ $extraKids }} (₱{{ number_format($kidGuestPrice * $extraKids, 0) }})</option>
+                                        @endfor
+                                    </select>
+                                </div>
                                 <div class="reservation-card-footer">
                                     <span class="price">₱{{ number_format($room->price, 0) }}/night</span>
                                     <button type="button" class="select-option-btn" data-title="{{ $room->room_type }}" data-price="{{ $room->price }}" data-room-id="{{ $room->id }}">Add to Reservation</button>
@@ -1202,8 +1212,11 @@
         let selectedFacilities = [];
         let selectedEvent = [];
         let selectedDining = [];
+        let selectedAdults = 0;
+        let selectedKids = 0;
         let selectedExtraGuests = 0;
-        let selectedExtraGuestPrice = 650;
+        let selectedAdultPrice = 650;
+        let selectedKidPrice = 325;
         let selectedPaymentMethod = 'Cash / Pay at Hotel';
         let confirmPaymentProofUrl = null;
 
@@ -1240,6 +1253,11 @@
         };
         const getSelectedEventCount = () => selectedEvent.length;
         const getSelectedDiningCount = () => selectedDining.length;
+        const syncSelectedGuestCounts = (card) => {
+            selectedAdults = Number(card?.querySelector('[data-guest-type="adult"]')?.value || 0);
+            selectedKids = Number(card?.querySelector('[data-guest-type="kid"]')?.value || 0);
+            selectedExtraGuests = selectedAdults + selectedKids;
+        };
 
         const formatDisplayDate = (dateValue) => {
             if (!dateValue) {
@@ -1380,7 +1398,7 @@
         const updateSummary = () => {
             const stayNights = getStayNights();
             const roomTotal = roomPrice * stayNights;
-            const extraGuestsTotal = selectedExtraGuests * selectedExtraGuestPrice * stayNights;
+            const extraGuestsTotal = ((selectedAdults * selectedAdultPrice) + (selectedKids * selectedKidPrice)) * stayNights;
             const selectedEventTitles = selectedEvent.map(item => item.title).join(', ');
             const selectedDiningTitles = selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ');
             const selectedDiningSchedule = [...new Set(selectedDining.map(item => item.schedule).filter(Boolean))].join(', ');
@@ -1398,10 +1416,11 @@
             const bookingEndTime = selectedRoom ? '' : selectedEventEndTime;
 
             summaryRoom.textContent = selectedRoom ? selectedRoom : 'None';
-            summaryRoomDetails.textContent = selectedRoom ? `${formatDisplayDate(checkIn.value)} – ${formatDisplayDate(checkOut.value)} • ${stayNights} night${stayNights === 1 ? '' : 's'}${selectedExtraGuests > 0 ? ` • ${selectedExtraGuests} Extra Person(s)` : ''}` : 'Choose a room and dates';
+            const guestBreakdown = selectedExtraGuests > 0 ? ` • ${selectedAdults} Adult${selectedAdults === 1 ? '' : 's'}, ${selectedKids} Kid${selectedKids === 1 ? '' : 's'}` : '';
+            summaryRoomDetails.textContent = selectedRoom ? `${formatDisplayDate(checkIn.value)} – ${formatDisplayDate(checkOut.value)} • ${stayNights} night${stayNights === 1 ? '' : 's'}${guestBreakdown}` : 'Choose a room and dates';
             summaryRoomPrice.textContent = `₱${roomTotal.toLocaleString()}`;
             summaryItems.textContent = selectedFacilities.length > 0 ? `${selectedFacilities.length} selected` : '0 selected';
-            summaryAdditionalGuests.textContent = selectedExtraGuests > 0 ? `${selectedExtraGuests} added` : 'None';
+            summaryAdditionalGuests.textContent = selectedExtraGuests > 0 ? `${selectedAdults} adult${selectedAdults === 1 ? '' : 's'}, ${selectedKids} kid${selectedKids === 1 ? '' : 's'}` : 'None';
             summaryEvent.textContent = selectedEvent.length ? `${selectedEvent.length} selected${selectedEventTitles ? ` • ${selectedEventTitles}` : ''}` : 'None';
             summaryDining.textContent = selectedDining.length ? `${selectedDining.length} selected${selectedDiningTitles ? ` • ${selectedDiningTitles}` : ''}${selectedDiningSchedule ? ` / ${selectedDiningSchedule}` : ''}${selectedDiningTable ? ` / ${selectedDiningTable}` : ''}` : 'None';
             summaryFacilitiesPrice.textContent = `₱${selectedFacilities.reduce((sum, item) => sum + getFacilityCharge(item), 0).toLocaleString()}`;
@@ -1428,7 +1447,7 @@
             detailsCheckIn.textContent = hasRoomSelection ? formatDisplayDate(checkIn.value) : '—';
             detailsArrivalTime.textContent = hasRoomSelection ? formatDisplayTime(arrivalTime.value) : '—';
             detailsCheckOut.textContent = hasRoomSelection ? formatDisplayDate(checkOut.value) : '—';
-            detailsRoomGuests.textContent = hasRoomSelection ? `${selectedRoomCapacity + selectedExtraGuests} Guests` : '—';
+            detailsRoomGuests.textContent = hasRoomSelection ? `${selectedRoomCapacity + selectedExtraGuests} Guests (${selectedAdults} adult${selectedAdults === 1 ? '' : 's'}, ${selectedKids} kid${selectedKids === 1 ? '' : 's'})` : '—';
             detailsRoomAmount.textContent = hasRoomSelection ? `Amount: ${formatCurrencyValue(roomTotal)}` : '';
             detailsRoomStatus.textContent = hasRoomSelection ? 'Status: Reserved' : '';
             detailsFacilitiesTitle.textContent = hasFacilitySelection ? selectedFacilities.map(item => item.title).join(', ') : '';
@@ -1464,7 +1483,7 @@
             confirmArrivingOn.textContent = selectedRoom ? formatDisplayDate(checkIn.value) : '—';
             confirmArrivalTime.textContent = selectedRoom ? formatDisplayTime(arrivalTime.value) : '—';
             confirmCheckOut.textContent = selectedRoom ? formatDisplayDate(checkOut.value) : '—';
-            confirmGuests.textContent = selectedRoom ? `${selectedRoomCapacity + selectedExtraGuests} Guests` : '—';
+            confirmGuests.textContent = selectedRoom ? `${selectedRoomCapacity + selectedExtraGuests} Guests (${selectedAdults} adult${selectedAdults === 1 ? '' : 's'}, ${selectedKids} kid${selectedKids === 1 ? '' : 's'})` : '—';
             confirmStatus.textContent = 'Reserved';
             confirmPaymentMethod.textContent = selectedPaymentMethod;
             const paymentDetailRows = getPaymentDetailRows();
@@ -1591,7 +1610,7 @@
             const facilitiesTotal = selectedFacilities.reduce((sum, item) => sum + getFacilityCharge(item), 0);
             const eventTotal = selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0);
             const diningTotal = selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0);
-            const extraGuestsTotal = selectedExtraGuests * selectedExtraGuestPrice * stayNights;
+            const extraGuestsTotal = ((selectedAdults * selectedAdultPrice) + (selectedKids * selectedKidPrice)) * stayNights;
             return (roomPrice * stayNights) + facilitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
         };
 
@@ -1901,8 +1920,9 @@
             select.addEventListener('change', function () {
                 const card = this.closest('.reservation-card');
                 if (selectedRoom === card.dataset.name) {
-                    selectedExtraGuests = Number(this.value);
-                    selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice);
+                    syncSelectedGuestCounts(card);
+                    selectedAdultPrice = Number(card.dataset.extraGuestPrice);
+                    selectedKidPrice = Number(card.dataset.kidGuestPrice || selectedAdultPrice / 2);
                     updateSummary();
                 }
             });
@@ -1924,8 +1944,11 @@
                         selectedRoomCapacity = 2;
                         selectedFacilities = [];
                         reservationRoomId.value = '';
+                        selectedAdults = 0;
+                        selectedKids = 0;
                         selectedExtraGuests = 0;
-                        selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice || 650);
+                        selectedAdultPrice = Number(card.dataset.extraGuestPrice || 650);
+                        selectedKidPrice = Number(card.dataset.kidGuestPrice || selectedAdultPrice / 2);
                         document.querySelectorAll('.room-extra-guests').forEach(select => select.value = '0');
                         items.forEach(btn => {
                             if (btn.closest('.reservation-card').dataset.category === 'room') {
@@ -1940,8 +1963,9 @@
                         selectedRoom = title;
                         roomPrice = price;
                         selectedRoomCapacity = Number(card.dataset.roomCapacity || 2);
-                        selectedExtraGuestPrice = Number(card.dataset.extraGuestPrice || 650);
-                        selectedExtraGuests = Number(card.querySelector('.room-extra-guests')?.value || 0);
+                        selectedAdultPrice = Number(card.dataset.extraGuestPrice || 650);
+                        selectedKidPrice = Number(card.dataset.kidGuestPrice || selectedAdultPrice / 2);
+                        syncSelectedGuestCounts(card);
                         reservationRoomId.value = card.dataset.roomId || '';
                         items.forEach(btn => {
                             if (btn.closest('.reservation-card').dataset.category === 'room') {
@@ -1984,6 +2008,8 @@
                 } else if (category === 'event') {
                     const eventIndex = selectedEvent.findIndex(item => item.id === card.dataset.eventId);
                     if (eventIndex === -1) {
+                        configureEventTimeOptions(card);
+                        const eventEndTime = updateEventEndTime(card);
                         selectedEvent.push({
                             id: card.dataset.eventId,
                             type: card.dataset.eventType,
@@ -1993,7 +2019,7 @@
                             guests: normalizeEventGuestCount(card.querySelector('.event-guests'), card),
                             date: card.querySelector('.event-date')?.value || '',
                             startTime: card.querySelector('.event-start-time')?.value || '',
-                            endTime: card.querySelector('.event-end-time')?.value || '',
+                            endTime: eventEndTime,
                             durationHours: Number(card.querySelector('.event-duration')?.value || card.dataset.durationHours || 4),
                         });
                         this.textContent = 'Selected';
@@ -2156,7 +2182,12 @@
                 });
             }
             if (selectedExtraGuests > 0) {
-                receiptItems.push([String(selectedExtraGuests * stayNights), `Extra person (${stayNights} night${stayNights === 1 ? '' : 's'})`, formatCurrencyValue(selectedExtraGuestPrice), formatCurrencyValue(selectedExtraGuests * selectedExtraGuestPrice * stayNights)]);
+                if (selectedAdults > 0) {
+                    receiptItems.push([String(selectedAdults * stayNights), `Extra adult${selectedAdults === 1 ? '' : 's'} (${stayNights} night${stayNights === 1 ? '' : 's'})`, formatCurrencyValue(selectedAdultPrice), formatCurrencyValue(selectedAdults * selectedAdultPrice * stayNights)]);
+                }
+                if (selectedKids > 0) {
+                    receiptItems.push([String(selectedKids * stayNights), `Kid${selectedKids === 1 ? '' : 's'} (50% rate, ${stayNights} night${stayNights === 1 ? '' : 's'})`, formatCurrencyValue(selectedKidPrice), formatCurrencyValue(selectedKids * selectedKidPrice * stayNights)]);
+                }
             }
             receiptGuestName.textContent = detailsGuestName.value || 'Guest';
             receiptGuestEmail.textContent = detailsGuestEmail.value || 'guest@example.com';
@@ -2165,7 +2196,7 @@
             receiptCheckIn.textContent = confirmArrivingOn.textContent;
             receiptCheckOut.textContent = confirmCheckOut.textContent;
             receiptGuests.textContent = selectedRoom
-                ? `${selectedRoomCapacity + selectedExtraGuests} Guests`
+                ? `${selectedRoomCapacity + selectedExtraGuests} Guests (${selectedAdults} adult${selectedAdults === 1 ? '' : 's'}, ${selectedKids} kid${selectedKids === 1 ? '' : 's'})`
                 : selectedEvent.length
                     ? `${selectedEvent.reduce((sum, item) => sum + Number(item.guests || 0), 0)} Guests`
                     : '—';
@@ -2301,6 +2332,118 @@
             }
         };
 
+        const validateBeforeSubmit = () => {
+            if (!detailsTerms.checked) {
+                return 'Please check Terms & Conditions before submitting.';
+            }
+
+            if (!selectedRoom && selectedEvent.length === 0 && selectedDining.length === 0) {
+                return 'Please select a room, event place, or dining before submitting.';
+            }
+
+            if (selectedRoom) {
+                if (!checkIn.value || !checkOut.value) {
+                    return 'Please select check-in and check-out dates before submitting.';
+                }
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const checkInDate = new Date(`${checkIn.value}T00:00:00`);
+                const checkOutDate = new Date(`${checkOut.value}T00:00:00`);
+
+                if (checkInDate < today) {
+                    return 'Check-in date cannot be earlier than today.';
+                }
+                if (checkOutDate < checkInDate) {
+                    return 'Check-out date cannot be earlier than check-in date.';
+                }
+                if ((selectedRoomCapacity + selectedExtraGuests) < 1) {
+                    return 'Please select at least one guest for the room.';
+                }
+            }
+
+            if (selectedEvent.length > 0) {
+                const eventSelection = selectedEvent[0];
+                const eventCard = document.querySelector(`[data-event-id="${eventSelection.id}"]`);
+                if (!eventSelection.startTime || !eventSelection.endTime) {
+                    return 'Please select the event start and end times before submitting.';
+                }
+                if (!eventSelection.date) {
+                    return 'Please select the event date before submitting.';
+                }
+                if (!eventSelection.guests || Number(eventSelection.guests) < 1) {
+                    return 'Please enter the number of event guests before submitting.';
+                }
+
+                const timeToMinutes = time => {
+                    const [hours, minutes] = time.split(':').map(Number);
+                    return (hours * 60) + minutes;
+                };
+                const eventDuration = timeToMinutes(eventSelection.endTime) - timeToMinutes(eventSelection.startTime);
+                const configuredDuration = Math.max(1, Number(eventCard?.dataset.durationHours || eventSelection.durationHours || 4));
+                const pricingBasis = String(eventCard?.dataset.pricingBasis || eventSelection.pricingBasis || '').toLowerCase();
+                const availableFrom = eventCard?.dataset.availableFrom || '';
+                const availableTo = eventCard?.dataset.availableTo || '';
+
+                if (eventDuration <= 0) {
+                    return 'The event end time must be after the start time.';
+                }
+                if (pricingBasis === 'per person' && eventDuration !== configuredDuration * 60) {
+                    return `This event uses a fixed duration of ${configuredDuration} hours. Please choose a different start time.`;
+                }
+                if (pricingBasis === 'per hour' && eventDuration > configuredDuration * 60) {
+                    return `This event allows a maximum duration of ${configuredDuration} hours.`;
+                }
+                if (availableFrom && timeToMinutes(eventSelection.startTime) < timeToMinutes(availableFrom)) {
+                    return `The event cannot start before ${formatDisplayTime(availableFrom)}.`;
+                }
+                if (availableTo && timeToMinutes(eventSelection.endTime) > timeToMinutes(availableTo)) {
+                    return `The event must end by ${formatDisplayTime(availableTo)}.`;
+                }
+            }
+
+            const proofInputIds = {
+                GCash: 'gcashPaymentProof',
+                Maya: 'mayaPaymentProof',
+                'Bank Transfer': 'bankPaymentProof',
+            };
+            const proofInput = proofInputIds[selectedPaymentMethod]
+                ? document.getElementById(proofInputIds[selectedPaymentMethod])
+                : null;
+            const proofFile = proofInput?.files?.[0];
+            if (proofFile) {
+                const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                const fileExtension = proofFile.name.split('.').pop().toLowerCase();
+                const isImage = proofFile.type.startsWith('image/') && imageExtensions.includes(fileExtension);
+                if (!isImage) {
+                    return `${selectedPaymentMethod} payment proof must be an image (JPG, JPEG, PNG, GIF, or WEBP).`;
+                }
+                if (proofFile.size > 5 * 1024 * 1024) {
+                    return `${selectedPaymentMethod} payment proof must be 5 MB or smaller.`;
+                }
+            }
+
+            const paymentAmountIds = {
+                GCash: 'gcashPaymentAmount',
+                Maya: 'mayaPaymentAmount',
+                'Credit / Debit Card': 'cardPaymentAmount',
+                'Bank Transfer': 'transferAmount',
+            };
+            const paymentAmountId = paymentAmountIds[selectedPaymentMethod];
+            if (paymentAmountId) {
+                const paidAmount = getPaymentAmountValue(paymentAmountId);
+                const totalAmount = calculateTotal();
+                if (paidAmount <= 0) {
+                    return `Please enter the amount paid for ${selectedPaymentMethod}.`;
+                }
+                if (paidAmount > totalAmount) {
+                    return 'The amount paid cannot be greater than the reservation total.';
+                }
+            }
+
+            return '';
+        };
+
         const openReceiptPrintWindow = () => {
             const printWindow = window.open('', '_blank', 'width=600,height=700');
             if (!printWindow) {
@@ -2335,6 +2478,14 @@
                 modalCancelBtn.textContent = 'Back to Details';
                 confirmBtn.hidden = true;
                 seeReceiptBtn.hidden = false;
+                return;
+            }
+
+            const validationMessage = validateBeforeSubmit();
+            if (validationMessage) {
+                alert(validationMessage);
+                modalConfirmBtn.disabled = false;
+                modalConfirmBtn.textContent = 'Submit Reservation';
                 return;
             }
 
@@ -2414,8 +2565,11 @@
             checkIn.value = '';
             checkOut.value = '';
             arrivalTime.value = '15:00';
+            selectedAdults = 0;
+            selectedKids = 0;
             selectedExtraGuests = 0;
-            selectedExtraGuestPrice = 650;
+            selectedAdultPrice = 650;
+            selectedKidPrice = 325;
             document.querySelectorAll('.room-extra-guests').forEach(select => select.value = '0');
             items.forEach(btn => {
                 btn.textContent = 'Add to Reservation';

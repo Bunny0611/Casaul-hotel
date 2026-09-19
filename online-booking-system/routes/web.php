@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
 use App\Http\Controllers\ProfileController;
@@ -29,6 +30,7 @@ Route::middleware(['auth:guest', 'verified', 'role:guest'])->group(function () {
     Route::post('/reservation', [HomeController::class, 'storeReservation'])->name('reservation.store');
 });
 Route::post('/send-message', [HomeController::class, 'sendMessage'])->name('send.message');
+Route::post('/chatbot/message', [ChatbotController::class, 'message'])->name('chatbot.message');
 Route::view('/offers', 'offers')->name('offers');
 Route::view('/gallery', 'gallery')->name('gallery');
 Route::get('/dining', [HomeController::class, 'dining'])->name('dining');
