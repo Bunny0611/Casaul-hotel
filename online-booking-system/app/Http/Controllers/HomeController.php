@@ -454,12 +454,16 @@ class HomeController extends Controller
                     $configuredDuration = max(1, (int) ($event->duration_hours ?: 4));
                     $pricingBasis = strtolower(trim((string) $event->pricing_basis));
 
+                    if ($pricingBasis === 'per person') {
+                        $end = $start->copy()->addHours($configuredDuration);
+                        $validated['event_end_time'] = $end->format('H:i');
+                    }
+
                     abort_if($end->lessThanOrEqualTo($start), 422, 'The event end time must be after the start time.');
                     abort_if($event->available_from && $start->format('H:i') < Carbon::parse($event->available_from)->format('H:i'), 422, 'The event starts before its available time.');
                     abort_if($event->available_to && $end->format('H:i') > Carbon::parse($event->available_to)->format('H:i'), 422, 'The event ends after its available time.');
 
                     $submittedDuration = max(1, $start->diffInHours($end));
-                    abort_if($pricingBasis === 'per person' && $submittedDuration !== $configuredDuration, 422, 'This event uses a fixed duration of '.$configuredDuration.' hours.');
                     abort_if($pricingBasis === 'per hour' && $submittedDuration > $configuredDuration, 422, 'This event allows a maximum duration of '.$configuredDuration.' hours.');
                     $validated['duration_hours'] = $submittedDuration;
                 }

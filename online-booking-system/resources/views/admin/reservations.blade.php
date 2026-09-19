@@ -1,9 +1,6 @@
 @extends('admin.layout')
 
 @section('content')
-<div class="mb-4 flex justify-end">
-    <a href="{{ route('admin.refunds') }}" class="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"><i class="fas fa-rotate-left mr-2"></i>Refund History</a>
-</div>
 <style>
     .reservation-management-page {
         font-size: 16px;
