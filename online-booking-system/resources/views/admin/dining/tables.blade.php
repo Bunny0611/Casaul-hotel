@@ -45,7 +45,7 @@
                                 @php
                                     $statusClass = match($table['status']) {
                                         'Available' => 'border-green-200 bg-green-100 text-green-700',
-                                        'Reserved' => 'border-yellow-200 bg-yellow-100 text-yellow-700',
+                                        'Reserved' => 'border-blue-200 bg-blue-100 text-blue-700',
                                         default => 'border-red-200 bg-red-100 text-red-700',
                                     };
                                 @endphp

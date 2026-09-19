@@ -247,6 +247,18 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
             }
         });
         $diningTables = DiningTable::orderBy('table_no')->get();
+        $statusController = app(AdminController::class);
+        $resources = $statusController->applyResourceReservationStatuses($rooms, $facilities, $events, $diningTables);
+        $rooms = $resources['rooms'];
+        $facilities = $resources['facilities'];
+        $events = $resources['events'];
+        $diningTables = $resources['diningTables'];
+        $reservations = $statusController->unifiedReservations();
+        $rooms->each(function ($room) {
+            if (in_array(strtolower((string) $room->status), ['reserved', 'occupied'], true)) {
+                $room->employee_status_label = ucfirst(strtolower((string) $room->status));
+            }
+        });
         $dining = DiningMenu::orderBy('name')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $currentTime = Carbon::now()->format('H:i:s');
@@ -275,7 +287,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
             $table->status = $isReservedNow ? 'Reserved' : 'Available';
         });
 
-        return view('employee.room-status', compact('rooms', 'inventoryItems', 'facilities', 'events', 'diningTables', 'dining', 'diningSchedules'));
+        return view('employee.room-status', compact('rooms', 'reservations', 'inventoryItems', 'facilities', 'events', 'diningTables', 'dining', 'diningSchedules'));
     })->name('room-status');
     Route::patch('/rooms/{id}/status', [HousekeepingController::class, 'updateStatus'])->name('rooms.status');
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
