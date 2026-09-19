@@ -400,9 +400,10 @@
 
     <div class="calendar-legend">
         <span class="legend-item"><span class="legend-dot" style="background:#ef4444"></span>Booked</span>
-        <span class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span>Confirmed</span>
-        <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Checked-In</span>
-        <span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>Pending</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Confirmed</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#ea580c"></span>Checked-In</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#f8e805"></span>Pending</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span>Completed</span>
     </div>
 </div>
 
