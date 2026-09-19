@@ -233,7 +233,7 @@
                 })
                 ->unique()
                 ->values()
-                ->all();
+                ->all() : [];
             $details += [
                 'dining_area' => $uniqueCsvValue($reservation->dining_area ?? 'N/A'),
                 'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
