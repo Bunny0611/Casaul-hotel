@@ -197,6 +197,41 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     })->name('checkin');
     Route::get('/room-status', function () {
         $rooms = \App\Models\Room::orderBy('room_number')->get();
+        $activeRoomReservations = RoomReservation::query()
+            ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
+            ->whereDate('check_out', '>=', today())
+            ->orderByDesc('check_in')
+            ->get()
+            ->groupBy('room_id')
+            ->map(fn ($reservations) => $reservations->first());
+        $activeHousekeepingTasks = \App\Models\HousekeepingTask::with('assignedStaff')
+            ->whereIn('status', ['pending', 'in_progress'])
+            ->latest()
+            ->get()
+            ->groupBy('room_id')
+            ->map(fn ($tasks) => $tasks->first());
+        $reservedRoomIds = RoomReservation::query()
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->whereDate('check_out', '>=', today())
+            ->pluck('room_id')
+            ->filter()
+            ->unique();
+        $rooms->each(function ($room) use ($reservedRoomIds) {
+            $roomStatusCode = HousekeepingController::roomStatusCode($room);
+            $room->employee_status_code = $roomStatusCode;
+            $room->employee_status_label = $reservedRoomIds->contains($room->id)
+                ? 'Reserved'
+                : HousekeepingController::employeeStatusLabel($roomStatusCode);
+        });
+        $rooms->each(function ($room) use ($activeRoomReservations, $activeHousekeepingTasks) {
+            $reservation = $activeRoomReservations->get($room->id);
+            $task = $activeHousekeepingTasks->get($room->id);
+            $room->detail_guest = $reservation?->guest_name ?: '—';
+            $room->detail_checkin = $reservation?->check_in?->format('Y-m-d') ?: '—';
+            $room->detail_checkout = $reservation?->check_out?->format('Y-m-d') ?: '—';
+            $room->detail_housekeeper = $task?->assignedStaff?->name ?: '—';
+            $room->detail_notes = $room->description ?: ($task?->notes ?: '—');
+        });
         $inventoryItems = \App\Models\InventoryItem::orderBy('name')->get();
         $facilities = \App\Models\Facility::orderBy('name')->get();
         $events = \App\Models\Event::orderBy('name')->get();
@@ -243,6 +278,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
 
         return view('employee.room-status', compact('rooms', 'inventoryItems', 'facilities', 'events', 'diningTables', 'dining', 'diningSchedules'));
     })->name('room-status');
+    Route::patch('/rooms/{id}/status', [HousekeepingController::class, 'updateStatus'])->name('rooms.status');
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
     Route::get('/guest-requests/{id}', [AdminController::class, 'employeeGuestRequest'])->name('guest-requests.show');
     Route::patch('/guest-requests/{id}', [AdminController::class, 'updateEmployeeGuestRequest'])->name('guest-requests.update');

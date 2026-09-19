@@ -610,17 +610,103 @@ class HousekeepingController extends Controller
             Room::where('room_number', $id)->firstOrFail();
 
         $validated = $request->validate([
-            'cleaning_status' => ['required', 'in:clean,dirty,in_progress,ready,blocked,out_of_order'],
+            'room_status' => ['nullable', 'in:VC,VD,OC,OD,OOO,BLO,NS,SO,HU,DND,VR,HSUC,HSD'],
+            'cleaning_status' => ['nullable', 'in:clean,dirty,in_progress,ready,blocked,out_of_order'],
         ]);
 
-        $room->update([
-            'cleaning_status' => $validated['cleaning_status']
-        ]);
+        if (!empty($validated['room_status'])) {
+            $room->update(self::roomStatusFields($validated['room_status']));
+        } else {
+            $room->update(['cleaning_status' => $validated['cleaning_status'] ?? 'clean']);
+        }
 
         return back()->with(
             'success',
-            "Room {$room->room_number} marked as " .
-            str_replace('_', ' ', $validated['cleaning_status']) . '.'
+            "Room {$room->room_number} status updated."
         );
+    }
+
+    public static function roomStatusFields(string $status): array
+    {
+        $fields = [
+            'VR' => ['status' => 'vr', 'cleaning_status' => 'ready'],
+            'VC' => ['status' => 'vc', 'cleaning_status' => 'clean'],
+            'VD' => ['status' => 'vd', 'cleaning_status' => 'dirty'],
+            'OC' => ['status' => 'oc', 'cleaning_status' => 'clean'],
+            'OD' => ['status' => 'od', 'cleaning_status' => 'dirty'],
+            'OOO' => ['status' => 'ooo', 'cleaning_status' => 'out_of_order'],
+            'BLO' => ['status' => 'blo', 'cleaning_status' => 'blocked'],
+            'NS' => ['status' => 'ns', 'cleaning_status' => 'clean'],
+            'SO' => ['status' => 'so', 'cleaning_status' => 'clean'],
+            'HU' => ['status' => 'hu', 'cleaning_status' => 'clean'],
+            'DND' => ['status' => 'dnd', 'cleaning_status' => 'clean'],
+            'HSUC' => ['status' => 'hsuc', 'cleaning_status' => 'clean'],
+            'HSD' => ['status' => 'hsd', 'cleaning_status' => 'dirty'],
+        ];
+
+        return $fields[$status] ?? $fields['VR'];
+    }
+
+    public static function roomStatusCode($room): string
+    {
+        $status = strtoupper(trim((string) ($room->status ?? '')));
+        $cleaningStatus = strtolower(trim((string) ($room->cleaning_status ?? '')));
+
+        if (in_array($status, ['VC', 'VD', 'OC', 'OD', 'OOO', 'BLO', 'NS', 'SO', 'HU', 'DND', 'VR', 'HSUC', 'HSD'], true)) {
+            return $status;
+        }
+
+        if (in_array($status, ['MAINTENANCE', 'OUT_OF_ORDER'], true) || $cleaningStatus === 'out_of_order') {
+            return 'OOO';
+        }
+        if (in_array($status, ['BLOCKED', 'UNAVAILABLE'], true) || $cleaningStatus === 'blocked') {
+            return 'BLO';
+        }
+        if ($status === 'OCCUPIED') {
+            return $cleaningStatus === 'dirty' ? 'OD' : 'OC';
+        }
+        if (in_array($status, ['AVAILABLE', 'VACANT', 'RESERVED'], true)) {
+            return $cleaningStatus === 'dirty' ? 'VD' : 'VC';
+        }
+
+        return 'VR';
+    }
+
+    public static function employeeStatusLabel(string $status): string
+    {
+        return [
+            'VC' => 'Available',
+            'VD' => 'Dirty',
+            'OC' => 'Occupied',
+            'OD' => 'Occupied / Dirty',
+            'OOO' => 'Maintenance',
+            'BLO' => 'Unavailable',
+            'NS' => 'No Show',
+            'SO' => 'Occupied',
+            'HU' => 'House Use',
+            'DND' => 'Occupied',
+            'VR' => 'Available',
+            'HSUC' => 'House Use',
+            'HSD' => 'House Use',
+        ][$status] ?? 'Available';
+    }
+
+    public static function housekeepingStatusLabel(string $status): string
+    {
+        return [
+            'VC' => 'Vacant Clean',
+            'VD' => 'Vacant Dirty',
+            'OC' => 'Occupied Clean',
+            'OD' => 'Occupied Dirty',
+            'OOO' => 'Out of Order',
+            'BLO' => 'Blocked',
+            'NS' => 'No Show',
+            'SO' => 'Slept Out',
+            'HU' => 'House Use',
+            'DND' => 'Do Not Disturb',
+            'VR' => 'Vacant Ready',
+            'HSUC' => 'House Use Clean',
+            'HSD' => 'House Use Dirty',
+        ][$status] ?? 'Vacant Ready';
     }
 }

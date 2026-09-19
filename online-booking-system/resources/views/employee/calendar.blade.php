@@ -169,17 +169,20 @@
     .calendar-reservation {
         position: absolute;
         top: 10px;
-        height: 34px;
+        min-height: 34px;
+        height: auto;
         border-radius: 0.7rem;
-        padding: 0.45rem 0.55rem;
+        padding: 0.3rem 0.4rem;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 0.7rem;
+        line-height: 1.1;
         font-weight: 600;
-        white-space: nowrap;
+        text-align: center;
+        white-space: normal;
+        overflow-wrap: anywhere;
         overflow: hidden;
-        text-overflow: ellipsis;
         box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
         z-index: 1;
         cursor: pointer;
@@ -424,9 +427,11 @@
             const visibleDays = { Weekly: 7, Monthly: 31 };
             const maxVisible = visibleDays[rangeValue] || 7;
             const gridColumns = `repeat(${maxVisible}, minmax(72px, 1fr))`;
+            const gridMinWidth = `${Math.max(720, maxVisible * 72)}px`;
 
             document.querySelectorAll('.calendar-days, .calendar-timeline-row').forEach((grid) => {
                 grid.style.gridTemplateColumns = gridColumns;
+                grid.style.minWidth = gridMinWidth;
             });
 
             document.querySelectorAll('.calendar-day-header').forEach((header, index) => {

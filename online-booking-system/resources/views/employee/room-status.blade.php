@@ -392,9 +392,11 @@
                     </thead>
                     <tbody>
                     @foreach($rooms as $room)
-                    @php($roomStatus = $room->status === 'maintenance' ? 'maintenance' : ($room->cleaning_status === 'in_progress' ? 'cleaning' : ($room->cleaning_status === 'dirty' ? 'dirty' : $room->status)))
-                    <tr data-room-row data-room-number="{{ $room->room_number }}" data-room-type="{{ $room->room_type }}" data-floor="{{ $room->floor }}" data-capacity="{{ $room->capacity }}" data-status="{{ $roomStatus }}" data-status-label="{{ ucfirst($roomStatus) }}" data-housekeeping-status="{{ ucfirst(str_replace('_', ' ', $room->cleaning_status ?: 'clean')) }}" data-housekeeper="—" data-guest="—" data-checkin="—" data-checkout="—" data-notes="{{ $room->description ?: '—' }}" data-room-label="{{ $room->room_number }}">
-                        <td>{{ $room->room_number }}</td><td>{{ $room->room_type }}</td><td>Floor {{ $room->floor }}</td><td><span class="status-badge {{ $roomStatus }}">{{ ucfirst($roomStatus) }}</span></td><td><span class="housekeeping-pill">{{ ucfirst(str_replace('_', ' ', $room->cleaning_status ?: 'clean')) }}</span></td><td><button class="action-btn" type="button" data-action="view">Details</button></td>
+                    @php($roomStatusCode = $room->employee_status_code ?? \App\Http\Controllers\HousekeepingController::roomStatusCode($room))
+                    @php($roomStatusLabel = $room->employee_status_label ?? \App\Http\Controllers\HousekeepingController::employeeStatusLabel($roomStatusCode))
+                    @php($housekeepingStatusLabel = \App\Http\Controllers\HousekeepingController::housekeepingStatusLabel($roomStatusCode))
+                    <tr data-room-row data-room-id="{{ $room->id }}" data-room-number="{{ $room->room_number }}" data-room-type="{{ $room->room_type }}" data-floor="{{ $room->floor }}" data-capacity="{{ $room->capacity }}" data-status="{{ strtolower($roomStatusLabel) }}" data-status-code="{{ $roomStatusCode }}" data-status-label="{{ $roomStatusLabel }}" data-housekeeping-status="{{ $roomStatusCode }} — {{ $housekeepingStatusLabel }}" data-housekeeper="{{ $room->detail_housekeeper ?? '—' }}" data-guest="{{ $room->detail_guest ?? '—' }}" data-checkin="{{ $room->detail_checkin ?? '—' }}" data-checkout="{{ $room->detail_checkout ?? '—' }}" data-notes="{{ $room->detail_notes ?? ($room->description ?: '—') }}" data-room-label="{{ $room->room_number }}">
+                        <td>{{ $room->room_number }}</td><td>{{ $room->room_type }}</td><td>Floor {{ $room->floor }}</td><td><span class="status-badge {{ strtolower($roomStatusCode) }}">{{ $roomStatusLabel }}</span></td><td><span class="housekeeping-pill">{{ $roomStatusCode }} — {{ $housekeepingStatusLabel }}</span></td><td><button class="action-btn" type="button" data-action="view">Details</button></td>
                     </tr>
                     @endforeach
                     @if($rooms->isEmpty())<tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No rooms have been added by the admin.</td></tr>@endif
@@ -559,10 +561,6 @@
                 <div class="modal-item"><strong>Assigned Housekeeper</strong><span id="detail-housekeeper">—</span></div>
                 <div class="modal-item modal-notes"><strong>Notes</strong><span id="detail-notes">—</span></div>
             </div>
-        </div>
-        <div class="modal-actions">
-            <button class="primary-btn" id="modal-change-status" type="button">Change Status</button>
-            <button class="secondary-btn" id="modal-assign-housekeeper" type="button">Assign Housekeeper</button>
         </div>
     </div>
 </div>
