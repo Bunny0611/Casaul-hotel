@@ -915,12 +915,12 @@ class AdminController extends Controller
     {
         $this->completeFinishedReservations();
 
-        $roomReservations = RoomReservation::with('room')->latest()->get();
-        $facilitiesReservations = FacilityReservation::with('facility')->latest()->get();
-        $eventsReservations = EventReservation::with(['event', 'diningItems.diningMenu'])->latest()->get();
-        $diningReservations = DiningReservation::with('diningItems.diningMenu')->latest()->get();
+        $roomReservations = RoomReservation::with(['room', 'refunds'])->latest()->get();
+        $facilitiesReservations = FacilityReservation::with(['facility', 'refunds'])->latest()->get();
+        $eventsReservations = EventReservation::with(['event', 'diningItems.diningMenu', 'refunds'])->latest()->get();
+        $diningReservations = DiningReservation::with(['diningItems.diningMenu', 'refunds'])->latest()->get();
 
-        $legacyReservations = Reservation::with(['room', 'facility', 'event', 'diningItems'])->latest()->get();
+        $legacyReservations = Reservation::with(['room', 'facility', 'event', 'diningItems', 'refunds'])->latest()->get();
         $legacyReservations->each(function ($reservation) use (&$roomReservations, &$facilitiesReservations, &$eventsReservations, &$diningReservations) {
             $category = $reservation->category;
             if ($category === 'rooms' || $reservation->room_id) {
@@ -935,6 +935,44 @@ class AdminController extends Controller
             if ($category === 'dining' || $reservation->dining_id || $reservation->dining_area || $reservation->dining_schedule) {
                 $diningReservations->push($reservation);
             }
+        });
+
+        $allReservationRows = collect([
+            ...$roomReservations,
+            ...$facilitiesReservations,
+            ...$eventsReservations,
+            ...$diningReservations,
+            ...$legacyReservations,
+        ])->unique(fn ($reservation) => get_class($reservation) . ':' . $reservation->id)->values();
+
+        $allReservationRows->each(function ($reservation) use ($allReservationRows) {
+            $relatedRefunds = $allReservationRows
+                ->filter(fn ($related) => $related->guest_email === $reservation->guest_email
+                    && optional($related->check_in)->toDateString() === optional($reservation->check_in)->toDateString())
+                ->flatMap(function ($related) {
+                    $category = match (true) {
+                        $related instanceof RoomReservation => 'Room',
+                        $related instanceof FacilityReservation => 'Facilities',
+                        $related instanceof EventReservation => 'Event',
+                        $related instanceof DiningReservation => 'Dining',
+                        default => 'Reservation',
+                    };
+
+                    return $related->refunds->map(fn ($refund) => [
+                        'id' => $refund->id,
+                        'category' => $category,
+                        'amount' => (float) $refund->refund_amount,
+                        'reason' => $refund->reason,
+                        'status' => $refund->status,
+                        'date' => $refund->refund_date?->format('F j, Y') ?? 'N/A',
+                    ]);
+                })
+                ->unique('id')
+                ->sortByDesc('id')
+                ->values()
+                ->all();
+
+            $reservation->setAttribute('related_refunds', $relatedRefunds);
         });
 
         $roomReservations = $this->paginateReservations($roomReservations->sortByDesc('created_at')->values(), 'rooms_page');
@@ -1192,6 +1230,8 @@ class AdminController extends Controller
             'guest_phone' => ['required', 'string', 'max:20'],
             'event_type' => ['nullable', 'required_if:category,event', 'string', 'max:100'],
             'number_of_guests' => ['nullable', 'required_if:category,rooms|required_if:category,event', 'integer', 'min:1'],
+            'adult_guests' => ['nullable', 'integer', 'min:0'],
+            'kid_guests' => ['nullable', 'integer', 'min:0'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Afternoon Snacks,Dinner'],
             'quantity' => ['nullable', 'integer', 'min:1'],
@@ -1245,7 +1285,14 @@ class AdminController extends Controller
         $facility = !empty($validated['facility_id']) ? Facility::findOrFail($validated['facility_id']) : null;
         $event = !empty($validated['event_id']) ? Event::findOrFail($validated['event_id']) : null;
         $roomTotal = $room
-            ? ReservationPricing::room($room, $validated['check_in'], $validated['check_out'], (int) ($validated['number_of_guests'] ?? 1))
+            ? ReservationPricing::room(
+                $room,
+                $validated['check_in'],
+                $validated['check_out'],
+                (int) ($validated['number_of_guests'] ?? 1),
+                isset($validated['adult_guests']) ? (int) $validated['adult_guests'] : null,
+                isset($validated['kid_guests']) ? (int) $validated['kid_guests'] : null
+            )
             : 0;
         $facilityTotal = $facility
             ? ReservationPricing::facilities(
@@ -1398,13 +1445,7 @@ class AdminController extends Controller
             if ($validated['status'] === 'cancelled' && $reservation->status !== 'cancelled') {
                 $reservation->loadMissing('payments');
                 $originalTotal = round((float) ($reservation->total_amount ?? 0), 2);
-                $totalPaid = round(min(
-                    max(
-                        (float) ($reservation->amount_paid ?? 0),
-                        (float) $reservation->payments->sum('amount')
-                    ),
-                    max($originalTotal, 0)
-                ), 2);
+                $totalPaid = $this->overallReservationTotals($reservation)['paid'];
                 $refundReason = $reservation->status === 'checked-in' ? 'Early Check-out' : 'Cancellation';
                 $refundAmount = $this->calculateRefundAmount($originalTotal, 0, $totalPaid);
                 $this->createRefundIfDue(
@@ -1661,6 +1702,8 @@ class AdminController extends Controller
             'guest_phone' => ['required', 'string', 'max:20'],
             'event_type' => ['nullable', 'required_if:category,event', 'string', 'max:100'],
             'number_of_guests' => ['nullable', 'required_if:category,event', 'integer', 'min:1'],
+            'adult_guests' => ['nullable', 'integer', 'min:0'],
+            'kid_guests' => ['nullable', 'integer', 'min:0'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Afternoon Snacks,Dinner'],
             'quantity' => ['nullable', 'integer', 'min:1'],
@@ -1686,16 +1729,17 @@ class AdminController extends Controller
             'dining' => DiningReservation::findOrFail($id),
         };
 
-        $beforeTotals = $this->overallReservationTotals($reservation);
-        $originalTotal = $beforeTotals['total'];
-        $paymentTotals = ['paid' => $beforeTotals['paid']];
+        $originalTotal = round((float) ($reservation->total_amount ?? 0), 2);
+        $paymentTotals = ['paid' => $this->overallReservationTotals($reservation)['paid']];
 
         $calculatedTotal = match ($validated['category']) {
             'rooms' => ReservationPricing::room(
                 Room::findOrFail($validated['room_id'] ?? $reservation->room_id),
                 $validated['check_in'],
                 $validated['check_out'],
-                (int) ($validated['number_of_guests'] ?? 1)
+                (int) ($validated['number_of_guests'] ?? $reservation->number_of_guests ?? 1),
+                array_key_exists('adult_guests', $validated) ? (int) $validated['adult_guests'] : $reservation->adult_guests,
+                array_key_exists('kid_guests', $validated) ? (int) $validated['kid_guests'] : $reservation->kid_guests
             ),
             'facilities' => ReservationPricing::facilities(
                 collect([Facility::findOrFail($validated['facility_id'] ?? $reservation->facility_id)]),
@@ -1740,8 +1784,7 @@ class AdminController extends Controller
 
         $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
 
-        $afterTotals = $this->overallReservationTotals($reservation->fresh());
-        $finalTotal = $afterTotals['total'];
+        $finalTotal = round((float) ($validated['total_amount'] ?? 0), 2);
 
         $this->createRefundIfDue(
             $reservation,
@@ -1905,10 +1948,15 @@ class AdminController extends Controller
 
     private function calculateRefundAmount(float $originalTotal, float $finalTotal, float $totalPaid): float
     {
-        $reduction = max($originalTotal - $finalTotal, 0);
-        if ($reduction <= 0) {
+        $originalTotal = max($originalTotal, 0);
+        $finalTotal = max($finalTotal, 0);
+        $totalPaid = max($totalPaid, 0);
+
+        if ($finalTotal >= $originalTotal || $totalPaid < $finalTotal) {
             return 0.0;
         }
+
+        $reduction = $originalTotal - $finalTotal;
 
         return round(min(max($totalPaid, 0), $reduction), 2);
     }
@@ -1924,11 +1972,15 @@ class AdminController extends Controller
             return;
         }
 
+        $originalTotal = round(max($originalTotal, 0), 2);
+        $finalTotal = round(max($finalTotal, 0), 2);
+        $totalPaid = round(min(max($totalPaid, 0), $originalTotal), 2);
+
         $reservation->refunds()->create([
             'guest_name' => $reservation->guest_name,
-            'original_total' => round($originalTotal, 2),
-            'final_total' => round($finalTotal, 2),
-            'total_paid' => round($totalPaid, 2),
+            'original_total' => $originalTotal,
+            'final_total' => $finalTotal,
+            'total_paid' => $totalPaid,
             'refund_amount' => $refundAmount,
             'reason' => $reason,
             'refund_date' => now()->toDateString(),

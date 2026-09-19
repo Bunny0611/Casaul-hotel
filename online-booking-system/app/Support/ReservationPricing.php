@@ -10,14 +10,22 @@ use Carbon\Carbon;
 
 class ReservationPricing
 {
-    public static function room(Room $room, $checkIn, $checkOut, int $numberOfGuests): float
+    public static function room(Room $room, $checkIn, $checkOut, int $numberOfGuests, ?int $adultGuests = null, ?int $kidGuests = null): float
     {
         $nights = max(1, Carbon::parse($checkIn)->diffInDays(Carbon::parse($checkOut)));
         $capacity = max(1, (int) ($room->capacity ?? 2));
-        $extraGuests = max(0, $numberOfGuests - $capacity);
         $extraGuestPrice = str_contains(strtolower((string) $room->room_type), 'standard') ? 500 : 650;
+        $kidGuestPrice = $extraGuestPrice / 2;
 
-        return round(((float) $room->price + ($extraGuests * $extraGuestPrice)) * $nights, 2);
+        if (($adultGuests ?? 0) + ($kidGuests ?? 0) > 0) {
+            $extraGuestTotal = (max(0, (int) $adultGuests) * $extraGuestPrice)
+                + (max(0, (int) $kidGuests) * $kidGuestPrice);
+        } else {
+            $extraGuests = max(0, $numberOfGuests - $capacity);
+            $extraGuestTotal = $extraGuests * $extraGuestPrice;
+        }
+
+        return round(((float) $room->price + $extraGuestTotal) * $nights, 2);
     }
 
     public static function facilities($facilities, int $quantity, $checkIn, $checkOut): float

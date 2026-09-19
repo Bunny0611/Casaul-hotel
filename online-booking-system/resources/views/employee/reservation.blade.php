@@ -7,6 +7,21 @@
     $reservations = $reservations ?? collect([]);
     $formatDate = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('F j, Y') : 'N/A';
     $formatTime = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('g:i A') : 'Time not set';
+    $refundSummary = function ($reservation) {
+        return collect($reservation->related_refunds ?? $reservation->refunds)->map(function ($refund) {
+            if (is_array($refund)) {
+                return $refund;
+            }
+
+            return [
+                'category' => 'Reservation',
+                'amount' => (float) $refund->refund_amount,
+                'reason' => $refund->reason,
+                'status' => $refund->status,
+                'date' => $refund->refund_date?->format('F j, Y') ?? 'N/A',
+            ];
+        })->values()->all();
+    };
     $formatEventDuration = function ($start, $end) {
         if (!$start || !$end) {
             return 'N/A';
@@ -395,6 +410,7 @@
                                             'category' => 'rooms',
                                             'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                             'status' => ucfirst($reservation->status),
+                                            'refunds' => $refundSummary($reservation),
                                             'guest_name' => $reservation->guest_name,
                                             'guest_email' => $reservation->guest_email,
                                             'guest_phone' => $reservation->guest_phone,
@@ -406,6 +422,8 @@
                                             'room_check_out' => $reservation->check_out?->format('Y-m-d') ?? 'N/A',
                                             'room_check_out_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
                                             'room_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
+                                            'adult_guests' => $reservation->adult_guests,
+                                            'kid_guests' => $reservation->kid_guests,
                                             'room_rate' => $reservation->room?->price ?? 'N/A',
                                             'selected_services' => $roomSelectedServices($reservation),
                                             'amount_paid' => $reservation->amount_paid ?? $latestPayment?->amount ?? 0,
@@ -480,6 +498,7 @@
                                 'category' => 'rooms',
                                 'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                 'status' => ucfirst($reservation->status),
+                                'refunds' => $refundSummary($reservation),
                                 'guest_name' => $reservation->guest_name,
                                 'guest_email' => $reservation->guest_email,
                                 'guest_phone' => $reservation->guest_phone,
@@ -491,6 +510,8 @@
                                 'room_check_out' => $reservation->check_out?->format('Y-m-d') ?? 'N/A',
                                 'room_check_out_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
                                 'room_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
+                                            'adult_guests' => $reservation->adult_guests,
+                                            'kid_guests' => $reservation->kid_guests,
                                 'room_rate' => $reservation->room?->price ?? 'N/A',
                                 'selected_services' => $roomSelectedServices($reservation),
                                 'amount_paid' => $reservation->amount_paid ?? 0,
@@ -583,6 +604,7 @@
                                             'category' => 'facilities',
                                             'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                             'status' => ucfirst($reservation->status),
+                                            'refunds' => $refundSummary($reservation),
                                             'guest_name' => $reservation->guest_name,
                                             'guest_email' => $reservation->guest_email,
                                             'guest_phone' => $reservation->guest_phone,
@@ -654,6 +676,7 @@
                                 'category' => 'facilities',
                                 'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                 'status' => ucfirst($reservation->status),
+                                'refunds' => $refundSummary($reservation),
                                 'guest_name' => $reservation->guest_name,
                                 'guest_email' => $reservation->guest_email,
                                 'guest_phone' => $reservation->guest_phone,
@@ -755,6 +778,7 @@
                                             'category' => 'event',
                                             'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                             'status' => ucfirst($reservation->status),
+                                            'refunds' => $refundSummary($reservation),
                                             'guest_name' => $reservation->guest_name,
                                             'guest_email' => $reservation->guest_email,
                                             'guest_phone' => $reservation->guest_phone,
@@ -830,6 +854,7 @@
                                 'category' => 'event',
                                 'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                 'status' => ucfirst($reservation->status),
+                                'refunds' => $refundSummary($reservation),
                                 'guest_name' => $reservation->guest_name,
                                 'guest_email' => $reservation->guest_email,
                                 'guest_phone' => $reservation->guest_phone,
@@ -940,6 +965,7 @@
                                             'category' => 'dining',
                                             'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                             'status' => ucfirst($reservation->status),
+                                            'refunds' => $refundSummary($reservation),
                                             'guest_name' => $reservation->guest_name,
                                             'guest_email' => $reservation->guest_email,
                                             'guest_phone' => $reservation->guest_phone,
@@ -1020,6 +1046,7 @@
                                 'category' => 'dining',
                                 'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
                                 'status' => ucfirst($reservation->status),
+                                'refunds' => $refundSummary($reservation),
                                 'guest_name' => $reservation->guest_name,
                                 'guest_email' => $reservation->guest_email,
                                 'guest_phone' => $reservation->guest_phone,
@@ -1259,6 +1286,8 @@
                 <div data-standard-reservation-field>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Number of Guests</label>
                     <input type="number" name="number_of_guests" value="{{ old('number_of_guests') }}" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <input type="hidden" name="adult_guests" value="{{ old('adult_guests') }}">
+                    <input type="hidden" name="kid_guests" value="{{ old('kid_guests') }}">
                     @error('number_of_guests')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
             <div class="hidden md:col-span-2" data-facility-reservation-field>
@@ -1868,6 +1897,30 @@
             { label: 'Reservation', value: formatMoney(reservation.total_amount || 0) },
         ]));
 
+        const refundEntries = Array.isArray(reservation.refunds) ? reservation.refunds : [];
+        const refundTotal = refundEntries.reduce((total, refund) => total + Number(String(refund.amount || 0).replace(/,/g, '')), 0);
+        const refundRows = refundEntries.length
+            ? refundEntries.map((refund) => `
+                <div class="grid gap-3 border-b border-gray-200 py-2 last:border-b-0 sm:grid-cols-5">
+                    <div><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Category</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(refund.category || 'Reservation')}</div></div>
+                    <div><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Amount</div><div class="mt-1 text-sm font-semibold text-gray-900">${formatMoney(refund.amount || 0)}</div></div>
+                    <div><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Reason</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(refund.reason || 'N/A')}</div></div>
+                    <div><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Status</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(refund.status || 'N/A')}</div></div>
+                    <div><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Date</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(refund.date || 'N/A')}</div></div>
+                </div>
+            `).join('')
+            : '<p class="text-sm text-gray-600">No refund recorded.</p>';
+        detailsSections.push(`
+            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <h4 class="mb-3 text-base font-semibold text-gray-800">Refund Summary</h4>
+                ${refundRows}
+                <div class="mt-3 flex items-center justify-between border-t border-gray-300 pt-3 text-sm font-semibold text-gray-800">
+                    <span>Total Refund Amount</span>
+                    <span>${formatMoney(refundTotal)}</span>
+                </div>
+            </div>
+        `);
+
         const paymentRecord = window.employeePaymentMap?.[`${category}:${reservation.id}`] || {};
         const guestPaymentDetails = reservation.guest_payment_details || paymentRecord.guest_payment_details || reservation.payment_details || '';
         const paymentDetails = parseEmployeePaymentDetails(guestPaymentDetails);
@@ -2097,6 +2150,8 @@
             setValue('[data-standard-reservation-field] [name="check_out"]', dateValue(reservation.check_out));
             setValue('[data-standard-reservation-field] [name="check_out_time"]', timeValue(reservation.room_check_out_time || reservation.check_out_time));
             setValue('[data-standard-reservation-field] [name="number_of_guests"]', reservation.number_of_guests);
+            setValue('[data-standard-reservation-field] [name="adult_guests"]', reservation.adult_guests);
+            setValue('[data-standard-reservation-field] [name="kid_guests"]', reservation.kid_guests);
         }
 
         setValue('[name="total_amount"]', reservation.total_amount || 0);

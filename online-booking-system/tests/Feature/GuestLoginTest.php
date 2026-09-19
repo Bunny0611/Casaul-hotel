@@ -166,4 +166,43 @@ class GuestLoginTest extends TestCase
             'status' => 'Pending',
         ]);
     }
+
+    public function test_guest_cancellation_without_payment_does_not_create_a_refund(): void
+    {
+        $guest = \App\Models\Guest::factory()->create([
+            'name' => 'Unpaid Guest',
+            'email' => 'guest-unpaid@example.com',
+        ]);
+
+        $room = \App\Models\Room::create([
+            'room_number' => '103',
+            'room_type' => 'Deluxe',
+            'price' => 2500,
+            'floor' => '1',
+            'status' => 'available',
+            'capacity' => 2,
+        ]);
+
+        $reservation = \App\Models\Reservation::create([
+            'category' => 'rooms',
+            'room_id' => $room->id,
+            'guest_name' => $guest->name,
+            'guest_email' => $guest->email,
+            'guest_phone' => '09123456789',
+            'check_in' => now()->toDateString(),
+            'check_out' => now()->addDay()->toDateString(),
+            'status' => 'pending',
+            'total_amount' => 2500,
+            'amount_paid' => 0,
+        ]);
+
+        $this->actingAs($guest, 'guest')
+            ->patch(route('guest.reservations.cancel', $reservation))
+            ->assertRedirect(route('guest.records'));
+
+        $this->assertDatabaseMissing('refunds', [
+            'reservationable_type' => \App\Models\Reservation::class,
+            'reservationable_id' => $reservation->id,
+        ]);
+    }
 }
