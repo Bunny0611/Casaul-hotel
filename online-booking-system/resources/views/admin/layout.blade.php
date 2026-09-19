@@ -120,7 +120,7 @@
         .status-available { background: #10b981; }
         .status-occupied { background: #ef4444; }
         .status-maintenance { background: #f59e0b; }
-        .status-reserved { background: #04d9ff; }
+        .status-reserved { background: #2563eb; }
         
         .status-pending { background: #f59e0b; }
         .status-confirmed { background: #10b981; }
