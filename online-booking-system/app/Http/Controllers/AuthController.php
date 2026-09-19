@@ -137,7 +137,7 @@ class AuthController extends Controller
         Auth::guard('guest')->login($guest, true);
         $request->session()->regenerate();
 
-        return redirect()->route('home');
+        return redirect()->route('profile.edit');
     }
 
     public function showForgotPasswordForm()
