@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ReservationConfirmed;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -1238,10 +1240,10 @@ class AdminController extends Controller
             'facility_quantity' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'required_if:category,facilities', 'date_format:H:i'],
-            'event_start_time' => ['nullable', 'date_format:H:i'],
+            'event_start_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
-            'event_end_time' => ['nullable', 'date_format:H:i'],
+            'event_end_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
@@ -1376,8 +1378,9 @@ class AdminController extends Controller
         ]);
 
         $refundMessage = null;
+        $confirmedReservation = null;
 
-        DB::transaction(function () use ($id, $validated, &$refundMessage) {
+        DB::transaction(function () use ($id, $validated, &$refundMessage, &$confirmedReservation) {
             $reservationType = match ($validated['category'] ?? null) {
                 'rooms' => 'room',
                 'event' => 'event',
@@ -1393,7 +1396,8 @@ class AdminController extends Controller
                 default => RoomReservation::with('room')->find($id)
                     ?? EventReservation::find($id)
                     ?? FacilityReservation::find($id)
-                    ?? DiningReservation::find($id),
+                    ?? DiningReservation::find($id)
+                    ?? Reservation::with('room')->find($id),
             };
 
             if (!$reservationType) {
@@ -1403,6 +1407,9 @@ class AdminController extends Controller
             }
 
             abort_if(!$reservation, 404, 'Reservation not found');
+
+            $wasPendingConfirmation = $reservation->status !== 'confirmed'
+                && $validated['status'] === 'confirmed';
 
             if ($validated['status'] === 'completed') {
                 $relatedRows = $reservation instanceof RoomReservation
@@ -1461,6 +1468,10 @@ class AdminController extends Controller
             }
 
             $reservation->update(['status' => $validated['status']]);
+
+            if ($wasPendingConfirmation && $reservation->guest_email) {
+                $confirmedReservation = $reservation->fresh();
+            }
 
             if ($reservation instanceof RoomReservation && in_array($validated['status'], ['checked-in', 'completed'], true)) {
                 $legacyReservation = Reservation::query()
@@ -1559,6 +1570,11 @@ class AdminController extends Controller
                 }
             }
         });
+
+        if ($confirmedReservation) {
+            Mail::to($confirmedReservation->guest_email)
+                ->send(new ReservationConfirmed($confirmedReservation));
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -1711,10 +1727,10 @@ class AdminController extends Controller
             'facility_quantity' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'date_format:H:i'],
-            'event_start_time' => ['nullable', 'date_format:H:i'],
+            'event_start_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
-            'event_end_time' => ['nullable', 'date_format:H:i'],
+            'event_end_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
             'total_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['nullable', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
