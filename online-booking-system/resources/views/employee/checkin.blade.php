@@ -538,6 +538,18 @@
                 <span class="modal-detail-label">Check-in Time:</span>
                 <span class="modal-detail-value" id="checkInTime"></span>
             </div>
+            <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <h5 class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Add-On Services</h5>
+                <div id="checkInAddOns" class="space-y-3"></div>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Add-On Total:</span>
+                <span class="modal-detail-value" id="checkInAddOnTotal"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Grand Total:</span>
+                <span class="modal-detail-value" id="checkInTotal"></span>
+            </div>
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Payment Status:</span>
                 <span class="modal-detail-value" id="checkInPaymentStatus"></span>
@@ -609,10 +621,6 @@
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Check-out Time:</span>
                 <span class="modal-detail-value" id="checkOutTime"></span>
-            </div>
-            <div class="modal-detail-row">
-                <span class="modal-detail-label">Room Total:</span>
-                <span class="modal-detail-value" id="checkOutRoomTotal"></span>
             </div>
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Add-On Total:</span>
@@ -727,9 +735,12 @@
         document.getElementById('checkInGuests').textContent = row.dataset.guests || 'N/A';
         document.getElementById('checkInDate').textContent = date;
         document.getElementById('checkInTime').textContent = row.dataset.time || 'N/A';
+        renderAddOns('checkInAddOns', row);
+        document.getElementById('checkInAddOnTotal').textContent = formatCurrency(Number(row.dataset.addonTotal || 0));
         const total = Number(row.dataset.total || 0);
         const paid = Number(row.dataset.paid || 0);
         const balance = Number(row.dataset.balance ?? Math.max(total - paid, 0));
+        document.getElementById('checkInTotal').textContent = formatCurrency(total);
         const paymentStatus = document.getElementById('checkInPaymentStatus');
         paymentStatus.textContent = getPaymentStatus(total, paid);
         document.getElementById('checkInPaid').textContent = formatCurrency(paid);
@@ -782,8 +793,8 @@
             .replace(/'/g, '&#039;');
     }
 
-    function renderCheckoutAddOns(row) {
-        const container = document.getElementById('checkOutAddOns');
+    function renderAddOns(containerId, row) {
+        const container = document.getElementById(containerId);
         let addOns = [];
 
         try {
@@ -828,12 +839,11 @@
         document.getElementById('checkOutCheckInDate').textContent = formatReservationDate(row.dataset.checkInDate);
         document.getElementById('checkOutDate').textContent = formatReservationDate(row.dataset.checkOutDate);
         document.getElementById('checkOutTime').textContent = row.dataset.time || 'N/A';
-        renderCheckoutAddOns(row);
+        renderAddOns('checkOutAddOns', row);
         const roomTotal = Number(row.dataset.roomTotal || 0);
         const addOnTotal = Number(row.dataset.addonTotal || 0);
         const total = Number(row.dataset.total || 0);
         const paid = Number(row.dataset.paid || 0);
-        document.getElementById('checkOutRoomTotal').textContent = formatCurrency(roomTotal);
         document.getElementById('checkOutAddOnTotal').textContent = formatCurrency(addOnTotal);
         document.getElementById('checkOutTotal').textContent = formatCurrency(total);
         document.getElementById('checkOutPaid').textContent = formatCurrency(paid);
@@ -936,7 +946,9 @@
         row.dataset.paid = data.paid.toFixed(2);
         row.dataset.balance = data.balance.toFixed(2);
         if (row === window.currentCheckInRow) {
+            row.dataset.total = data.total.toFixed(2);
             document.getElementById('checkInPaymentStatus').textContent = getPaymentStatus(data.total, data.paid);
+            document.getElementById('checkInTotal').textContent = formatCurrency(data.total);
             document.getElementById('checkInPaid').textContent = formatCurrency(data.paid);
             document.getElementById('checkInBalance').textContent = formatCurrency(data.balance);
             document.getElementById('checkInRecordPaymentButton').classList.toggle('hidden', data.balance === 0);

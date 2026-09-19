@@ -1358,11 +1358,37 @@ class AdminController extends Controller
             abort_if(!$reservation, 404, 'Reservation not found');
 
             if ($validated['status'] === 'completed') {
+                $relatedRows = $reservation instanceof RoomReservation
+                    ? collect([
+                        ...RoomReservation::with('payments')->get(),
+                        ...FacilityReservation::with('payments')->get(),
+                        ...EventReservation::with('payments')->get(),
+                        ...DiningReservation::with('payments')->get(),
+                    ])->filter(function ($row) use ($reservation) {
+                        return $row->guest_email === $reservation->guest_email
+                            && optional($row->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
+                    })
+                    : collect([$reservation]);
+                $total = (float) $relatedRows->sum(fn ($row) => (float) ($row->total_amount ?? 0));
+                if ($reservation instanceof RoomReservation) {
+                    $total += (float) GuestRequest::with('reservation')
+                        ->where('is_billable', true)
+                        ->where('status', 'Completed')
+                        ->get()
+                        ->filter(function (GuestRequest $guestRequest) use ($reservation) {
+                            return ($guestRequest->reservation_type === RoomReservation::class
+                                    && (int) $guestRequest->reservation_key === (int) $reservation->id)
+                                || ($guestRequest->reservation
+                                    && $guestRequest->reservation->guest_email === $reservation->guest_email
+                                    && optional($guestRequest->reservation->check_in)->toDateString() === optional($reservation->check_in)->toDateString());
+                        })
+                        ->sum(fn (GuestRequest $guestRequest) => (float) $guestRequest->unit_price * max((int) ($guestRequest->quantity ?? 1), 1));
+                }
                 $paid = max(
-                    (float) ($reservation->amount_paid ?? 0),
-                    (float) $reservation->payments()->sum('amount')
+                    (float) $relatedRows->max(fn ($row) => (float) ($row->amount_paid ?? 0)),
+                    (float) $relatedRows->sum(fn ($row) => (float) $row->payments->sum('amount'))
                 );
-                if (round((float) $reservation->total_amount - $paid, 2) > 0) {
+                if (round($total - $paid, 2) > 0) {
                     throw ValidationException::withMessages([
                         'status' => 'The reservation must be paid in full before checkout.',
                     ]);
@@ -1535,10 +1561,6 @@ class AdminController extends Controller
                 ? GuestRequest::with('reservation')
                     ->where('is_billable', true)
                     ->where('status', 'Completed')
-                    ->where(function ($query) {
-                        $query->whereNull('billing_status')
-                            ->orWhere('billing_status', '!=', 'posted');
-                    })
                     ->lockForUpdate()
                     ->get()
                     ->filter(function (GuestRequest $guestRequest) use ($reservation) {
@@ -1553,7 +1575,7 @@ class AdminController extends Controller
                 : collect();
             $total = $isRoomBooking
                 ? round(
-                    (float) $reservation->total_amount
+                    (float) $relatedRows->sum(fn ($row) => (float) ($row->total_amount ?? 0))
                     + (float) $chargeableAddOns->sum(function (GuestRequest $guestRequest) {
                             return round(
                                 (float) ($guestRequest->unit_price ?? 0) * max((int) ($guestRequest->quantity ?? 1), 1),
