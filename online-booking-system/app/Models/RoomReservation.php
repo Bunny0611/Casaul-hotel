@@ -23,6 +23,8 @@ class RoomReservation extends Model
         'check_out',
         'room_check_out_time',
         'number_of_guests',
+        'adult_guests',
+        'kid_guests',
         'status',
         'total_amount',
         'payment_method',

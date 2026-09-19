@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ReservationConfirmed;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -34,30 +36,160 @@ use App\Support\ReservationPricing;
 
 class AdminController extends Controller
 {
+    public function unifiedReservations(?string $from = null, ?string $to = null)
+    {
+        $sources = collect([
+            ['category' => 'rooms', 'rows' => RoomReservation::with('room')->get()],
+            ['category' => 'facilities', 'rows' => FacilityReservation::with('facility')->get()],
+            ['category' => 'event', 'rows' => EventReservation::with('event')->get()],
+            ['category' => 'dining', 'rows' => DiningReservation::with('diningItems.diningMenu')->get()],
+            ['category' => null, 'rows' => Reservation::with(['room', 'facility', 'event', 'diningItems'])->get()],
+        ]);
+
+        return $sources->flatMap(function (array $source) use ($from, $to) {
+            return $source['rows']->filter(function ($reservation) use ($from, $to) {
+                if ($from && optional($reservation->created_at)->lt(Carbon::parse($from)->startOfDay())) {
+                    return false;
+                }
+                if ($to && optional($reservation->created_at)->gt(Carbon::parse($to)->endOfDay())) {
+                    return false;
+                }
+
+                return true;
+            })->map(function ($reservation) use ($source) {
+                $category = $source['category'] ?: ($reservation->category ?: ($reservation->room_id ? 'rooms' : null));
+                if (!$category && $reservation->facility_id) {
+                    $category = 'facilities';
+                } elseif (!$category && $reservation->event_id) {
+                    $category = 'event';
+                } elseif (!$category && ($reservation->dining_id || $reservation->dining_area || $reservation->dining_schedule)) {
+                    $category = 'dining';
+                }
+
+                $reservation->resource_category = $category;
+
+                return $reservation;
+            });
+        })->filter(fn ($reservation) => $reservation->resource_category !== null)
+            ->unique(function ($reservation) {
+                return implode('|', [
+                    $reservation->resource_category,
+                    $reservation->guest_email,
+                    optional($reservation->check_in)->toDateString(),
+                    $reservation->room_id,
+                    $reservation->facility_id,
+                    $reservation->event_id,
+                    $reservation->dining_area,
+                    $reservation->total_amount,
+                ]);
+            })->values();
+    }
+
+    public function applyResourceReservationStatuses($rooms, $facilities, $events, $diningTables): array
+    {
+        $activeStatuses = ['pending', 'confirmed', 'checked-in'];
+        $today = today();
+        $reservations = $this->unifiedReservations();
+        $active = $reservations->filter(function ($reservation) use ($activeStatuses, $today) {
+            return in_array(strtolower((string) $reservation->status), $activeStatuses, true)
+                && (!$reservation->check_out || Carbon::parse($reservation->check_out)->gte($today));
+        });
+        $statusFor = static fn ($reservation) => strtolower((string) $reservation->status) === 'checked-in' ? 'occupied' : 'reserved';
+
+        $rooms->each(function ($room) use ($active, $statusFor) {
+            $booking = $active->first(fn ($reservation) => $reservation->resource_category === 'rooms'
+                && (int) $reservation->room_id === (int) $room->id);
+            $baseStatus = strtolower((string) $room->status);
+            if ($booking && !in_array($baseStatus, ['maintenance', 'out_of_order', 'blocked'], true)) {
+                $room->status = $statusFor($booking);
+                $room->detail_guest = $booking->guest_name ?: '—';
+                $room->detail_checkin = optional($booking->check_in)->format('Y-m-d') ?: '—';
+                $room->detail_checkout = optional($booking->check_out)->format('Y-m-d') ?: '—';
+            }
+        });
+
+        $facilities->each(function ($facility) use ($active, $statusFor) {
+            $booking = $active->first(fn ($reservation) => $reservation->resource_category === 'facilities'
+                && (int) $reservation->facility_id === (int) $facility->id);
+            $baseStatus = strtolower((string) $facility->status);
+            if ($booking && !in_array($baseStatus, ['maintenance', 'unavailable'], true)) {
+                $facility->status = $statusFor($booking);
+            }
+        });
+
+        $events->each(function ($event) use ($active, $statusFor) {
+            $booking = $active->first(fn ($reservation) => $reservation->resource_category === 'event'
+                && (int) $reservation->event_id === (int) $event->id);
+            $baseStatus = strtolower((string) $event->status);
+            if ($booking && !in_array($baseStatus, ['maintenance', 'unavailable'], true)) {
+                $event->status = $statusFor($booking);
+            }
+        });
+
+        $diningTables->each(function ($table) use ($active, $statusFor) {
+            $tableNumber = (string) $table->table_no;
+            $booking = $active->first(function ($reservation) use ($tableNumber) {
+                if ($reservation->resource_category !== 'dining') {
+                    return false;
+                }
+
+                return collect(explode(',', (string) $reservation->dining_area))
+                    ->map(fn ($value) => trim($value))
+                    ->contains($tableNumber);
+            });
+            $baseStatus = strtolower((string) $table->status);
+            if ($booking && !in_array($baseStatus, ['maintenance', 'unavailable'], true)) {
+                $table->status = ucfirst($statusFor($booking));
+            }
+        });
+
+        return compact('rooms', 'facilities', 'events', 'diningTables');
+    }
+
+    protected function dynamicRoomCounts($rooms): array
+    {
+        return [
+            'total' => $rooms->count(),
+            'available' => $rooms->filter(fn ($room) => strtolower((string) $room->status) === 'available'
+                && in_array($room->cleaning_status, ['clean', 'ready'], true))->count(),
+            'reserved' => $rooms->where('status', 'reserved')->count(),
+            'occupied' => $rooms->where('status', 'occupied')->count(),
+            'dirty' => $rooms->where('cleaning_status', 'dirty')->count(),
+            'cleaning' => $rooms->where('cleaning_status', 'in_progress')->count(),
+            'maintenance' => $rooms->filter(fn ($room) => in_array(strtolower((string) $room->status), ['maintenance', 'out_of_order'], true)
+                || $room->cleaning_status === 'out_of_order')->count(),
+        ];
+    }
+
     public function dashboard()
     {
+        $unifiedReservations = $this->unifiedReservations();
+        $rooms = Room::orderBy('room_number')->get();
+        $resources = $this->applyResourceReservationStatuses($rooms, Facility::get(), Event::get(), DiningTable::get());
+        $rooms = $resources['rooms'];
+
         // === Core Stats ===
-        $totalRevenue = Reservation::where('status', 'completed')->sum('total_amount') ?? 0;
-        $availableRooms = Room::where('status', 'available')->count();
-        $totalRooms = Room::count();
-        $activeReservations = Reservation::where('status', 'confirmed')->count();
-        $totalGuests = Reservation::distinct('guest_email')->count('guest_email');
+        $totalRevenue = $unifiedReservations->where('status', 'completed')->sum('total_amount') ?? 0;
+        $availableRooms = $rooms->where('status', 'available')->count();
+        $totalRooms = $rooms->count();
+        $activeReservations = $unifiedReservations->where('status', 'confirmed')->count();
+        $totalGuests = $unifiedReservations->pluck('guest_email')->filter()->unique()->count();
         $unreadMessages = Message::where('is_replied', false)->count();
-        $maintenanceRooms = Room::where('status', 'maintenance')->count();
-        $occupiedRooms = Room::where('status', 'occupied')->count();
+        $maintenanceRooms = $rooms->where('status', 'maintenance')->count();
+        $occupiedRooms = $rooms->where('status', 'occupied')->count();
         $occupancyRate = $totalRooms > 0 ? round((($totalRooms - $availableRooms) / $totalRooms) * 100) : 0;
 
         // === Reservation Status Counts ===
-        $pendingReservations = Reservation::where('status', 'pending')->count();
-        $confirmedReservations = Reservation::where('status', 'confirmed')->count();
-        $completedReservations = Reservation::where('status', 'completed')->count();
-        $cancelledReservations = Reservation::where('status', 'cancelled')->count();
+        $pendingReservations = $unifiedReservations->where('status', 'pending')->count();
+        $confirmedReservations = $unifiedReservations->where('status', 'confirmed')->count();
+        $completedReservations = $unifiedReservations->where('status', 'completed')->count();
+        $cancelledReservations = $unifiedReservations->where('status', 'cancelled')->count();
 
         // === Average Daily Revenue (Last 30 Days) ===
         // Use updated_at so recent completions/payments count toward the average.
         $thirtyDaysAgo = now()->subDays(30);
-        $last30DaysRevenue = Reservation::where('status', 'completed')
-            ->where('updated_at', '>=', $thirtyDaysAgo)
+        $last30DaysRevenue = $unifiedReservations
+            ->filter(fn ($reservation) => $reservation->status === 'completed' && $reservation->updated_at && $reservation->updated_at->gte($thirtyDaysAgo))
             ->sum('total_amount');
         $avgDailyRevenue = $last30DaysRevenue > 0 ? round($last30DaysRevenue / 30, 2) : 0;
 
@@ -68,10 +200,7 @@ class AdminController extends Controller
             ->toArray();
 
         // === Recent Reservations (Latest 5) ===
-        $recentReservations = Reservation::with('room')
-            ->latest()
-            ->take(5)
-            ->get();
+        $recentReservations = $unifiedReservations->sortByDesc('created_at')->take(5);
 
         return view('admin.dashboard', compact(
             'totalRevenue',
@@ -95,19 +224,22 @@ class AdminController extends Controller
 
     public function employeeDashboard()
     {
-        $totalRooms = Room::count();
-        $availableRooms = Room::where('status', 'available')->count();
-        $occupiedRooms = Room::where('status', 'occupied')->count();
-        $maintenanceRooms = Room::where('status', 'maintenance')->count();
+        $rooms = Room::orderBy('room_number')->get();
+        $resources = $this->applyResourceReservationStatuses($rooms, Facility::get(), Event::get(), DiningTable::get());
+        $rooms = $resources['rooms'];
+        $unifiedReservations = $this->unifiedReservations();
+        $totalRooms = $rooms->count();
+        $availableRooms = $rooms->where('status', 'available')->count();
+        $occupiedRooms = $rooms->where('status', 'occupied')->count();
+        $maintenanceRooms = $rooms->where('status', 'maintenance')->count();
         $todayArrivals = RoomReservation::whereDate('check_in', today())->count();
         $todayDepartures = RoomReservation::whereDate('check_out', today())->count();
-        $pendingRequests = RoomReservation::where('status', 'pending')->count();
+        $pendingRequests = $unifiedReservations->where('status', 'pending')->count();
         $occupancyRate = $totalRooms > 0 ? min(100, round(($occupiedRooms / $totalRooms) * 100)) : 0;
 
-        $recentActivity = RoomReservation::with('room')
-            ->latest()
+        $recentActivity = $unifiedReservations->where('resource_category', 'rooms')
+            ->sortByDesc('created_at')
             ->take(5)
-            ->get()
             ->map(function ($reservation) {
                 $roomNumber = $reservation->room?->room_number ?? 'N/A';
 
@@ -497,6 +629,17 @@ class AdminController extends Controller
         if (!in_array($activeTab, ['rooms', 'facilities', 'events', 'dining'], true)) {
             $activeTab = 'rooms';
         }
+
+        $resources = $this->applyResourceReservationStatuses(
+            $rooms->getCollection(),
+            $facilities->getCollection(),
+            $events->getCollection(),
+            $diningTables
+        );
+        $rooms->setCollection($resources['rooms']);
+        $facilities->setCollection($resources['facilities']);
+        $events->setCollection($resources['events']);
+        $diningTables = $resources['diningTables'];
 
         return view('admin.rooms', compact('rooms', 'facilities', 'events', 'dining', 'diningTables', 'diningSchedules', 'activeTab'));
     }
@@ -915,12 +1058,12 @@ class AdminController extends Controller
     {
         $this->completeFinishedReservations();
 
-        $roomReservations = RoomReservation::with('room')->latest()->get();
-        $facilitiesReservations = FacilityReservation::with('facility')->latest()->get();
-        $eventsReservations = EventReservation::with(['event', 'diningItems.diningMenu'])->latest()->get();
-        $diningReservations = DiningReservation::with('diningItems.diningMenu')->latest()->get();
+        $roomReservations = RoomReservation::with(['room', 'refunds'])->latest()->get();
+        $facilitiesReservations = FacilityReservation::with(['facility', 'refunds'])->latest()->get();
+        $eventsReservations = EventReservation::with(['event', 'diningItems.diningMenu', 'refunds'])->latest()->get();
+        $diningReservations = DiningReservation::with(['diningItems.diningMenu', 'refunds'])->latest()->get();
 
-        $legacyReservations = Reservation::with(['room', 'facility', 'event', 'diningItems'])->latest()->get();
+        $legacyReservations = Reservation::with(['room', 'facility', 'event', 'diningItems', 'refunds'])->latest()->get();
         $legacyReservations->each(function ($reservation) use (&$roomReservations, &$facilitiesReservations, &$eventsReservations, &$diningReservations) {
             $category = $reservation->category;
             if ($category === 'rooms' || $reservation->room_id) {
@@ -935,6 +1078,44 @@ class AdminController extends Controller
             if ($category === 'dining' || $reservation->dining_id || $reservation->dining_area || $reservation->dining_schedule) {
                 $diningReservations->push($reservation);
             }
+        });
+
+        $allReservationRows = collect([
+            ...$roomReservations,
+            ...$facilitiesReservations,
+            ...$eventsReservations,
+            ...$diningReservations,
+            ...$legacyReservations,
+        ])->unique(fn ($reservation) => get_class($reservation) . ':' . $reservation->id)->values();
+
+        $allReservationRows->each(function ($reservation) use ($allReservationRows) {
+            $relatedRefunds = $allReservationRows
+                ->filter(fn ($related) => $related->guest_email === $reservation->guest_email
+                    && optional($related->check_in)->toDateString() === optional($reservation->check_in)->toDateString())
+                ->flatMap(function ($related) {
+                    $category = match (true) {
+                        $related instanceof RoomReservation => 'Room',
+                        $related instanceof FacilityReservation => 'Facilities',
+                        $related instanceof EventReservation => 'Event',
+                        $related instanceof DiningReservation => 'Dining',
+                        default => 'Reservation',
+                    };
+
+                    return $related->refunds->map(fn ($refund) => [
+                        'id' => $refund->id,
+                        'category' => $category,
+                        'amount' => (float) $refund->refund_amount,
+                        'reason' => $refund->reason,
+                        'status' => $refund->status,
+                        'date' => $refund->refund_date?->format('F j, Y') ?? 'N/A',
+                    ]);
+                })
+                ->unique('id')
+                ->sortByDesc('id')
+                ->values()
+                ->all();
+
+            $reservation->setAttribute('related_refunds', $relatedRefunds);
         });
 
         $roomReservations = $this->paginateReservations($roomReservations->sortByDesc('created_at')->values(), 'rooms_page');
@@ -1192,16 +1373,18 @@ class AdminController extends Controller
             'guest_phone' => ['required', 'string', 'max:20'],
             'event_type' => ['nullable', 'required_if:category,event', 'string', 'max:100'],
             'number_of_guests' => ['nullable', 'required_if:category,rooms|required_if:category,event', 'integer', 'min:1'],
+            'adult_guests' => ['nullable', 'integer', 'min:0'],
+            'kid_guests' => ['nullable', 'integer', 'min:0'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Afternoon Snacks,Dinner'],
             'quantity' => ['nullable', 'integer', 'min:1'],
             'facility_quantity' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'required_if:category,facilities', 'date_format:H:i'],
-            'event_start_time' => ['nullable', 'date_format:H:i'],
+            'event_start_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
-            'event_end_time' => ['nullable', 'date_format:H:i'],
+            'event_end_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
@@ -1245,7 +1428,14 @@ class AdminController extends Controller
         $facility = !empty($validated['facility_id']) ? Facility::findOrFail($validated['facility_id']) : null;
         $event = !empty($validated['event_id']) ? Event::findOrFail($validated['event_id']) : null;
         $roomTotal = $room
-            ? ReservationPricing::room($room, $validated['check_in'], $validated['check_out'], (int) ($validated['number_of_guests'] ?? 1))
+            ? ReservationPricing::room(
+                $room,
+                $validated['check_in'],
+                $validated['check_out'],
+                (int) ($validated['number_of_guests'] ?? 1),
+                isset($validated['adult_guests']) ? (int) $validated['adult_guests'] : null,
+                isset($validated['kid_guests']) ? (int) $validated['kid_guests'] : null
+            )
             : 0;
         $facilityTotal = $facility
             ? ReservationPricing::facilities(
@@ -1329,8 +1519,9 @@ class AdminController extends Controller
         ]);
 
         $refundMessage = null;
+        $confirmedReservation = null;
 
-        DB::transaction(function () use ($id, $validated, &$refundMessage) {
+        DB::transaction(function () use ($id, $validated, &$refundMessage, &$confirmedReservation) {
             $reservationType = match ($validated['category'] ?? null) {
                 'rooms' => 'room',
                 'event' => 'event',
@@ -1346,7 +1537,8 @@ class AdminController extends Controller
                 default => RoomReservation::with('room')->find($id)
                     ?? EventReservation::find($id)
                     ?? FacilityReservation::find($id)
-                    ?? DiningReservation::find($id),
+                    ?? DiningReservation::find($id)
+                    ?? Reservation::with('room')->find($id),
             };
 
             if (!$reservationType) {
@@ -1356,6 +1548,9 @@ class AdminController extends Controller
             }
 
             abort_if(!$reservation, 404, 'Reservation not found');
+
+            $wasPendingConfirmation = $reservation->status !== 'confirmed'
+                && $validated['status'] === 'confirmed';
 
             if ($validated['status'] === 'completed') {
                 $relatedRows = $reservation instanceof RoomReservation
@@ -1398,13 +1593,7 @@ class AdminController extends Controller
             if ($validated['status'] === 'cancelled' && $reservation->status !== 'cancelled') {
                 $reservation->loadMissing('payments');
                 $originalTotal = round((float) ($reservation->total_amount ?? 0), 2);
-                $totalPaid = round(min(
-                    max(
-                        (float) ($reservation->amount_paid ?? 0),
-                        (float) $reservation->payments->sum('amount')
-                    ),
-                    max($originalTotal, 0)
-                ), 2);
+                $totalPaid = $this->overallReservationTotals($reservation)['paid'];
                 $refundReason = $reservation->status === 'checked-in' ? 'Early Check-out' : 'Cancellation';
                 $refundAmount = $this->calculateRefundAmount($originalTotal, 0, $totalPaid);
                 $this->createRefundIfDue(
@@ -1420,6 +1609,10 @@ class AdminController extends Controller
             }
 
             $reservation->update(['status' => $validated['status']]);
+
+            if ($wasPendingConfirmation && $reservation->guest_email) {
+                $confirmedReservation = $reservation->fresh();
+            }
 
             if ($reservation instanceof RoomReservation && in_array($validated['status'], ['checked-in', 'completed'], true)) {
                 $legacyReservation = Reservation::query()
@@ -1518,6 +1711,11 @@ class AdminController extends Controller
                 }
             }
         });
+
+        if ($confirmedReservation) {
+            Mail::to($confirmedReservation->guest_email)
+                ->send(new ReservationConfirmed($confirmedReservation));
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -1662,16 +1860,18 @@ class AdminController extends Controller
             'guest_phone' => ['required', 'string', 'max:20'],
             'event_type' => ['nullable', 'required_if:category,event', 'string', 'max:100'],
             'number_of_guests' => ['nullable', 'required_if:category,event', 'integer', 'min:1'],
+            'adult_guests' => ['nullable', 'integer', 'min:0'],
+            'kid_guests' => ['nullable', 'integer', 'min:0'],
             'dining_area' => ['nullable', 'required_if:category,dining', 'string', 'max:100'],
             'dining_schedule' => ['nullable', 'required_if:category,dining', 'in:Breakfast,Lunch,Afternoon Snacks,Dinner'],
             'quantity' => ['nullable', 'integer', 'min:1'],
             'facility_quantity' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['required', 'date'],
             'check_in_time' => ['nullable', 'date_format:H:i'],
-            'event_start_time' => ['nullable', 'date_format:H:i'],
+            'event_start_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => ['nullable', 'date_format:H:i'],
-            'event_end_time' => ['nullable', 'date_format:H:i'],
+            'event_end_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
             'total_amount' => ['nullable', 'numeric', 'min:0'],
             'payment_method' => ['nullable', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
@@ -1687,16 +1887,17 @@ class AdminController extends Controller
             'dining' => DiningReservation::findOrFail($id),
         };
 
-        $beforeTotals = $this->overallReservationTotals($reservation);
-        $originalTotal = $beforeTotals['total'];
-        $paymentTotals = ['paid' => $beforeTotals['paid']];
+        $originalTotal = round((float) ($reservation->total_amount ?? 0), 2);
+        $paymentTotals = ['paid' => $this->overallReservationTotals($reservation)['paid']];
 
         $calculatedTotal = match ($validated['category']) {
             'rooms' => ReservationPricing::room(
                 Room::findOrFail($validated['room_id'] ?? $reservation->room_id),
                 $validated['check_in'],
                 $validated['check_out'],
-                (int) ($validated['number_of_guests'] ?? 1)
+                (int) ($validated['number_of_guests'] ?? $reservation->number_of_guests ?? 1),
+                array_key_exists('adult_guests', $validated) ? (int) $validated['adult_guests'] : $reservation->adult_guests,
+                array_key_exists('kid_guests', $validated) ? (int) $validated['kid_guests'] : $reservation->kid_guests
             ),
             'facilities' => ReservationPricing::facilities(
                 collect([Facility::findOrFail($validated['facility_id'] ?? $reservation->facility_id)]),
@@ -1741,8 +1942,7 @@ class AdminController extends Controller
 
         $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
 
-        $afterTotals = $this->overallReservationTotals($reservation->fresh());
-        $finalTotal = $afterTotals['total'];
+        $finalTotal = round((float) ($validated['total_amount'] ?? 0), 2);
 
         $this->createRefundIfDue(
             $reservation,
@@ -1906,10 +2106,15 @@ class AdminController extends Controller
 
     private function calculateRefundAmount(float $originalTotal, float $finalTotal, float $totalPaid): float
     {
-        $reduction = max($originalTotal - $finalTotal, 0);
-        if ($reduction <= 0) {
+        $originalTotal = max($originalTotal, 0);
+        $finalTotal = max($finalTotal, 0);
+        $totalPaid = max($totalPaid, 0);
+
+        if ($finalTotal >= $originalTotal || $totalPaid < $finalTotal) {
             return 0.0;
         }
+
+        $reduction = $originalTotal - $finalTotal;
 
         return round(min(max($totalPaid, 0), $reduction), 2);
     }
@@ -1925,11 +2130,15 @@ class AdminController extends Controller
             return;
         }
 
+        $originalTotal = round(max($originalTotal, 0), 2);
+        $finalTotal = round(max($finalTotal, 0), 2);
+        $totalPaid = round(min(max($totalPaid, 0), $originalTotal), 2);
+
         $reservation->refunds()->create([
             'guest_name' => $reservation->guest_name,
-            'original_total' => round($originalTotal, 2),
-            'final_total' => round($finalTotal, 2),
-            'total_paid' => round($totalPaid, 2),
+            'original_total' => $originalTotal,
+            'final_total' => $finalTotal,
+            'total_paid' => $totalPaid,
             'refund_amount' => $refundAmount,
             'reason' => $reason,
             'refund_date' => now()->toDateString(),
@@ -2116,15 +2325,7 @@ class AdminController extends Controller
         $maintenanceRepairing = $maintenanceReports->whereIn('status', ['Repairing', 'In Progress'])->count();
         $maintenanceCompleted = $maintenanceReports->where('status', 'Completed')->count();
 
-        $reservationsQuery = Reservation::with('room')->latest();
-        if ($from) {
-            $reservationsQuery->whereDate('created_at', '>=', $from);
-        }
-        if ($to) {
-            $reservationsQuery->whereDate('created_at', '<=', $to);
-        }
-
-        $reservations = $reservationsQuery->get();
+        $reservations = $this->unifiedReservations($from, $to)->sortByDesc('created_at')->values();
         $completedReservations = $reservations->where('status', 'completed');
         $confirmedReservations = $reservations->where('status', 'confirmed');
         $pendingReservations = $reservations->where('status', 'pending');
@@ -2141,16 +2342,20 @@ class AdminController extends Controller
             return $reservation->updated_at ?? $reservation->created_at;
         })->take(8);
 
-        $monthlyRevenueQuery = Reservation::where('status', 'completed');
-        if ($from) {
-            $monthlyRevenueQuery->whereDate('updated_at', '>=', $from);
-        }
-        if ($to) {
-            $monthlyRevenueQuery->whereDate('updated_at', '<=', $to);
-        }
+        $completedRevenueByMonth = $completedReservations
+            ->filter(function ($reservation) use ($from, $to) {
+                if (!$reservation->updated_at) {
+                    return false;
+                }
+                if ($from && $reservation->updated_at->lt(Carbon::parse($from)->startOfDay())) {
+                    return false;
+                }
+                if ($to && $reservation->updated_at->gt(Carbon::parse($to)->endOfDay())) {
+                    return false;
+                }
 
-        $completedRevenueByMonth = $monthlyRevenueQuery->orderBy('updated_at')
-            ->get(['updated_at', 'total_amount'])
+                return true;
+            })
             ->groupBy(function ($reservation) {
                 return $reservation->updated_at->format('Y-m');
             })
@@ -2204,7 +2409,9 @@ class AdminController extends Controller
         for ($i = 5; $i >= 0; $i--) {
             $monthStart = Carbon::now()->subMonths($i)->startOfMonth();
             $monthEnd = (clone $monthStart)->endOfMonth();
-            $count = Reservation::whereBetween('created_at', [$monthStart->startOfDay(), $monthEnd->endOfDay()])
+            $count = $this->unifiedReservations()
+                ->filter(fn ($reservation) => $reservation->created_at
+                    && $reservation->created_at->between($monthStart->startOfDay(), $monthEnd->endOfDay()))
                 ->count();
 
             $reservationTrendLabels[] = $monthStart->format('M Y');
@@ -2230,66 +2437,9 @@ class AdminController extends Controller
         $mostBookedRoomTypeLabels = $mostBookedRoomTypes->keys()->all();
         $mostBookedRoomTypeData = $mostBookedRoomTypes->values()->map(fn($count) => (int) $count)->all();
 
-        $hasReservations = $reservations->count() > 0;
-
-        if (! $hasReservations) {
-            $totalRevenue = 180000.00;
-            $totalPaymentsReceived = 180000.00;
-            $revenueThisMonth = 34000.00;
-            $averageRevenuePerReservation = 4250.00;
-
-            $paymentMethodLabels = ['Cash', 'Credit Card', 'Bank Transfer'];
-            $paymentMethodData = [45, 30, 25];
-
-            $roomTypeRevenueLabels = ['Deluxe', 'Executive', 'Standard'];
-            $roomTypeRevenueData = [62000.00, 52000.00, 66000.00];
-
-            $monthlyLabels = ['Mar 2026', 'Apr 2026', 'May 2026', 'Jun 2026', 'Jul 2026', 'Aug 2026'];
-            $monthlyRevenue = [22000.00, 25000.00, 28000.00, 30000.00, 33000.00, 35000.00];
-
-            $reservationTrendLabels = $monthlyLabels;
-            $reservationTrendData = [18, 22, 20, 24, 26, 28];
-            $reservationStatusData = [10, 18, 26, 6];
-            $mostBookedRoomTypeLabels = ['Deluxe', 'Executive', 'Standard'];
-            $mostBookedRoomTypeData = [20, 15, 12];
-
-            $totalGuests = 245;
-            $newGuests = 58;
-            $returningGuests = 187;
-            $averageStayDuration = 3.7;
-
-            $dummyRooms = [
-                Room::make(['room_number' => '102']),
-                Room::make(['room_number' => '205']),
-                Room::make(['room_number' => '310']),
-            ];
-
-            $recentPayments = collect([
-                Reservation::make([
-                    'guest_name' => 'John Doe',
-                    'total_amount' => 6200.00,
-                    'status' => 'completed',
-                ])->setRelation('room', $dummyRooms[0]),
-                Reservation::make([
-                    'guest_name' => 'Maria Santos',
-                    'total_amount' => 4300.00,
-                    'status' => 'completed',
-                ])->setRelation('room', $dummyRooms[1]),
-                Reservation::make([
-                    'guest_name' => 'Alex Cruz',
-                    'total_amount' => 5300.00,
-                    'status' => 'completed',
-                ])->setRelation('room', $dummyRooms[2]),
-            ]);
-
-            $recentGuestActivity = $recentPayments;
-            $reservations = $recentPayments;
-            $confirmedReservations = $reservations->where('status', 'confirmed');
-            $pendingReservations = $reservations->where('status', 'pending');
-            $cancelledReservations = $reservations->where('status', 'cancelled');
-        }
-
         $rooms = Room::orderBy('room_number')->get();
+        $resources = $this->applyResourceReservationStatuses($rooms, Facility::get(), Event::get(), DiningTable::get());
+        $rooms = $resources['rooms'];
         $availableRooms = $rooms->where('status', 'available')->count();
         $occupiedRooms = $rooms->where('status', 'occupied')->count();
         $maintenanceRooms = $rooms->where('status', 'maintenance')->count();
@@ -2310,8 +2460,10 @@ class AdminController extends Controller
         for ($i = 5; $i >= 0; $i--) {
             $monthStart = Carbon::now()->subMonths($i)->startOfMonth();
             $monthEnd = (clone $monthStart)->endOfMonth();
-            $count = Reservation::whereBetween('created_at', [$monthStart->startOfDay(), $monthEnd->endOfDay()])
-                ->whereIn('status', ['confirmed', 'completed'])
+            $count = $this->unifiedReservations()
+                ->filter(fn ($reservation) => $reservation->created_at
+                    && $reservation->created_at->between($monthStart->startOfDay(), $monthEnd->endOfDay())
+                    && in_array($reservation->status, ['confirmed', 'checked-in', 'completed'], true))
                 ->count();
 
             $occupancyTrendLabels[] = $monthStart->format('M Y');
@@ -2391,15 +2543,7 @@ class AdminController extends Controller
         $from = $request->query('from');
         $to = $request->query('to');
 
-        $reservationsQuery = Reservation::with('room')->latest();
-        if ($from) {
-            $reservationsQuery->whereDate('created_at', '>=', $from);
-        }
-        if ($to) {
-            $reservationsQuery->whereDate('created_at', '<=', $to);
-        }
-
-        $reservations = $reservationsQuery->get();
+        $reservations = $this->unifiedReservations($from, $to)->sortByDesc('created_at')->values();
         $completedReservations = $reservations->where('status', 'completed');
         $confirmedReservations = $reservations->where('status', 'confirmed');
         $pendingReservations = $reservations->where('status', 'pending');
@@ -2435,11 +2579,10 @@ class AdminController extends Controller
         })->count();
         $newGuests = max(0, $totalGuests - $returningGuests);
 
-        $monthlyRevenue = Reservation::where('status', 'completed')
-            ->when($from, fn ($query) => $query->whereDate('updated_at', '>=', $from))
-            ->when($to, fn ($query) => $query->whereDate('updated_at', '<=', $to))
-            ->orderBy('updated_at')
-            ->get(['updated_at', 'total_amount'])
+        $monthlyRevenue = $completedReservations
+            ->filter(fn ($reservation) => $reservation->updated_at
+                && (!$from || $reservation->updated_at->gte(Carbon::parse($from)->startOfDay()))
+                && (!$to || $reservation->updated_at->lte(Carbon::parse($to)->endOfDay())))
             ->groupBy(fn ($reservation) => $reservation->updated_at->format('Y-m'))
             ->map(fn ($group) => $group->sum('total_amount'))
             ->slice(max(0, $reservations->count() > 0 ? 0 : 0));
@@ -2576,14 +2719,10 @@ class AdminController extends Controller
         $from = $request->query('from');
         $to = $request->query('to');
 
-        $reservations = Reservation::with('room')->latest();
-        if ($from) $reservations->whereDate('created_at', '>=', $from);
-        if ($to) $reservations->whereDate('created_at', '<=', $to);
-        $reservations = $reservations->get();
+        $reservations = $this->unifiedReservations($from, $to)->sortByDesc('created_at')->values();
 
-        $completedRevenueByMonth = Reservation::where('status', 'completed')
-            ->orderBy('updated_at')
-            ->get(['updated_at', 'total_amount'])
+        $completedRevenueByMonth = $reservations->where('status', 'completed')
+            ->filter(fn ($reservation) => $reservation->updated_at)
             ->groupBy(function ($reservation) {
                 return $reservation->updated_at->format('Y-m');
             })
