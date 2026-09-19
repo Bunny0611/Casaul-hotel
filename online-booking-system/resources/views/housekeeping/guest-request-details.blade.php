@@ -13,7 +13,7 @@
     <div style="display:grid; gap:0.75rem; padding:1rem 1.25rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; margin-bottom:1.5rem;">
         <div><strong>Guest:</strong> {{ $requestData['guest'] }}</div>
         <div><strong>Room:</strong> {{ $requestData['room'] }}</div>
-        <div><strong>Reservation:</strong> {{ $requestData['reservation'] }}</div>
+        <div><strong>Request ID:</strong> {{ $requestData['requestId'] }}</div>
         <div><strong>Request Category:</strong> {{ $requestData['requestCategory'] }}</div>
         <div><strong>Request:</strong> {{ $requestData['requestType'] }}</div>
         <div><strong>Quantity:</strong> {{ $requestData['quantity'] }}</div>

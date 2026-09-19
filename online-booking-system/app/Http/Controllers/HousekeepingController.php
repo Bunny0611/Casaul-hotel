@@ -264,14 +264,8 @@ class HousekeepingController extends Controller
 
         $groupedRequests = $requests->groupBy(function ($request) {
             $signature = [
-                $request->guest_id ?? 'guest',
-                $request->reservation_id ?? 'reservation',
                 $request->room_id ?? 'room',
-                trim((string) ($request->description ?? '')),
-                trim((string) ($request->preferred_time ?? '')),
-                trim((string) ($request->priority ?? '')),
-                trim((string) ($request->status ?? '')),
-                $request->submitted_at ? $request->submitted_at->toDateTimeString() : now()->toDateTimeString(),
+                $request->submitted_at ? $request->submitted_at->format('Y-m-d H:i:s.u') : 'submitted-at-missing-' . $request->id,
             ];
 
             return md5(implode('|', $signature));
@@ -450,16 +444,8 @@ class HousekeepingController extends Controller
         if (isset($validated['status'])) {
             $guestRequest->status = $validated['status'];
 
-            if ($validated['status'] === 'Completed' && $guestRequest->is_billable && $guestRequest->billing_status !== 'posted') {
-                $reservation = $this->resolveReservationForGuestRequest($guestRequest);
-                if ($reservation) {
-                    $currentTotal = (float) ($reservation->total_amount ?? 0);
-                    $reservation->update([
-                        'total_amount' => $currentTotal + (float) $guestRequest->subtotal,
-                    ]);
-                    $guestRequest->billing_status = 'posted';
-                    $guestRequest->billing_posted_at = now();
-                }
+            if (in_array($validated['status'], ['Delivered', 'Completed'], true)) {
+                $this->postGuestRequestBilling($guestRequest);
             }
         }
 
@@ -482,16 +468,47 @@ class HousekeepingController extends Controller
             ?? \App\Models\RoomReservation::find($guestRequest->reservation_key);
     }
 
+    protected function postGuestRequestBilling(GuestRequest $guestRequest): void
+    {
+        if (!$guestRequest->is_billable || $guestRequest->billing_status === 'posted') {
+            return;
+        }
+
+        $reservation = $this->resolveReservationForGuestRequest($guestRequest);
+        if ($reservation) {
+            $reservation->update([
+                'total_amount' => round(
+                    (float) ($reservation->total_amount ?? 0) + (float) ($guestRequest->subtotal ?? 0),
+                    2
+                ),
+            ]);
+            $guestRequest->billing_status = 'posted';
+            $guestRequest->billing_posted_at = now();
+        }
+    }
+
     public function markGuestRequestDelivered(Request $request, $id)
     {
         $guestRequest = GuestRequest::findOrFail($id);
-        $guestRequest->status = 'Delivered';
-        $guestRequest->save();
+        $groupQuery = GuestRequest::where('department', 'Housekeeping')
+            ->where('room_id', $guestRequest->room_id);
+
+        if ($guestRequest->submitted_at) {
+            $groupQuery->where('submitted_at', $guestRequest->submitted_at);
+        } else {
+            $groupQuery->whereKey($guestRequest->id);
+        }
+
+        $groupQuery->get()->each(function ($groupRequest) {
+            $groupRequest->status = 'Delivered';
+            $this->postGuestRequestBilling($groupRequest);
+            $groupRequest->save();
+        });
 
         return response()->json([
             'success' => true,
             'message' => 'Guest request marked as delivered',
-            'data' => $guestRequest,
+            'data' => $guestRequest->fresh(),
         ]);
     }
 

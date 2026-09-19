@@ -1420,7 +1420,7 @@ class AdminController extends Controller
                 if ($reservation instanceof RoomReservation) {
                     $total += (float) GuestRequest::with('reservation')
                         ->where('is_billable', true)
-                        ->where('status', 'Completed')
+                        ->whereIn('status', ['Delivered', 'Completed'])
                         ->get()
                         ->filter(function (GuestRequest $guestRequest) use ($reservation) {
                             return ($guestRequest->reservation_type === RoomReservation::class
@@ -1601,7 +1601,8 @@ class AdminController extends Controller
             $chargeableAddOns = $isRoomBooking
                 ? GuestRequest::with('reservation')
                     ->where('is_billable', true)
-                    ->where('status', 'Completed')
+                    ->whereIn('status', ['Delivered', 'Completed'])
+                        ->where('billing_status', 'pending')
                     ->lockForUpdate()
                     ->get()
                     ->filter(function (GuestRequest $guestRequest) use ($reservation) {

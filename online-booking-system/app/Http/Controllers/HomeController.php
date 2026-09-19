@@ -815,6 +815,38 @@ class HomeController extends Controller
             ->latest('submitted_at')
             ->get();
 
+        $guestRequests = $guestRequests->groupBy(function (GuestRequest $guestRequest) {
+            $room = $guestRequest->room_id ?? $guestRequest->room?->room_number ?? 'room';
+            $submittedAt = $guestRequest->submitted_at?->toDateTimeString() ?? 'submitted-at';
+
+            return $room . '|' . $submittedAt;
+        })->map(function ($group) {
+            $first = $group->first();
+            $statuses = $group->pluck('status')->unique()->values();
+            $priorities = $group->pluck('priority')->unique()->values();
+            $statusOrder = ['New' => 1, 'In Progress' => 2, 'Delivered' => 3, 'Completed' => 4];
+            $groupStatus = $statuses->sortBy(fn ($status) => $statusOrder[$status] ?? 0)->first();
+
+            $first->setAttribute('group_count', $group->count());
+            $first->setAttribute('group_request_id', 'REQ-' . str_pad($first->id, 4, '0', STR_PAD_LEFT));
+            $first->setAttribute('group_status', $groupStatus ?: 'New');
+            $first->setAttribute('group_priority', $priorities->count() === 1 ? $priorities->first() : 'Mixed');
+            $first->setAttribute('group_items', $group->map(function (GuestRequest $item) {
+                return [
+                    'request_type' => $item->request_type,
+                    'status' => $item->status,
+                    'priority' => $item->priority,
+                    'description' => $item->description,
+                    'quantity' => (int) ($item->quantity ?? 1),
+                    'unit_price' => (float) ($item->unit_price ?? 0),
+                    'subtotal' => (float) ($item->subtotal ?? ((float) ($item->unit_price ?? 0) * (int) ($item->quantity ?? 1))),
+                    'submitted_at' => $item->submitted_at?->format('M d, Y g:i A'),
+                ];
+            })->values()->all());
+
+            return $first;
+        })->values();
+
         return view('profile-records', compact('reservations', 'activeReservation', 'guestRequests'));
     }
 
