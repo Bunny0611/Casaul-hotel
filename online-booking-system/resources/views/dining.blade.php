@@ -39,7 +39,7 @@
                 <div class="dining-rule"></div>
             </header>
 
-            <div class="dining-category-bar" aria-label="Dining categories">
+            <div class="dining-category-nav" aria-label="Dining categories">
                 @foreach($categoryButtons as $category)
                     <button
                         type="button"
@@ -60,28 +60,15 @@
 
                 <div class="dining-grid" id="dining-menu-items" data-category="{{ $selectedCategory }}">
                     @foreach($selectedMeals as $meal)
-                        @php
-                            $availableFrom = $meal->available_from ?: $meal->diningSchedule?->available_from;
-                            $availableTo = $meal->available_to ?: $meal->diningSchedule?->available_to;
-                            $timeDisplay = $availableFrom && $availableTo ? 'Available: ' . \Carbon\Carbon::parse($availableFrom)->format('g:i A') . ' - ' . \Carbon\Carbon::parse($availableTo)->format('g:i A') : 'Available All Day';
-                        @endphp
-
                         <article class="dining-menu-card" data-category="{{ $selectedCategory }}" data-name="{{ $meal->name }}" data-price="{{ $meal->price }}" data-dining-id="{{ $meal->id }}" data-schedule="{{ $meal->diningSchedule?->period ?? '' }}">
                             <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? asset('storage/' . $meal->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
                             <div class="dining-menu-card-body">
                                 <h4>{{ $meal->name }}</h4>
                                 <p>{{ $meal->description ?: 'A delicious option crafted for your stay.' }}</p>
                                 <div class="dining-meta-tag">{{ $selectedCategory }}</div>
-                                <div class="dining-time">{{ $timeDisplay }}</div>
                                 <div class="dining-card-footer">
                                     <span class="dining-price">₱{{ number_format((float) $meal->price, 0) }}</span>
-                                    <div class="dining-qty">
-                                        <button type="button" class="qty-btn qty-decrease" data-dining-id="{{ $meal->id }}" aria-label="Decrease quantity">−</button>
-                                        <input type="number" min="1" value="1" class="dining-quantity" data-dining-id="{{ $meal->id }}">
-                                        <button type="button" class="qty-btn qty-increase" data-dining-id="{{ $meal->id }}" aria-label="Increase quantity">+</button>
-                                    </div>
                                 </div>
-                                <button type="button" class="dining-add-btn select-option-btn" data-title="{{ $meal->name }}" data-price="{{ $meal->price }}" data-category="dining" data-dining-id="{{ $meal->id }}">Add to Reservation</button>
                             </div>
                         </article>
                     @endforeach
@@ -109,14 +96,6 @@
         const categoryButtons = document.querySelectorAll('.dining-category-btn');
         const menuContainer = document.getElementById('dining-menu-items');
 
-        const formatTimeLabel = (time) => {
-            if (!time) return 'Available All Day';
-            const [hours, minutes] = String(time).split(':').map(Number);
-            const period = hours >= 12 ? 'PM' : 'AM';
-            const displayHours = hours % 12 || 12;
-            return `Available: ${displayHours}:${String(minutes || 0).padStart(2, '0')} ${period}`;
-        };
-
         const renderMenuItems = (items, categoryName) => {
             if (!menuContainer) return;
 
@@ -138,9 +117,6 @@
                 article.dataset.schedule = meal.schedule || '';
 
                 const imageUrl = meal.image || '{{ asset('image/Royal-Suite-room.jpg') }}';
-                const availableFrom = meal.available_from || meal.schedule || '';
-                const availableTo = meal.available_to || '';
-                const timeLabel = availableFrom && availableTo ? `Available: ${formatTimeLabel(availableFrom)} - ${formatTimeLabel(availableTo)}` : 'Available All Day';
 
                 article.innerHTML = `
                     <img src="${imageUrl}" alt="${meal.name}">
@@ -148,16 +124,9 @@
                         <h4>${meal.name}</h4>
                         <p>${meal.description || 'A delicious option crafted for your stay.'}</p>
                         <div class="dining-meta-tag">${categoryName}</div>
-                        <div class="dining-time">${timeLabel}</div>
                         <div class="dining-card-footer">
                             <span class="dining-price">₱${Number(meal.price || 0).toLocaleString('en-US')}</span>
-                            <div class="dining-qty">
-                                <button type="button" class="qty-btn qty-decrease" data-dining-id="${meal.id}" aria-label="Decrease quantity">−</button>
-                                <input type="number" min="1" value="1" class="dining-quantity" data-dining-id="${meal.id}">
-                                <button type="button" class="qty-btn qty-increase" data-dining-id="${meal.id}" aria-label="Increase quantity">+</button>
-                            </div>
                         </div>
-                        <button type="button" class="dining-add-btn select-option-btn" data-title="${meal.name}" data-price="${meal.price}" data-category="dining" data-dining-id="${meal.id}">Add to Reservation</button>
                     </div>
                 `;
 
@@ -168,57 +137,6 @@
         };
 
         const bindDiningInteractions = () => {
-            document.querySelectorAll('.dining-menu-card .qty-btn').forEach((button) => {
-                button.onclick = function () {
-                    const card = this.closest('.dining-menu-card');
-                    const input = card?.querySelector('.dining-quantity');
-                    if (!input) return;
-                    const currentValue = Number(input.value) || 1;
-                    const nextValue = this.classList.contains('qty-increase') ? currentValue + 1 : Math.max(1, currentValue - 1);
-                    input.value = nextValue;
-                };
-            });
-
-            document.querySelectorAll('.dining-menu-card .dining-quantity').forEach((input) => {
-                input.onchange = function () {
-                    const card = this.closest('.dining-menu-card');
-                    if (!card) return;
-                    const value = Math.max(1, Number(this.value) || 1);
-                    this.value = value;
-                };
-            });
-
-            document.querySelectorAll('.dining-menu-card .dining-add-btn').forEach((button) => {
-                button.onclick = function () {
-                    const card = this.closest('.dining-menu-card');
-                    const id = card?.dataset.diningId;
-                    const quantityInput = card?.querySelector('.dining-quantity');
-                    const quantity = Number(quantityInput?.value || 1);
-                    const diningItem = {
-                        id: Number(id),
-                        title: card?.dataset.name || this.dataset.title,
-                        price: Number(card?.dataset.price || this.dataset.price || 0),
-                        quantity,
-                        schedule: document.getElementById('diningSchedule')?.value || card?.dataset.schedule || '',
-                        table: document.getElementById('diningTable')?.value || '',
-                        date: document.getElementById('diningDate')?.value || '',
-                    };
-
-                    const existingIndex = selectedDining.findIndex((item) => item.id === diningItem.id);
-                    if (existingIndex >= 0) {
-                        selectedDining[existingIndex].quantity = quantity;
-                        selectedDining[existingIndex].schedule = diningItem.schedule;
-                        selectedDining[existingIndex].table = diningItem.table;
-                        selectedDining[existingIndex].date = diningItem.date;
-                    } else {
-                        selectedDining.push(diningItem);
-                    }
-
-                    updateSummary();
-                    this.textContent = 'Added';
-                    setTimeout(() => { this.textContent = 'Add to Reservation'; }, 800);
-                };
-            });
         };
 
         categoryButtons.forEach((button) => {

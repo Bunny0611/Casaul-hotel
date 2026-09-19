@@ -8,6 +8,9 @@ use App\Models\InventoryItem;
 use App\Models\Facility;
 use App\Models\Event;
 use App\Models\DiningMenu;
+use App\Models\DiningReservationItem;
+use App\Models\EventReservationDiningItem;
+use App\Models\ReservationDiningItem;
 use App\Models\DiningSchedule;
 use App\Models\DiningTable;
 use App\Models\Message;
@@ -72,7 +75,58 @@ class HomeController extends Controller
     public function index()
     {
         $rooms = $this->featuredRooms();
-        return view('index', compact('rooms'));
+        $bestSellingDining = $this->bestSellingDining();
+
+        return view('index', compact('rooms', 'bestSellingDining'));
+    }
+
+    private function bestSellingDining()
+    {
+        $menus = DiningMenu::query()
+            ->whereIn('status', ['available', 'limited'])
+            ->get()
+            ->keyBy('id');
+
+        $sales = collect();
+
+        $sales = $sales->merge(
+            DiningReservationItem::query()
+                ->whereHas('diningReservation', fn ($query) => $query->whereNotIn('status', ['cancelled']))
+                ->selectRaw('dining_id, SUM(quantity) as total_quantity')
+                ->groupBy('dining_id')
+                ->get()
+        );
+
+        $sales = $sales->merge(
+            ReservationDiningItem::query()
+                ->whereHas('reservation', fn ($query) => $query->whereNotIn('status', ['cancelled']))
+                ->selectRaw('dining_id, SUM(quantity) as total_quantity')
+                ->groupBy('dining_id')
+                ->get()
+        );
+
+        $sales = $sales->merge(
+            EventReservationDiningItem::query()
+                ->whereHas('eventReservation', fn ($query) => $query->whereNotIn('status', ['cancelled']))
+                ->selectRaw('dining_id, SUM(quantity) as total_quantity')
+                ->groupBy('dining_id')
+                ->get()
+        );
+
+        $salesByMenu = $sales
+            ->groupBy('dining_id')
+            ->map(fn ($items) => $items->sum('total_quantity'));
+
+        return collect($this->diningCategoryOptions())
+            ->mapWithKeys(function ($category) use ($menus, $salesByMenu) {
+                $menu = $menus
+                    ->filter(fn ($item) => $this->normalizeDiningCategory($item->category ?? 'Breakfast') === $category)
+                    ->sortByDesc(fn ($item) => $salesByMenu->get($item->id, 0))
+                    ->first();
+
+                return [$category => $menu];
+            })
+            ->filter();
     }
 
     public function reservation()
