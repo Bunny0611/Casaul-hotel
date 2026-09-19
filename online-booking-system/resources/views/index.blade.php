@@ -34,6 +34,26 @@
         </div>
     </section>
 
+    <section class="home-dining-section">
+        <header class="home-featured-heading">
+            <h2>Dining Best Sellers</h2>
+            <a href="{{ route('dining') }}">View Full Menu</a>
+        </header>
+        <div class="home-dining-grid">
+            @foreach($bestSellingDining as $category => $meal)
+                <article class="home-dining-card">
+                    <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? asset('storage/' . $meal->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
+                    <div class="home-dining-card-body">
+                        <span>{{ $category }}</span>
+                        <h3>{{ $meal->name }}</h3>
+                        <p>{{ $meal->description ?: 'A delicious option crafted for your stay.' }}</p>
+                        <strong>₱{{ number_format((float) $meal->price, 0) }}</strong>
+                    </div>
+                </article>
+            @endforeach
+        </div>
+    </section>
+
     <section class="home-featured-section">
         <header class="home-featured-heading"><h2>Featured Rooms</h2><a href="{{ route('accommodation') }}">View All Rooms</a></header>
         <div class="home-room-grid">
