@@ -89,7 +89,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::post('/reservations/bulk-delete', [AdminController::class, 'bulkDestroyReservations'])->name('reservations.bulk-destroy');
     Route::get('/checkin', function () {
-        $checkIns = RoomReservation::with('room')
+        $checkIns = RoomReservation::with(['room', 'payments'])
             ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
             ->whereDate('check_in', today())
             ->latest()
@@ -110,10 +110,6 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
         $employeeAddOns = GuestRequest::with('reservation')
             ->where('is_billable', true)
             ->where('status', 'Completed')
-            ->where(function ($query) {
-                $query->whereNull('billing_status')
-                    ->orWhere('billing_status', '!=', 'posted');
-            })
             ->get();
         $prepareEmployeeAddOns = function ($reservation) use ($employeeAddOns) {
             return $employeeAddOns
@@ -175,7 +171,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
                         return $addOn;
                     })
                     ->values();
-                $roomTotal = round((float) ($reservation->total_amount ?? 0), 2);
+                $roomTotal = round((float) ($reservation->overall_total_amount ?? $reservation->total_amount ?? 0), 2);
                 $addOnTotal = round((float) $employeeAddOns->sum('subtotal'), 2);
                 $grandTotal = round($roomTotal + $addOnTotal, 2);
 
