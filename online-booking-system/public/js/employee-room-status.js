@@ -95,23 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    const modalChangeStatus = document.getElementById('modal-change-status');
-    const modalAssignHousekeeper = document.getElementById('modal-assign-housekeeper');
     let activeRoomNumber = null;
-
-    modalChangeStatus?.addEventListener('click', () => {
-        if (!activeRoomNumber) {
-            return;
-        }
-        alert(`Change status for room ${activeRoomNumber}`);
-    });
-
-    modalAssignHousekeeper?.addEventListener('click', () => {
-        if (!activeRoomNumber) {
-            return;
-        }
-        alert(`Assign housekeeper for room ${activeRoomNumber}`);
-    });
 
     document.getElementById('refresh-button')?.addEventListener('click', () => {
         rows.forEach((row) => {
