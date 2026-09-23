@@ -447,6 +447,30 @@ class HomeController extends Controller
             $validated['payment_details'] = null;
         }
 
+        $paymentDetails = (string) ($validated['payment_details'] ?? '');
+        $paymentValidationMessage = match ($validated['payment_method']) {
+            'GCash' => preg_match('/Number:\s*09\d{9}(?:\s*•|$)/', $paymentDetails)
+                ? null
+                : 'GCash mobile number must be exactly 11 digits and start with 09.',
+            'Maya' => preg_match('/Number:\s*09\d{9}(?:\s*•|$)/', $paymentDetails)
+                ? null
+                : 'Maya mobile number must be exactly 11 digits and start with 09.',
+            'Credit / Debit Card' => preg_match('/Expiration:\s*(0[1-9]|1[0-2])\/\d{2}(?:\s*•|$)/', $paymentDetails)
+                ? null
+                : 'Expiration date must use MM/YY.',
+            'Bank Transfer' => preg_match('/Reference:\s*([^•]*)/', $paymentDetails, $referenceMatch)
+                && mb_strlen(trim($referenceMatch[1])) <= 50
+                ? null
+                : 'Bank reference number must be 50 characters or fewer.',
+            default => null,
+        };
+
+        if ($paymentValidationMessage) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'payment_details' => $paymentValidationMessage,
+            ]);
+        }
+
         if (!empty($validated['amount_paid'])) {
             $validated['amount_paid'] = (float) $validated['amount_paid'];
         } elseif (!empty($validated['payment_details'])) {

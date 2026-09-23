@@ -167,6 +167,7 @@
             'category' => $category,
             'reservation_date' => $reservation->created_at ? $reservation->created_at->format('F j, Y g:i A') : 'N/A',
             'status' => ucfirst($reservation->status),
+            'refunds' => $reservation->related_refunds ?? [],
             'guest_name' => $reservation->guest_name,
             'guest_email' => $reservation->guest_email,
             'guest_phone' => $reservation->guest_phone,
@@ -417,7 +418,7 @@
                                         @if($reservation->status === 'confirmed') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'checked-in')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Mark as Checked-in</button> @endif
                                         @if($reservation->status === 'checked-in') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Mark as Checked-out</button> @endif
                                         @if($reservation->status !== 'cancelled' && $reservation->status !== 'completed') <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Cancel Reservation</button> @endif
-                                        @if($reservation->status === 'completed') <button type="button" onclick="window.print()" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Print/Download Receipt</button> @endif
+                                        @if($reservation->status === 'completed') <button type="button" onclick='printAdminReservationReceipt(@json($employeeReservationDetails($reservation, "rooms")))' class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Print/Download Receipt</button> @endif
                                         <form action="{{ route('admin.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="return confirm('Delete this reservation?');"><button type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"><i class="fas fa-trash mr-2 w-4"></i>Delete Reservation</button>@csrf @method('DELETE')</form>
                                     </div>
                                 </div>
@@ -772,6 +773,48 @@
         const modal = document.getElementById('adminReservationDetailsModal');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+    }
+
+    function printAdminReservationReceipt(reservation) {
+        const category = reservation.category || 'rooms';
+        const categoryLabels = { rooms: 'Room', facilities: 'Facility', event: 'Event', dining: 'Dining' };
+        const categoryAmounts = reservation.category_amounts || {};
+        const amountRows = Object.entries(categoryAmounts)
+            .filter(([, amount]) => Number(amount || 0) > 0)
+            .map(([label, amount]) => `<tr><td>${escapeAdminHtml(label)}</td><td>${formatAdminMoney(amount)}</td></tr>`)
+            .join('');
+        const refunds = Array.isArray(reservation.refunds) ? reservation.refunds : [];
+        const refundTotal = refunds.reduce((total, refund) => total + Number(refund.amount || 0), 0);
+        const refundRows = refunds.map((refund) => `<tr><td>${escapeAdminHtml(refund.category || 'Reservation')} - ${escapeAdminHtml(refund.reason || 'Refund')}</td><td>${formatAdminMoney(refund.amount || 0)}</td></tr>`).join('');
+        const details = category === 'rooms'
+            ? `${reservation.room_type || 'Room'} | ${formatAdminDate(reservation.room_check_in)} - ${formatAdminDate(reservation.room_check_out)}`
+            : `${categoryLabels[category] || 'Reservation'} | ${formatAdminDate(reservation.check_in || reservation.date)}`;
+        const receiptWindow = window.open('', '_blank', 'width=760,height=900');
+
+        if (!receiptWindow) return;
+
+        receiptWindow.document.write(`
+            <!doctype html><html><head><title>Receipt RES-${escapeAdminHtml(reservation.id || '')}</title>
+            <style>
+                @page { size: A4 portrait; margin: 8mm; }
+                * { box-sizing: border-box; } body { margin: 0 auto; padding: 0; width: 194mm; color: #1f2937; font: 12px Arial, sans-serif; }
+                .receipt { width: 100%; margin: 0; } header { border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 14px; }
+                h1 { margin: 0 0 4px; font-size: 24px; letter-spacing: .08em; } h2 { margin: 0; font-size: 12px; font-weight: 400; color: #6b7280; }
+                .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 20px; margin-bottom: 14px; } .meta strong { display: block; font-size: 9px; color: #6b7280; text-transform: uppercase; }
+                table { width: 100%; border-collapse: collapse; margin: 9px 0 14px; } th, td { padding: 6px 0; border-bottom: 1px solid #d1d5db; text-align: left; } th:last-child, td:last-child { text-align: right; }
+                .total td { border-top: 2px solid #111827; font-size: 14px; font-weight: 700; } .section { margin-top: 15px; break-inside: avoid; } .section h3 { border-bottom: 1px solid #9ca3af; padding-bottom: 5px; margin: 0 0 5px; font-size: 11px; text-transform: uppercase; }
+                .paid { display: flex; justify-content: space-between; padding: 3px 0; } .footer { margin-top: 20px; border-top: 1px solid #d1d5db; padding-top: 8px; text-align: center; color: #6b7280; font-size: 10px; }
+            </style></head><body><main class="receipt">
+                <header><h1>CASAUL HOTEL</h1><h2>Official Reservation Receipt</h2></header>
+                <div class="meta"><div><strong>Receipt</strong>RES-${escapeAdminHtml(reservation.id || 'N/A')}</div><div><strong>Status</strong>${escapeAdminHtml(reservation.status || 'Completed')}</div><div><strong>Guest</strong>${escapeAdminHtml(reservation.guest_name || 'N/A')}</div><div><strong>Details</strong>${escapeAdminHtml(details)}</div></div>
+                <div class="section"><h3>Charges</h3><table><thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>${amountRows || `<tr><td>${escapeAdminHtml(categoryLabels[category] || 'Reservation')}</td><td>${formatAdminMoney(reservation.total_amount || 0)}</td></tr>`}<tr class="total"><td>Grand Total</td><td>${formatAdminMoney(reservation.grand_total || reservation.total_amount || 0)}</td></tr></tbody></table></div>
+                <div class="section"><h3>Payment</h3><div class="paid"><span>Payment Method</span><strong>${escapeAdminHtml(reservation.overall_payment_method || reservation.payment_method || 'N/A')}</strong></div><div class="paid"><span>Total Paid</span><strong>${formatAdminMoney(reservation.overall_amount_paid || 0)}</strong></div><div class="paid"><span>Balance Due</span><strong>${formatAdminMoney(reservation.balance_due || 0)}</strong></div></div>
+                ${refunds.length ? `<div class="section"><h3>Refunds</h3><table><tbody>${refundRows}<tr class="total"><td>Total Refund</td><td>${formatAdminMoney(refundTotal)}</td></tr></tbody></table></div>` : ''}
+                <div class="footer">Thank you for choosing Casaul Hotel.</div>
+            </main></body></html>
+        `);
+        receiptWindow.document.close();
+        receiptWindow.onload = function () { receiptWindow.print(); };
     }
 
     function changeReservationStatus(id, status) {

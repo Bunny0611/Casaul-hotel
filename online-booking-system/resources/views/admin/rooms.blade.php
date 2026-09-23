@@ -309,7 +309,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, @json($room->floor), {{ $room->capacity }}, @json($room->status), @json($room->description))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
+                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, {{ $room->adult_guest_price ?? 0 }}, {{ $room->kid_guest_price ?? 0 }}, @json($room->floor), {{ $room->capacity }}, @json($room->status), @json($room->description))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
                                         <i class='fas fa-edit'></i>
                                     </button>
                                     <button type="button" onclick="changeStatus({{ $room->id }})" class="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 transition hover:bg-emerald-100" aria-label="Change room status">
@@ -886,6 +886,14 @@
                     <input type="number" name="price" value="{{ old('price') }}" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Extra Adult Price (₱)</label>
+                    <input type="number" name="adult_guest_price" value="{{ old('adult_guest_price') }}" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Extra Kid Price (₱)</label>
+                    <input type="number" name="kid_guest_price" value="{{ old('kid_guest_price') }}" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Floor</label>
                     <input type="text" name="floor" value="{{ old('floor') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
@@ -941,6 +949,14 @@
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label>
                     <input type="number" name="price" id="editPrice" step="0.01" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Extra Adult Price (₱)</label>
+                    <input type="number" name="adult_guest_price" id="editAdultGuestPrice" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Extra Kid Price (₱)</label>
+                    <input type="number" name="kid_guest_price" id="editKidGuestPrice" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Floor</label>
@@ -1023,11 +1039,13 @@
         document.getElementById('addRoomModal').classList.remove('flex');
     }
 
-    function editRoom(id, roomNumber, roomType, price, floor, capacity, status, description) {
+    function editRoom(id, roomNumber, roomType, price, adultGuestPrice, kidGuestPrice, floor, capacity, status, description) {
         document.getElementById('editRoomId').value = id;
         document.getElementById('editRoomNumber').value = roomNumber;
         document.getElementById('editRoomType').value = roomType;
         document.getElementById('editPrice').value = price;
+        document.getElementById('editAdultGuestPrice').value = adultGuestPrice;
+        document.getElementById('editKidGuestPrice').value = kidGuestPrice;
 
         const normalizedFloor = floor === '1st Floor' || floor === '1st' || floor === '1' ? '1st'
             : floor === '2nd Floor' || floor === '2nd' || floor === '2' ? '2nd'

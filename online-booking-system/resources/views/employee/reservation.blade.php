@@ -2023,13 +2023,14 @@
         receiptWindow.document.write(`
             <!doctype html><html><head><title>Receipt RES-${escapeHtml(reservation.id || '')}</title>
             <style>
-                * { box-sizing: border-box; } body { margin: 0; padding: 32px; color: #1f2937; font: 14px Arial, sans-serif; }
-                .receipt { width: 100%; max-width: 680px; margin: 0 auto; } header { border-bottom: 2px solid #111827; padding-bottom: 18px; margin-bottom: 20px; }
-                h1 { margin: 0 0 5px; font-size: 25px; letter-spacing: .08em; } h2 { margin: 0; font-size: 14px; font-weight: 400; color: #6b7280; }
-                .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 22px; } .meta strong { display: block; font-size: 11px; color: #6b7280; text-transform: uppercase; }
-                table { width: 100%; border-collapse: collapse; margin: 14px 0 22px; } th, td { padding: 9px 0; border-bottom: 1px solid #d1d5db; text-align: left; } th:last-child, td:last-child { text-align: right; }
-                .total td { border-top: 2px solid #111827; font-size: 16px; font-weight: 700; } .section { margin-top: 24px; } .section h3 { border-bottom: 1px solid #9ca3af; padding-bottom: 7px; font-size: 13px; text-transform: uppercase; }
-                .paid { display: flex; justify-content: space-between; padding: 5px 0; } .footer { margin-top: 32px; border-top: 1px solid #d1d5db; padding-top: 12px; text-align: center; color: #6b7280; font-size: 12px; }
+                @page { size: A4 portrait; margin: 8mm; }
+                * { box-sizing: border-box; } body { margin: 0 auto; padding: 0; width: 194mm; color: #1f2937; font: 12px Arial, sans-serif; }
+                .receipt { width: 100%; max-width: none; margin: 0; } header { border-bottom: 2px solid #111827; padding-bottom: 12px; margin-bottom: 14px; }
+                h1 { margin: 0 0 4px; font-size: 24px; letter-spacing: .08em; } h2 { margin: 0; font-size: 12px; font-weight: 400; color: #6b7280; }
+                .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 20px; margin-bottom: 14px; } .meta strong { display: block; font-size: 9px; color: #6b7280; text-transform: uppercase; }
+                table { width: 100%; border-collapse: collapse; margin: 9px 0 14px; } th, td { padding: 6px 0; border-bottom: 1px solid #d1d5db; text-align: left; } th:last-child, td:last-child { text-align: right; }
+                .total td { border-top: 2px solid #111827; font-size: 14px; font-weight: 700; } .section { margin-top: 15px; break-inside: avoid; } .section h3 { border-bottom: 1px solid #9ca3af; padding-bottom: 5px; margin: 0 0 5px; font-size: 11px; text-transform: uppercase; }
+                .paid { display: flex; justify-content: space-between; padding: 3px 0; } .footer { margin-top: 20px; border-top: 1px solid #d1d5db; padding-top: 8px; text-align: center; color: #6b7280; font-size: 10px; }
                 @media print { body { padding: 0; } .receipt { max-width: none; } }
             </style></head><body><main class="receipt">
                 <header><h1>CASAUL HOTEL</h1><h2>Official Reservation Receipt</h2></header>
