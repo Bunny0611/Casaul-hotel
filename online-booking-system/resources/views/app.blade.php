@@ -35,7 +35,13 @@
         CASAUL HOTEL
     </div>
 
-    <ul>
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <ul class="nav-menu" id="nav-menu">
 
         <li><a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}" @if(request()->routeIs('home')) aria-current="page" @endif>HOME</a></li>
 
@@ -250,6 +256,27 @@
 @include('chatbot.widget')
 
 @vite('resources/js/app.js')
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const navToggle = document.getElementById('nav-toggle');
+        const navMenu = document.getElementById('nav-menu');
+
+        if (navToggle && navMenu) {
+            navToggle.addEventListener('click', function () {
+                const isOpen = navMenu.classList.toggle('open');
+                navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+
+            navMenu.querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    navMenu.classList.remove('open');
+                    navToggle.setAttribute('aria-expanded', 'false');
+                });
+            });
+        }
+    });
+</script>
 
 </body>
 </html>
