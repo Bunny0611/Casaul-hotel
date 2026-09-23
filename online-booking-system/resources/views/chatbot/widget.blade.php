@@ -42,7 +42,11 @@
     </div>
 
   
-    <div id="chat-quick-replies" class="chat-quick-replies">
+    <button id="chat-faq-toggle" class="chat-faq-toggle" type="button" aria-expanded="false">
+        Show Quick Questions
+    </button>
+
+    <div id="chat-quick-replies" class="chat-quick-replies" style="display:none;">
         <button class="quick-reply" data-action="reservations">Reservations</button>
         <button class="quick-reply" data-action="rooms">Rooms</button>
         <button class="quick-reply" data-action="check-in-check-out">Check-in / Check-out</button>
@@ -61,7 +65,7 @@
 
   
     <div class="chat-input-area">
-        <form id="message-form" action="{{ route('chatbot.message') }}" method="POST" data-chatbot-endpoint="{{ route('chatbot.message') }}">
+        <form id="message-form" action="{{ route('chatbot.message') }}" method="POST" data-chatbot-endpoint="{{ route('chatbot.message') }}" data-guest-messages-endpoint="{{ route('guest.messages') }}">
             @csrf
             <input type="hidden" name="name" id="customer-name" value="Guest">
             <input type="hidden" name="email" id="customer-email" value="guest@example.com">

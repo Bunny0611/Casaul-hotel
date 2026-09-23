@@ -27,7 +27,16 @@ class ChatbotController extends Controller
             ], 422);
         }
 
-        if ($action === 'contact_front_desk') {
+        if ($action === 'contact_front_desk'
+            || $this->normalizeFaqText($message) === $this->normalizeFaqText('Contact Front Desk')) {
+            if ($this->normalizeFaqText($message) === $this->normalizeFaqText('Contact Front Desk')) {
+                $request->session()->put('chatbot_mode', 'contact_front_desk');
+            }
+
+            return response()->json($this->contactFrontDesk($message));
+        }
+
+        if ($action === '' && $request->session()->pull('chatbot_mode') === 'contact_front_desk') {
             return response()->json($this->contactFrontDesk($message));
         }
 
