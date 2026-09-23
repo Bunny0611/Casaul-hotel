@@ -14,8 +14,8 @@ class ReservationPricing
     {
         $nights = max(1, Carbon::parse($checkIn)->diffInDays(Carbon::parse($checkOut)));
         $capacity = max(1, (int) ($room->capacity ?? 2));
-        $extraGuestPrice = str_contains(strtolower((string) $room->room_type), 'standard') ? 500 : 650;
-        $kidGuestPrice = $extraGuestPrice / 2;
+        $extraGuestPrice = (float) ($room->adult_guest_price ?? (str_contains(strtolower((string) $room->room_type), 'standard') ? 500 : 650));
+        $kidGuestPrice = (float) ($room->kid_guest_price ?? ($extraGuestPrice / 2));
 
         if (($adultGuests ?? 0) + ($kidGuests ?? 0) > 0) {
             $extraGuestTotal = (max(0, (int) $adultGuests) * $extraGuestPrice)

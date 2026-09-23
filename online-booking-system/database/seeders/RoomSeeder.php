@@ -14,10 +14,12 @@ class RoomSeeder extends Seeder
     public function run(): void
     {
         $rooms = [
+            ['room_number' => '101', 'room_type' => 'Standard Room', 'price' => 1800.00, 'floor' => '1st', 'status' => 'available', 'description' => 'Standard room available', 'image' => null, 'capacity' => 2],
             ['room_number' => '102', 'room_type' => 'Deluxe Room', 'price' => 90000.00, 'floor' => '1st', 'status' => 'available', 'description' => 'sgdfhyduhsjkmgresa', 'image' => null, 'capacity' => 2],
             ['room_number' => '104', 'room_type' => 'Deluxe Room', 'price' => 1000.00, 'floor' => '1st', 'status' => 'available', 'description' => 'darwftfhiwa', 'image' => null, 'capacity' => 2],
             ['room_number' => '106', 'room_type' => 'Deluxe Room', 'price' => 66666.00, 'floor' => '6', 'status' => 'available', 'description' => null, 'image' => null, 'capacity' => 6],
-            ['room_number' => '109', 'room_type' => 'Deluxe Room', 'price' => 123.00, 'floor' => '1st', 'status' => 'available', 'description' => 'adsf', 'image' => null, 'capacity' => 10],
+            ['room_number' => '109', 'room_type' => 'Deluxe Room', 'price' => 123.00, 'floor' => '1st', 'status' => 'reserved', 'description' => 'adsf', 'image' => null, 'capacity' => 10],
+            ['room_number' => '110', 'room_type' => 'Standard Room', 'price' => 2200.00, 'floor' => '1st', 'status' => 'available', 'description' => 'Standard room ready for check-in', 'image' => null, 'capacity' => 2],
             ['room_number' => '177', 'room_type' => 'Deluxe Room', 'price' => 1.00, 'floor' => '1', 'status' => 'available', 'description' => null, 'image' => null, 'capacity' => 1],
         ];
 

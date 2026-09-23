@@ -40,6 +40,10 @@ class ChatbotController extends Controller
             return 'Check-out is at 12:00 PM. You may request a late check-out, subject to room availability and front desk approval.';
         }
 
+        if (Str::contains($normalized, ['deluxe', 'executive', 'presidential', 'suite', 'standard'])) {
+            return $this->roomTypeReply($normalized, $message);
+        }
+
         if (Str::contains($normalized, ['room', 'rooms', 'accommodation', 'stay'])) {
             return $this->roomReply($normalized);
         }
@@ -81,8 +85,7 @@ class ChatbotController extends Controller
         $priceText = $lowestPrice ? ' from ₱' . number_format((float) $lowestPrice, 2) : 'from our current available rates';
 
         if (Str::contains($normalized, ['available', 'availability'])) {
-            $availableRooms = Room::where('status', 'available')->count();
-            return 'We currently have ' . $availableRooms . ' available room' . ($availableRooms === 1 ? '' : 's') . ' in our system. Room types include ' . $roomList . '.';
+            return $this->availableRoomsReply();
         }
 
         if (Str::contains($normalized, ['price', 'rate', 'cost'])) {
@@ -90,6 +93,135 @@ class ChatbotController extends Controller
         }
 
         return 'Casaul Hotel currently has ' . $roomCount . ' room' . ($roomCount === 1 ? '' : 's') . ' in our inventory. We offer room types such as ' . $roomList . '. If you want, I can help you check available dates or guide you to the best room for your stay.';
+    }
+
+    protected function roomTypeReply(string $normalized, string $message): string
+    {
+        $candidate = strtolower(trim($message));
+
+        $typeMap = [
+            'deluxe' => 'Deluxe',
+            'executive' => 'Executive',
+            'presidential' => 'Presidential Suite',
+            'suite' => 'Suite',
+            'standard' => 'Standard',
+            'standard room' => 'Standard',
+        ];
+
+        $requestedType = null;
+        foreach ($typeMap as $keyword => $label) {
+            if (Str::contains($candidate, $keyword)) {
+                $requestedType = $label;
+                break;
+            }
+        }
+
+        if ($requestedType === null) {
+            return $this->availableRoomsReply();
+        }
+
+        $typesToCheck = [$requestedType];
+
+        if ($requestedType === 'Deluxe') {
+            $typesToCheck[] = 'Standard';
+        }
+
+        $typesToCheck = array_values(array_unique($typesToCheck));
+        $availableByType = [];
+
+        foreach ($typesToCheck as $type) {
+            $rooms = Room::query()
+                ->orderBy('room_number')
+                ->get()
+                ->filter(function ($room) use ($type) {
+                    if (! $this->isRoomAvailableForChat($room->status ?? null)) {
+                        return false;
+                    }
+
+                    $roomType = strtolower((string) ($room->room_type ?? ''));
+                    $requested = strtolower($type);
+
+                    return Str::contains($roomType, $requested)
+                        || Str::contains($requested, $roomType);
+                });
+
+            if ($rooms->isNotEmpty()) {
+                $availableByType[$type] = $rooms;
+            }
+        }
+
+        if ($availableByType === []) {
+            return 'There are currently no available ' . $requestedType . ' rooms. Please check other room types or let us know your preferred dates and we will help you find an option.';
+        }
+
+        $sections = [];
+        foreach ($typesToCheck as $type) {
+            if (! isset($availableByType[$type])) {
+                continue;
+            }
+
+            $availableRoomList = $availableByType[$type]
+                ->map(function ($room) {
+                    return $this->formatRoomAvailabilityItem($room);
+                })
+                ->implode("\n");
+
+            $sections[] = 'Available ' . $type . ' rooms:' . "\n" . $availableRoomList;
+        }
+
+        return implode("\n\n", $sections) . "\n\nWould you like me to help you check your preferred dates and guest count?";
+    }
+
+    protected function availableRoomsReply(): string
+    {
+        $availableRooms = Room::query()
+            ->orderBy('room_number')
+            ->get()
+            ->filter(fn ($room) => $this->isRoomAvailableForChat($room->status ?? null));
+
+        if ($availableRooms->isEmpty()) {
+            return 'There are currently no available rooms in our system. Please check other dates or contact our front desk for assistance.';
+        }
+
+        $availableRoomList = $availableRooms
+            ->map(function ($room) {
+                return $this->formatRoomAvailabilityItem($room);
+            })
+            ->implode("\n");
+
+        return 'Currently available rooms:' . "\n" . $availableRoomList . "\n\nLet me know your preferred dates and guest count, and I can help you choose the best option.";
+    }
+
+    protected function isRoomAvailableForChat($status): bool
+    {
+        $normalized = strtolower(trim((string) $status));
+        $compact = str_replace(['_', ' ', '-'], '', $normalized);
+
+        $availableStatuses = [
+            'available',
+            'vacant',
+            'vacant_ready',
+            'vacantready',
+            'vacant_clean',
+            'vacantclean',
+            'vr',
+            'vc',
+            'clean',
+            'ready',
+        ];
+
+        return in_array($normalized, $availableStatuses, true)
+            || in_array($compact, $availableStatuses, true);
+    }
+
+    protected function formatRoomAvailabilityItem($room): string
+    {
+        $roomNumber = $room->room_number ?? 'N/A';
+        $roomType = trim((string) ($room->room_type ?? ''));
+        $price = $room->price ? '₱' . number_format((float) $room->price, 2) . '/night' : 'N/A';
+        $typeSuffix = $roomType !== '' ? ' — ' . $roomType : '';
+
+        return '• Room ' . $roomNumber . $typeSuffix . "\n  Price: " . $price;
     }
 
     protected function facilityReply(string $normalized): string

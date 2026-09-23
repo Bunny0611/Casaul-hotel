@@ -10,6 +10,8 @@ class Room extends Model
         'room_number',
         'room_type',
         'price',
+        'adult_guest_price',
+        'kid_guest_price',
         'floor',
         'status',
         'cleaning_status',

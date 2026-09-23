@@ -262,13 +262,17 @@
     .details-secondary-grid .details-form-section { min-width:0; }
     .details-mode .details-secondary-grid [hidden] { display:none !important; }
     .details-secondary-grid.details-only-services .details-services-summary { grid-column:1 / -1; }
+    .details-secondary-grid.details-only-room .details-summary-room { grid-column:1 / -1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:24px; }
+    .details-secondary-grid.details-only-room .details-summary-title,
+    .details-secondary-grid.details-only-room .details-summary-room-name { grid-column:1 / -1; }
+    .details-secondary-grid.details-only-room .details-summary-row { width:100%; }
     .details-guest-info .guest-info-fields { gap:12px 16px; }
     .guest-info-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
     .guest-request-field { grid-column:1 / -1; }
     .guest-info-fields .guest-request-field small { margin-top:4px; }
     .details-addons { display:flex; flex-direction:column; gap:6px; }
     .details-addons label { margin:0; }
-    @media (max-width:700px){ .details-mode .confirmation-grid,.details-form-grid,.details-secondary-grid{ grid-template-columns:1fr !important; } .details-mode .payment-method-options{ grid-template-columns:1fr 1fr; } }
+    @media (max-width:700px){ .details-mode .confirmation-grid,.details-form-grid,.details-secondary-grid{ grid-template-columns:1fr !important; } .details-secondary-grid.details-only-room .details-summary-room { grid-template-columns:1fr; } .details-mode .payment-method-options{ grid-template-columns:1fr 1fr; } }
 
     @media (min-width:701px){
         .details-mode .confirmation-card { padding:20px !important; }
@@ -509,8 +513,8 @@
 
                 <div class="reservation-card-grid">
                     @foreach($rooms as $room)
-                        @php($extraGuestPrice = str_contains(strtolower($room->room_type), 'standard') ? 500 : 650)
-                        @php($kidGuestPrice = $extraGuestPrice / 2)
+                        @php($extraGuestPrice = (float) ($room->adult_guest_price ?? (str_contains(strtolower($room->room_type), 'standard') ? 500 : 650)))
+                        @php($kidGuestPrice = (float) ($room->kid_guest_price ?? ($extraGuestPrice / 2)))
                         @php($roomCapacity = max(1, (int) ($room->capacity ?? 2)))
                         <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}" data-kid-guest-price="{{ $kidGuestPrice }}">
                             <img src="{{ $room->image ? asset(str_starts_with($room->image, 'rooms/') ? 'storage/' . $room->image : $room->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}">
@@ -917,7 +921,7 @@
                     <h5>GCash Payment</h5>
                     <div class="payment-fields">
                         <div class="payment-field"><label for="gcashAccountName">GCash Account Name</label><input id="gcashAccountName" type="text" placeholder="Enter account name"></div>
-                        <div class="payment-field"><label for="gcashNumber">GCash Number</label><input id="gcashNumber" type="tel" placeholder="09XX XXX XXXX"></div>
+                        <div class="payment-field"><label for="gcashNumber">GCash Number</label><input id="gcashNumber" type="tel" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" placeholder="09XX XXX XXXX"></div>
                         <div class="payment-field"><label for="gcashReferenceNumber">Reference Number</label><input id="gcashReferenceNumber" type="text" placeholder="Enter reference number"></div>
                         <div class="payment-field"><label for="gcashPaymentAmount">Payment Amount</label><input id="gcashPaymentAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
                         <div class="payment-field full-width"><label for="gcashPaymentProof">Upload Payment Proof</label><input id="gcashPaymentProof" name="gcash_payment_proof" form="reservationForm" type="file" accept="image/*"></div>
@@ -927,7 +931,7 @@
                     <h5>Maya Payment</h5>
                     <div class="payment-fields">
                         <div class="payment-field"><label for="mayaAccountName">Maya Account Name</label><input id="mayaAccountName" type="text" placeholder="Enter account name"></div>
-                        <div class="payment-field"><label for="mayaNumber">Maya Number</label><input id="mayaNumber" type="tel" placeholder="09XX XXX XXXX"></div>
+                        <div class="payment-field"><label for="mayaNumber">Maya Number</label><input id="mayaNumber" type="tel" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" placeholder="09XX XXX XXXX"></div>
                         <div class="payment-field"><label for="mayaReferenceNumber">Reference Number</label><input id="mayaReferenceNumber" type="text" placeholder="Enter reference number"></div>
                         <div class="payment-field"><label for="mayaPaymentAmount">Payment Amount</label><input id="mayaPaymentAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
                         <div class="payment-field full-width"><label for="mayaPaymentProof">Upload Payment Proof</label><input id="mayaPaymentProof" name="maya_payment_proof" form="reservationForm" type="file" accept="image/*"></div>
@@ -937,9 +941,9 @@
                     <h5>Card Payment</h5>
                     <div class="payment-fields">
                         <div class="payment-field full-width"><label for="cardholderName">Cardholder Name</label><input id="cardholderName" type="text" placeholder="Enter cardholder name"></div>
-                        <div class="payment-field full-width"><label for="cardNumber">Card Number</label><input id="cardNumber" type="text" inputmode="numeric" placeholder="**** **** **** ****"></div>
-                        <div class="payment-field"><label for="cardExpiration">Expiration Date</label><input id="cardExpiration" type="text" placeholder="MM / YY"></div>
-                        <div class="payment-field"><label for="cardCvv">CVV</label><input id="cardCvv" type="password" inputmode="numeric" placeholder="***"></div>
+                        <div class="payment-field full-width"><label for="cardNumber">Card Number</label><input id="cardNumber" type="text" inputmode="numeric" maxlength="16" pattern="[0-9]{16}" placeholder="**** **** **** ****"></div>
+                        <div class="payment-field"><label for="cardExpiration">Expiration Date</label><input id="cardExpiration" type="text" inputmode="numeric" maxlength="5" pattern="(0[1-9]|1[0-2])/[0-9]{2}" placeholder="MM / YY"></div>
+                        <div class="payment-field"><label for="cardCvv">CVV</label><input id="cardCvv" type="password" inputmode="numeric" maxlength="3" pattern="[0-9]{3}" placeholder="***"></div>
                         <div class="payment-field full-width"><label for="cardPaymentAmount">Payment Amount</label><input id="cardPaymentAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
                     </div>
                 </div>
@@ -948,7 +952,7 @@
                     <div class="payment-fields">
                         <div class="payment-field"><label for="bankAccountName">Account Name</label><input id="bankAccountName" type="text" placeholder="Enter account name"></div>
                         <div class="payment-field"><label for="bankName">Bank</label><select id="bankName"><option value="">Select Bank</option><option>BDO</option><option>BPI</option><option>Metrobank</option><option>Other</option></select></div>
-                        <div class="payment-field"><label for="bankReferenceNumber">Reference Number</label><input id="bankReferenceNumber" type="text" placeholder="Enter reference number"></div>
+                        <div class="payment-field"><label for="bankReferenceNumber">Reference Number</label><input id="bankReferenceNumber" type="text" maxlength="50" placeholder="Enter reference number"></div>
                         <div class="payment-field"><label for="transferDate">Transfer Date</label><input id="transferDate" type="date"></div>
                         <div class="payment-field"><label for="transferAmount">Amount Transferred</label><input id="transferAmount" type="text" inputmode="decimal" placeholder="Enter amount"></div>
                         <div class="payment-field"><label for="bankPaymentProof">Upload Payment Proof</label><input id="bankPaymentProof" name="bank_payment_proof" form="reservationForm" type="file" accept="image/*"></div>
@@ -1209,6 +1213,24 @@
         const detailsTerms = document.getElementById('detailsTerms');
         const paymentPanels = document.querySelectorAll('[data-payment-panel]');
         const methodPaymentAmounts = document.querySelectorAll('#gcashPaymentAmount, #mayaPaymentAmount, #cardPaymentAmount, #transferAmount');
+        const digitsOnlyFields = [
+            document.getElementById('gcashNumber'),
+            document.getElementById('mayaNumber'),
+            document.getElementById('cardNumber'),
+            document.getElementById('cardCvv'),
+        ];
+
+        digitsOnlyFields.forEach(input => input?.addEventListener('input', () => {
+            input.value = input.value.replace(/\D/g, '');
+        }));
+
+        document.getElementById('cardExpiration')?.addEventListener('input', function () {
+            const digits = this.value.replace(/\D/g, '').slice(0, 4);
+            const month = digits.slice(0, 2);
+            const normalizedMonth = month.length === 2 && Number(month) > 12 ? '12' : month;
+            const year = digits.slice(2);
+            this.value = digits.length > 2 ? `${normalizedMonth}/${year}` : normalizedMonth;
+        });
 
         let selectedRoom = null;
         let roomPrice = 0;
@@ -1440,6 +1462,7 @@
             const selectedServiceCount = Number(hasFacilitySelection) + Number(hasEventSelection) + Number(hasDiningSelection);
             detailsRoomSummary.hidden = !hasRoomSelection;
             detailsSecondaryGrid.classList.toggle('details-only-services', !hasRoomSelection);
+            detailsSecondaryGrid.classList.toggle('details-only-room', hasRoomSelection && selectedServiceCount === 0);
             detailsFacilityService.hidden = !hasFacilitySelection;
             detailsEventService.hidden = !hasEventSelection;
             detailsDiningService.hidden = !hasDiningSelection;
@@ -2426,6 +2449,45 @@
                 }
                 if (proofFile.size > 5 * 1024 * 1024) {
                     return `${selectedPaymentMethod} payment proof must be 5 MB or smaller.`;
+                }
+            }
+
+            const paymentFieldValues = {
+                GCash: {
+                    number: document.getElementById('gcashNumber')?.value.trim() || '',
+                    label: 'GCash mobile number',
+                },
+                Maya: {
+                    number: document.getElementById('mayaNumber')?.value.trim() || '',
+                    label: 'Maya mobile number',
+                },
+            };
+            if (paymentFieldValues[selectedPaymentMethod]) {
+                const { number, label } = paymentFieldValues[selectedPaymentMethod];
+                if (!/^09\d{9}$/.test(number)) {
+                    return `${label} must be exactly 11 digits and start with 09.`;
+                }
+            }
+
+            if (selectedPaymentMethod === 'Credit / Debit Card') {
+                const cardNumber = document.getElementById('cardNumber')?.value.trim() || '';
+                const cardExpiration = document.getElementById('cardExpiration')?.value.trim() || '';
+                const cardCvv = document.getElementById('cardCvv')?.value.trim() || '';
+                if (!/^\d{16}$/.test(cardNumber)) {
+                    return 'Card number must be exactly 16 digits.';
+                }
+                if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExpiration)) {
+                    return 'Expiration date must use MM/YY.';
+                }
+                if (!/^\d{3}$/.test(cardCvv)) {
+                    return 'CVV must be exactly 3 digits.';
+                }
+            }
+
+            if (selectedPaymentMethod === 'Bank Transfer') {
+                const bankReference = document.getElementById('bankReferenceNumber')?.value.trim() || '';
+                if (bankReference.length > 50) {
+                    return 'Bank reference number must be 50 characters or fewer.';
                 }
             }
 

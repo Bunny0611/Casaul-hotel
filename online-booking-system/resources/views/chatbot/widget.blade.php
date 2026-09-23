@@ -34,8 +34,8 @@
     <div id="chat-messages" class="chat-messages">
         <div class="chat-msg bot">
             <div class="chat-msg-content">
-                <p>Hi! I am a virtual assistant and I can help you book your upcoming stay.</p>
-                <p>Please let us know how we can help you today by tapping on the options or by sending us a message.</p>
+                <p>Let me check room availability for you! 📅</p>
+                <p>Share your desired dates, number of guests, and preferred room type, or tap below to view our available rooms.</p>
             </div>
             <span class="chat-msg-time">Just now</span>
         </div>
@@ -45,7 +45,7 @@
     <div id="chat-quick-replies" class="chat-quick-replies">
         <button class="quick-reply" data-action="book">Book a Room</button>
         <button class="quick-reply" data-action="inquiries">Inquiries</button>
-        <button class="quick-reply" data-action="availability">Check Availability</button>
+        <button class="quick-reply" data-action="availability">Show Available Rooms</button>
         <button class="quick-reply" data-action="offers">Special Offers</button>
         <button class="quick-reply" data-action="contact">Contact Us</button>
     </div>
