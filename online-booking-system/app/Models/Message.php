@@ -14,4 +14,9 @@ class Message extends Model
         'is_replied',
         'replied_at',
     ];
+
+    protected $casts = [
+        'is_replied' => 'boolean',
+        'replied_at' => 'datetime',
+    ];
 }

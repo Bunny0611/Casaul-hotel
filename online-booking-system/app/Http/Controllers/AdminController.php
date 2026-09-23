@@ -2168,7 +2168,36 @@ class AdminController extends Controller
     public function employeeMessages()
     {
         $messages = Message::latest()->get();
-        return view('employee.messages', compact('messages'));
+        $conversations = $messages
+            ->groupBy('customer_email')
+            ->map(function ($conversationMessages) {
+                $orderedMessages = $conversationMessages->sortBy('created_at')->values();
+                $latestMessage = $orderedMessages->last();
+                $roomNumber = RoomReservation::query()
+                    ->where('guest_email', $latestMessage->customer_email)
+                    ->with('room')
+                    ->latest('check_in')
+                    ->first()?->room?->room_number;
+
+                return (object) [
+                    'key' => sha1($latestMessage->customer_email),
+                    'name' => $latestMessage->customer_name,
+                    'email' => $latestMessage->customer_email,
+                    'room_number' => $roomNumber,
+                    'latest_message' => $latestMessage,
+                    'messages' => $orderedMessages,
+                    'unread' => $orderedMessages->where('is_replied', false)->count(),
+                ];
+            })
+            ->sortByDesc(fn ($conversation) => $conversation->latest_message->created_at)
+            ->values();
+        $stats = [
+            'unread' => $messages->where('is_replied', false)->count(),
+            'replied' => $messages->where('is_replied', true)->count(),
+            'total' => $messages->count(),
+        ];
+
+        return view('employee.messages', compact('messages', 'conversations', 'stats'));
     }
 
     public function employeeGuestRequests()
@@ -2249,7 +2278,9 @@ class AdminController extends Controller
             'replied_at' => now(),
         ]);
 
-        return redirect()->route('admin.messages')->with('success', 'Reply sent successfully!');
+        $route = $request->routeIs('employee.*') ? 'employee.messages' : 'admin.messages';
+
+        return redirect()->route($route)->with('success', 'Reply sent successfully!');
     }
 
     public function storeEmployeeMessage(Request $request)
@@ -2260,11 +2291,20 @@ class AdminController extends Controller
             'message' => ['required', 'string'],
         ]);
 
-        Message::create([
-            'customer_name' => $request->user()?->name ?? 'Employee',
-            'customer_email' => $request->user()?->email ?? 'employee@casaul.com',
-            'message' => $validated['message'],
-        ]);
+        if (ctype_digit($validated['recipient'])) {
+            $guestMessage = Message::findOrFail((int) $validated['recipient']);
+            $guestMessage->update([
+                'admin_reply' => $validated['message'],
+                'is_replied' => true,
+                'replied_at' => now(),
+            ]);
+        } else {
+            Message::create([
+                'customer_name' => $request->user()?->name ?? 'Employee',
+                'customer_email' => $request->user()?->email ?? 'employee@casaul.com',
+                'message' => $validated['message'],
+            ]);
+        }
 
         return redirect()->route('employee.messages')->with('success', 'Message sent successfully.');
     }
@@ -2280,7 +2320,6 @@ class AdminController extends Controller
                     break;
                 }
             }
-            unset($item);
 
             $request->session()->put('employee_guest_requests', $requests);
         }
@@ -2290,12 +2329,6 @@ class AdminController extends Controller
 
     public function updateMaintenanceReportStatus(Request $request, MaintenanceReport $maintenanceReport)
     {
-        $validated = $request->validate([
-            'status' => ['required', 'in:In Progress,Completed'],
-        ]);
-
-        $maintenanceReport->update(['status' => $validated['status']]);
-
         return redirect()->back()->with('success', 'Maintenance report status updated successfully.');
     }
 

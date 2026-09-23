@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\DiningMenu;
 use App\Models\Event;
 use App\Models\Facility;
+use App\Models\GuestRequest;
+use App\Models\Message;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomReservation;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -16,6 +19,7 @@ class ChatbotController extends Controller
     public function message(Request $request)
     {
         $message = trim((string) $request->input('message', ''));
+        $action = (string) $request->input('action', '');
 
         if ($message === '') {
             return response()->json([
@@ -23,9 +27,174 @@ class ChatbotController extends Controller
             ], 422);
         }
 
+        if ($action === 'contact_front_desk') {
+            return response()->json($this->contactFrontDesk($message));
+        }
+
+        if ($action === 'request_housekeeping') {
+            return response()->json($this->requestHousekeeping($message, (string) $request->input('request_type', $message)));
+        }
+
+        $faqReply = $this->faqReply($message);
+
+        return response()->json(array_filter([
+            'reply' => $faqReply['reply'] ?? $this->generateReply($message),
+            'quick_replies' => $faqReply['quick_replies'] ?? null,
+        ], static fn ($value) => $value !== null));
+    }
+
+    public function guestMessages()
+    {
+        $guest = Auth::guard('guest')->user();
+
+        abort_unless($guest, 403);
+
         return response()->json([
-            'reply' => $this->generateReply($message),
+            'messages' => $this->messagesForGuest($guest->email)->map(fn (Message $message) => [
+                'message' => $message->message,
+                'reply' => $message->admin_reply,
+                'is_replied' => (bool) $message->is_replied,
+                'sent_at' => $message->created_at?->toISOString(),
+                'replied_at' => $message->replied_at?->toISOString(),
+            ])->values(),
         ]);
+    }
+
+    protected function contactFrontDesk(string $message): array
+    {
+        $guest = Auth::guard('guest')->user();
+
+        if (! $guest) {
+            return ['reply' => 'Please sign in as a guest before contacting the front desk.'];
+        }
+
+        if ($this->normalizeFaqText($message) === $this->normalizeFaqText('Contact Front Desk')) {
+            return [
+                'reply' => 'Please type your message for the front desk. Your message and any reply will remain available in this chat.' . $this->formatGuestConversation($guest->email),
+                'mode' => 'contact_front_desk',
+            ];
+        }
+
+        Message::create([
+            'customer_name' => $guest->name,
+            'customer_email' => $guest->email,
+            'message' => $message,
+        ]);
+
+        return [
+            'reply' => 'Your message has been sent to the front desk. We will reply as soon as possible. Your conversation history is shown below.' . $this->formatGuestConversation($guest->email),
+            'mode' => 'contact_front_desk',
+        ];
+    }
+
+    protected function requestHousekeeping(string $message, string $requestType): array
+    {
+        $guest = Auth::guard('guest')->user();
+        $requestTypes = ['Room Cleaning', 'Towels', 'Bed Linens', 'Toiletries', 'Other Request'];
+
+        if (! $guest) {
+            return ['reply' => 'Please sign in as a guest before requesting housekeeping.'];
+        }
+
+        if ($this->normalizeFaqText($message) === $this->normalizeFaqText('Request Housekeeping')) {
+            return [
+                'reply' => 'What can housekeeping help you with?',
+                'quick_replies' => $requestTypes,
+                'mode' => 'request_housekeeping',
+            ];
+        }
+
+        $selectedType = collect($requestTypes)->first(fn ($type) => $this->normalizeFaqText($type) === $this->normalizeFaqText($requestType));
+        if (! $selectedType) {
+            return [
+                'reply' => 'Please choose one of the housekeeping request types below.',
+                'quick_replies' => $requestTypes,
+                'mode' => 'request_housekeeping',
+            ];
+        }
+
+        $reservation = $this->activeRoomReservationFor($guest);
+        if (! $reservation) {
+            return ['reply' => 'A current confirmed or checked-in room reservation is required before submitting a housekeeping request. Please contact the front desk if you need help.'];
+        }
+
+        GuestRequest::create([
+            'guest_id' => $guest->id,
+            'room_id' => $reservation->room_id,
+            'request_type' => $selectedType,
+            'description' => $selectedType . ' requested through the hotel chatbot.',
+            'department' => 'Housekeeping',
+            'priority' => 'Normal',
+            'status' => 'Pending',
+            'reservation_type' => RoomReservation::class,
+            'reservation_key' => $reservation->id,
+            'submitted_at' => now(),
+        ]);
+
+        return [
+            'reply' => 'Your ' . strtolower($selectedType) . ' request has been submitted to housekeeping. You can follow its status from your guest records.',
+            'quick_replies' => ['Contact Front Desk', 'Request Housekeeping'],
+        ];
+    }
+
+    protected function activeRoomReservationFor($guest): ?RoomReservation
+    {
+        return RoomReservation::query()
+            ->where('guest_email', $guest->email)
+            ->whereIn('status', ['confirmed', 'checked-in'])
+            ->whereDate('check_in', '<=', today())
+            ->whereDate('check_out', '>=', today())
+            ->latest('check_in')
+            ->first();
+    }
+
+    protected function messagesForGuest(string $email)
+    {
+        return Message::query()->where('customer_email', $email)->latest()->get();
+    }
+
+    protected function formatGuestConversation(string $email): string
+    {
+        return $this->messagesForGuest($email)->reverse()->map(function (Message $message) {
+            $sentAt = $message->created_at?->format('M j, Y g:i A') ?? 'Unknown time';
+            $reply = $message->admin_reply ? "\nFront Desk (" . ($message->replied_at?->format('M j, Y g:i A') ?? 'reply time unavailable') . "): " . $message->admin_reply : "\nFront Desk: Reply pending";
+
+            return "\n\nYou (" . $sentAt . "): " . $message->message . $reply;
+        })->implode('');
+    }
+
+    protected function faqReply(string $message): ?array
+    {
+        $normalizedMessage = $this->normalizeFaqText($message);
+        $categories = config('chatbot.categories', []);
+
+        foreach ($categories as $category) {
+            $categoryNames = array_merge([$category['label']], $category['aliases'] ?? []);
+            $normalizedCategoryNames = array_map(fn ($name) => $this->normalizeFaqText($name), $categoryNames);
+
+            if (in_array($normalizedMessage, $normalizedCategoryNames, true)) {
+                return [
+                    'reply' => 'Here are some common questions about ' . $category['label'] . '. Select a question below or type your own question.',
+                    'quick_replies' => array_keys($category['questions']),
+                ];
+            }
+
+            foreach ($category['questions'] as $question => $answer) {
+                if ($normalizedMessage === $this->normalizeFaqText($question)) {
+                    return [
+                        'reply' => $answer,
+                        'quick_replies' => array_column($categories, 'label'),
+                    ];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    protected function normalizeFaqText(string $text): string
+    {
+        return trim((string) preg_replace('/[^a-z0-9]+/i', ' ', strtolower($text)));
     }
 
     protected function generateReply(string $message): string

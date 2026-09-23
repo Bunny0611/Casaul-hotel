@@ -68,6 +68,7 @@ Route::middleware(['auth:guest', 'verified', 'role:guest'])->group(function () {
     Route::patch('/guest/reservations/{reservation}/cancel', [HomeController::class, 'cancelReservation'])->name('guest.reservations.cancel');
     Route::post('/guest/requests', [HomeController::class, 'storeGuestRequest'])->name('guest.requests.store');
     Route::delete('/guest/requests/{guestRequest}', [HomeController::class, 'deleteGuestRequest'])->name('guest.requests.destroy');
+    Route::get('/guest/messages', [ChatbotController::class, 'guestMessages'])->name('guest.messages');
 });
 
 // --- Employee Portal ---
@@ -294,13 +295,10 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
     Route::get('/guest-requests/{id}', [AdminController::class, 'employeeGuestRequest'])->name('guest-requests.show');
     Route::patch('/guest-requests/{id}', [AdminController::class, 'updateEmployeeGuestRequest'])->name('guest-requests.update');
-    Route::get('/messages', function () {
-        $messages = Message::latest()->get();
-
-        return view('employee.messages', compact('messages'));
-    })->name('messages');
+    Route::get('/messages', [AdminController::class, 'employeeMessages'])->name('messages');
 
     Route::post('/messages', [AdminController::class, 'storeEmployeeMessage'])->name('messages.store');
+    Route::post('/messages/{id}/reply', [AdminController::class, 'replyMessage'])->name('messages.reply');
 });
 
 // --- Protected Admin Routes (requires authentication) ---
