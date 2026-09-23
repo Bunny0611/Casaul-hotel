@@ -618,7 +618,25 @@ class AdminController extends Controller
 
     public function rooms()
     {
-        $rooms = Room::orderBy('room_number')->paginate(5);
+        $roomType = strtolower(trim((string) request()->query('room_type', '')));
+        $roomSearch = trim((string) request()->query('room_search', ''));
+        $roomQuery = Room::orderBy('room_number');
+
+        if (in_array($roomType, ['standard', 'deluxe'], true)) {
+            $roomQuery->whereRaw('LOWER(room_type) LIKE ?', ['%' . $roomType . '%']);
+        }
+
+        if ($roomSearch !== '') {
+            $roomQuery->where(function ($query) use ($roomSearch) {
+                $query->where('room_number', 'like', '%' . $roomSearch . '%')
+                    ->orWhere('room_type', 'like', '%' . $roomSearch . '%');
+            });
+        }
+
+        $rooms = $roomQuery->paginate(5, ['*'], 'rooms_page')->appends([
+            'room_type' => $roomType,
+            'room_search' => $roomSearch,
+        ]);
         $facilities = Facility::orderBy('name')->paginate(5, ['*'], 'facilities_page')->appends(['tab' => 'facilities']);
         $events = Event::orderBy('name')->paginate(5, ['*'], 'events_page')->appends(['tab' => 'events']);
         $dining = DiningMenu::orderBy('name')->paginate(5, ['*'], 'dining_page')->appends(['tab' => 'dining']);

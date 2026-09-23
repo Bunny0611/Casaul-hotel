@@ -51,6 +51,62 @@
         min-width: 112px;
     }
 
+    .room-management-page .room-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .room-management-page .room-filter-panel {
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .room-management-page .room-filter-card {
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: #fff;
+    }
+
+    .room-management-page .room-filter-card label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #6b7280;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .room-management-page .room-filter-card input,
+    .room-management-page .room-filter-card select {
+        width: 100%;
+        min-height: 2.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.625rem;
+        padding: 0.55rem 0.75rem;
+        color: #374151;
+        background: #fff;
+        outline: none;
+    }
+
+    .room-management-page .room-filter-card input:focus,
+    .room-management-page .room-filter-card select:focus {
+        border-color: #f97316;
+        box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.15);
+    }
+
+    @media (max-width: 640px) {
+        .room-management-page .room-filter-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
     .room-management-page .dining-form-column {
         display: contents;
     }
@@ -250,6 +306,23 @@
         <button type="button" data-tab="dining" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">DINING</button>
     </div>
 
+    <div id="roomFilterPanel" class="room-filter-panel">
+        <div class="room-filter-grid">
+            <div class="room-filter-card">
+                <label for="roomSearch">Search</label>
+                <input id="roomSearch" type="search" value="{{ request('room_search', '') }}" placeholder="Search by room number or type" autocomplete="off">
+            </div>
+            <div class="room-filter-card">
+                <label for="roomTypeFilter">Room Type</label>
+                <select id="roomTypeFilter">
+                    <option value="" @selected(request('room_type', '') === '')>All room types</option>
+                    <option value="standard" @selected(request('room_type') === 'standard')>Standard Room</option>
+                    <option value="deluxe" @selected(request('room_type') === 'deluxe')>Deluxe Room</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
     <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-none">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-6 py-4">
             <div class="text-sm text-gray-500">{{ $rooms->total() }} room{{ $rooms->total() === 1 ? '' : 's' }}</div>
@@ -289,7 +362,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($rooms as $room)
-                        <tr class="transition-colors hover:bg-gray-50">
+                        <tr class="room-row transition-colors hover:bg-gray-50" data-room-search="{{ strtolower($room->room_number . ' ' . $room->room_type) }}" data-room-type="{{ str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other') }}">
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <input type="checkbox" class="room-checkbox h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" value="{{ $room->id }}" onclick="updateSelectAllCheckbox()">
                             </td>
@@ -1591,6 +1664,41 @@
         const diningSubTabs = document.querySelectorAll('.dining-subtab');
         const diningSubPanels = document.querySelectorAll('[data-dining-subpanel]');
         const diningPanel = document.querySelector('[data-panel="dining"]');
+        const roomFilterPanel = document.getElementById('roomFilterPanel');
+        const roomSearch = document.getElementById('roomSearch');
+        const roomTypeFilter = document.getElementById('roomTypeFilter');
+
+        function filterRooms() {
+            const searchTerm = (roomSearch?.value || '').trim().toLowerCase();
+            const roomType = roomTypeFilter?.value || '';
+
+            document.querySelectorAll('[data-panel="rooms"] .room-row').forEach(function (row) {
+                const matchesSearch = !searchTerm || (row.dataset.roomSearch || '').includes(searchTerm);
+                const matchesType = !roomType || row.dataset.roomType === roomType;
+                row.style.display = matchesSearch && matchesType ? '' : 'none';
+            });
+        }
+
+        function applyRoomFilters() {
+            const params = new URLSearchParams(window.location.search);
+            const searchTerm = roomSearch?.value.trim() || '';
+            const roomType = roomTypeFilter?.value || '';
+
+            params.set('tab', 'rooms');
+            params.delete('rooms_page');
+            searchTerm ? params.set('room_search', searchTerm) : params.delete('room_search');
+            roomType ? params.set('room_type', roomType) : params.delete('room_type');
+            window.location.search = params.toString();
+        }
+
+        roomSearch?.addEventListener('input', filterRooms);
+        roomSearch?.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                applyRoomFilters();
+            }
+        });
+        roomTypeFilter?.addEventListener('change', applyRoomFilters);
 
         if (diningPanel) {
             diningPanel.querySelectorAll('[data-dining-subpanel] td:nth-last-child(2) span').forEach(function (statusElement) {
@@ -1634,6 +1742,7 @@
             panels.forEach(function(panel) {
                 panel.classList.toggle('hidden', panel.getAttribute('data-panel') !== targetName);
             });
+            roomFilterPanel?.classList.toggle('hidden', targetName !== 'rooms');
             addButtons.forEach(function(button) {
                 const shouldShow =
                     (targetName === 'rooms' && button.id === 'add-room-button') ||
