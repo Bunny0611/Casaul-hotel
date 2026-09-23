@@ -430,11 +430,11 @@ class HousekeepingController extends Controller
 
     public function updateGuestRequest(Request $request, $id)
     {
-        $guestRequest = GuestRequest::findOrFail($id);
+        $guestRequest = GuestRequest::where('department', 'Housekeeping')->findOrFail($id);
 
         $validated = $request->validate([
             'notes' => 'nullable|string',
-            'status' => 'nullable|string|in:New,In Progress,Delivered,Completed',
+            'status' => 'nullable|string|in:New,Pending,Assigned,In Progress,Delivered,Completed,Cancelled',
         ]);
 
         if (isset($validated['notes'])) {
@@ -447,6 +447,10 @@ class HousekeepingController extends Controller
             if (in_array($validated['status'], ['Delivered', 'Completed'], true)) {
                 $this->postGuestRequestBilling($guestRequest);
             }
+
+            $guestRequest->completed_at = in_array($validated['status'], ['Completed', 'Cancelled'], true)
+                ? ($guestRequest->completed_at ?: now())
+                : null;
         }
 
         $guestRequest->save();

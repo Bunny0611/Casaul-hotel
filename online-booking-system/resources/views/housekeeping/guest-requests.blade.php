@@ -1135,7 +1135,7 @@
                     <div class="details-card"><h3><i class="far fa-comment"></i> Special Request</h3><div id="specialRequestText" class="details-note">No request selected.</div></div>
                     <div class="details-card"><h3><i class="far fa-clock"></i> Estimated Arrival Time</h3><div class="details-note"><strong id="estimatedArrivalTimeText">—</strong> </div></div>
                 </div>
-                <div class="details-card specific-request-content"><h3><i class="far fa-edit"></i> Housekeeping Notes</h3><textarea id="housekeepingNotes" class="details-note" placeholder="Enter notes about request fulfillment, delivery time, or any issues..."></textarea></div>
+                <div class="details-card specific-request-content"><h3><i class="far fa-edit"></i> Housekeeping Notes</h3><textarea id="housekeepingNotes" class="details-note" placeholder="Enter notes about request fulfillment, delivery time, or any issues..."></textarea><label for="housekeepingStatus" style="display:block;margin-top:12px;font-weight:600">Status</label><select id="housekeepingStatus" class="details-note" style="width:100%;margin-top:6px"><option value="Pending">Pending</option><option value="Assigned">Assigned</option><option value="In Progress">In Progress</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></select></div>
                 <div class="details-actions specific-request-content"><button type="button" class="details-action" onclick="saveRequestProgress()">Save Progress</button><button type="button" class="details-action primary" onclick="markAllDelivered()">Mark All as Delivered</button></div>
             </div>
 
@@ -1365,6 +1365,11 @@ function openGuestRequest(requestId) {
         status.innerHTML = '<i class="far fa-clock"></i> Status: ' + (localStorage.getItem('housekeeping-request-status-' + request.requestId) || request.status);
 
         const requestStatus = request.statusLabel || request.status || 'Pending';
+        const statusSelect = document.getElementById('housekeepingStatus');
+        if (statusSelect) {
+            const selectableStatus = ['New', 'Delivered'].includes(request.status) ? 'Pending' : request.status;
+            statusSelect.value = statusSelect.querySelector(`option[value="${selectableStatus}"]`) ? selectableStatus : 'Pending';
+        }
 
         document.getElementById('detailGuest').textContent = request.guest;
         document.getElementById('detailRoom').textContent = request.room;
@@ -1440,6 +1445,7 @@ function saveRequestProgress() {
     }
 
     const notes = document.getElementById('housekeepingNotes').value;
+    const status = document.getElementById('housekeepingStatus').value;
     const requestId = String(currentGuestRequestId).replace(/^REQ-/, '').trim();
 
     fetch(`/housekeeping/guest-requests/${requestId}`, {
@@ -1450,6 +1456,7 @@ function saveRequestProgress() {
         },
         body: JSON.stringify({
             notes: notes,
+            status: status,
         }),
     })
     .then(response => response.json())

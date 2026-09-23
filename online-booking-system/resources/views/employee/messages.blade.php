@@ -28,6 +28,97 @@
         background: #fff1eb;
         color: #ff6b35;
     }
+
+    .employee-conversation-list {
+        max-height: 560px;
+        overflow-y: auto;
+    }
+
+    .employee-conversation {
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: #fff;
+        padding: 1rem;
+        text-align: left;
+        transition: 0.2s;
+    }
+
+    .employee-conversation:hover,
+    .employee-conversation.is-selected {
+        border-color: #ff6b35;
+        background: #fff8f4;
+    }
+
+    .employee-conversation-preview {
+        overflow: hidden;
+        color: #6b7280;
+        font-size: 0.875rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .employee-chat-thread {
+        display: flex;
+        min-height: 360px;
+        max-height: 470px;
+        flex-direction: column;
+        gap: 0.75rem;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: #f8fafc;
+        padding: 1rem;
+    }
+
+    .employee-chat-empty {
+        display: flex;
+        min-height: 360px;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+        text-align: center;
+    }
+
+    .employee-chat-message {
+        max-width: 78%;
+    }
+
+    .employee-chat-message.guest {
+        align-self: flex-start;
+    }
+
+    .employee-chat-message.front-desk {
+        align-self: flex-end;
+        text-align: right;
+    }
+
+    .employee-chat-bubble {
+        display: inline-block;
+        border-radius: 1rem;
+        background: #fff;
+        padding: 0.75rem 1rem;
+        color: #374151;
+        text-align: left;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    }
+
+    .front-desk .employee-chat-bubble {
+        background: #ff6b35;
+        color: #fff;
+    }
+
+    .employee-chat-time {
+        display: block;
+        margin-top: 0.25rem;
+        color: #9ca3af;
+        font-size: 0.6875rem;
+    }
+
+    .employee-reply-form.is-disabled {
+        opacity: 0.55;
+        pointer-events: none;
+    }
 </style>
 <div class="space-y-6">
     <!-- Stats Cards -->
@@ -37,7 +128,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Unread Messages</p>
-                    <p class="mt-2 text-4xl font-bold text-gray-800">0</p>
+                    <p class="mt-2 text-4xl font-bold text-gray-800">{{ $stats['unread'] ?? 0 }}</p>
                     <p class="mt-2 text-xs text-gray-500">Messages awaiting your response</p>
                 </div>
                 <div class="rounded-lg bg-yellow-100 p-3 text-yellow-600">
@@ -51,7 +142,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Replied Messages</p>
-                    <p class="mt-2 text-4xl font-bold text-gray-800">0</p>
+                    <p class="mt-2 text-4xl font-bold text-gray-800">{{ $stats['replied'] ?? 0 }}</p>
                     <p class="mt-2 text-xs text-gray-500">Messages you've already responded to</p>
                 </div>
                 <div class="rounded-lg bg-green-100 p-3 text-green-600">
@@ -65,7 +156,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Messages</p>
-                    <p class="mt-2 text-4xl font-bold text-gray-800">0</p>
+                    <p class="mt-2 text-4xl font-bold text-gray-800">{{ $stats['total'] ?? 0 }}</p>
                     <p class="mt-2 text-xs text-gray-500">All guest messages received</p>
                 </div>
                 <div class="rounded-lg bg-blue-100 p-3 text-blue-600">
@@ -108,21 +199,25 @@
                 <h3 class="text-lg font-semibold text-gray-800">Guest Message Box</h3>
             </div>
 
-            @forelse($messages as $message)
-                <div class="space-y-4">
-                    <div class="flex items-start gap-3 rounded-lg border border-gray-200 p-4">
-                        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-600">
+            @forelse($conversations as $conversation)
+                <button type="button" class="employee-conversation mb-3 {{ $loop->first ? 'is-selected' : '' }}" data-conversation-key="{{ $conversation->key }}" onclick="selectEmployeeConversation('{{ $conversation->key }}')">
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
                             <i class="fas fa-user text-sm"></i>
                         </div>
-                        <div class="flex-1 min-w-0">
+                        <div class="min-w-0 flex-1">
                             <div class="flex items-start justify-between gap-2">
-                                <h6 class="font-semibold text-gray-800">{{ $message->customer_name }}</h6>
-                                <span class="flex-shrink-0 text-xs text-gray-500">{{ $message->created_at->diffForHumans() }}</span>
+                                <h6 class="truncate font-semibold text-gray-800">{{ $conversation->name }}</h6>
+                                <span class="flex-shrink-0 text-xs text-gray-500">{{ $conversation->latest_message->created_at?->diffForHumans() }}</span>
                             </div>
-                            <p class="mt-1 text-sm text-gray-600">{{ Str::limit($message->message, 100) }}</p>
+                            <p class="text-xs text-gray-500">Room {{ $conversation->room_number ?? '—' }}</p>
+                            <p class="employee-conversation-preview mt-1">Latest message: &quot;{{ $conversation->latest_message->message }}&quot;</p>
                         </div>
+                        @if($conversation->unread > 0)
+                            <span class="flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-500 px-2 text-xs font-semibold text-white">{{ $conversation->unread }}</span>
+                        @endif
                     </div>
-                </div>
+                </button>
             @empty
                 <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-12">
                     <div class="text-4xl text-gray-400 mb-2">
@@ -134,31 +229,37 @@
             @endforelse
         </div>
 
-        <!-- Quick Reply -->
+        <!-- Conversation and Quick Reply -->
         <div class="rounded-2xl bg-white p-6 shadow-md">
             <div class="mb-6 flex items-center gap-3">
                 <div class="rounded-lg bg-orange-100 p-2 text-orange-600">
                     <i class="fas fa-pen-square text-lg"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-800">Quick Reply</h3>
+                <h3 id="employee-chat-title" class="text-lg font-semibold text-gray-800">Select a conversation</h3>
             </div>
 
-            <form action="{{ route('employee.messages.store') }}" method="POST" class="space-y-4">
+            <div id="employee-chat-thread" class="employee-chat-thread">
+                @if($conversations->isNotEmpty())
+                    @foreach($conversations->first()->messages as $threadMessage)
+                        <div class="employee-chat-message guest">
+                            <div class="employee-chat-bubble">{{ $threadMessage->message }}</div>
+                            <span class="employee-chat-time">Guest · {{ $threadMessage->created_at?->format('M j, Y g:i A') }}</span>
+                        </div>
+                        @if($threadMessage->admin_reply)
+                            <div class="employee-chat-message front-desk">
+                                <div class="employee-chat-bubble">{{ $threadMessage->admin_reply }}</div>
+                                <span class="employee-chat-time">Front Desk · {{ $threadMessage->replied_at?->format('M j, Y g:i A') }}</span>
+                            </div>
+                        @endif
+                    @endforeach
+                @else
+                    <div class="employee-chat-empty">Select a guest conversation to view the full chat.</div>
+                @endif
+            </div>
+
+            <form id="employee-reply-form" action="{{ route('employee.messages.store') }}" method="POST" class="employee-reply-form mt-4 space-y-4 {{ $conversations->isEmpty() ? 'is-disabled' : '' }}">
                 @csrf
-                <div>
-                    <label class="mb-2 block text-sm font-semibold text-gray-700">Compose Message</label>
-                    <div>
-                        <label class="mb-2 block text-xs font-semibold text-gray-600 uppercase">Send To</label>
-                        <select name="recipient" required class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                            <option value="">Select a guest...</option>
-                            @forelse($messages as $message)
-                                <option value="{{ $message->id }}">{{ $message->customer_name }} ({{ $message->customer_email }})</option>
-                            @empty
-                                <option disabled>No guests available</option>
-                            @endforelse
-                        </select>
-                    </div>
-                </div>
+                <input type="hidden" id="employee-recipient" name="recipient" value="{{ $conversations->first()?->latest_message?->id }}">
 
                 <div>
                     <label class="mb-2 block text-xs font-semibold text-gray-600 uppercase">Quick Templates</label>
@@ -171,7 +272,7 @@
                 </div>
 
                 <div>
-                    <label class="mb-2 block text-xs font-semibold text-gray-600 uppercase">Message</label>
+                    <label class="mb-2 block text-xs font-semibold text-gray-600 uppercase">Reply</label>
                     <textarea id="employeeReplyMessage" name="message" rows="6" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Type your message here..."></textarea>
                 </div>
 
@@ -185,11 +286,62 @@
         </div>
     </div>
 </div>
+@php
+    $employeeConversationData = $conversations->mapWithKeys(function ($conversation) {
+        return [$conversation->key => [
+            'name' => $conversation->name,
+            'recipient' => $conversation->latest_message->id,
+            'messages' => $conversation->messages->map(function ($message) {
+                return [
+                    'guest' => $message->message,
+                    'reply' => $message->admin_reply,
+                    'sent_at' => $message->created_at?->format('M j, Y g:i A'),
+                    'replied_at' => $message->replied_at?->format('M j, Y g:i A'),
+                ];
+            })->values(),
+        ]];
+    });
+@endphp
 <script>
+    const employeeConversations = @json($employeeConversationData);
+
+    function selectEmployeeConversation(key) {
+        const conversation = employeeConversations[key];
+        if (!conversation) return;
+
+        document.querySelectorAll('.employee-conversation').forEach((item) => {
+            item.classList.toggle('is-selected', item.dataset.conversationKey === key);
+        });
+
+        document.getElementById('employee-chat-title').textContent = conversation.name;
+        document.getElementById('employee-recipient').value = conversation.recipient;
+        document.getElementById('employee-reply-form').classList.remove('is-disabled');
+
+        const thread = document.getElementById('employee-chat-thread');
+        thread.innerHTML = conversation.messages.map((message) => `
+            <div class="employee-chat-message guest">
+                <div class="employee-chat-bubble">${escapeEmployeeMessage(message.guest)}</div>
+                <span class="employee-chat-time">Guest · ${message.sent_at || ''}</span>
+            </div>
+            ${message.reply ? `<div class="employee-chat-message front-desk"><div class="employee-chat-bubble">${escapeEmployeeMessage(message.reply)}</div><span class="employee-chat-time">Front Desk · ${message.replied_at || ''}</span></div>` : ''}
+        `).join('');
+        thread.scrollTop = thread.scrollHeight;
+    }
+
+    function escapeEmployeeMessage(value) {
+        return String(value || '').replace(/[&<>'"]/g, (character) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        }[character]));
+    }
+
     function insertEmployeeTemplate(text) {
         const textarea = document.getElementById('employeeReplyMessage');
         textarea.value = textarea.value ? textarea.value + '\n\n' + text : text;
         textarea.focus();
+    }
+
+    if (Object.keys(employeeConversations).length) {
+        selectEmployeeConversation(Object.keys(employeeConversations)[0]);
     }
 </script>
 @endsection

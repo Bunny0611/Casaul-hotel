@@ -45,6 +45,30 @@ nav{
     border-bottom: 1px solid rgba(255,255,255,.15);
 }
 
+.nav-toggle {
+    display:none;
+    width:42px;
+    height:42px;
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:10px;
+    background: rgba(255,255,255,.08);
+    color:#fff;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    cursor:pointer;
+    flex-shrink:0;
+}
+
+.nav-toggle span {
+    display:block;
+    width:18px;
+    height:2px;
+    border-radius:2px;
+    background:#fff;
+}
+
 .logo{
     color:white;
     font-size:22px;
@@ -3754,9 +3778,65 @@ body:has(.profile-page) footer {
     }
 }
 
+@media (max-width: 1024px) {
+    nav { padding: 14px 18px; gap: 12px; }
+    nav ul { gap: 8px; }
+    nav a { font-size: 12px; padding: 8px 10px; }
+    .logo { font-size: 18px; }
+    .logo-img { height: 30px; }
+    .nav-search-form input { min-width: 140px; }
+}
+
 @media (max-width: 768px){
-    nav ul{ gap: 10px; }
-    nav a{ padding: 8px 10px; font-size: 12px; }
+    nav { padding: 12px 16px; }
+    .nav-toggle { display:flex; }
+    nav ul,
+    .nav-menu {
+        position:absolute;
+        left:0;
+        right:0;
+        top:100%;
+        display:none;
+        flex-direction:column;
+        align-items:flex-start;
+        gap:8px;
+        padding:12px 16px 18px;
+        background: rgba(193,18,31,.98);
+        box-shadow: 0 16px 30px rgba(0,0,0,.18);
+        border-top: 1px solid rgba(255,255,255,.18);
+    }
+    nav ul.open,
+    .nav-menu.open {
+        display:flex;
+    }
+    nav ul {
+        list-style:none;
+        margin:0;
+        width:100%;
+    }
+    nav li { width:100%; }
+    nav a { display:block; width:100%; padding:10px 12px; font-size:13px; }
+    .nav-actions { margin-left: auto; }
+    .nav-search-wrapper { display:none; }
+    .nav-signin-btn { padding: 9px 12px; font-size:12px; }
+    .profile-trigger { padding-right: 8px; }
+}
+
+@media (max-width: 480px){
+    .logo { font-size: 16px; letter-spacing: .2px; }
+    .logo-img { height: 28px; }
+    nav { gap: 10px; }
+    .nav-actions { gap: 8px; }
+    .nav-signin-btn { padding: 8px 10px; font-size: 11px; }
+    .profile-trigger-avatar { width: 30px; height: 30px; }
+}
+
+@media (max-width: 375px){
+    nav { padding: 10px 12px; }
+    .logo { font-size: 14px; }
+    .logo-img { height: 24px; }
+    .nav-toggle { width: 36px; height: 36px; }
+    .nav-signin-btn { padding: 7px 9px; }
 }
 
 /* ====================================================

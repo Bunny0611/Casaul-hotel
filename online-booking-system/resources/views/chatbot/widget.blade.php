@@ -34,8 +34,8 @@
     <div id="chat-messages" class="chat-messages">
         <div class="chat-msg bot">
             <div class="chat-msg-content">
-                <p>Let me check room availability for you! 📅</p>
-                <p>Share your desired dates, number of guests, and preferred room type, or tap below to view our available rooms.</p>
+                <p>Hello! How can I help you?</p>
+                <p>Choose a frequently asked question below, or type your question.</p>
             </div>
             <span class="chat-msg-time">Just now</span>
         </div>
@@ -43,6 +43,15 @@
 
   
     <div id="chat-quick-replies" class="chat-quick-replies">
+        <button class="quick-reply" data-action="reservations">Reservations</button>
+        <button class="quick-reply" data-action="rooms">Rooms</button>
+        <button class="quick-reply" data-action="check-in-check-out">Check-in / Check-out</button>
+        <button class="quick-reply" data-action="payment-information">Payment Information</button>
+        <button class="quick-reply" data-action="dining-menu">Dining &amp; Menu</button>
+        <button class="quick-reply" data-action="hotel-services">Hotel Services</button>
+        <button class="quick-reply" data-action="hotel-policies">Hotel Policies</button>
+        <button class="quick-reply" data-action="contact-front-desk">Contact Front Desk</button>
+        <button class="quick-reply" data-action="request-housekeeping">Request Housekeeping</button>
         <button class="quick-reply" data-action="book">Book a Room</button>
         <button class="quick-reply" data-action="inquiries">Inquiries</button>
         <button class="quick-reply" data-action="availability">Show Available Rooms</button>

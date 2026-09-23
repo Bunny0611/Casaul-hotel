@@ -246,6 +246,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const chatbotUrl  = formEl ? formEl.dataset.chatbotEndpoint : null;
 
     let isOpen = false;
+    let pendingAction = null;
+    let frontDeskHistoryLoaded = false;
 
     function scrollToBottom() {
         requestAnimationFrame(() => {
@@ -292,6 +294,74 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function addFrontDeskBubble(text, type, timestamp) {
+        const typing = messagesEl.querySelector('.typing-indicator');
+        if (typing) typing.remove();
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-msg ${type} front-desk-msg`;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'chat-msg-content';
+        contentDiv.textContent = text;
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'chat-msg-time';
+        timeSpan.textContent = timestamp || formatTime();
+
+        msgDiv.appendChild(contentDiv);
+        msgDiv.appendChild(timeSpan);
+        messagesEl.appendChild(msgDiv);
+    }
+
+    function parseFrontDeskHistory(replyText) {
+        const historyStart = replyText.indexOf('\n\nYou (');
+        if (historyStart === -1) return null;
+
+        const history = replyText.slice(historyStart).trim();
+        const entries = history.split('\n\nYou (').filter(Boolean);
+
+        return entries.map((entry) => {
+            const guestEnd = entry.indexOf('): ');
+            if (guestEnd === -1) return null;
+
+            const guestTimestamp = entry.slice(0, guestEnd);
+            const conversation = entry.slice(guestEnd + 3);
+            const frontDeskMarker = conversation.indexOf('\nFront Desk');
+            const guestMessage = frontDeskMarker === -1
+                ? conversation
+                : conversation.slice(0, frontDeskMarker);
+            const frontDeskConversation = frontDeskMarker === -1
+                ? ''
+                : conversation.slice(frontDeskMarker).replace(/^\nFront Desk(?: \((.*?)\))?: ?/, '');
+            const frontDeskTimestampMatch = conversation.match(/\nFront Desk \((.*?)\):/);
+
+            return {
+                guestMessage,
+                guestTimestamp,
+                frontDeskMessage: frontDeskConversation === 'Reply pending' ? '' : frontDeskConversation,
+                frontDeskTimestamp: frontDeskTimestampMatch?.[1] || '',
+            };
+        }).filter(Boolean);
+    }
+
+    function renderFrontDeskHistory(replyText, includeGuestMessages = true) {
+        const entries = parseFrontDeskHistory(replyText);
+        if (!entries) return false;
+
+        entries.forEach((entry) => {
+            if (includeGuestMessages) {
+                addFrontDeskBubble(entry.guestMessage, 'user', entry.guestTimestamp);
+            }
+            if (entry.frontDeskMessage) {
+                addFrontDeskBubble(entry.frontDeskMessage, 'bot', entry.frontDeskTimestamp);
+            }
+        });
+
+        scrollToBottom();
+        return true;
+    }
+
     function showTypingIndicator() {
         const typing = document.createElement('div');
         typing.className = 'typing-indicator';
@@ -321,9 +391,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    async function sendChatbotMessage(message) {
+    const defaultQuickReplies = ['Reservations', 'Rooms', 'Check-in / Check-out', 'Payment Information', 'Dining & Menu', 'Hotel Services', 'Hotel Policies', 'Contact Front Desk', 'Request Housekeeping', 'Book a Room', 'Inquiries', 'Show Available Rooms', 'Special Offers', 'Contact Us'];
+
+    async function sendChatbotMessage(message, action = null, requestType = null) {
         if (!chatbotUrl) {
-            return 'Thank you for your message. Please contact our front desk for assistance.';
+            return { reply: 'Thank you for your message. Please contact our front desk for assistance.' };
         }
 
         const csrfToken = formEl ? formEl.querySelector('input[name="_token"]')?.value || '' : '';
@@ -338,6 +410,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 body: JSON.stringify({
                     message: message,
+                    action: action,
+                    request_type: requestType,
                     name: 'Guest',
                     email: 'guest@example.com'
                 })
@@ -348,21 +422,28 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const data = await response.json();
-            return data.reply || 'Thank you for your message. Please contact our front desk for assistance.';
+            return data;
         } catch (error) {
             console.error('Chatbot request error:', error);
-            return 'Thank you for your message. Please contact our front desk for assistance.';
+            return { reply: 'Thank you for your message. Please contact our front desk for assistance.' };
         }
     }
 
-    function botReplyFromServer(replyText) {
+    function botReplyFromServer(replyData) {
         const typingEl = showTypingIndicator();
         const delay = 500 + Math.random() * 400;
 
         setTimeout(() => {
             typingEl.remove();
-            addMessage(replyText, 'bot', true);
-            updateQuickReplies(['Book a Room', 'Inquiries', 'Show Available Rooms', 'Special Offers', 'Contact Us']);
+            const isFrontDeskReply = pendingAction === 'contact_front_desk' || replyData.mode === 'contact_front_desk';
+            const renderedHistory = isFrontDeskReply && renderFrontDeskHistory(replyData.reply, !frontDeskHistoryLoaded);
+
+            if (isFrontDeskReply && renderedHistory) {
+                frontDeskHistoryLoaded = true;
+            } else if (!isFrontDeskReply) {
+                addMessage(replyData.reply, 'bot', true);
+            }
+            updateQuickReplies(replyData.quick_replies || defaultQuickReplies);
         }, delay);
     }
 
@@ -371,14 +452,31 @@ document.addEventListener('DOMContentLoaded', function () {
         const message = text.trim();
         addMessage(message, 'user');
         inputEl.value = '';
+        const action = pendingAction;
+        const requestType = action === 'request_housekeeping' ? message : null;
+        pendingAction = null;
 
-        sendChatbotMessage(message).then((reply) => {
+        if (action !== 'contact_front_desk') {
+            frontDeskHistoryLoaded = false;
+        }
+
+        sendChatbotMessage(message, action, requestType).then((reply) => {
+            pendingAction = reply.mode || null;
             botReplyFromServer(reply);
         });
     }
 
    
     function handleQuickReply(label, action) {
+        if (action === 'contact-front-desk') {
+            pendingAction = 'contact_front_desk';
+        } else if (action === 'request-housekeeping') {
+            pendingAction = 'request_housekeeping';
+        } else if (pendingAction === 'request_housekeeping') {
+            sendUserMessage(label);
+            return;
+        }
+
         sendUserMessage(label);
     }
 
