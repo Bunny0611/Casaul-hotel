@@ -309,7 +309,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), {{ $room->price }}, {{ $room->adult_guest_price ?? 0 }}, {{ $room->kid_guest_price ?? 0 }}, @json($room->floor), {{ $room->capacity }}, @json($room->status), @json($room->description))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
+                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), @json($room->bed_type ?? "1 Queen Bed"), {{ $room->price }}, {{ $room->adult_guest_price ?? 0 }}, {{ $room->kid_guest_price ?? 0 }}, @json($room->floor), {{ $room->capacity }}, @json($room->status), @json($room->description))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
                                         <i class='fas fa-edit'></i>
                                     </button>
                                     <button type="button" onclick="changeStatus({{ $room->id }})" class="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 transition hover:bg-emerald-100" aria-label="Change room status">
@@ -882,6 +882,13 @@
                     </select>
                 </div>
                 <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Bed Type</label>
+                    <select name="bed_type" class="room-bed-type w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" onchange="toggleCustomBedType(this)" required>
+                        @include('admin.partials.bed-type-options', ['selectedBedType' => old('bed_type', '1 Queen Bed')])
+                    </select>
+                    <input type="text" class="bed-type-custom mt-2 hidden w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" maxlength="100" placeholder="Enter custom bed type">
+                </div>
+                <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label>
                     <input type="number" name="price" value="{{ old('price') }}" step="0.01" min="0" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
@@ -895,7 +902,11 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Floor</label>
-                    <input type="text" name="floor" value="{{ old('floor') }}" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <select name="floor" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select Floor</option>
+                        <option value="1st" @selected(old('floor') === '1st')>1st Floor</option>
+                        <option value="2nd" @selected(old('floor') === '2nd')>2nd Floor</option>
+                    </select>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label>
@@ -945,6 +956,13 @@
                         <option value="Deluxe Room">Deluxe Room</option>
                         <option value="Standard Room">Standard Room</option>
                     </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Bed Type</label>
+                    <select name="bed_type" id="editBedType" class="room-bed-type w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" onchange="toggleCustomBedType(this)" required>
+                        @include('admin.partials.bed-type-options', ['selectedBedType' => '1 Queen Bed'])
+                    </select>
+                    <input type="text" id="editBedTypeCustom" class="bed-type-custom mt-2 hidden w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" maxlength="100" placeholder="Enter custom bed type">
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label>
@@ -1039,10 +1057,22 @@
         document.getElementById('addRoomModal').classList.remove('flex');
     }
 
-    function editRoom(id, roomNumber, roomType, price, adultGuestPrice, kidGuestPrice, floor, capacity, status, description) {
+    function editRoom(id, roomNumber, roomType, bedType, price, adultGuestPrice, kidGuestPrice, floor, capacity, status, description) {
         document.getElementById('editRoomId').value = id;
         document.getElementById('editRoomNumber').value = roomNumber;
         document.getElementById('editRoomType').value = roomType;
+        const editBedType = document.getElementById('editBedType');
+        const editBedTypeCustom = document.getElementById('editBedTypeCustom');
+        const savedBedType = bedType || '1 Queen Bed';
+        const knownBedType = [...editBedType.options].some(option => option.value === savedBedType);
+        if (!knownBedType && savedBedType) {
+            editBedTypeCustom.value = savedBedType;
+            editBedType.value = '__custom__';
+        } else {
+            editBedType.value = savedBedType;
+            editBedTypeCustom.value = '';
+        }
+        toggleCustomBedType(editBedType);
         document.getElementById('editPrice').value = price;
         document.getElementById('editAdultGuestPrice').value = adultGuestPrice;
         document.getElementById('editKidGuestPrice').value = kidGuestPrice;
@@ -1059,6 +1089,25 @@
         document.getElementById('editRoomForm').action = editRoute.replace('__ID__', id);
         document.getElementById('editRoomModal').classList.remove('hidden');
         document.getElementById('editRoomModal').classList.add('flex');
+    }
+
+    function toggleCustomBedType(select) {
+        const customInput = select.parentElement.querySelector('.bed-type-custom');
+        if (!customInput) return;
+
+        const isCustom = select.value === '__custom__';
+        customInput.classList.toggle('hidden', !isCustom);
+        customInput.required = isCustom;
+    }
+
+    function applyCustomBedType(form) {
+        const select = form.querySelector('.room-bed-type');
+        const customInput = form.querySelector('.bed-type-custom');
+        if (!select || select.value !== '__custom__' || !customInput?.value.trim()) return;
+
+        const customValue = customInput.value.trim();
+        const customOption = new Option(customValue, customValue, true, true);
+        select.add(customOption);
     }
 
     function closeEditRoomModal() {
@@ -1514,6 +1563,13 @@
         const editDiningModal = document.getElementById('editDiningModal');
         const editInventoryModal = document.getElementById('editInventoryModal');
         const inventoryStatusModal = document.getElementById('inventoryStatusModal');
+
+        document.querySelectorAll('.room-bed-type').forEach(toggleCustomBedType);
+        document.querySelectorAll('#addRoomModal form, #editRoomForm').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                applyCustomBedType(form);
+            });
+        });
 
         document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape') {
