@@ -4114,6 +4114,34 @@ body:has(.profile-page) footer {
     border-top: 1px solid rgba(0, 0, 0, 0.04);
 }
 
+.chat-faq-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 8px auto 0;
+    padding: 8px 16px;
+    border: 1.5px solid var(--brand);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--brand);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
+}
+
+.chat-faq-toggle:hover {
+    background: var(--brand);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.chat-faq-toggle:active {
+    transform: scale(0.97);
+}
+
 .quick-reply {
     padding: 8px 16px;
     border-radius: 999px;
@@ -4140,17 +4168,24 @@ body:has(.profile-page) footer {
 
 /* ---- Input Area ---- */
 .chat-input-area {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    display: block;
     padding: 10px 14px 14px;
     flex-shrink: 0;
     background: #f8f9fc;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+#message-form {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+}
+
 .chat-input {
     flex: 1;
+    min-width: 0;
     padding: 11px 16px;
     border: 1.5px solid #e5e7eb;
     border-radius: 999px;
@@ -4248,6 +4283,12 @@ body:has(.profile-page) footer {
 
     .chat-quick-replies {
         padding: 8px 12px 4px;
+    }
+
+    .chat-faq-toggle {
+        margin-top: 7px;
+        padding: 7px 14px;
+        font-size: 12px;
     }
 
     .quick-reply {
