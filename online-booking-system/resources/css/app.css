@@ -2959,6 +2959,16 @@ footer::before{
     transform: scale(0.96);
 }
 
+.chat-end-conversation {
+    border-color: #9ca3af;
+    color: #6b7280;
+}
+
+.chat-end-conversation:hover {
+    background: #6b7280;
+    border-color: #6b7280;
+}
+
 /* ---- Input Area ---- */
 .chat-input-area {
     display: block;

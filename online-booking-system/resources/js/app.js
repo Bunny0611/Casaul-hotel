@@ -252,6 +252,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let frontDeskHistoryLoaded = false;
     let lastFrontDeskAction = null;
     let lastFrontDeskPrompt = false;
+    let frontDeskNoticeShown = false;
     let frontDeskPollingTimer = null;
     const frontDeskServerState = new Map();
 
@@ -470,6 +471,15 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.addEventListener('click', () => handleQuickReply(label, btn.dataset.action));
             container.appendChild(btn);
         });
+
+        if (pendingAction === 'contact_front_desk') {
+            const endButton = document.createElement('button');
+            endButton.className = 'quick-reply chat-end-conversation';
+            endButton.type = 'button';
+            endButton.textContent = 'End Conversation';
+            endButton.addEventListener('click', endFrontDeskConversation);
+            container.appendChild(endButton);
+        }
     }
 
     const defaultQuickReplies = ['Reservations', 'Rooms', 'Check-in / Check-out', 'Payment Information', 'Dining & Menu', 'Hotel Services', 'Hotel Policies', 'Contact Front Desk', 'Request Housekeeping', 'Book a Room', 'Inquiries', 'Show Available Rooms', 'Special Offers', 'Contact Us'];
@@ -520,6 +530,10 @@ document.addEventListener('DOMContentLoaded', function () {
             let renderedHistory = false;
 
             if (isFrontDeskReply && !frontDeskHistoryLoaded) {
+                if (!frontDeskNoticeShown) {
+                    addFrontDeskBubble('You are now chatting with the Front Desk. Send your message below.', 'bot', 'Now');
+                    frontDeskNoticeShown = true;
+                }
                 renderedHistory = renderFrontDeskHistory(replyData.reply, lastFrontDeskPrompt);
                 if (renderedHistory) frontDeskHistoryLoaded = true;
             } else if (isFrontDeskReply) {
@@ -556,6 +570,17 @@ document.addEventListener('DOMContentLoaded', function () {
             if (pendingAction === 'contact_front_desk') startFrontDeskPolling();
             botReplyFromServer(reply);
         });
+    }
+
+    function endFrontDeskConversation() {
+        stopFrontDeskPolling();
+        pendingAction = null;
+        lastFrontDeskAction = null;
+        lastFrontDeskPrompt = false;
+        frontDeskNoticeShown = false;
+
+        addMessage('Your Front Desk conversation has ended. How else can I help you?', 'bot');
+        updateQuickReplies(defaultQuickReplies);
     }
 
    
