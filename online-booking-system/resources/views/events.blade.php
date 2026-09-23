@@ -55,12 +55,6 @@
         </div>
     </section>
 
-    <section class="wedding-testimonial">
-        <div><p class="wedding-eyebrow">Real stories</p><h2>Beautiful<br><em>Memories</em></h2><p>Nothing makes us happier than seeing guests enjoy their celebrations.</p><a href="{{ route('reservation') }}" class="wedding-button">Read More Stories</a></div>
-        <blockquote><span class="wedding-quote-mark">“</span><p>CASAUL made our celebration come true! Everything was so thoughtfully planned, from the decor to the smallest details. We simply enjoyed every moment.</p><cite>- CASAUL Guest<br><small>Celebration Event</small></cite></blockquote>
-        <div class="wedding-testimonial-image"><img src="{{ asset('image/HM.jpg') }}" alt="Guests enjoying an event celebration"></div>
-    </section>
-
     <section class="wedding-cta">
         <div><p class="wedding-eyebrow">Your next event</p><h2>Starts Here</h2><p>Let's create a celebration you'll cherish forever.</p></div>
         <a href="{{ route('reservation') }}" class="wedding-button wedding-button--gold">Plan Your Event</a>

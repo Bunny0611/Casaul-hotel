@@ -60,7 +60,16 @@
             @foreach($rooms as $room)
                 <a href="{{ route('accommodation.room', ['slug' => $room['slug']]) }}" class="home-room-card">
                     <img src="{{ asset($room['image']) }}" alt="{{ $room['name'] }}">
-                    <div><h3>{{ $room['name'] }}</h3><p>{{ $room['price'] }} <span>/ night</span></p><div class="home-room-meta"><span><i class="fas fa-users"></i> Guests</span><span><i class="fas fa-bed"></i> 1 Bed</span><span><i class="fas fa-wifi"></i> Wi-Fi</span><span><i class="fas fa-snowflake"></i> AC</span></div></div>
+                    <div>
+                        <h3>{{ $room['name'] }}</h3>
+                        <p>{{ $room['price'] }} <span>/ night</span></p>
+                        <div class="home-room-meta">
+                            <span><i class="fas fa-users"></i> 2 Guests</span>
+                            <span><i class="fas fa-bed"></i> 1 Bed</span>
+                            <span><i class="fas fa-wifi"></i> Wi‑Fi</span>
+                            <span><i class="fas fa-snowflake"></i> AC</span>
+                        </div>
+                    </div>
                     <b>View Room</b>
                 </a>
             @endforeach

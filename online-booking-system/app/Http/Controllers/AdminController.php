@@ -950,13 +950,14 @@ class AdminController extends Controller
         $validated = $request->validate([
             'room_number' => 'required|string|max:255|unique:rooms,room_number',
             'room_type' => 'required|string',
+            'bed_type' => 'required|string|max:100',
             'price' => 'required|numeric|min:0',
             'adult_guest_price' => 'required|numeric|min:0',
             'kid_guest_price' => 'required|numeric|min:0',
             'floor' => 'required|string',
             'capacity' => 'required|integer|min:1',
             'description' => 'nullable|string',
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
         $validated['status'] = 'available';
 
@@ -974,13 +975,14 @@ class AdminController extends Controller
         $validated = $request->validate([
             'room_number' => 'required|string|unique:rooms,room_number,' . $id,
             'room_type' => 'required|string',
+            'bed_type' => 'required|string|max:100',
             'price' => 'required|numeric|min:0',
             'adult_guest_price' => 'required|numeric|min:0',
             'kid_guest_price' => 'required|numeric|min:0',
             'floor' => 'required|string',
             'capacity' => 'required|integer|min:1',
             'description' => 'nullable|string',
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
             'status' => 'required|in:OC,OD,VR,VC,VD,HSD,HSUC,OOO,BLO,NS,SO,HU,DND,available,occupied,reserved,maintenance,blocked,out_of_order',
         ]);
 

@@ -32,11 +32,34 @@ class HomeController extends Controller
 {
     protected function featuredRooms(): array
     {
+        $rooms = Room::query()
+            ->where('status', 'available')
+            ->orderBy('room_number')
+            ->limit(5)
+            ->get();
+
+        if ($rooms->isNotEmpty()) {
+            return $rooms
+                ->map(function (Room $room) {
+                    return [
+                        'slug' => Str::slug($room->room_type ?? 'room'),
+                        'name' => $room->room_type ?? 'Room',
+                        'price' => '₱' . number_format((float) $room->price, 2),
+                        'tagline' => 'Comfortable accommodation for a restful stay.',
+                        'image' => $room->image ? 'images/' . $room->image : 'image/Royal-Suite-room.jpg',
+                        'description' => $room->description ?? 'Enjoy a comfortable room with thoughtful facilities and a welcoming atmosphere.',
+                        'features' => ['2 Guests', '1 Bed', 'Wi‑Fi', 'Air conditioning'],
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
         return [
             [
                 'slug' => 'deluxe-room',
                 'name' => 'Deluxe Room',
-                'price' => '₱3,500',
+                'price' => '₱3,500.00',
                 'tagline' => 'Elegant comfort for a restful getaway.',
                 'image' => 'image/Royal-Suite-room.jpg',
                 'description' => 'Our Deluxe Room pairs a warm, modern aesthetic with airy interiors, plush bedding, and a convenient layout designed for both relaxation and productivity.',
@@ -45,7 +68,7 @@ class HomeController extends Controller
             [
                 'slug' => 'executive-room',
                 'name' => 'Executive Room',
-                'price' => '₱6,500',
+                'price' => '₱6,500.00',
                 'tagline' => 'Sophisticated luxury for work and leisure.',
                 'image' => 'image/Royal-Suite-room.jpg',
                 'description' => 'The Executive Room is crafted for guests who want a more elevated experience, with generous space, refined finishes, and a tranquil atmosphere throughout the stay.',
@@ -54,7 +77,7 @@ class HomeController extends Controller
             [
                 'slug' => 'presidential-room',
                 'name' => 'Presidential Room',
-                'price' => '₱12,000',
+                'price' => '₱12,000.00',
                 'tagline' => 'A grand stay with a sense of occasion.',
                 'image' => 'image/Royal-Suite-room.jpg',
                 'description' => 'Designed for memorable stays, the Presidential Room offers a luxurious ambiance, refined details, and spacious comfort that effortlessly balances elegance and practicality.',
@@ -63,11 +86,20 @@ class HomeController extends Controller
             [
                 'slug' => 'standard-room',
                 'name' => 'Standard Room',
-                'price' => '₱2,800',
+                'price' => '₱2,800.00',
                 'tagline' => 'Simple comfort with a polished finish.',
                 'image' => 'image/Royal-Suite-room.jpg',
                 'description' => 'A well-appointed Standard Room brings together comfort and clarity, making it ideal for guests seeking a fresh, restful base in the heart of the city.',
                 'features' => ['Complimentary breakfast', 'Air-conditioned', 'Smart TV', 'Daily housekeeping'],
+            ],
+            [
+                'slug' => 'garden-suite',
+                'name' => 'Garden Suite',
+                'price' => '₱7,200.00',
+                'tagline' => 'A serene hideaway with fresh air and modern comfort.',
+                'image' => 'image/Royal-Suite-room.jpg',
+                'description' => 'The Garden Suite brings together elegance and tranquility, with generous living space and warm natural textures throughout the room.',
+                'features' => ['Private veranda', 'Garden view', 'Balcony seating', 'Room service'],
             ],
         ];
     }
