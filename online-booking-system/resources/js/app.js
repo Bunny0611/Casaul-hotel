@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => {
             typingEl.remove();
             addMessage(replyText, 'bot', true);
-            updateQuickReplies(['Book a Room', 'Inquiries', 'Check Availability', 'Special Offers', 'Contact Us']);
+            updateQuickReplies(['Book a Room', 'Inquiries', 'Show Available Rooms', 'Special Offers', 'Contact Us']);
         }, delay);
     }
 
