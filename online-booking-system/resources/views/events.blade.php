@@ -61,6 +61,43 @@
     </section>
 </main>
 
+<style>
+    body:has(.wedding-events) .wedding-hero {
+        width: min(1200px, calc(100% - 40px)) !important;
+        min-height: 291px !important;
+        height: 291px !important;
+        max-height: 291px !important;
+        margin: 96px auto 0 !important;
+        overflow: hidden !important;
+        border-radius: 15px !important;
+    }
+
+    body:has(.wedding-events) .wedding-eyebrow {
+        font-size: 0.56rem !important;
+        letter-spacing: 0.16em !important;
+        margin-bottom: 8px !important;
+    }
+
+    body:has(.wedding-events) .wedding-hero h1 {
+        font-size: clamp(2rem, 2.8vw, 2.8rem) !important;
+        line-height: 1.02 !important;
+        letter-spacing: -0.04em !important;
+    }
+
+    body:has(.wedding-events) .wedding-hero-text {
+        max-width: 310px !important;
+        font-size: 0.72rem !important;
+        line-height: 1.5 !important;
+        margin-top: 10px !important;
+    }
+
+    body:has(.wedding-events) .wedding-button {
+        font-size: 0.62rem !important;
+        padding: 9px 14px !important;
+        min-height: 38px !important;
+    }
+</style>
+
  </div>
 
 @endsection

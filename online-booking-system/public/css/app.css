@@ -3339,19 +3339,19 @@ body:has(.wedding-events) .page-loader {
 }
 
 body:has(.wedding-events) .wedding-hero {
-    width: min(1200px, calc(100% - 40px));
-    min-height: 570px;
-    height: min(650px, calc(100vh - 110px));
-    max-height: 720px;
-    margin: 108px auto 0;
+    width: min(1100px, calc(100% - 40px));
+    min-height: 291px;
+    height: 291px;
+    max-height: 291px;
+    margin: 96px auto 0;
     overflow: hidden;
     border: 1px solid #e5d8c5;
     border-radius: 15px;
     box-shadow: 0 12px 26px rgba(66, 43, 28, .1);
 }
 
-body:has(.wedding-events) .wedding-hero-copy { padding-top: 60px; }
-body:has(.wedding-events) .wedding-hero-image { min-height: 570px; }
+body:has(.wedding-events) .wedding-hero-copy { padding-top: 22px; }
+body:has(.wedding-events) .wedding-hero-image { min-height: 250px; }
 body:has(.wedding-events) .wedding-hero-image img { object-position: 62% center; }
 body:has(.wedding-events) .wedding-hero-image::before { position: absolute; z-index: 1; top: 0; bottom: 0; left: -1px; width: 34%; content: ''; background: linear-gradient(90deg, #fffdf9 0%, rgba(255, 253, 249, .76) 24%, rgba(255, 253, 249, .2) 68%, transparent 100%); pointer-events: none; }
 body:has(.wedding-events) .wedding-services { padding-top: 0; }
@@ -3364,7 +3364,6 @@ body:has(.wedding-events) footer .footer-logo span { font-family: 'Libre Baskerv
 body:has(.wedding-events) footer .footer-logo img { height: 34px; }
 
 body:has(.wedding-events) .wedding-hero-copy { max-width: 650px; }
-body:has(.wedding-events) .wedding-hero h1 { font-size: clamp(3.5rem, 6.3vw, 6.8rem); }
 body:has(.wedding-events) .wedding-hero { align-items: stretch; }
 body:has(.wedding-events) .wedding-hero-image { align-self: stretch; height: auto; min-height: 0; }
 body:has(.wedding-events) .wedding-hero-image img { height: 100%; }
