@@ -40,6 +40,10 @@ class ChatbotController extends Controller
             return 'Check-out is at 12:00 PM. You may request a late check-out, subject to room availability and front desk approval.';
         }
 
+        if (Str::contains($normalized, ['deluxe', 'executive', 'presidential', 'suite', 'standard'])) {
+            return $this->roomTypeReply($normalized, $message);
+        }
+
         if (Str::contains($normalized, ['room', 'rooms', 'accommodation', 'stay'])) {
             return $this->roomReply($normalized);
         }
@@ -81,8 +85,7 @@ class ChatbotController extends Controller
         $priceText = $lowestPrice ? ' from ₱' . number_format((float) $lowestPrice, 2) : 'from our current available rates';
 
         if (Str::contains($normalized, ['available', 'availability'])) {
-            $availableRooms = Room::where('status', 'available')->count();
-            return 'We currently have ' . $availableRooms . ' available room' . ($availableRooms === 1 ? '' : 's') . ' in our system. Room types include ' . $roomList . '.';
+            return $this->availableRoomsReply();
         }
 
         if (Str::contains($normalized, ['price', 'rate', 'cost'])) {
@@ -90,6 +93,84 @@ class ChatbotController extends Controller
         }
 
         return 'Casaul Hotel currently has ' . $roomCount . ' room' . ($roomCount === 1 ? '' : 's') . ' in our inventory. We offer room types such as ' . $roomList . '. If you want, I can help you check available dates or guide you to the best room for your stay.';
+    }
+
+    protected function roomTypeReply(string $normalized, string $message): string
+    {
+        $candidate = strtolower(trim($message));
+
+        $typeMap = [
+            'deluxe' => 'Deluxe',
+            'executive' => 'Executive',
+            'presidential' => 'Presidential Suite',
+            'suite' => 'Suite',
+            'standard' => 'Standard',
+            'standard room' => 'Standard',
+        ];
+
+        $requestedType = null;
+        foreach ($typeMap as $keyword => $label) {
+            if (Str::contains($candidate, $keyword)) {
+                $requestedType = $label;
+                break;
+            }
+        }
+
+        if ($requestedType === null) {
+            return $this->availableRoomsReply();
+        }
+
+        $availableRooms = Room::query()
+            ->whereRaw('LOWER(status) = ?', ['available'])
+            ->orderBy('room_number')
+            ->get()
+            ->filter(function ($room) use ($requestedType) {
+                $roomType = strtolower((string) ($room->room_type ?? ''));
+                $requested = strtolower($requestedType);
+
+                return Str::contains($roomType, $requested)
+                    || Str::contains($requested, $roomType);
+            });
+
+        if ($availableRooms->isEmpty()) {
+            return 'There are currently no available ' . $requestedType . ' rooms. Please check other room types or let us know your preferred dates and we will help you find an option.';
+        }
+
+        $availableRoomList = $availableRooms
+            ->map(function ($room) {
+                $roomNumber = $room->room_number ?? 'N/A';
+                $roomType = $room->room_type ?? 'Room';
+                $price = $room->price ? ' — ₱' . number_format((float) $room->price, 2) . '/night' : '';
+
+                return '• Room ' . $roomNumber . ' — ' . $roomType . $price;
+            })
+            ->implode("\n");
+
+        return 'Available ' . $requestedType . ' rooms:\n' . $availableRoomList . '\n\nWould you like me to help you check your preferred dates and guest count?';
+    }
+
+    protected function availableRoomsReply(): string
+    {
+        $availableRooms = Room::query()
+            ->whereRaw('LOWER(status) = ?', ['available'])
+            ->orderBy('room_number')
+            ->get();
+
+        if ($availableRooms->isEmpty()) {
+            return 'There are currently no available rooms in our system. Please check other dates or contact our front desk for assistance.';
+        }
+
+        $availableRoomList = $availableRooms
+            ->map(function ($room) {
+                $roomNumber = $room->room_number ?? 'N/A';
+                $roomType = $room->room_type ?? 'Room';
+                $price = $room->price ? ' — ₱' . number_format((float) $room->price, 2) . '/night' : '';
+
+                return '• Room ' . $roomNumber . ' — ' . $roomType . $price;
+            })
+            ->implode("\n");
+
+        return 'Currently available rooms:\n' . $availableRoomList . '\n\nLet me know your preferred dates and guest count, and I can help you choose the best option.';
     }
 
     protected function facilityReply(string $normalized): string
