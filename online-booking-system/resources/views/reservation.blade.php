@@ -188,17 +188,20 @@
     .field-label { display:block; margin-bottom:5px; color:#3c465a; font-size:10px; font-weight:700; }
     .field-input { width:100%; min-height:34px; box-sizing:border-box; border:1px solid #e1e5ec; border-radius:7px; padding:7px 10px; color:#8993a6; background:#fff; font-size:10px; }
     .room-guest-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
-    .reservation-card-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+    .reservation-card-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; align-items:stretch; }
+    .room-type-tabs { display:flex; gap:6px; margin:0 0 12px; padding:4px; border-radius:8px; background:#fff1f2; }
+    .room-type-tab { flex:1; border:0; border-radius:6px; padding:8px 10px; color:#b42318; background:transparent; font-size:11px; font-weight:700; cursor:pointer; }
+    .room-type-tab.active { color:#fff; background:linear-gradient(90deg,#cc0925,#f97316); box-shadow:0 3px 8px rgba(204,9,37,.18); }
     .reservation-card { display:flex; flex-direction:column; min-width:0; overflow:hidden; border:1px solid #edf0f4; border-radius:8px; background:#fff; box-shadow:0 2px 5px rgba(24,36,64,.04); }
-    .reservation-card img { width:100%; height:88px; flex:0 0 88px; object-fit:cover; }
+    .reservation-card img { width:100%; height:130px; flex:0 0 130px; object-fit:cover; }
     .reservation-card-body { gap:6px; padding:9px; }
     .reservation-card h4 { font-size:11px; }
-    .reservation-card-meta { gap:8px; font-size:9px; }
-    .reservation-card-body > p { margin:0; color:#788398; font-size:9px; line-height:1.45; }
+    .reservation-card-meta { gap:8px; min-height:34px; align-items:flex-start; font-size:9px; line-height:1.35; }
+    .reservation-card-body > p { min-height:40px; margin:0; color:#788398; font-size:9px; line-height:1.45; }
     .event-time-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
     .event-time-row .field-input { padding-left:4px; padding-right:2px; }
     .reservation-card-footer { display:block; }
-    .reservation-card .price { display:block; margin-bottom:7px; color:#d20b26; font-size:11px; font-weight:800; }
+    .reservation-card .price { display:block; min-height:16px; margin-bottom:7px; color:#d20b26; font-size:11px; font-weight:800; }
     .select-option-btn { width:100%; padding:7px 8px; border:1px solid #ff9aa7; border-radius:7px; color:#d20b26; background:#fff; font-size:10px; }
     .select-option-btn:disabled { border-color:#d20b26; background:#d20b26; color:#fff; opacity:1; }
     .reservation-summary { width:auto; flex:auto; }
@@ -577,18 +580,25 @@
                     </div>
                 </div>
 
+                <div class="room-type-tabs" role="tablist" aria-label="Filter rooms by type">
+                    <button type="button" class="room-type-tab active" data-room-filter="all" role="tab" aria-selected="true">All Rooms</button>
+                    <button type="button" class="room-type-tab" data-room-filter="standard" role="tab" aria-selected="false">Standard</button>
+                    <button type="button" class="room-type-tab" data-room-filter="deluxe" role="tab" aria-selected="false">Deluxe</button>
+                </div>
+
                 <div class="reservation-card-grid">
                     @foreach($rooms as $room)
                         @php($extraGuestPrice = (float) ($room->adult_guest_price ?? (str_contains(strtolower($room->room_type), 'standard') ? 500 : 650)))
                         @php($kidGuestPrice = (float) ($room->kid_guest_price ?? ($extraGuestPrice / 2)))
                         @php($roomCapacity = max(1, (int) ($room->capacity ?? 2)))
-                        <article class="reservation-card" data-category="room" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}" data-kid-guest-price="{{ $kidGuestPrice }}">
+                        @php($roomTypeFilter = str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other'))
+                        <article class="reservation-card" data-category="room" data-room-type="{{ $roomTypeFilter }}" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}" data-kid-guest-price="{{ $kidGuestPrice }}">
                             <img src="{{ $room->image ? asset(str_starts_with($room->image, 'rooms/') ? 'storage/' . $room->image : $room->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $room->room_type }}</h4>
                                 <div class="reservation-card-meta">
                                     <span><i class="fas fa-users"></i>{{ $room->capacity ?? 2 }} Guests</span>
-                                    <span><i class="fas fa-bed"></i>1 Queen Bed</span>
+                                    <span><i class="fas fa-bed"></i>{{ $room->bed_type ?? '1 Queen Bed' }}</span>
                                 </div>
                                 <p>{{ $room->description ?? 'Premium stay with comfortable bedding and modern facilities.' }}</p>
                                 <label class="field-label">Add Persons</label>
@@ -1279,6 +1289,7 @@
         const detailsTerms = document.getElementById('detailsTerms');
         const paymentPanels = document.querySelectorAll('[data-payment-panel]');
         const methodPaymentAmounts = document.querySelectorAll('#gcashPaymentAmount, #mayaPaymentAmount, #cardPaymentAmount, #transferAmount');
+        const roomTypeTabs = document.querySelectorAll('.room-type-tab');
         const digitsOnlyFields = [
             document.getElementById('gcashNumber'),
             document.getElementById('mayaNumber'),
@@ -1313,6 +1324,21 @@
         let confirmPaymentProofUrl = null;
 
         const items = document.querySelectorAll('.select-option-btn');
+        const filterRoomCards = (filter) => {
+            document.querySelectorAll('.reservation-card[data-category="room"]').forEach(card => {
+                card.style.display = filter === 'all' || card.dataset.roomType === filter ? '' : 'none';
+            });
+            roomTypeTabs.forEach(tab => {
+                const isActive = tab.dataset.roomFilter === filter;
+                tab.classList.toggle('active', isActive);
+                tab.setAttribute('aria-selected', String(isActive));
+            });
+        };
+
+        roomTypeTabs.forEach(tab => {
+            tab.addEventListener('click', () => filterRoomCards(tab.dataset.roomFilter || 'all'));
+        });
+
         const sumItemTotal = (itemsList) => itemsList.reduce((sum, item) => sum + (Number(item.price || 0) * (Number(item.quantity || 1))), 0);
         const getFacilityCharge = (facility) => {
             const price = Number(facility.price || 0);

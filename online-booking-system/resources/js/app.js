@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchToggle = document.getElementById('nav-search-toggle');
     const searchForm = document.getElementById('nav-search-form');
     const searchInput = document.getElementById('nav-search-input');
-    const modalTrigger = document.getElementById('guest-signin-trigger');
+    const modalTriggers = document.querySelectorAll('#guest-signin-trigger, [data-auth-trigger]');
     const authModal = document.getElementById('guest-auth-modal');
     const closeModalBtn = document.getElementById('guest-auth-close');
     const signInView = document.getElementById('auth-signin-view');
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    if (modalTrigger && authModal) {
+    if (modalTriggers.length && authModal) {
         const openModal = () => {
             authModal.classList.add('open');
             authModal.setAttribute('aria-hidden', 'false');
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.body.style.overflow = '';
         };
 
-        modalTrigger.addEventListener('click', openModal);
+        modalTriggers.forEach((trigger) => trigger.addEventListener('click', openModal));
         closeModalBtn?.addEventListener('click', closeModal);
         authModal.addEventListener('click', (event) => {
             if (event.target === authModal) {
