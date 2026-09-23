@@ -120,41 +120,64 @@ class ChatbotController extends Controller
             return $this->availableRoomsReply();
         }
 
-        $availableRooms = Room::query()
-            ->whereRaw('LOWER(status) = ?', ['available'])
-            ->orderBy('room_number')
-            ->get()
-            ->filter(function ($room) use ($requestedType) {
-                $roomType = strtolower((string) ($room->room_type ?? ''));
-                $requested = strtolower($requestedType);
+        $typesToCheck = [$requestedType];
 
-                return Str::contains($roomType, $requested)
-                    || Str::contains($requested, $roomType);
-            });
+        if ($requestedType === 'Deluxe') {
+            $typesToCheck[] = 'Standard';
+        }
 
-        if ($availableRooms->isEmpty()) {
+        $typesToCheck = array_values(array_unique($typesToCheck));
+        $availableByType = [];
+
+        foreach ($typesToCheck as $type) {
+            $rooms = Room::query()
+                ->orderBy('room_number')
+                ->get()
+                ->filter(function ($room) use ($type) {
+                    if (! $this->isRoomAvailableForChat($room->status ?? null)) {
+                        return false;
+                    }
+
+                    $roomType = strtolower((string) ($room->room_type ?? ''));
+                    $requested = strtolower($type);
+
+                    return Str::contains($roomType, $requested)
+                        || Str::contains($requested, $roomType);
+                });
+
+            if ($rooms->isNotEmpty()) {
+                $availableByType[$type] = $rooms;
+            }
+        }
+
+        if ($availableByType === []) {
             return 'There are currently no available ' . $requestedType . ' rooms. Please check other room types or let us know your preferred dates and we will help you find an option.';
         }
 
-        $availableRoomList = $availableRooms
-            ->map(function ($room) {
-                $roomNumber = $room->room_number ?? 'N/A';
-                $roomType = $room->room_type ?? 'Room';
-                $price = $room->price ? ' — ₱' . number_format((float) $room->price, 2) . '/night' : '';
+        $sections = [];
+        foreach ($typesToCheck as $type) {
+            if (! isset($availableByType[$type])) {
+                continue;
+            }
 
-                return '• Room ' . $roomNumber . ' — ' . $roomType . $price;
-            })
-            ->implode("\n");
+            $availableRoomList = $availableByType[$type]
+                ->map(function ($room) {
+                    return $this->formatRoomAvailabilityItem($room);
+                })
+                ->implode("\n");
 
-        return 'Available ' . $requestedType . ' rooms:\n' . $availableRoomList . '\n\nWould you like me to help you check your preferred dates and guest count?';
+            $sections[] = 'Available ' . $type . ' rooms:' . "\n" . $availableRoomList;
+        }
+
+        return implode("\n\n", $sections) . "\n\nWould you like me to help you check your preferred dates and guest count?";
     }
 
     protected function availableRoomsReply(): string
     {
         $availableRooms = Room::query()
-            ->whereRaw('LOWER(status) = ?', ['available'])
             ->orderBy('room_number')
-            ->get();
+            ->get()
+            ->filter(fn ($room) => $this->isRoomAvailableForChat($room->status ?? null));
 
         if ($availableRooms->isEmpty()) {
             return 'There are currently no available rooms in our system. Please check other dates or contact our front desk for assistance.';
@@ -162,15 +185,43 @@ class ChatbotController extends Controller
 
         $availableRoomList = $availableRooms
             ->map(function ($room) {
-                $roomNumber = $room->room_number ?? 'N/A';
-                $roomType = $room->room_type ?? 'Room';
-                $price = $room->price ? ' — ₱' . number_format((float) $room->price, 2) . '/night' : '';
-
-                return '• Room ' . $roomNumber . ' — ' . $roomType . $price;
+                return $this->formatRoomAvailabilityItem($room);
             })
             ->implode("\n");
 
-        return 'Currently available rooms:\n' . $availableRoomList . '\n\nLet me know your preferred dates and guest count, and I can help you choose the best option.';
+        return 'Currently available rooms:' . "\n" . $availableRoomList . "\n\nLet me know your preferred dates and guest count, and I can help you choose the best option.";
+    }
+
+    protected function isRoomAvailableForChat($status): bool
+    {
+        $normalized = strtolower(trim((string) $status));
+        $compact = str_replace(['_', ' ', '-'], '', $normalized);
+
+        $availableStatuses = [
+            'available',
+            'vacant',
+            'vacant_ready',
+            'vacantready',
+            'vacant_clean',
+            'vacantclean',
+            'vr',
+            'vc',
+            'clean',
+            'ready',
+        ];
+
+        return in_array($normalized, $availableStatuses, true)
+            || in_array($compact, $availableStatuses, true);
+    }
+
+    protected function formatRoomAvailabilityItem($room): string
+    {
+        $roomNumber = $room->room_number ?? 'N/A';
+        $roomType = trim((string) ($room->room_type ?? ''));
+        $price = $room->price ? '₱' . number_format((float) $room->price, 2) . '/night' : 'N/A';
+        $typeSuffix = $roomType !== '' ? ' — ' . $roomType : '';
+
+        return '• Room ' . $roomNumber . $typeSuffix . "\n  Price: " . $price;
     }
 
     protected function facilityReply(string $normalized): string

@@ -51,7 +51,7 @@ class ChatbotAvailabilityTest extends TestCase
 
         $this->assertStringContainsString('Currently available rooms', $content);
         $this->assertStringContainsString('Room 101', $content);
-        $this->assertStringContainsString('Deluxe', $content);
+        $this->assertStringContainsString('Price: ', $content);
         $this->assertStringContainsString('2,500.00', $content);
         $this->assertStringContainsString('Room 102', $content);
         $this->assertStringContainsString('1,800.00', $content);
@@ -156,5 +156,67 @@ class ChatbotAvailabilityTest extends TestCase
         $this->assertStringContainsString('1,800.00', $content);
         $this->assertStringContainsString('2,200.00', $content);
         $this->assertStringNotContainsString('Room 205', $content);
+    }
+
+    public function test_chatbot_includes_standard_rooms_when_user_requests_deluxe_and_standard_is_available(): void
+    {
+        Room::query()->delete();
+
+        Room::create([
+            'room_number' => '201',
+            'room_type' => 'Deluxe Room',
+            'status' => 'available',
+            'price' => 2800,
+            'floor' => 2,
+            'capacity' => 2,
+            'cleaning_status' => 'clean',
+            'description' => 'Deluxe room 1',
+        ]);
+
+        Room::create([
+            'room_number' => '101',
+            'room_type' => 'Standard Room',
+            'status' => 'available',
+            'price' => 1800,
+            'floor' => 1,
+            'capacity' => 2,
+            'cleaning_status' => 'clean',
+            'description' => 'Standard room 1',
+        ]);
+
+        $response = $this->postJson('/chatbot/message', ['message' => 'deluxe']);
+
+        $response->assertOk();
+        $content = $response->getContent();
+
+        $this->assertStringContainsString('Available Deluxe rooms', $content);
+        $this->assertStringContainsString('Room 201', $content);
+        $this->assertStringContainsString('Available Standard rooms', $content);
+        $this->assertStringContainsString('Room 101', $content);
+    }
+
+    public function test_chatbot_reads_vacant_ready_standard_rooms_as_available(): void
+    {
+        Room::query()->delete();
+
+        Room::create([
+            'room_number' => '110',
+            'room_type' => 'Standard Room',
+            'status' => 'vacant_ready',
+            'price' => 2200,
+            'floor' => 1,
+            'capacity' => 2,
+            'cleaning_status' => 'clean',
+            'description' => 'Vacant-ready standard room',
+        ]);
+
+        $response = $this->postJson('/chatbot/message', ['message' => 'standard room']);
+
+        $response->assertOk();
+        $content = $response->getContent();
+
+        $this->assertStringContainsString('Available Standard rooms', $content);
+        $this->assertStringContainsString('Room 110', $content);
+        $this->assertStringContainsString('2,200.00', $content);
     }
 }
