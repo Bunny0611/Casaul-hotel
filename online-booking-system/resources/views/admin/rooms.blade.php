@@ -3,13 +3,26 @@
 @section('content')
 <style>
     .room-management-page {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
         font-size: 16px;
         -webkit-text-size-adjust: 100%;
         text-size-adjust: 100%;
     }
 
+    .room-management-page > * {
+        max-width: 100%;
+    }
+
+    .room-management-page [data-panel] {
+        min-width: 0;
+    }
+
     .room-management-page .room-table-shell {
-        min-width: 980px;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .room-management-page .room-table-shell table {
@@ -18,6 +31,7 @@
     }
 
     .room-management-page .dining-table-scroll {
+        max-width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
@@ -129,6 +143,72 @@
     .room-management-page [data-dining-subpanel] td:nth-last-child(2) span.status-limited { background-color: #ca8a04; }
 
     @media (max-width: 640px) {
+        .room-management-page > .mb-6:first-child {
+            margin-bottom: 1rem;
+        }
+
+        .room-management-page > .mb-6:first-child h2 {
+            font-size: 1.5rem;
+            line-height: 2rem;
+        }
+
+        .room-management-page > .mb-6:first-child .flex {
+            width: 100%;
+        }
+
+        .room-management-page .tab-button {
+            flex: 1 1 calc(50% - 0.5rem);
+            min-width: 0;
+            padding: 0.625rem 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        .room-management-page [data-panel] > .border-b {
+            align-items: stretch;
+            flex-direction: column;
+            padding: 0.75rem 1rem;
+        }
+
+        .room-management-page [data-panel] > .border-b > .flex {
+            justify-content: space-between;
+        }
+
+        .room-management-page [data-panel="rooms"] > .px-6 {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        .room-management-page .room-table-shell table {
+            min-width: 860px;
+        }
+
+        .room-management-page .dining-table-scroll table {
+            min-width: 680px;
+        }
+
+        .room-management-page [data-dining-subpanel] {
+            padding: 0.75rem;
+        }
+
+        .room-management-page [data-dining-subpanel] .dining-card-header {
+            padding: 0.75rem;
+        }
+
+        .room-management-page [data-dining-subpanel] .dining-card-header > .flex {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .room-management-page [data-dining-subpanel] .dining-card-header > .flex > * {
+            width: 100%;
+        }
+
+        .room-management-page .admin-modal-panel {
+            max-height: calc(100vh - 1rem);
+            padding: 1rem;
+        }
+
         .room-management-page .dining-card-header {
             align-items: stretch;
             flex-direction: column;
@@ -864,7 +944,11 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Floor</label>
-                    <input type="text" name="floor" id="editFloor" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <select name="floor" id="editFloor" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select Floor</option>
+                        <option value="1st">1st Floor</option>
+                        <option value="2nd">2nd Floor</option>
+                    </select>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Capacity</label>
@@ -944,7 +1028,12 @@
         document.getElementById('editRoomNumber').value = roomNumber;
         document.getElementById('editRoomType').value = roomType;
         document.getElementById('editPrice').value = price;
-        document.getElementById('editFloor').value = floor;
+
+        const normalizedFloor = floor === '1st Floor' || floor === '1st' || floor === '1' ? '1st'
+            : floor === '2nd Floor' || floor === '2nd' || floor === '2' ? '2nd'
+            : '1st';
+        document.getElementById('editFloor').value = normalizedFloor;
+
         document.getElementById('editCapacity').value = capacity;
         document.getElementById('editStatus').value = status;
         document.getElementById('editDescription').value = description || '';
