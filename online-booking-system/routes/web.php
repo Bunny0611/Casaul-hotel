@@ -90,13 +90,13 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::post('/reservations/bulk-delete', [AdminController::class, 'bulkDestroyReservations'])->name('reservations.bulk-destroy');
     Route::get('/checkin', function () {
-        $checkIns = RoomReservation::with(['room', 'payments'])
+        $checkIns = RoomReservation::with(['room', 'payments', 'refunds'])
             ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
             ->whereDate('check_in', today())
             ->latest()
             ->get();
 
-        $checkOuts = RoomReservation::with(['room', 'payments'])
+        $checkOuts = RoomReservation::with(['room', 'payments', 'refunds'])
             ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
             ->whereDate('check_out', today())
             ->latest()
@@ -183,6 +183,10 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
                 $reservation->overall_total_amount = $grandTotal;
                 $reservation->overall_amount_paid = min((float) ($reservation->overall_amount_paid ?? 0), $grandTotal);
                 $reservation->overall_balance_due = max($grandTotal - $reservation->overall_amount_paid, 0);
+                $reservation->display_amount_paid = (float) ($reservation->refunds->first()?->total_paid ?? $reservation->overall_amount_paid);
+                $reservation->display_balance_due = $reservation->overall_balance_due;
+                $reservation->original_total_amount = (float) ($reservation->refunds->first()?->original_total ?? $grandTotal);
+                $reservation->refund_amount = (float) $reservation->refunds->sum('refund_amount');
             });
         };
 

@@ -30,9 +30,14 @@
 
 <nav>
 
-    <div class="logo">
-        <img src="{{ asset('image/LOGO.png') }}" alt="Casaul Hotel Logo" class="logo-img">
-        CASAUL HOTEL
+    <div class="logo" aria-label="CASAUL Hotel">
+        <div class="logo-mark">
+            <img src="{{ asset('image/LOGO.png') }}" alt="Casaul Hotel Logo" class="logo-img">
+        </div>
+        <div class="logo-text">
+            <span class="logo-name">CASAUL HOTEL</span>
+            <span class="logo-tag">LUXURY &amp; COMFORT</span>
+        </div>
     </div>
 
     <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
@@ -134,7 +139,7 @@
 
 </nav>
 
-@php($signupHasErrors = $errors->hasAny(['first_name', 'last_name', 'middle_initial', 'contact_no', 'password_confirmation']))
+@php($signupHasErrors = old('auth_form') === 'signup' || $errors->hasAny(['first_name', 'last_name', 'middle_initial', 'contact_no', 'country_code', 'region_code', 'province_code', 'city_code', 'password_confirmation']))
 @php($authHasErrors = $errors->has('email') || $signupHasErrors)
 @php($authShouldOpen = $authHasErrors || request()->query('auth') === 'signin' || session()->has('status'))
 <div class="auth-modal-backdrop{{ $authShouldOpen ? ' open' : '' }}" id="guest-auth-modal" aria-hidden="{{ $authShouldOpen ? 'false' : 'true' }}">
@@ -169,6 +174,7 @@
 
                 <form method="POST" action="{{ route('guest.login.submit') }}" class="auth-form">
                     @csrf
+                    <input type="hidden" name="auth_form" value="signin">
                     <label class="auth-input-wrap"><i class="far fa-envelope" aria-hidden="true"></i><input type="email" name="email" class="auth-input" placeholder="Email address" required></label>
                     <label class="auth-input-wrap"><i class="fas fa-lock" aria-hidden="true"></i><input id="signin-password" type="password" name="password" class="auth-input" placeholder="Password" required><button type="button" class="auth-password-toggle" data-password-target="signin-password" aria-label="Show password"><i class="far fa-eye" aria-hidden="true"></i></button></label>
                     <a href="{{ route('guest.password.request') }}" class="auth-forgot-link">Forgot password?</a>
@@ -183,11 +189,22 @@
                 </div>
                 <form method="POST" action="{{ route('guest.register.submit') }}" class="auth-form" id="guest-signup-form">
                     @csrf
+                    <input type="hidden" name="auth_form" value="signup">
                     <label class="auth-input-wrap"><i class="far fa-user" aria-hidden="true"></i><input type="text" name="first_name" class="auth-input" placeholder="First Name" value="{{ old('first_name') }}" required></label>
                     <label class="auth-input-wrap"><i class="far fa-user" aria-hidden="true"></i><input type="text" name="last_name" class="auth-input" placeholder="Last Name" value="{{ old('last_name') }}" required></label>
                     <label class="auth-input-wrap"><i class="far fa-id-card" aria-hidden="true"></i><input type="text" name="middle_initial" class="auth-input" placeholder="M.I." maxlength="3" value="{{ old('middle_initial') }}" required></label>
                     <label class="auth-input-wrap"><i class="far fa-envelope" aria-hidden="true"></i><input type="email" name="email" class="auth-input" placeholder="Gmail Address" value="{{ old('email') }}" required></label>
                     <label class="auth-input-wrap"><i class="fas fa-phone" aria-hidden="true"></i><input type="text" name="contact_no" class="auth-input" placeholder="Contact No." value="{{ old('contact_no') }}" required></label>
+                    <div class="auth-location-grid">
+                        <label class="auth-select-wrap"><span>Country <strong>*</strong></span><select name="country_code" id="guest-country" required data-old="{{ old('country_code') }}"><option value="">Select country</option></select></label>
+                        <label class="auth-select-wrap"><span>Region/State</span><select name="region_code" id="guest-region" data-old="{{ old('region_code') }}" disabled><option value="">Select country first</option></select></label>
+                        <label class="auth-select-wrap"><span>Province/Area</span><select name="province_code" id="guest-province" data-old="{{ old('province_code') }}" disabled><option value="">Select region/state first</option></select></label>
+                        <label class="auth-select-wrap"><span>City</span><select name="city_code" id="guest-city" data-old="{{ old('city_code') }}" disabled><option value="">Select province/area first</option></select></label>
+                    </div>
+                    <input type="hidden" name="country_name" id="guest-country-name" value="{{ old('country_name') }}">
+                    <input type="hidden" name="region_name" id="guest-region-name" value="{{ old('region_name') }}">
+                    <input type="hidden" name="province_name" id="guest-province-name" value="{{ old('province_name') }}">
+                    <input type="hidden" name="city_name" id="guest-city-name" value="{{ old('city_name') }}">
                     <label class="auth-input-wrap"><i class="fas fa-lock" aria-hidden="true"></i><input id="signup-password" type="password" name="password" class="auth-input" placeholder="Password" required><button type="button" class="auth-password-toggle" data-password-target="signup-password" aria-label="Show password"><i class="far fa-eye" aria-hidden="true"></i></button></label>
                     <label class="auth-input-wrap"><i class="fas fa-lock" aria-hidden="true"></i><input id="signup-password-confirmation" type="password" name="password_confirmation" class="auth-input" placeholder="Re-type Password" required><button type="button" class="auth-password-toggle" data-password-target="signup-password-confirmation" aria-label="Show password"><i class="far fa-eye" aria-hidden="true"></i></button></label>
                     <button type="submit" class="auth-submit-btn">Create Account</button>

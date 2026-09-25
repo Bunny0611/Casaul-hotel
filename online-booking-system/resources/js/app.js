@@ -1,4 +1,5 @@
 import './bootstrap';
+import { City, Country, State } from 'country-state-city';
 
 
 
@@ -111,9 +112,139 @@ document.addEventListener('DOMContentLoaded', function () {
     const googleBtn = document.getElementById('google-signin-btn');
     const authMessage = document.getElementById('auth-message');
     const signupForm = document.getElementById('guest-signup-form');
+    const signupEmailInput = signupForm?.querySelector('input[name="email"]');
     const profileDropdown = document.getElementById('profile-dropdown');
     const profileTrigger = document.getElementById('profile-trigger');
     const profileMenu = document.getElementById('profile-menu');
+
+    document.querySelectorAll('.auth-password-toggle').forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            const input = document.getElementById(toggle.dataset.passwordTarget);
+            if (!input) return;
+
+            const isVisible = input.type === 'text';
+            input.type = isVisible ? 'password' : 'text';
+            toggle.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+            const icon = toggle.querySelector('i');
+            icon?.classList.toggle('fa-eye', isVisible);
+            icon?.classList.toggle('fa-eye-slash', !isVisible);
+        });
+    });
+
+    if (signupEmailInput && signUpView && !signUpView.classList.contains('auth-hidden')
+        && /email|registered|taken/i.test(authMessage?.textContent || '')) {
+        window.setTimeout(() => signupEmailInput.focus(), 0);
+    }
+
+    const countrySelect = document.getElementById('guest-country');
+    const regionSelect = document.getElementById('guest-region');
+    const provinceSelect = document.getElementById('guest-province');
+    const citySelect = document.getElementById('guest-city');
+
+    if (signupForm && countrySelect && regionSelect && provinceSelect && citySelect) {
+        const nameFields = {
+            country: document.getElementById('guest-country-name'),
+            region: document.getElementById('guest-region-name'),
+            province: document.getElementById('guest-province-name'),
+            city: document.getElementById('guest-city-name'),
+        };
+        const oldValues = {
+            country: countrySelect.dataset.old,
+            region: regionSelect.dataset.old,
+            province: provinceSelect.dataset.old,
+            city: citySelect.dataset.old,
+        };
+        const setOptions = (select, options, placeholder) => {
+            select.innerHTML = `<option value="">${placeholder}</option>`;
+            options.forEach((option) => {
+                const element = document.createElement('option');
+                element.value = option.code;
+                element.textContent = option.name;
+                element.dataset.name = option.name;
+                select.appendChild(element);
+            });
+            select.disabled = options.length === 0;
+        };
+        const setName = (select, field) => {
+            field.value = select.selectedOptions[0]?.dataset.name || '';
+        };
+        const getPhilippineData = async (path) => {
+            const response = await fetch(`https://psgc.gitlab.io/api/${path}`);
+            if (!response.ok) throw new Error('Unable to load Philippine locations');
+            return response.json();
+        };
+        const loadCities = async (countryCode, provinceCode) => {
+            if (countryCode === 'PH') {
+                const cities = await getPhilippineData(`provinces/${provinceCode}/cities-municipalities/`);
+                setOptions(citySelect, cities.map((city) => ({ code: city.code, name: city.name })), 'Select city/municipality');
+                return;
+            }
+            const cities = City.getCitiesOfState(countryCode, provinceCode) || [];
+            setOptions(citySelect, cities.map((city) => ({ code: city.name, name: city.name })), 'Select city');
+        };
+        const loadProvinces = async (countryCode, regionCode) => {
+            citySelect.disabled = true;
+            if (countryCode === 'PH') {
+                const provinces = await getPhilippineData(`regions/${regionCode}/provinces/`);
+                setOptions(provinceSelect, provinces.map((province) => ({ code: province.code, name: province.name })), 'Select province');
+            } else {
+                setOptions(provinceSelect, [{ code: regionCode, name: regionSelect.selectedOptions[0]?.dataset.name || regionCode }], 'Select area');
+            }
+            if (oldValues.province) provinceSelect.value = oldValues.province;
+            setName(provinceSelect, nameFields.province);
+            if (provinceSelect.value) {
+                await loadCities(countryCode, provinceSelect.value);
+                if (oldValues.city) citySelect.value = oldValues.city;
+                setName(citySelect, nameFields.city);
+            }
+        };
+        const loadRegions = async (countryCode) => {
+            if (countryCode === 'PH') {
+                const regions = await getPhilippineData('regions/');
+                setOptions(regionSelect, regions.map((region) => ({ code: region.code, name: region.name })), 'Select region');
+            } else {
+                const states = State.getStatesOfCountry(countryCode) || [];
+                setOptions(regionSelect, states.map((state) => ({ code: state.isoCode, name: state.name })), 'Select state/region');
+            }
+            if (oldValues.region) regionSelect.value = oldValues.region;
+            setName(regionSelect, nameFields.region);
+            if (regionSelect.value) await loadProvinces(countryCode, regionSelect.value);
+        };
+
+        setOptions(countrySelect, Country.getAllCountries().map((country) => ({ code: country.isoCode, name: country.name })), 'Select country');
+        if (oldValues.country) {
+            countrySelect.value = oldValues.country;
+            setName(countrySelect, nameFields.country);
+            loadRegions(countrySelect.value).catch(() => setOptions(regionSelect, [], 'Locations unavailable'));
+        }
+        countrySelect.addEventListener('change', async () => {
+            setName(countrySelect, nameFields.country);
+            oldValues.region = '';
+            oldValues.province = '';
+            oldValues.city = '';
+            nameFields.region.value = '';
+            nameFields.province.value = '';
+            nameFields.city.value = '';
+            setOptions(regionSelect, [], 'Loading regions...');
+            setOptions(provinceSelect, [], 'Select region/state first');
+            setOptions(citySelect, [], 'Select province/area first');
+            try { await loadRegions(countrySelect.value); } catch { setOptions(regionSelect, [], 'Locations unavailable'); }
+        });
+        regionSelect.addEventListener('change', async () => {
+            setName(regionSelect, nameFields.region);
+            oldValues.province = '';
+            oldValues.city = '';
+            setOptions(provinceSelect, [], 'Loading provinces...');
+            try { await loadProvinces(countrySelect.value, regionSelect.value); } catch { setOptions(provinceSelect, [], 'Locations unavailable'); }
+        });
+        provinceSelect.addEventListener('change', async () => {
+            setName(provinceSelect, nameFields.province);
+            oldValues.city = '';
+            setOptions(citySelect, [], 'Loading cities...');
+            try { await loadCities(countrySelect.value, provinceSelect.value); } catch { setOptions(citySelect, [], 'Locations unavailable'); }
+        });
+        citySelect.addEventListener('change', () => setName(citySelect, nameFields.city));
+    }
 
     if (profileDropdown && profileTrigger && profileMenu) {
         const closeProfileMenu = () => {
