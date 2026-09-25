@@ -957,6 +957,7 @@
                                 'facilities' => $reservation->facilities->map(fn ($facility) => [
                                     'name' => $facility->name,
                                     'description' => $facility->description,
+                                    'location' => $facility->location,
                                     'price' => '₱' . number_format((float) $facility->price, 2),
                                 ])->values(),
                                 'events' => $reservation->events->map(fn ($event) => [
@@ -1515,7 +1516,7 @@
             const room = reservationCategory === 'rooms' && reservation.room ? `<div class="reservation-detail-section"><h4>Room</h4><div class="reservation-detail-grid">
                 ${field('Room type', reservation.room.type)}${field('Room number', reservation.room.number)}${field('Floor', reservation.room.floor)}${field('Capacity', reservation.room.capacity)}${field('Rate', reservation.room.price)}
                 </div><p>${escapeHtml(reservation.room.description || 'No room description.')}</p></div>` : '';
-            const facilities = reservationCategory === 'facilities' ? `<div class="reservation-detail-section"><h4>Facilities</h4>${list(reservation.facilities, 'No facilities selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>` : '';
+            const facilities = reservationCategory === 'facilities' ? `<div class="reservation-detail-section"><h4>Facilities</h4>${list(reservation.facilities, 'No facilities selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.location, item.description].filter(Boolean).join(' | ') || 'No description.')}</p></div>`)}</div>` : '';
             const events = reservationCategory === 'event' ? `<div class="reservation-detail-section"><h4>Events</h4>${list(reservation.events, 'No events selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.type, item.location, item.capacity ? `Capacity: ${item.capacity}` : ''].filter(Boolean).join(' | '))}</p><p>${escapeHtml(item.description || 'No description.')}</p></div>`)}</div>` : '';
             const dining = reservationCategory === 'dining' ? `<div class="reservation-detail-section"><h4>Dining</h4>${list(reservation.dining, 'No dining items selected.', item => `<div class="reservation-detail-item"><strong>${escapeHtml(item.name)} x${escapeHtml(item.quantity)}</strong><span>${escapeHtml(item.price)}</span><p>${escapeHtml([item.category, item.area, item.schedule, item.date].filter(Boolean).join(' | '))}</p></div>`)}</div>` : '';
             const receiptLines = reservation.receiptLines || [];

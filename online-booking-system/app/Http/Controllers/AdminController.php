@@ -785,7 +785,7 @@ class AdminController extends Controller
                 'name' => $validated['name'], 'description' => $validated['description'] ?? null,
                 'price' => $validated['price'], 'status' => $validated['status'], 'image' => $validated['image'] ?? null,
                 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null,
-                'scheduling_requirement' => $validated['scheduling_requirement'] ?? 'No Additional Schedule',
+                'location' => $validated['location'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? 'No Additional Schedule',
             ]),
             'event' => Event::create([
                 'event_type' => $validated['event_type'] ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null,
@@ -901,7 +901,7 @@ class AdminController extends Controller
         }
 
         $item->update($category === 'facilities'
-            ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? $item->scheduling_requirement ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
+            ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? $item->scheduling_requirement ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
             : ($category === 'event'
                 ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'duration_hours' => $validated['duration_hours'] ?? $item->duration_hours ?? 4, 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
                 : [

@@ -660,11 +660,12 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($facilities as $facility)
-                        <article class="reservation-card" data-category="facilities" data-price="{{ $facility->price }}" data-pricing-basis="{{ $facility->pricing_basis ?? 'Per Stay' }}" data-title="{{ $facility->name }}" data-facility-id="{{ $facility->id }}" data-capacity="{{ $facility->capacity ?? '' }}" data-scheduling="{{ $facility->scheduling_requirement ?? 'No Additional Schedule' }}">
+                        <article class="reservation-card" data-category="facilities" data-price="{{ $facility->price }}" data-pricing-basis="{{ $facility->pricing_basis ?? 'Per Stay' }}" data-title="{{ $facility->name }}" data-facility-id="{{ $facility->id }}" data-capacity="{{ $facility->capacity ?? '' }}" data-location="{{ $facility->location ?? '' }}" data-scheduling="{{ $facility->scheduling_requirement ?? 'No Additional Schedule' }}">
                             <img src="{{ $facility->image ? asset('storage/' . $facility->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $facility->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $facility->name }}</h4>
                                 <p>{{ $facility->description ?: 'Premium guest add-on for your stay.' }}</p>
+                                <p class="text-muted">{{ $facility->location ? 'Location: ' . $facility->location : 'Location: —' }}</p>
                                 <p class="text-muted">₱{{ number_format($facility->price, 0) }} / {{ strtolower(str_replace('Per ', '', $facility->pricing_basis ?? 'Stay')) }}</p>
                                 @if(($facility->capacity ?? null) || ($facility->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
                                     <div class="facility-options">
@@ -1612,9 +1613,9 @@
             detailsRoomGuests.textContent = hasRoomSelection ? `${selectedRoomCapacity + selectedExtraGuests} Guests (${selectedAdults} adult${selectedAdults === 1 ? '' : 's'}, ${selectedKids} kid${selectedKids === 1 ? '' : 's'})` : '—';
             detailsRoomAmount.textContent = hasRoomSelection ? `Amount: ${formatCurrencyValue(roomTotal)}` : '';
             detailsRoomStatus.textContent = hasRoomSelection ? 'Status: Reserved' : '';
-            detailsFacilitiesTitle.textContent = hasFacilitySelection ? selectedFacilities.map(item => item.title).join(', ') : '';
+            detailsFacilitiesTitle.textContent = hasFacilitySelection ? selectedFacilities.map(item => `${item.title}${item.location ? ` (${item.location})` : ''}`).join(', ') : '';
             detailsFacilitiesSummary.textContent = hasFacilitySelection
-                ? selectedFacilities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''}`).join(', ')
+                ? selectedFacilities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.location ? ` • ${item.location}` : ''}${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.time ? ` • ${formatDisplayTime(item.time)}` : ''}`).join(', ')
                 : '';
             detailsFacilitiesAmount.textContent = hasFacilitySelection ? `Amount: ${formatCurrencyValue(selectedFacilities.reduce((sum, item) => sum + getFacilityCharge(item), 0))}` : '';
             detailsFacilitiesStatus.textContent = hasFacilitySelection ? 'Status: Reserved' : '';
@@ -1665,9 +1666,9 @@
                 confirmPaymentProof.removeAttribute('src');
                 confirmPaymentProof.style.display = 'none';
             }
-            confirmFacilitiesTitle.textContent = selectedFacilities.length ? selectedFacilities.map(item => item.title).join(', ') : 'None';
+            confirmFacilitiesTitle.textContent = selectedFacilities.length ? selectedFacilities.map(item => `${item.title}${item.location ? ` (${item.location})` : ''}`).join(', ') : 'None';
             confirmFacilities.textContent = selectedFacilities.length
-                ? selectedFacilities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'} • ₱${getFacilityCharge(item).toLocaleString()}`).join(', ')
+                ? selectedFacilities.map(item => `${item.quantity} ${item.quantity === 1 ? 'slot' : 'slots'}${item.location ? ` • ${item.location}` : ''} • ₱${getFacilityCharge(item).toLocaleString()}`).join(', ')
                 : 'No facilities selected';
             confirmEventTitle.textContent = selectedEvent.length ? selectedEvent.map(item => item.title).join(', ') : 'None';
             confirmEventDining.textContent = selectedEvent.length
@@ -2160,6 +2161,7 @@
                         selectedFacilities.push({
                             id: card.dataset.facilityId,
                             title,
+                            location: card.dataset.location || '',
                             price,
                             pricingBasis: card.dataset.pricingBasis || 'Per Stay',
                             quantity,

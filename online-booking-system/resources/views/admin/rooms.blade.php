@@ -456,6 +456,7 @@
                     <tr class="bg-gray-50">
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllFacilitiesHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="facilities" onclick="toggleAllInventoryCheckboxes('facilities', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Facility Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Location</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Capacity / Quantity</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Action</th>
@@ -464,9 +465,9 @@
                 <tbody id="facilities-list" class="divide-y divide-gray-200">
                     @forelse($facilities as $item)
                         @php($facilityStatus = strtolower($item->status ?? 'unavailable'))
-                        <tr class="transition-colors hover:bg-gray-50"><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-facilities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('facilities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full px-3 py-1 text-xs font-medium text-white {{ $facilityStatus === 'available' ? 'bg-green-500' : ($facilityStatus === 'reserved' ? 'bg-blue-600' : ($facilityStatus === 'limited' ? 'bg-yellow-500' : 'bg-red-500')) }}">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "facilities")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit facility"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "facilities")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change facility status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=facilities" method="POST" onsubmit="return confirm('Delete this facility?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete facility"><i class="fas fa-trash"></i></button></form></div></td></tr>
+                        <tr class="transition-colors hover:bg-gray-50"><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-facilities h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('facilities')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full px-3 py-1 text-xs font-medium text-white {{ $facilityStatus === 'available' ? 'bg-green-500' : ($facilityStatus === 'reserved' ? 'bg-blue-600' : ($facilityStatus === 'limited' ? 'bg-yellow-500' : 'bg-red-500')) }}">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "facilities")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit facility"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "facilities")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change facility status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=facilities" method="POST" onsubmit="return confirm('Delete this facility?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete facility"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @empty
-                        <tr><td colspan="6" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-concierge-bell mb-4 text-4xl text-gray-300"></i><p>No facilities found. Add your first facility to get started.</p></td></tr>
+                        <tr><td colspan="7" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-concierge-bell mb-4 text-4xl text-gray-300"></i><p>No facilities found. Add your first facility to get started.</p></td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -482,6 +483,7 @@
                     <tr class="bg-gray-50">
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"><input id="selectAllEventHeader" type="checkbox" class="inventory-select-all h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" data-category="event" onclick="toggleAllInventoryCheckboxes('event', this)"></th><th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Event Name</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Price</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Location</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Maximum Guests</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Available Time</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
@@ -490,7 +492,7 @@
                 </thead>
                 <tbody id="events-list" class="divide-y divide-gray-200">
                     @foreach($events as $item)
-                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->available_from && $item->available_to ? \Illuminate\Support\Carbon::parse($item->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($item->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full px-3 py-1 text-xs font-medium text-white {{ strtolower((string) $item->status) === 'reserved' ? 'bg-blue-600' : 'bg-green-500' }}">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "event")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "event")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=event" method="POST" onsubmit="return confirm('Delete this event?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event"><i class="fas fa-trash"></i></button></form></div></td></tr>
+                        <tr><td class="px-6 py-4 text-sm"><input type="checkbox" class="inventory-checkbox inventory-checkbox-event h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $item->id }}" onclick="updateInventorySelectAll('event')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $item->name }}</td><td class="px-6 py-4 text-sm text-gray-900">₱{{ number_format($item->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->location ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->capacity ?: '—' }}</td><td class="px-6 py-4 text-sm text-gray-900">{{ $item->available_from && $item->available_to ? \Illuminate\Support\Carbon::parse($item->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($item->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-6 py-4 text-sm"><span class="rounded-full px-3 py-1 text-xs font-medium text-white {{ strtolower((string) $item->status) === 'reserved' ? 'bg-blue-600' : 'bg-green-500' }}">{{ ucfirst($item->status) }}</span></td><td class="px-6 py-4 text-sm"><div class="flex items-center gap-2"><button type='button' onclick='editInventory({{ $item->id }}, @json($item), "event")' class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700" aria-label="Edit event"><i class="fas fa-edit"></i></button><button type='button' onclick='changeInventoryStatus({{ $item->id }}, @json($item->status), "event")' class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700" aria-label="Change event status"><i class="fas fa-exchange-alt"></i></button><form action="{{ route('admin.inventory.destroy', $item->id) }}?category=event" method="POST" onsubmit="return confirm('Delete this event?');">@csrf @method('DELETE')<button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700" aria-label="Delete event"><i class="fas fa-trash"></i></button></form></div></td></tr>
                     @endforeach
                 </tbody>
             </table>
@@ -660,6 +662,7 @@
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label><select id="editInventoryPricingBasis" name="pricing_basis" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Stay + Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option><option>Per Event</option></select></div>
                 <div id="editInventoryDurationField" class="hidden"><label id="editInventoryDurationLabel" class="mb-1 block text-sm font-medium text-gray-700">Duration (hours)</label><input id="editInventoryDuration" name="duration_hours" type="number" min="1" max="24" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div><label id="editInventoryCapacityLabel" class="mb-1 block text-sm font-medium text-gray-700">Capacity / Maximum Guests</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
+                <div id="editInventoryLocationField"><label class="mb-1 block text-sm font-medium text-gray-700">Location</label><select id="editInventoryLocation" name="location" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option value="">Select Location</option><option value="Ground Floor">Ground Floor</option><option value="2nd Floor">2nd Floor</option><option value="Garden">Garden</option><option value="Private Room">Private Room</option><option value="Poolside">Poolside</option><option value="Rooftop">Rooftop</option></select></div>
                 <div id="editInventorySchedulingField"><label class="mb-1 block text-sm font-medium text-gray-700">Scheduling Requirement</label><select id="editInventoryScheduling" name="scheduling_requirement" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>No Additional Schedule</option><option>Date Required</option><option>Date &amp; Time Required</option></select></div>
                 <div id="editInventoryQuantityField"><label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label><input id="editInventoryQuantity" name="quantity" type="number" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div id="editInventoryFromField"><label class="mb-1 block text-sm font-medium text-gray-700">Available From</label><input id="editInventoryFrom" name="available_from" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
@@ -720,6 +723,18 @@
                     <label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label>
                     <select name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2">
                         <option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Stay + Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Location</label>
+                    <select name="location" class="w-full rounded-lg border border-gray-300 px-3 py-2">
+                        <option value="">Select Location</option>
+                        <option value="Ground Floor">Ground Floor</option>
+                        <option value="2nd Floor">2nd Floor</option>
+                        <option value="Garden">Garden</option>
+                        <option value="Private Room">Private Room</option>
+                        <option value="Poolside">Poolside</option>
+                        <option value="Rooftop">Rooftop</option>
                     </select>
                 </div>
                 <div>
@@ -794,6 +809,18 @@
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Maximum Guests</label>
                     <input type="number" name="capacity" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Location</label>
+                    <select name="location" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Select Location</option>
+                        <option value="Ground Floor">Ground Floor</option>
+                        <option value="2nd Floor">2nd Floor</option>
+                        <option value="Garden">Garden</option>
+                        <option value="Private Room">Private Room</option>
+                        <option value="Poolside">Poolside</option>
+                        <option value="Rooftop">Rooftop</option>
+                    </select>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Available From</label>
@@ -1460,8 +1487,12 @@
         typeInput.disabled = isFacility;
         const schedulingField = document.getElementById('editInventorySchedulingField');
         const schedulingInput = document.getElementById('editInventoryScheduling');
+        const locationField = document.getElementById('editInventoryLocationField');
+        const locationInput = document.getElementById('editInventoryLocation');
         schedulingField.classList.toggle('hidden', isEvent);
         schedulingInput.disabled = isEvent;
+        locationField.classList.toggle('hidden', !isFacility && !isEvent);
+        locationInput.disabled = !isFacility && !isEvent;
         fromField.classList.toggle('hidden', isFacility);
         toField.classList.toggle('hidden', isFacility);
         const pricingBasis = document.getElementById('editInventoryPricingBasis');
@@ -1491,6 +1522,7 @@
         statusInput.value = item.status || 'available';
         imagePreview.src = item.image ? "{{ asset('storage') }}/" + item.image : '';
         document.getElementById('editInventoryCapacity').value = item.capacity || '';
+        document.getElementById('editInventoryLocation').value = item.location || '';
         document.getElementById('editInventoryScheduling').value = item.scheduling_requirement || 'No Additional Schedule';
         document.getElementById('editInventoryQuantity').value = item.quantity || '';
         document.getElementById('editInventoryFrom').value = item.available_from ? item.available_from.substring(0, 5) : '';

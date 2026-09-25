@@ -11,28 +11,33 @@
     - Previous is disabled on the first page; Next is disabled on the last page.
 --}}
 @if ($paginator->hasPages())
-    <div class="flex w-full items-center justify-between gap-4 border-t border-gray-200 bg-white px-6 py-4">
-        <span class="text-sm text-gray-600">Page {{ $paginator->currentPage() }}</span>
+    <div class="flex w-full items-center justify-between gap-4 border-t border-gray-200 bg-white px-6 py-3">
+        <span class="text-sm font-medium text-gray-600">
+            Page {{ $paginator->currentPage() }} of {{ $paginator->lastPage() }}
+        </span>
+
         <nav role="navigation" aria-label="Room pagination" class="room-pagination ml-auto flex items-center gap-2 bg-transparent shadow-none">
-            {{-- Previous link (rendered as a disabled span on the first page) --}}
             @if ($paginator->onFirstPage())
-                <span aria-disabled="true" class="inline-flex cursor-not-allowed items-center rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-400">
-                    « Previous
+                <span aria-disabled="true" class="inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-400">
+                    <i class="fas fa-chevron-left mr-1 text-xs"></i>
+                    Previous
                 </span>
             @else
-                <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
-                    « Previous
+                <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
+                    <i class="fas fa-chevron-left mr-1 text-xs"></i>
+                    Previous
                 </a>
             @endif
 
-            {{-- Next link (rendered as a disabled span on the last page) --}}
             @if ($paginator->hasMorePages())
-                <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="inline-flex items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
-                    Next »
+                <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
+                    Next
+                    <i class="fas fa-chevron-right ml-1 text-xs"></i>
                 </a>
             @else
-                <span aria-disabled="true" class="inline-flex cursor-not-allowed items-center rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-400">
-                    Next »
+                <span aria-disabled="true" class="inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm font-medium text-gray-400">
+                    Next
+                    <i class="fas fa-chevron-right ml-1 text-xs"></i>
                 </span>
             @endif
         </nav>

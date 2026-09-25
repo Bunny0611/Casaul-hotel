@@ -260,11 +260,12 @@
         } elseif ($category === 'facilities') {
             $details += [
                 'facility_name' => $reservation->facility?->name ?? 'N/A',
+                'facility_location' => $reservation->facility?->location ?? 'N/A',
                 'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
                 'time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
                 'quantity' => $reservation->quantity ?? 'N/A',
             ];
-            $details['selected_services'] = $reservation->facility ? ['Facility: ' . $reservation->facility->name] : [];
+            $details['selected_services'] = $reservation->facility ? ['Facility: ' . $reservation->facility->name . ($reservation->facility->location ? ' (' . $reservation->facility->location . ')' : '')] : [];
         } elseif ($category === 'event') {
             $details += [
                 'event_name' => $reservation->event?->name ?? 'N/A',
@@ -791,7 +792,7 @@
             rooms: [
                 ['Room Number', reservation.room_number], ['Room Type', reservation.room_type], ['Check-in Date', formatAdminDate(reservation.room_check_in)], ['Check-in Time', reservation.room_check_in_time], ['Check-out Date', formatAdminDate(reservation.room_check_out)], ['Check-out Time', reservation.room_check_out_time], ['Number of Guests', reservation.adult_guests !== null && reservation.adult_guests !== undefined && reservation.kid_guests !== null && reservation.kid_guests !== undefined ? `${reservation.room_number_of_guests} (${reservation.adult_guests} adult, ${reservation.kid_guests} kid)` : reservation.room_number_of_guests], ['Room Rate', reservation.room_rate && reservation.room_rate !== 'N/A' ? formatAdminMoney(reservation.room_rate) : 'N/A']
             ],
-            facilities: [['Facility', reservation.facility_name], ['Date', formatAdminDate(reservation.date)], ['Time', reservation.time], ['Quantity', reservation.quantity]],
+            facilities: [['Facility', reservation.facility_name], ['Location', reservation.facility_location || 'N/A'], ['Date', formatAdminDate(reservation.date)], ['Time', reservation.time], ['Quantity', reservation.quantity]],
             event: [['Event', reservation.event_name], ['Event Type', reservation.event_type], ['Event Date', formatAdminDate(reservation.event_date)], ['Start Time', reservation.event_start_time], ['End Time', reservation.event_end_time], ['Event Hours', reservation.event_duration], ['Number of Guests', reservation.event_number_of_guests]],
             dining: [['Dining Area/Table', reservation.dining_area], ['Date', formatAdminDate(reservation.date)], ['Time', reservation.time], ['Number of Guests', reservation.number_of_guests]],
         };
