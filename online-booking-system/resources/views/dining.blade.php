@@ -13,7 +13,8 @@
         ['name' => 'Dessert', 'icon' => 'fa-cake-candles'],
         ['name' => 'Beverage', 'icon' => 'fa-glass-water'],
     ];
-    $selectedCategory = $defaultCategory;
+    $requestedCategory = request()->query('category', $defaultCategory);
+    $selectedCategory = collect($categoryButtons)->first(fn ($button) => strtolower($button['name']) === strtolower((string) $requestedCategory), ['name' => $defaultCategory])['name'];
     $selectedMeals = $menuByCategory[$selectedCategory] ?? collect();
 @endphp
 
