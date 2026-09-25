@@ -88,7 +88,7 @@ class AuthController extends Controller
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+        ])->onlyInput('email', 'auth_form');
     }
 
     public function redirectToGoogle()
@@ -199,7 +199,17 @@ class AuthController extends Controller
             'middle_initial' => 'required|string|max:3',
             'email' => ['required', 'email', 'unique:staff_users,email', 'unique:guest_users,email'],
             'contact_no' => 'required|string|max:25',
+            'country_code' => 'required|string|max:10',
+            'country_name' => 'required|string|max:255',
+            'region_code' => 'nullable|string|max:30',
+            'region_name' => 'nullable|string|max:255',
+            'province_code' => 'nullable|string|max:30',
+            'province_name' => 'nullable|string|max:255',
+            'city_code' => 'nullable|string|max:30',
+            'city_name' => 'nullable|string|max:255',
             'password' => 'required|string|confirmed|min:6',
+        ], [
+            'email.unique' => 'This email is already registered. Please use a different email address.',
         ]);
 
         $user = Guest::create([
@@ -209,6 +219,14 @@ class AuthController extends Controller
             'name' => trim($data['first_name'].' '.$data['middle_initial'].' '.$data['last_name']),
             'email' => $data['email'],
             'contact_no' => $data['contact_no'],
+            'country_code' => $data['country_code'],
+            'country_name' => $data['country_name'],
+            'region_code' => $data['region_code'] ?? null,
+            'region_name' => $data['region_name'] ?? null,
+            'province_code' => $data['province_code'] ?? null,
+            'province_name' => $data['province_name'] ?? null,
+            'city_code' => $data['city_code'] ?? null,
+            'city_name' => $data['city_name'] ?? null,
             'password' => Hash::make($data['password']),
         ]);
 

@@ -33,7 +33,9 @@ use App\Models\ReservationDiningItem;
 use App\Models\GuestRequest;
 use App\Models\Payment;
 use App\Models\Refund;
+use App\Models\Guest;
 use App\Support\ReservationPricing;
+use App\Support\GuestOrigin;
 
 class AdminController extends Controller
 {
@@ -2626,12 +2628,38 @@ class AdminController extends Controller
         })->count();
         $newGuests = max(0, $totalGuests - $returningGuests);
 
+        $guestOriginLabels = ['Local', 'Provincial', 'Regional', 'National', 'International'];
+        $guestOriginCounts = Guest::query()->get()
+            ->groupBy(fn (Guest $guest) => GuestOrigin::classify($guest))
+            ->map(fn ($guests) => $guests->count());
+        $guestOriginData = collect($guestOriginLabels)
+            ->map(fn (string $origin) => (int) $guestOriginCounts->get($origin, 0))
+            ->all();
+
         $stayDurations = $reservations->filter(function ($reservation) {
             return $reservation->check_in && $reservation->check_out;
         })->map(function ($reservation) {
             return $reservation->check_in->diffInDays($reservation->check_out);
         });
         $averageStayDuration = $stayDurations->count() > 0 ? round($stayDurations->avg(), 1) : 0;
+
+        $stayDurationTrendLabels = [];
+        $stayDurationTrendData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = Carbon::now()->subMonths($i)->startOfMonth();
+            $monthEnd = (clone $monthStart)->endOfMonth();
+            $monthlyStayDurations = $reservations
+                ->filter(fn ($reservation) => $reservation->created_at
+                    && $reservation->created_at->between($monthStart->startOfDay(), $monthEnd->endOfDay())
+                    && $reservation->check_in
+                    && $reservation->check_out)
+                ->map(fn ($reservation) => $reservation->check_in->diffInDays($reservation->check_out));
+
+            $stayDurationTrendLabels[] = $monthStart->format('M Y');
+            $stayDurationTrendData[] = $monthlyStayDurations->count() > 0
+                ? round($monthlyStayDurations->avg(), 1)
+                : 0;
+        }
 
         $recentGuestActivity = $reservations->sortByDesc(function ($reservation) {
             return $reservation->created_at;
@@ -2676,7 +2704,11 @@ class AdminController extends Controller
             'totalGuests',
             'newGuests',
             'returningGuests',
+            'guestOriginLabels',
+            'guestOriginData',
             'averageStayDuration',
+            'stayDurationTrendLabels',
+            'stayDurationTrendData',
             'recentGuestActivity',
             'maintenanceReports',
             'maintenanceStatusLabels',

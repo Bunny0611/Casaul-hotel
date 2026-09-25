@@ -1314,6 +1314,50 @@ body:has(.auth-modal-backdrop.open) {
     gap: 12px;
 }
 
+.auth-location-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.auth-select-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.auth-select-wrap span {
+    color: #817775;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.auth-select-wrap strong {
+    color: #8f0e16;
+}
+
+.auth-select-wrap select {
+    width: 100%;
+    border: 1px solid #ded8d5;
+    border-radius: 10px;
+    background: #fff;
+    color: #292324;
+    padding: 11px 10px;
+    font-size: 13px;
+    outline: none;
+}
+
+.auth-select-wrap select:focus {
+    border-color: #8f0e16;
+    box-shadow: 0 0 0 3px rgba(143, 14, 22, 0.12);
+}
+
+.auth-select-wrap select:disabled {
+    background: #f7f4f2;
+    color: #a69b97;
+}
+
 .auth-input {
     width: 100%;
     border: 1px solid #ded8d5;

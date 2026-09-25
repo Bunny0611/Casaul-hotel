@@ -133,14 +133,14 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold mb-4">Monthly Revenue</h3>
-                <div class="relative h-[340px]">
+                <div class="relative h-[240px]">
                     <canvas id="monthlyRevenue" class="w-full h-full"></canvas>
                 </div>
             </div>
 
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Revenue by Category</h3>
-                <div class="relative h-[340px]">
+                <div class="relative h-[240px]">
                     <canvas id="revenueByCategoryChart" class="w-full h-full"></canvas>
                 </div>
             </div>
@@ -170,14 +170,14 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Reservation Trend</h3>
-                <div class="relative h-[320px]">
+                <div class="relative h-[240px]">
                     <canvas id="reservationTrendChart" class="w-full h-full"></canvas>
                 </div>
             </div>
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Reservation Status Distribution</h3>
-                <div class="flex items-center justify-center h-[320px]">
-                    <canvas id="reservationStatusChart" class="max-w-[320px] max-h-[320px] w-full h-full"></canvas>
+                <div class="flex items-center justify-center h-[240px]">
+                    <canvas id="reservationStatusChart" class="max-w-[240px] max-h-[240px] w-full h-full"></canvas>
                 </div>
             </div>
         </div>
@@ -222,14 +222,14 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Occupancy Trend</h3>
-                <div class="relative h-[320px]">
+                <div class="relative h-[240px]">
                     <canvas id="occupancyTrendChart" class="w-full h-full"></canvas>
                 </div>
             </div>
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Room Status Distribution</h3>
-                <div class="flex items-center justify-center h-[320px]">
-                    <canvas id="roomStatusChart" class="max-w-[320px] max-h-[320px] w-full h-full"></canvas>
+                <div class="flex items-center justify-center h-[240px]">
+                    <canvas id="roomStatusChart" class="max-w-[240px] max-h-[240px] w-full h-full"></canvas>
                 </div>
             </div>
         </div>
@@ -258,22 +258,30 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Guest Registration Trend</h3>
-                <div class="relative h-[320px]">
+                <div class="relative h-[240px]">
                     <canvas id="guestRegistrationChart" class="w-full h-full"></canvas>
                 </div>
             </div>
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">New vs Returning Guests</h3>
-                <div class="flex items-center justify-center h-[320px]">
+                <div class="flex items-center justify-center h-[240px]">
                     <canvas id="guestTypeChart" class="max-w-[320px] max-h-[320px] w-full h-full"></canvas>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Average Stay Duration</h3>
-            <div class="relative h-[320px]">
-                <canvas id="stayDurationChart" class="w-full h-full"></canvas>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Guests by Origin</h3>
+                <div class="relative h-[240px]">
+                    <canvas id="guestOriginChart" class="w-full h-full"></canvas>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Average Stay Duration</h3>
+                <div class="relative h-[240px]">
+                    <canvas id="stayDurationChart" class="w-full h-full"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -791,9 +799,39 @@
         });
     }
 
+    const guestOriginCtx = document.getElementById('guestOriginChart')?.getContext('2d');
+    const guestOriginLabels = @json($guestOriginLabels);
+    const guestOriginData = @json($guestOriginData).map(value => Number(value) || 0);
+
+    if (guestOriginCtx) {
+        new Chart(guestOriginCtx, {
+            type: 'bar',
+            data: {
+                labels: guestOriginLabels,
+                datasets: [{
+                    label: 'Guests',
+                    data: guestOriginData,
+                    backgroundColor: ['#8f0e16', '#d97706', '#2563eb', '#059669', '#7c3aed'],
+                    borderRadius: 4,
+                    barThickness: 24
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } },
+                    y: { grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
     const stayDurationCtx = document.getElementById('stayDurationChart')?.getContext('2d');
-    const stayDurationLabels = @json($reservationTrendLabels);
-    const stayDurationData = @json($reservationTrendData);
+    const stayDurationLabels = @json($stayDurationTrendLabels);
+    const stayDurationData = @json($stayDurationTrendData);
 
     if (stayDurationCtx) {
         new Chart(stayDurationCtx, {
