@@ -1,6 +1,112 @@
 @extends('admin.layout')
 
 @section('content')
+<style>
+    .report-export-document {
+        box-sizing: border-box;
+        width: 1400px;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 32px;
+        color: #1f2937;
+        background: #ffffff;
+        font-family: Arial, sans-serif;
+    }
+
+    .report-export-document.report-print-target {
+        display: none;
+    }
+
+    body.report-pdf-rendering > *:not(.report-export-document) {
+        visibility: hidden !important;
+    }
+
+    .report-export-document .report-export-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .report-export-document .report-export-period {
+        margin-top: 6px;
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    .report-export-document [data-panel] {
+        display: block !important;
+    }
+
+    .report-export-document [data-panel] > * {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .report-export-document .report-export-kpi-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 24px;
+    }
+
+    .report-export-document .report-export-two-column-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 24px;
+    }
+
+    .report-export-document .report-export-three-column-grid {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 24px;
+    }
+
+    .report-export-document canvas,
+    .report-export-document .report-export-chart {
+        display: block;
+        max-width: 100%;
+        height: auto !important;
+        object-fit: contain;
+    }
+
+    .report-export-document .shadow-lg,
+    .report-export-document .shadow-sm {
+        box-shadow: none !important;
+    }
+
+    @media print {
+        @page {
+            size: A4 landscape;
+            margin: 12mm;
+        }
+
+        body {
+            background: #ffffff !important;
+        }
+
+        body.report-printing > *:not(.report-export-document) {
+            display: none !important;
+        }
+
+        .report-export-document.report-print-target {
+            display: block !important;
+        }
+
+        .report-export-document {
+            width: 100%;
+            max-width: none;
+        }
+
+        .report-export-document .report-export-chart-card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+    }
+
+        .report-export-page-break {
+            break-before: page;
+            page-break-before: always;
+        }
+</style>
 <div class="animate-fade-in">
     <h2 class="text-3xl font-bold text-gray-800 mb-6">Comprehensive Reporting System</h2>
     
@@ -24,6 +130,9 @@
                     </button>
                     <button id="exportCsvBtn" type="button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
                         <i class="fas fa-file-csv mr-2"></i>Export Excel
+                    </button>
+                    <button id="downloadPdfBtn" type="button" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                        <i class="fas fa-file-pdf mr-2"></i>Download PDF
                     </button>
                     <button id="printBtn" type="button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                         <i class="fas fa-print mr-2"></i>Print
@@ -339,10 +448,12 @@
     document.addEventListener('DOMContentLoaded', function () {
         const tabButtons = document.querySelectorAll('.tab-btn');
         const panels = document.querySelectorAll('[data-panel]');
+        let activeTab = document.querySelector('.tab-btn.border-orange-500')?.getAttribute('data-tab') || 'financial';
 
         tabButtons.forEach(button => {
             button.addEventListener('click', function () {
                 const target = this.getAttribute('data-tab');
+                activeTab = target;
 
                 tabButtons.forEach(btn => {
                     btn.classList.remove('border-orange-500', 'font-semibold', 'text-orange-600');
@@ -356,10 +467,108 @@
                 });
             });
         });
-        // Actions: Refresh, Export Excel, Print
+        // Actions: Refresh, Export Excel, Download PDF, Print
         const refreshBtn = document.getElementById('reportsRefresh');
         const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const downloadPdfBtn = document.getElementById('downloadPdfBtn');
         const printBtn = document.getElementById('printBtn');
+
+        const reportTitles = {
+            financial: 'Financial Report',
+            reservations: 'Reservations Report',
+            occupancy: 'Occupancy Report',
+            guests: 'Guests Report',
+            maintenance: 'Maintenance Report'
+        };
+
+        function getReportingPeriod() {
+            const from = document.getElementById('reportFrom')?.value || 'All';
+            const to = document.getElementById('reportTo')?.value || 'All';
+            return `From: ${from}  |  To: ${to}`;
+        }
+
+        function prepareExportDocument() {
+            const sourcePanel = document.querySelector(`[data-panel="${activeTab}"]`);
+            if (!sourcePanel) return null;
+
+            const documentRoot = document.createElement('div');
+            documentRoot.className = 'report-export-document';
+            documentRoot.innerHTML = `
+                <header class="report-export-header">
+                    <h1>${reportTitles[activeTab] || 'Hotel Report'}</h1>
+                    <p class="report-export-period">${getReportingPeriod()}</p>
+                </header>
+            `;
+
+            const panelClone = sourcePanel.cloneNode(true);
+            panelClone.classList.remove('hidden');
+            panelClone.querySelectorAll('details:not([open])').forEach(details => details.remove());
+            panelClone.querySelectorAll('button, input, select, textarea, form').forEach(control => control.remove());
+
+            panelClone.querySelectorAll(':scope > .grid').forEach((grid, index) => {
+                if (index === 0) {
+                    grid.classList.add('report-export-kpi-grid');
+                } else if (grid.classList.contains('lg:grid-cols-3')) {
+                    grid.classList.add('report-export-three-column-grid');
+                } else {
+                    grid.classList.add('report-export-two-column-grid');
+                }
+
+                if (index >= 2) grid.classList.add('report-export-page-break');
+            });
+
+            sourcePanel.querySelectorAll('canvas').forEach(sourceCanvas => {
+                const chart = window.Chart?.getChart(sourceCanvas);
+                if (chart) chart.resize();
+
+                const clonedCanvas = panelClone.querySelector(`#${sourceCanvas.id}`);
+                if (!clonedCanvas) return;
+
+                const chartImage = document.createElement('img');
+                chartImage.className = 'report-export-chart';
+                chartImage.alt = '';
+                chartImage.width = sourceCanvas.width;
+                chartImage.height = sourceCanvas.height;
+                chartImage.src = sourceCanvas.toDataURL('image/png', 1);
+                clonedCanvas.replaceWith(chartImage);
+
+                const chartCard = chartImage.closest('.bg-white');
+                chartCard?.classList.add('report-export-chart-card');
+            });
+
+            documentRoot.appendChild(panelClone);
+            return documentRoot;
+        }
+
+        function loadPdfLibraries() {
+            const loadScript = (src, ready) => new Promise((resolve, reject) => {
+                if (ready()) return resolve();
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+
+            return Promise.all([
+                loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', () => !!window.html2canvas),
+                loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', () => !!window.jspdf?.jsPDF)
+            ]);
+        }
+
+        function printCurrentReport(reportDocument) {
+            reportDocument.classList.add('report-print-target');
+            document.body.classList.add('report-printing');
+            document.body.appendChild(reportDocument);
+
+            const cleanup = () => {
+                reportDocument.remove();
+                document.body.classList.remove('report-printing');
+            };
+
+            window.addEventListener('afterprint', cleanup, { once: true });
+            window.print();
+        }
 
         function buildQuery() {
             const from = document.getElementById('reportFrom')?.value || '';
@@ -384,11 +593,76 @@
             });
         }
 
+        if (downloadPdfBtn) {
+            downloadPdfBtn.addEventListener('click', async function () {
+                const reportDocument = prepareExportDocument();
+                if (!reportDocument) return;
+
+                downloadPdfBtn.disabled = true;
+                reportDocument.style.position = 'absolute';
+                reportDocument.style.top = '0';
+                reportDocument.style.left = '0';
+                reportDocument.style.zIndex = '9999';
+                document.body.classList.add('report-pdf-rendering');
+                document.body.appendChild(reportDocument);
+
+                try {
+                    await loadPdfLibraries();
+                    const canvas = await window.html2canvas(reportDocument, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        useCORS: true,
+                        logging: false
+                    });
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+                    const margin = 12;
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+                    const contentWidth = pageWidth - (margin * 2);
+                    const contentHeight = pageHeight - (margin * 2);
+                    const rootRect = reportDocument.getBoundingClientRect();
+                    const canvasScale = canvas.width / rootRect.width;
+                    const maximumPageHeight = (contentHeight / contentWidth) * canvas.width;
+                    const cssBreakpoints = Array.from(reportDocument.querySelectorAll('.report-export-page-break'))
+                        .map(element => (element.getBoundingClientRect().top - rootRect.top) * canvasScale)
+                        .filter(breakpoint => breakpoint > 0 && breakpoint < canvas.height);
+                    const pageBreakpoints = [...new Set([0, ...cssBreakpoints, canvas.height])].sort((a, b) => a - b);
+
+                    for (let breakpointIndex = 0; breakpointIndex < pageBreakpoints.length - 1; breakpointIndex += 1) {
+                        let sourceY = pageBreakpoints[breakpointIndex];
+                        const sectionEnd = pageBreakpoints[breakpointIndex + 1];
+
+                        while (sourceY < sectionEnd) {
+                            const sourceHeight = Math.min(maximumPageHeight, sectionEnd - sourceY);
+                        const pageCanvas = document.createElement('canvas');
+                        pageCanvas.width = canvas.width;
+                        pageCanvas.height = sourceHeight;
+                        pageCanvas.getContext('2d').drawImage(
+                            canvas, 0, sourceY, canvas.width, sourceHeight,
+                            0, 0, pageCanvas.width, pageCanvas.height
+                        );
+
+                        if (sourceY > 0) pdf.addPage();
+                        const renderedHeight = (sourceHeight * contentWidth) / canvas.width;
+                        pdf.addImage(pageCanvas, 'PNG', margin, margin, contentWidth, renderedHeight);
+                        sourceY += sourceHeight;
+                        }
+                    }
+
+                    pdf.save(`${(reportTitles[activeTab] || 'hotel-report').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`);
+                } finally {
+                    reportDocument.remove();
+                    document.body.classList.remove('report-pdf-rendering');
+                    downloadPdfBtn.disabled = false;
+                }
+            });
+        }
+
         if (printBtn) {
             printBtn.addEventListener('click', function () {
-                const q = buildQuery();
-                const url = "{{ route('admin.reports.print') }}" + q;
-                window.open(url, '_blank');
+                const reportDocument = prepareExportDocument();
+                if (reportDocument) printCurrentReport(reportDocument);
             });
         }
     });
