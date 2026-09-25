@@ -3175,7 +3175,7 @@ body:has(.auth-modal-backdrop.open) {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 110px clamp(28px, 7vw, 100px) 70px;
+    padding: 150px clamp(28px, 7vw, 100px) 70px;
 }
 
 .wedding-eyebrow {
