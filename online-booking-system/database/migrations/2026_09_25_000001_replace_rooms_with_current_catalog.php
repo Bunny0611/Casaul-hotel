@@ -18,11 +18,23 @@ return new class extends Migration
             ->whereNotIn('room_number', $roomNumbers)
             ->pluck('id');
 
-        foreach (['reservations', 'room_reservations', 'housekeeping_tasks'] as $table) {
-            if (Schema::hasTable($table) && DB::table($table)->whereIn('room_id', $obsoleteRoomIds)->exists()) {
-                throw new RuntimeException(
-                    "Cannot remove obsolete rooms because {$table} still references them."
-                );
+        if ($obsoleteRoomIds->isNotEmpty()) {
+            foreach (['reservations', 'room_reservations', 'housekeeping_tasks'] as $table) {
+                if (!Schema::hasTable($table)) {
+                    continue;
+                }
+
+                if ($table === 'reservations' && Schema::hasColumn('reservations', 'room_id')) {
+                    DB::table($table)
+                        ->whereIn('room_id', $obsoleteRoomIds)
+                        ->update(['room_id' => null]);
+
+                    continue;
+                }
+
+                DB::table($table)
+                    ->whereIn('room_id', $obsoleteRoomIds)
+                    ->delete();
             }
         }
 

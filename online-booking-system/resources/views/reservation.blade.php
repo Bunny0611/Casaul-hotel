@@ -1371,6 +1371,18 @@
         };
         const getSelectedEventCount = () => selectedEvent.length;
         const getSelectedDiningCount = () => selectedDining.length;
+        const getDiningSelectionPreview = (items, limit = 3) => {
+            if (!items || items.length === 0) {
+                return '';
+            }
+
+            const previewItems = items.slice(0, limit).map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`);
+            if (items.length <= limit) {
+                return previewItems.join(', ');
+            }
+
+            return `${previewItems.join(', ')} +${items.length - limit} more`;
+        };
         const syncSelectedGuestCounts = (card) => {
             selectedAdults = Number(card?.querySelector('[data-guest-type="adult"]')?.value || 0);
             selectedKids = Number(card?.querySelector('[data-guest-type="kid"]')?.value || 0);
@@ -1518,7 +1530,7 @@
             const roomTotal = roomPrice * stayNights;
             const extraGuestsTotal = ((selectedAdults * selectedAdultPrice) + (selectedKids * selectedKidPrice)) * stayNights;
             const selectedEventTitles = selectedEvent.map(item => item.title).join(', ');
-            const selectedDiningTitles = selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ');
+            const selectedDiningTitles = getDiningSelectionPreview(selectedDining);
             const selectedDiningSchedule = [...new Set(selectedDining.map(item => item.schedule).filter(Boolean))].join(', ');
             const selectedDiningTable = [...new Set(selectedDining.map(item => item.table).filter(Boolean))].join(', ');
             const selectedDiningDateValue = diningDate?.value || selectedDining[0]?.date || '';
@@ -1589,7 +1601,7 @@
             detailsEventAmount.textContent = hasEventSelection ? `Amount: ${formatCurrencyValue(selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0))}` : '';
             detailsEventStatus.textContent = hasEventSelection ? 'Status: Reserved' : '';
             detailsDiningTitle.textContent = hasDiningSelection
-                ? selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ')
+                ? getDiningSelectionPreview(selectedDining)
                 : '';
             detailsDiningSummary.textContent = hasDiningSelection
                 ? [selectedDiningTable ? `Table ${selectedDiningTable}` : null, selectedDiningSchedule || null, selectedDiningDate || null].filter(Boolean).join(' • ') || 'No table selected'
@@ -1631,7 +1643,7 @@
                 ? selectedEvent.map(item => `${item.type || 'Event'} • ${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}`).join(', ')
                 : 'No event selected';
             confirmDiningTitle.textContent = selectedDining.length
-                ? selectedDining.map(item => `${item.title}${Number(item.quantity || 1) > 1 ? ` x${item.quantity}` : ''}`).join(', ')
+                ? getDiningSelectionPreview(selectedDining)
                 : 'None';
             confirmDiningDetails.textContent = selectedDining.length
                 ? [selectedDiningTable ? `Table ${selectedDiningTable}` : 'Table not selected', selectedDiningSchedule || null, selectedDiningDate || null].filter(Boolean).join(' • ') || 'No dining selected'

@@ -1,15 +1,15 @@
 @extends('app')
 
 @section('content')
-<main class="home-reference-page">
-    <section class="home-reference-hero">
+<main class="home-page">
+    <section class="home-hero">
         <img src="{{ asset('image/HM.jpg') }}" alt="Warm CASAUL Hotel guest room">
-        <div class="home-reference-hero-overlay"></div>
-        <div class="home-reference-hero-copy">
-            <p class="home-reference-eyebrow">Comfort. Elegance. Memories.</p>
-            <h1>A Stay to<br>Remember</h1>
-            <p>Experience exceptional hospitality, luxurious<br class="home-desktop-break"> comfort, and unforgettable moments at CASAUL Hotel.</p>
-            <a class="home-gold-button{{ auth('guest')->check() ? '' : ' js-auth-trigger' }}" href="{{ auth('guest')->check() ? route('reservation') : '#guest-auth-modal' }}"{{ auth('guest')->check() ? '' : ' data-auth-trigger' }}>Book Your Stay</a>
+        <div class="home-hero-overlay"></div>
+        <div class="home-hero-copy">
+            <p class="home-eyebrow">Comfort. Elegance. Memories.</p>
+            <h1>A Stay to <span class="home-hero-highlight">Remember</span></h1>
+            <p>Experience exceptional hospitality, luxurious comfort, and unforgettable moments at CASAUL Hotel.</p>
+            <a class="home-primary-btn{{ auth('guest')->check() ? '' : ' js-auth-trigger' }}" href="{{ auth('guest')->check() ? route('reservation') : '#guest-auth-modal' }}"{{ auth('guest')->check() ? '' : ' data-auth-trigger' }}>Book Your Stay <span>→</span></a>
         </div>
     </section>
 
@@ -57,7 +57,7 @@
     <section class="home-featured-section">
         <header class="home-featured-heading"><h2>Featured Rooms</h2><a href="{{ route('accommodation') }}">View All Rooms</a></header>
         <div class="home-room-grid">
-            @foreach($rooms as $room)
+            @foreach(array_slice($rooms, 0, 4) as $room)
                 <a href="{{ route('accommodation.room', ['slug' => $room['slug']]) }}" class="home-room-card">
                     <img src="{{ asset($room['image']) }}" alt="{{ $room['name'] }}">
                     <div>
