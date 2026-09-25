@@ -19,6 +19,9 @@ Hotel booking system for CASAUL Hotel with staff login, reservations, rooms, hou
 4. Start MySQL/MariaDB in XAMPP and create a database named `casaul_hotel` in phpMyAdmin.
 5. Import `database/casaul_hotel.sql` into `casaul_hotel` using phpMyAdmin, or run `mysql -u root casaul_hotel < database/casaul_hotel.sql`.
 6. Run `php artisan config:clear` and `php artisan migrate` for any schema migrations added after the export.
+7. Run `php artisan storage:link` so uploaded room images are available at `/storage/...`.
+
+Uploaded room image files are stored in `storage/app/public/rooms` and should be committed with the project. The SQL export stores the room records and image paths, while the committed folder stores the actual picture files.
 
 ### Keeping the database in sync
 
