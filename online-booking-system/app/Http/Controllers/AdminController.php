@@ -639,7 +639,7 @@ class AdminController extends Controller
         ]);
         $facilities = Facility::orderBy('name')->paginate(5, ['*'], 'facilities_page')->appends(['tab' => 'facilities']);
         $events = Event::orderBy('name')->paginate(5, ['*'], 'events_page')->appends(['tab' => 'events']);
-        $dining = DiningMenu::orderBy('name')->paginate(5, ['*'], 'dining_page')->appends(['tab' => 'dining']);
+        $dining = DiningMenu::orderBy('name')->get();
         $diningTables = DiningTable::orderBy('table_no')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $activeTab = request()->query('tab', 'rooms');
@@ -738,6 +738,7 @@ class AdminController extends Controller
             'category' => ['required', 'in:facilities,event,dining'],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
+            'menu_category' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
             'pricing_basis' => ['required_if:category,facilities,event', 'nullable', 'string', 'in:Per Stay,Per Person,Per Vehicle,Per Stay + Per Vehicle,Per Hour,Per Day,Fixed Price,Per Event'],
@@ -746,11 +747,11 @@ class AdminController extends Controller
             'status' => ['required', 'string', 'max:50'],
             'location' => ['nullable', 'string', 'max:255'],
             'capacity' => ['nullable', 'integer', 'min:1'],
-            'available_from' => ['required_if:category,event', 'nullable', 'date_format:H:i', Rule::in($eventTimeOptions)],
-            'available_to' => ['required_if:category,event', 'nullable', 'date_format:H:i', 'after:available_from', Rule::in($eventTimeOptions)],
+            'available_from' => ['nullable', 'date_format:H:i', Rule::when($request->input('category') === 'event', ['required', Rule::in($eventTimeOptions)])],
+            'available_to' => ['nullable', 'date_format:H:i', 'after:available_from', Rule::when($request->input('category') === 'event', ['required', Rule::in($eventTimeOptions)])],
             'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
             'quantity' => ['nullable', 'integer', 'min:0'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
         if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
             $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
@@ -813,7 +814,8 @@ class AdminController extends Controller
             'capacity' => ['nullable', 'integer', 'min:1'],
             'location' => ['nullable', 'string', 'max:255'],
             'max_guests' => ['nullable', 'integer', 'min:1'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
+            'description' => ['nullable', 'string'],
             'status' => ['required', 'string', 'max:50'],
         ]);
 
@@ -843,6 +845,7 @@ class AdminController extends Controller
                 'status' => strtolower($validated['status']),
                 'available_from' => $validated['available_from'] ?? null,
                 'available_to' => $validated['available_to'] ?? null,
+                'description' => $validated['description'] ?? null,
                 'image' => $image,
             ]);
         }
@@ -858,6 +861,7 @@ class AdminController extends Controller
         $validated = $request->validate([
             'category' => ['required', 'in:facilities,event,dining'],
             'name' => ['required', 'string', 'max:255'],
+            'menu_category' => ['required_if:category,dining', 'nullable', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -871,7 +875,7 @@ class AdminController extends Controller
             'available_to' => ['required_if:category,event', 'nullable', 'date_format:H:i', 'after:available_from', Rule::in($eventTimeOptions)],
             'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
             'quantity' => ['nullable', 'integer', 'min:0'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
         if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
             $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
@@ -895,7 +899,24 @@ class AdminController extends Controller
             ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? $item->scheduling_requirement ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
             : ($category === 'event'
                 ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'duration_hours' => $validated['duration_hours'] ?? $item->duration_hours ?? 4, 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
-                : $validated));
+                : [
+                    'name' => $validated['name'],
+                    'category' => $validated['menu_category'] ?? $item->category,
+                    'description' => $validated['description'] ?? null,
+                    'price' => $validated['price'],
+                    'status' => $validated['status'],
+                    'available_from' => array_key_exists('available_from', $validated) ? $validated['available_from'] : $item->available_from,
+                    'available_to' => array_key_exists('available_to', $validated) ? $validated['available_to'] : $item->available_to,
+                    'quantity' => $validated['quantity'] ?? $item->quantity,
+                    ...($request->hasFile('image') ? ['image' => $validated['image']] : []),
+                ]));
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Inventory item updated successfully.',
+                'item' => $item->fresh(),
+            ]);
+        }
 
         return redirect()->route('admin.rooms')->with('success', 'Inventory item updated successfully.');
     }

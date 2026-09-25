@@ -1810,7 +1810,9 @@
                 article.dataset.diningId = meal.id;
                 article.dataset.schedule = meal.dining_schedule || meal.schedule || '';
 
-                const imageUrl = meal.image ? `{{ asset('storage/') }}/${meal.image.replace(/^storage\//, '')}` : "{{ asset('image/Royal-Suite-room.jpg') }}";
+                const imageUrl = meal.image
+                    ? (/^(https?:)?\/\//.test(meal.image) ? meal.image : `{{ asset('storage/') }}/${meal.image.replace(/^\/?storage\//, '')}`)
+                    : "{{ asset('image/Royal-Suite-room.jpg') }}";
                 const displayCategory = meal.category || normalizedCategory;
                 article.innerHTML = `
                     <img src="${imageUrl}" alt="${meal.name || ''}">
