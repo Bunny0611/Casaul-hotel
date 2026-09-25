@@ -224,8 +224,8 @@
     .receipt-modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.6); z-index:10000; }
     .receipt-modal.open { display:flex; }
     .receipt-card { width:min(720px,100%); max-height:calc(100vh - 40px); overflow-y:auto; padding:28px; border-radius:4px; background:#fff; box-shadow:0 25px 60px rgba(15,23,42,.2); }
-    .receipt-header { position:relative; display:block; padding-bottom:14px; border-bottom:4px solid #c7d8e8; }
-    .receipt-brand { margin:0; color:#07549a; font-size:32px; font-weight:400; text-align:center; }
+    .receipt-header { position:relative; display:block; padding-bottom:14px; border-bottom:4px solid #fed7aa; }
+    .receipt-brand { margin:0; color:#c2410c; font-size:32px; font-weight:400; text-align:center; }
     .receipt-contact { display:flex; justify-content:center; flex-wrap:wrap; gap:18px; margin:12px 0 4px; color:#727b85; font-size:12px; }
     .receipt-contact span { white-space:nowrap; }
     .receipt-contact i { margin-right:5px; color:#727b85; }
@@ -233,11 +233,11 @@
     .receipt-subcontact i { margin-right:5px; }
     .receipt-heading-row { margin:24px 0 16px; text-align:center; }
     .receipt-title-row { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; margin:0 0 18px; }
-    .receipt-paid-by h4, .receipt-booking h4 { margin:0 0 8px; color:#07549a; font-size:14px; }
+    .receipt-paid-by h4, .receipt-booking h4 { margin:0 0 8px; color:#c2410c; font-size:14px; }
     .receipt-paid-by p, .receipt-booking p { margin:3px 0; color:#4b5563; font-size:13px; }
-    .receipt-heading { margin:0; color:#07549a; font-size:32px; letter-spacing:.04em; }
+    .receipt-heading { margin:0; color:#c2410c; font-size:32px; letter-spacing:.04em; }
     .receipt-booking { min-width:220px; }
-    .receipt-booking-details { margin:0 0 20px; padding:16px 18px; border:1px solid #d9e5ef; border-radius:6px; background:#f8fbfe; }
+    .receipt-booking-details { margin:0 0 20px; padding:16px 18px; border:1px solid #fed7aa; border-radius:6px; background:#fff7ed; }
     .receipt-booking-details h4 { margin-bottom:12px; }
     .receipt-booking p { display:flex; justify-content:space-between; gap:18px; margin:0; padding:7px 0; border-top:1px solid #e6eef5; }
     .receipt-booking p:first-of-type { border-top:0; }
@@ -248,13 +248,13 @@
     .receipt-reservation-detail strong { color:#172033; text-align:right; }
     .receipt-close { position:absolute; top:-8px; right:-8px; border:0; background:transparent; color:#64748b; font-size:22px; cursor:pointer; }
     .receipt-content { color:#566176; font-size:12px; line-height:1.5; }
-    .receipt-table { width:100%; border:1px solid #7fa9d0; border-radius:4px; border-spacing:0; overflow:hidden; }
-    .receipt-table th { padding:9px 8px; color:#fff; background:#07549a; font-size:11px; text-align:left; }
-    .receipt-table td { padding:9px 8px; border-top:1px solid #d9e5ef; color:#4b5563; font-size:12px; }
+    .receipt-table { width:100%; border:1px solid #fdba74; border-radius:4px; border-spacing:0; overflow:hidden; }
+    .receipt-table th { padding:9px 8px; color:#fff; background:#c2410c; font-size:11px; text-align:left; }
+    .receipt-table td { padding:9px 8px; border-top:1px solid #e2e8f0; color:#4b5563; font-size:12px; }
     .receipt-table th:not(:first-child), .receipt-table td:not(:first-child) { text-align:right; }
-    .receipt-table .receipt-total-row td { border-top:2px solid #7fa9d0; color:#07549a; font-weight:800; }
-    .receipt-payment-summary { margin-top:20px; padding:16px 18px; border-top:3px solid #07549a; background:#f8fbfe; }
-    .receipt-payment-summary h4 { margin:0 0 8px; color:#07549a; font-size:14px; }
+    .receipt-table .receipt-total-row td { border-top:2px solid #fb923c; color:#c2410c; font-weight:800; }
+    .receipt-payment-summary { margin-top:20px; padding:16px 18px; border-top:3px solid #c2410c; background:#fff7ed; }
+    .receipt-payment-summary h4 { margin:0 0 8px; color:#c2410c; font-size:14px; }
     .receipt-payment-row { display:flex; justify-content:space-between; gap:18px; padding:6px 0; color:#4b5563; font-size:12px; }
     .receipt-payment-row strong { color:#172033; text-align:right; }
     .receipt-payment-row:last-child { margin-top:4px; padding-top:9px; border-top:1px solid #d9e5ef; font-weight:700; }
@@ -262,8 +262,28 @@
     .receipt-notes h4 { margin:0 0 6px; color:#07549a; font-size:14px; }
     .receipt-notes p { margin:0; color:#4b5563; font-size:12px; }
     .receipt-actions { display:flex; justify-content:flex-end; gap:8px; padding-top:14px; border-top:1px solid #e5e7eb; }
-    .receipt-actions button { border:0; border-radius:7px; padding:10px 16px; color:#fff; background:#d20b26; font-size:11px; font-weight:700; cursor:pointer; }
-    .receipt-actions .receipt-print-btn { background:#253570; }
+    .receipt-actions button { border:0; border-radius:7px; padding:10px 16px; color:#fff; background:#ea580c; font-size:11px; font-weight:700; cursor:pointer; }
+    .receipt-actions .receipt-print-btn { background:#334155; }
+    @media print {
+        @page { size:A4 portrait; margin:6mm; }
+        body { margin:0; background:#fff !important; }
+        .receipt-modal { position:static; display:block !important; padding:0; background:#fff; }
+        .receipt-card { width:100%; max-height:none; overflow:visible; padding:12px; box-shadow:none; }
+        .receipt-close, .receipt-actions, .reservation-page > *:not(.receipt-modal) { display:none !important; }
+        .receipt-header, .receipt-title-row, .receipt-booking-details, .receipt-content, .receipt-payment-summary, .receipt-notes { break-inside:avoid; }
+        .receipt-brand { font-size:24px; }
+        .receipt-contact, .receipt-subcontact, .receipt-paid-by p, .receipt-booking p, .receipt-notes p { font-size:10px; }
+        .receipt-heading-row { margin:12px 0 8px; }
+        .receipt-heading { font-size:24px; }
+        .receipt-title-row, .receipt-booking-details { margin-bottom:10px; }
+        .receipt-booking-details { padding:10px 12px; }
+        .receipt-booking p { padding:4px 0; }
+        .receipt-table { margin:6px 0 8px; }
+        .receipt-table th, .receipt-table td { padding:5px 6px; font-size:10px; }
+        .receipt-payment-summary { margin-top:8px; padding:10px 12px; }
+        .receipt-payment-row { padding:4px 0; font-size:10px; }
+        .receipt-notes { margin-top:8px; }
+    }
     @media (max-width:700px) { .receipt-card { padding:18px; } .receipt-brand,.receipt-heading { font-size:25px; } .receipt-title-row { align-items:flex-start; flex-direction:column; } .receipt-booking { min-width:0; width:100%; } .receipt-actions button { flex:1; } }
     .summary-clear { border:1px solid #ff9aa7; border-radius:7px; padding:9px; background:#fff; color:#d20b26; font-size:10px; font-weight:700; }
 
@@ -1076,10 +1096,10 @@
                 <p id="receiptGuestsRow"><span>Number of Guests</span><strong id="receiptGuests">2 Guests</strong></p>
                 <p id="receiptRoomRow"><span>Room</span><strong id="receiptRoom">—</strong></p>
                 <div class="receipt-reservation-details">
-                    <p><span>Facilities</span><strong id="receiptFacilities">None</strong></p>
-                    <p><span>Event</span><strong id="receiptEvent">None</strong></p>
-                    <p><span>Dining</span><strong id="receiptDining">0 items</strong></p>
-                    <p><span>Dining Table</span><strong id="receiptDiningTable">None</strong></p>
+                    <p id="receiptFacilitiesRow"><span>Facilities</span><strong id="receiptFacilities">None</strong></p>
+                    <p id="receiptEventRow"><span>Event</span><strong id="receiptEvent">None</strong></p>
+                    <p id="receiptDiningRow"><span>Dining</span><strong id="receiptDining">0 items</strong></p>
+                    <p id="receiptDiningTableRow"><span>Dining Table</span><strong id="receiptDiningTable">None</strong></p>
                 </div>
             </div>
             <div class="receipt-content" id="receiptContent"></div>
@@ -1209,6 +1229,10 @@
         const receiptGuests = document.getElementById('receiptGuests');
         const receiptGuestsRow = document.getElementById('receiptGuestsRow');
         const receiptRoom = document.getElementById('receiptRoom');
+            const receiptFacilitiesRow = document.getElementById('receiptFacilitiesRow');
+            const receiptEventRow = document.getElementById('receiptEventRow');
+            const receiptDiningRow = document.getElementById('receiptDiningRow');
+            const receiptDiningTableRow = document.getElementById('receiptDiningTableRow');
             const receiptFacilities = document.getElementById('receiptFacilities');
             const receiptEvent = document.getElementById('receiptEvent');
             const receiptDining = document.getElementById('receiptDining');
@@ -2340,6 +2364,11 @@
             receiptCheckOutRow.hidden = !selectedRoom && !hasDateOrTime;
             receiptGuestsRow.hidden = !selectedRoom && !selectedEvent.length;
             receiptRoomRow.hidden = !selectedRoom;
+            const receiptDiningTables = [...new Set(selectedDining.map(item => item.table).filter(Boolean))];
+            receiptFacilitiesRow.hidden = !selectedFacilities.length;
+            receiptEventRow.hidden = !selectedEvent.length;
+            receiptDiningRow.hidden = !selectedDining.length;
+            receiptDiningTableRow.hidden = !receiptDiningTables.length;
             receiptFacilities.textContent = selectedFacilities.length
                 ? selectedFacilities.map(item => item.title).join(', ')
                 : 'None';
@@ -2348,14 +2377,14 @@
                 : 'None';
             const diningItemCount = selectedDining.reduce((total, item) => total + Number(item.quantity || 1), 0);
             receiptDining.textContent = `${diningItemCount} ${diningItemCount === 1 ? 'item' : 'items'}`;
-            const receiptDiningTables = [...new Set(selectedDining.map(item => item.table).filter(Boolean))];
             receiptDiningTable.textContent = receiptDiningTables.length ? receiptDiningTables.join(', ') : 'None';
-            receiptContent.innerHTML = `<table class="receipt-table"><thead><tr><th>Quantity</th><th>Description</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>${receiptItems.map(([quantity, description, unitPrice, amount]) => `<tr><td>${escapeHtml(quantity)}</td><td>${escapeHtml(description)}</td><td>${escapeHtml(unitPrice)}</td><td>${escapeHtml(amount)}</td></tr>`).join('')}<tr class="receipt-total-row"><td colspan="3">Total</td><td>${escapeHtml(confirmTotalAmount.textContent)}</td></tr></tbody></table>`;
             const totalAmount = Number(String(confirmTotalAmount.textContent).replace(/[^\d.-]/g, '')) || 0;
+            const meaningfulReceiptItems = receiptItems.filter(([, description, , amount]) => description && Number(String(amount).replace(/[^\d.-]/g, '')) > 0);
+            receiptContent.innerHTML = `<table class="receipt-table"><thead><tr><th>Quantity</th><th>Description</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>${meaningfulReceiptItems.map(([quantity, description, unitPrice, amount]) => `<tr><td>${escapeHtml(quantity)}</td><td>${escapeHtml(description)}</td><td>${escapeHtml(unitPrice)}</td><td>${escapeHtml(amount)}</td></tr>`).join('')}<tr class="receipt-total-row"><td colspan="3">Total</td><td>${escapeHtml(formatCurrencyValue(totalAmount))}</td></tr></tbody></table>`;
             const paymentInputId = selectedPaymentMethod === 'GCash' ? 'gcashPaymentAmount' : selectedPaymentMethod === 'Maya' ? 'mayaPaymentAmount' : selectedPaymentMethod === 'Credit / Debit Card' ? 'cardPaymentAmount' : selectedPaymentMethod === 'Bank Transfer' ? 'transferAmount' : null;
             const amountPaid = paymentInputId ? getPaymentAmountValue(paymentInputId) : 0;
             const balanceDifference = amountPaid - totalAmount;
-            receiptTotalAmount.textContent = confirmTotalAmount.textContent;
+            receiptTotalAmount.textContent = formatCurrencyValue(totalAmount);
             receiptAmountPaid.textContent = formatCurrencyValue(amountPaid);
             receiptPaymentMethod.textContent = selectedPaymentMethod;
             receiptBalanceLabel.textContent = balanceDifference >= 0 ? 'Change' : 'Remaining Balance';
@@ -2432,20 +2461,16 @@
                 const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 10;
-                const imageWidth = pageWidth - (margin * 2);
-                const imageHeight = (canvas.height * imageWidth) / canvas.width;
+                const margin = 6;
+                const maxWidth = pageWidth - (margin * 2);
+                const maxHeight = pageHeight - (margin * 2);
+                const scale = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
+                const imageWidth = canvas.width * scale;
+                const imageHeight = canvas.height * scale;
+                const imageX = (pageWidth - imageWidth) / 2;
+                const imageY = (pageHeight - imageHeight) / 2;
                 const imageData = canvas.toDataURL('image/jpeg', 0.95);
-                let remainingHeight = imageHeight;
-                let offset = 0;
-                pdf.addImage(imageData, 'JPEG', margin, margin, imageWidth, imageHeight);
-                remainingHeight -= pageHeight - (margin * 2);
-                while (remainingHeight > 0) {
-                    offset += pageHeight - (margin * 2);
-                    pdf.addPage();
-                    pdf.addImage(imageData, 'JPEG', margin, margin - offset, imageWidth, imageHeight);
-                    remainingHeight -= pageHeight - (margin * 2);
-                }
+                pdf.addImage(imageData, 'JPEG', imageX, imageY, imageWidth, imageHeight);
                 pdf.save(`${confirmReservationId.textContent || 'reservation'}-receipt.pdf`);
             } catch (error) {
                 alert('The receipt PDF could not be downloaded. Please try again.');
@@ -2615,7 +2640,7 @@
             printableReceipt.querySelector('.receipt-close')?.remove();
             printableReceipt.querySelector('.receipt-actions')?.remove();
             printWindow.document.write(`<html><head><title>${confirmReservationId.textContent} Receipt</title><style>
-                *{box-sizing:border-box}body{margin:0;padding:24px;background:#fff;font-family:Arial,sans-serif;color:#172033}.receipt-card{width:100%;padding:28px;background:#fff}.receipt-header{position:relative;display:block;padding-bottom:14px;border-bottom:4px solid #c7d8e8}.receipt-brand{margin:0;color:#07549a;font-size:32px;font-weight:400;text-align:center}.receipt-contact{display:flex;justify-content:center;gap:18px;margin:12px 0 4px;color:#727b85;font-size:12px}.receipt-subcontact{text-align:center;margin:0;color:#727b85;font-size:12px}.receipt-heading-row{margin:24px 0 16px;text-align:center}.receipt-heading{margin:0;color:#07549a;font-size:32px;letter-spacing:.04em}.receipt-title-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin:0 0 18px}.receipt-paid-by h4,.receipt-booking h4,.receipt-notes h4{margin:0 0 8px;color:#07549a;font-size:14px}.receipt-paid-by p,.receipt-booking p,.receipt-notes p{margin:3px 0;color:#4b5563;font-size:13px}.receipt-booking{min-width:220px}.receipt-booking p{display:flex;justify-content:space-between;gap:18px}.receipt-booking strong{color:#4b5563;font-weight:600}.receipt-content{color:#566176;font-size:12px}.receipt-table{width:100%;border:1px solid #7fa9d0;border-spacing:0}.receipt-table th{padding:9px 8px;color:#fff;background:#07549a;font-size:11px;text-align:left}.receipt-table td{padding:9px 8px;border-top:1px solid #d9e5ef;color:#4b5563;font-size:12px}.receipt-table th:not(:first-child),.receipt-table td:not(:first-child){text-align:right}.receipt-table .receipt-total-row td{border-top:2px solid #7fa9d0;color:#07549a;font-weight:800}.receipt-notes{margin-top:18px}@media print{body{padding:0}.receipt-card{padding:0}}
+                @page{size:A4 portrait;margin:6mm}*{box-sizing:border-box}body{margin:0;padding:0;background:#fff;font-family:Arial,sans-serif;color:#172033}.receipt-card{width:100%;padding:12px;background:#fff}.receipt-header{position:relative;display:block;padding-bottom:10px;border-bottom:4px solid #fed7aa}.receipt-brand{margin:0;color:#c2410c;font-size:24px;font-weight:400;text-align:center}.receipt-contact{display:flex;justify-content:center;gap:12px;margin:8px 0 3px;color:#727b85;font-size:10px}.receipt-subcontact{text-align:center;margin:0;color:#727b85;font-size:10px}.receipt-heading-row{margin:12px 0 8px;text-align:center}.receipt-heading{margin:0;color:#c2410c;font-size:24px;letter-spacing:.04em}.receipt-title-row{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin:0 0 10px}.receipt-paid-by h4,.receipt-booking h4,.receipt-notes h4{margin:0 0 5px;color:#c2410c;font-size:11px}.receipt-paid-by p,.receipt-booking p,.receipt-notes p{margin:2px 0;color:#4b5563;font-size:10px}.receipt-booking{min-width:180px}.receipt-booking p{display:flex;justify-content:space-between;gap:12px}.receipt-booking strong{color:#4b5563;font-weight:600}.receipt-content{color:#566176;font-size:10px}.receipt-table{width:100%;border:1px solid #fdba74;border-spacing:0}.receipt-table th{padding:5px 6px;color:#fff;background:#c2410c;font-size:9px;text-align:left}.receipt-table td{padding:5px 6px;border-top:1px solid #e2e8f0;color:#4b5563;font-size:9px}.receipt-table th:not(:first-child),.receipt-table td:not(:first-child){text-align:right}.receipt-table .receipt-total-row td{border-top:2px solid #fb923c;color:#c2410c;font-weight:800}.receipt-payment-summary{margin-top:8px;padding:8px 10px;border-top:3px solid #c2410c;background:#fff7ed}.receipt-payment-row{padding:3px 0;font-size:9px;display:flex;justify-content:space-between}.receipt-notes{margin-top:8px}
                 </style></head><body>${printableReceipt.outerHTML}</body></html>`);
             printWindow.document.close();
             printWindow.focus();

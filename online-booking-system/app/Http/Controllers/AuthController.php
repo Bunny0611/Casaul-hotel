@@ -19,7 +19,10 @@ class AuthController extends Controller
      */
     public function showLoginForm()
     {
-        return view('admin.login');
+        return response()
+            ->view('admin.login')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     /**

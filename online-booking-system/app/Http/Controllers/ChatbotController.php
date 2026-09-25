@@ -65,6 +65,7 @@ class ChatbotController extends Controller
                 'is_replied' => (bool) $message->is_replied,
                 'sent_at' => $message->created_at?->toISOString(),
                 'replied_at' => $message->replied_at?->toISOString(),
+                'replies' => $this->repliesForMessage($message),
             ])->values(),
         ]);
     }
@@ -159,14 +160,32 @@ class ChatbotController extends Controller
 
     protected function messagesForGuest(string $email)
     {
-        return Message::query()->where('customer_email', $email)->latest()->get();
+        return Message::with('replies')->where('customer_email', $email)->latest()->get();
+    }
+
+    protected function repliesForMessage(Message $message)
+    {
+        if ($message->replies->isNotEmpty()) {
+            return $message->replies->map(fn ($reply) => [
+                'reply' => $reply->reply,
+                'replied_at' => $reply->replied_at?->toISOString(),
+            ])->values();
+        }
+
+        return $message->admin_reply ? collect([[
+            'reply' => $message->admin_reply,
+            'replied_at' => $message->replied_at?->toISOString(),
+        ]]) : collect();
     }
 
     protected function formatGuestConversation(string $email): string
     {
         return $this->messagesForGuest($email)->reverse()->map(function (Message $message) {
             $sentAt = $message->created_at?->format('M j, Y g:i A') ?? 'Unknown time';
-            $reply = $message->admin_reply ? "\nFront Desk (" . ($message->replied_at?->format('M j, Y g:i A') ?? 'reply time unavailable') . "): " . $message->admin_reply : "\nFront Desk: Reply pending";
+            $replies = $this->repliesForMessage($message);
+            $reply = $replies->isNotEmpty()
+                ? $replies->map(fn (array $item) => "\nFront Desk (" . ($item['replied_at'] ?? 'reply time unavailable') . "): " . $item['reply'])->implode('')
+                : "\nFront Desk: Reply pending";
 
             return "\n\nYou (" . $sentAt . "): " . $message->message . $reply;
         })->implode('');

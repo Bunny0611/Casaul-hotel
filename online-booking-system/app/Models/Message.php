@@ -19,4 +19,9 @@ class Message extends Model
         'is_replied' => 'boolean',
         'replied_at' => 'datetime',
     ];
+
+    public function replies()
+    {
+        return $this->hasMany(MessageReply::class)->orderBy('replied_at');
+    }
 }

@@ -31,12 +31,12 @@
         position: relative;
         display: block;
         padding-bottom: 14px;
-        border-bottom: 4px solid #c7d8e8;
+        border-bottom: 4px solid #fed7aa;
     }
 
     .receipt-brand {
         margin: 0;
-        color: #07549a;
+        color: #c2410c;
         font-size: 32px;
         font-weight: 400;
         text-align: center;
@@ -79,7 +79,7 @@
 
     .receipt-heading {
         margin: 0;
-        color: #07549a;
+        color: #c2410c;
         font-size: 32px;
         letter-spacing: 0.04em;
     }
@@ -96,7 +96,7 @@
     .receipt-booking h4,
     .receipt-notes h4 {
         margin: 0 0 8px;
-        color: #07549a;
+        color: #c2410c;
         font-size: 14px;
     }
 
@@ -130,12 +130,12 @@
     .receipt-payment-details {
         margin-top: 18px;
         padding-top: 14px;
-        border-top: 1px solid #d9e5ef;
+        border-top: 1px solid #e2e8f0;
     }
 
     .receipt-payment-details h4 {
         margin: 0 0 8px;
-        color: #07549a;
+        color: #c2410c;
         font-size: 14px;
     }
 
@@ -167,7 +167,7 @@
         display: block;
         width: min(360px, 100%);
         max-height: 280px;
-        border: 1px solid #d9e5ef;
+        border: 1px solid #e2e8f0;
         border-radius: 6px;
         object-fit: contain;
         background: #f8fafc;
@@ -192,7 +192,7 @@
 
     .receipt-table {
         width: 100%;
-        border: 1px solid #7fa9d0;
+        border: 1px solid #fdba74;
         border-spacing: 0;
         border-radius: 4px;
         overflow: hidden;
@@ -201,14 +201,14 @@
     .receipt-table th {
         padding: 9px 8px;
         color: #fff;
-        background: #07549a;
+        background: #c2410c;
         font-size: 11px;
         text-align: left;
     }
 
     .receipt-table td {
         padding: 9px 8px;
-        border-top: 1px solid #d9e5ef;
+        border-top: 1px solid #e2e8f0;
         color: #4b5563;
         font-size: 12px;
     }
@@ -219,8 +219,8 @@
     }
 
     .receipt-table .receipt-total-row td {
-        border-top: 2px solid #7fa9d0;
-        color: #07549a;
+        border-top: 2px solid #fb923c;
+        color: #c2410c;
         font-weight: 800;
     }
 
@@ -241,14 +241,14 @@
         border-radius: 7px;
         padding: 10px 16px;
         color: #fff;
-        background: #d20b26;
+        background: #ea580c;
         font-size: 11px;
         font-weight: 700;
         cursor: pointer;
     }
 
     .receipt-actions .receipt-print-btn {
-        background: #253570;
+        background: #334155;
     }
 
     .reservation-view-btn {
@@ -269,6 +269,26 @@
         background: #fff3f4;
         transform: translateY(-1px);
         box-shadow: 0 6px 16px rgba(182, 36, 58, 0.12);
+    }
+
+    @media print {
+        @page { size: A4 portrait; margin: 6mm; }
+
+        body { margin: 0; background: #fff !important; }
+        .receipt-modal { position: static; display: block !important; padding: 0; background: #fff; }
+        .receipt-card { width: 100%; max-height: none; overflow: visible; padding: 12px; box-shadow: none; }
+        .receipt-close, .receipt-actions, .profile-page > *:not(.receipt-modal) { display: none !important; }
+        .receipt-header, .receipt-title-row, .receipt-booking-details, .receipt-content, .receipt-notes { break-inside: avoid; }
+        .receipt-brand { font-size: 24px; }
+        .receipt-contact, .receipt-subcontact, .receipt-paid-by p, .receipt-booking p, .receipt-notes p { font-size: 10px; }
+        .receipt-heading-row { margin: 12px 0 8px; }
+        .receipt-heading { font-size: 24px; }
+        .receipt-title-row, .receipt-booking-details { margin-bottom: 10px; }
+        .receipt-table { margin: 6px 0 8px; }
+        .receipt-table th, .receipt-table td { padding: 5px 6px; font-size: 10px; }
+        .receipt-payment-details { margin-top: 10px; padding-top: 8px; }
+        .receipt-payment-details p { margin: 3px 0; font-size: 10px; }
+        .receipt-notes { margin-top: 10px; }
     }
 
     @media (max-width: 700px) {
@@ -520,7 +540,7 @@
                 return value || fallback;
             }
         };
-        const paymentMethod = parseDataValue(button.dataset.paymentMethod, '—') || '—';
+        const paymentMethod = parseDataValue(button.dataset.paymentMethod, '') || '';
         const paymentDetails = parseDataValue(button.dataset.paymentDetails, '') || '';
         const paymentProof = parseDataValue(button.dataset.paymentProof, '') || '';
         const escapeHtml = (value) => String(value ?? '')
@@ -529,6 +549,8 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+        const parseMoney = (value) => Number.parseFloat(String(value ?? '').replace(/[^\d.-]/g, '').replace(/,/g, '')) || 0;
+        const formatMoney = (value) => `₱${parseMoney(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         let lineItems = [];
         try {
             lineItems = JSON.parse(button.dataset.lineItems || '[]');
@@ -558,6 +580,14 @@
             })
             .join('');
 
+        const meaningfulLineItems = lineItems.filter((item) => {
+            return String(item.description ?? '').trim() && parseMoney(item.amount) !== 0;
+        });
+        const paymentRows = [
+            paymentMethod ? `<p><span>Payment method</span><strong>${escapeHtml(paymentMethod)}</strong></p>` : '',
+            paymentDetailRows,
+        ].join('');
+
         receiptContent.innerHTML = `
             <table class="receipt-table">
                 <thead>
@@ -569,24 +599,23 @@
                     </tr>
                 </thead>
                 <tbody>
-                    ${lineItems.length ? lineItems.map(item => `<tr>
+                    ${meaningfulLineItems.length ? meaningfulLineItems.map(item => `<tr>
                         <td>${escapeHtml(item.quantity ?? 1)}</td>
                         <td>${escapeHtml(item.description ?? 'Reservation Item')}</td>
-                        <td>${escapeHtml(item.unitPrice ?? totalValue)}</td>
-                        <td>${escapeHtml(item.amount ?? totalValue)}</td>
-                    </tr>`).join('') : `<tr><td colspan="4">No ${escapeHtml(receiptCategory)} items selected.</td></tr>`}
+                        <td>${formatMoney(item.unitPrice ?? 0)}</td>
+                        <td>${formatMoney(item.amount ?? 0)}</td>
+                    </tr>`).join('') : ''}
                     <tr class="receipt-total-row">
                         <td colspan="3">Total</td>
-                        <td>${totalValue}</td>
+                        <td>${formatMoney(totalValue)}</td>
                     </tr>
                 </tbody>
             </table>
-            <div class="receipt-payment-details">
+            ${paymentRows || paymentProof ? `<div class="receipt-payment-details">
                 <h4>Payment</h4>
-                <p><span>Payment method</span><strong>${escapeHtml(paymentMethod)}</strong></p>
-                ${paymentDetailRows || '<p><span>Payment details</span><strong>—</strong></p>'}
+                ${paymentRows}
                 ${paymentProof ? `<div class="receipt-payment-proof"><span class="receipt-payment-proof-label">Payment proof</span><a href="${escapeHtml(paymentProof)}" target="_blank" rel="noopener"><img src="${escapeHtml(paymentProof)}" alt="Payment proof"></a></div>` : ''}
-            </div>
+            </div>` : ''}
         `;
 
         modal.classList.add('open');
@@ -604,13 +633,26 @@
         document.getElementById('guest-receipt-modal').setAttribute('aria-hidden', 'true');
     });
 
-    document.getElementById('guest-receipt-download-btn')?.addEventListener('click', function () {
-        window.print();
-    });
+    function printGuestReceipt() {
+        const receipt = document.querySelector('#guest-receipt-modal .receipt-card');
+        const printWindow = window.open('', '_blank', 'width=760,height=900');
+        if (!receipt || !printWindow) return;
 
-    document.getElementById('guest-receipt-print-btn')?.addEventListener('click', function () {
-        window.print();
-    });
+        const printableReceipt = receipt.cloneNode(true);
+        printableReceipt.querySelector('.receipt-close')?.remove();
+        printableReceipt.querySelector('.receipt-actions')?.remove();
+        const styles = Array.from(document.querySelectorAll('style')).map(style => style.outerHTML).join('');
+
+        printWindow.document.write(`<!doctype html><html><head><title>${document.getElementById('guest-receipt-number').textContent} Receipt</title>${styles}</head><body><div class="receipt-modal open">${printableReceipt.outerHTML}</div></body></html>`);
+        printWindow.document.close();
+        printWindow.onload = () => {
+            printWindow.focus();
+            printWindow.print();
+        };
+    }
+
+    document.getElementById('guest-receipt-download-btn')?.addEventListener('click', printGuestReceipt);
+    document.getElementById('guest-receipt-print-btn')?.addEventListener('click', printGuestReceipt);
 </script>
 
 @endsection

@@ -2,12 +2,6 @@
 
 @section('content')
 <div class="animate-fade-in">
-    @if(session('success'))
-        <div class="mb-6 rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <h2 class="text-3xl font-bold text-gray-800 mb-6">Customer Messages</h2>
     
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

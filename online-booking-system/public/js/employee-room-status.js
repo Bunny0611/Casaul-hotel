@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const applyFilters = () => {
         const queryRoom = (searchRoomInput?.value || '').trim().toLowerCase();
-        const queryType = (searchTypeInput?.value || '').trim().toLowerCase();
+        const selectedType = (searchTypeInput?.value || '').trim().toLowerCase();
         const selectedStatus = (statusSelect?.value || '').toLowerCase();
         const selectedFloor = (floorSelect?.value || '').toLowerCase();
         let visibleCount = 0;
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const floor = (row.dataset.floor || '').toLowerCase();
 
             const matchesRoom = roomNumber.includes(queryRoom);
-            const matchesType = roomType.includes(queryType);
+            const matchesType = !selectedType || roomType === selectedType;
             const matchesStatus = !selectedStatus || status === selectedStatus;
             const matchesFloor = !selectedFloor || floor === selectedFloor;
 
