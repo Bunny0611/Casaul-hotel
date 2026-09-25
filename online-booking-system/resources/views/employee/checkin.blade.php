@@ -435,7 +435,7 @@
                     <tbody>
                         @forelse($checkIns as $reservation)
                             @php($checkInPaid = max((float) ($reservation->amount_paid ?? 0), (float) $reservation->payments->sum('amount')))
-                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-time="{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-guests="{{ $reservation->number_of_guests ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-total="{{ number_format($reservation->overall_total_amount, 2, '.', '') }}" data-room-total="{{ number_format($reservation->room_total_amount, 2, '.', '') }}" data-addon-total="{{ number_format($reservation->add_on_total_amount, 2, '.', '') }}" data-paid="{{ number_format($reservation->overall_amount_paid, 2, '.', '') }}" data-balance="{{ number_format($reservation->overall_balance_due, 2, '.', '') }}" data-payment-status="{{ $reservation->overall_amount_paid >= $reservation->overall_total_amount && $reservation->overall_total_amount > 0 ? 'Paid' : 'Unpaid' }}" data-add-ons='@json($reservation->employee_add_ons)'>
+                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-time="{{ $reservation->check_in_time ? \Illuminate\Support\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-guests="{{ $reservation->number_of_guests ?? 'N/A' }}" data-status="{{ ucfirst($reservation->status) }}" data-total="{{ number_format($reservation->overall_total_amount, 2, '.', '') }}" data-original-total="{{ number_format($reservation->original_total_amount, 2, '.', '') }}" data-refund-amount="{{ number_format($reservation->refund_amount, 2, '.', '') }}" data-room-total="{{ number_format($reservation->room_total_amount, 2, '.', '') }}" data-addon-total="{{ number_format($reservation->add_on_total_amount, 2, '.', '') }}" data-paid="{{ number_format($reservation->display_amount_paid, 2, '.', '') }}" data-balance="{{ number_format($reservation->display_balance_due, 2, '.', '') }}" data-payment-status="{{ $reservation->display_amount_paid >= $reservation->overall_total_amount && $reservation->overall_total_amount > 0 ? 'Paid' : 'Unpaid' }}" data-add-ons='@json($reservation->employee_add_ons)'>
                                 <td class="py-3 pr-3 whitespace-nowrap text-sm font-semibold text-slate-800">RES-{{ $reservation->id }}</td>
                                 <td class="py-3 pr-3 text-sm text-slate-700">{{ $reservation->guest_name }}</td>
                                 <td class="py-3 pr-3 whitespace-nowrap">
@@ -475,7 +475,7 @@
                     <tbody>
                         @forelse($checkOuts as $reservation)
                             @php($paid = max((float) ($reservation->amount_paid ?? 0), (float) $reservation->payments->sum('amount')))
-                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-check-in-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-check-out-date="{{ $reservation->check_out?->format('Y-m-d') }}" data-time="{{ ($reservation->check_out_time ?: $reservation->check_in_time) ? \Illuminate\Support\Carbon::parse($reservation->check_out_time ?: $reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-total="{{ number_format($reservation->overall_total_amount, 2, '.', '') }}" data-room-total="{{ number_format($reservation->room_total_amount, 2, '.', '') }}" data-addon-total="{{ number_format($reservation->add_on_total_amount, 2, '.', '') }}" data-paid="{{ number_format($reservation->overall_amount_paid, 2, '.', '') }}" data-balance="{{ number_format($reservation->overall_balance_due, 2, '.', '') }}" data-status="{{ ucfirst($reservation->status) }}" data-add-ons='@json($reservation->employee_add_ons)'>
+                            <tr class="border-b border-slate-100" data-reservation="RES-{{ $reservation->id }}" data-guest="{{ $reservation->guest_name }}" data-check-in-date="{{ $reservation->check_in?->format('Y-m-d') }}" data-check-out-date="{{ $reservation->check_out?->format('Y-m-d') }}" data-time="{{ ($reservation->check_out_time ?: $reservation->check_in_time) ? \Illuminate\Support\Carbon::parse($reservation->check_out_time ?: $reservation->check_in_time)->format('g:i A') : 'Time not set' }}" data-room="{{ $reservation->room?->room_number ?? 'N/A' }}" data-room-type="{{ $reservation->room?->room_type ?? 'N/A' }}" data-total="{{ number_format($reservation->overall_total_amount, 2, '.', '') }}" data-original-total="{{ number_format($reservation->original_total_amount, 2, '.', '') }}" data-refund-amount="{{ number_format($reservation->refund_amount, 2, '.', '') }}" data-room-total="{{ number_format($reservation->room_total_amount, 2, '.', '') }}" data-addon-total="{{ number_format($reservation->add_on_total_amount, 2, '.', '') }}" data-paid="{{ number_format($reservation->display_amount_paid, 2, '.', '') }}" data-balance="{{ number_format($reservation->display_balance_due, 2, '.', '') }}" data-status="{{ ucfirst($reservation->status) }}" data-add-ons='@json($reservation->employee_add_ons)'>
                                 <td class="py-3 pr-3 whitespace-nowrap text-sm font-semibold text-slate-800">RES-{{ $reservation->id }}</td>
                                 <td class="py-3 pr-3 text-sm text-slate-700">{{ $reservation->guest_name }}</td>
                                 <td class="py-3 pr-3 whitespace-nowrap">
@@ -551,6 +551,10 @@
                 <span class="modal-detail-value" id="checkInTotal"></span>
             </div>
             <div class="modal-detail-row">
+                <span class="modal-detail-label">Original Grand Total:</span>
+                <span class="modal-detail-value" id="checkInOriginalTotal"></span>
+            </div>
+            <div class="modal-detail-row">
                 <span class="modal-detail-label">Payment Status:</span>
                 <span class="modal-detail-value" id="checkInPaymentStatus"></span>
             </div>
@@ -561,6 +565,10 @@
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Balance Due:</span>
                 <span class="modal-detail-value text-rose-600" id="checkInBalance"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Refund Amount:</span>
+                <span class="modal-detail-value" id="checkInRefundAmount"></span>
             </div>
             <button type="button" id="checkInRecordPaymentButton" class="modal-btn modal-btn-secondary mt-4" onclick="openPaymentModal()">Record Payment</button>
             </div>
@@ -631,12 +639,20 @@
                 <span class="modal-detail-value" id="checkOutTotal"></span>
             </div>
             <div class="modal-detail-row">
+                <span class="modal-detail-label">Original Grand Total:</span>
+                <span class="modal-detail-value" id="checkOutOriginalTotal"></span>
+            </div>
+            <div class="modal-detail-row">
                 <span class="modal-detail-label">Amount Paid:</span>
                 <span class="modal-detail-value" id="checkOutPaid"></span>
             </div>
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Balance Due:</span>
                 <span class="modal-detail-value text-rose-600" id="checkOutBalance"></span>
+            </div>
+            <div class="modal-detail-row">
+                <span class="modal-detail-label">Refund Amount:</span>
+                <span class="modal-detail-value" id="checkOutRefundAmount"></span>
             </div>
             <div class="modal-detail-row">
                 <span class="modal-detail-label">Payment Status:</span>
@@ -741,10 +757,12 @@
         const paid = Number(row.dataset.paid || 0);
         const balance = Number(row.dataset.balance ?? Math.max(total - paid, 0));
         document.getElementById('checkInTotal').textContent = formatCurrency(total);
+        document.getElementById('checkInOriginalTotal').textContent = formatCurrency(Number(row.dataset.originalTotal ?? total));
         const paymentStatus = document.getElementById('checkInPaymentStatus');
         paymentStatus.textContent = getPaymentStatus(total, paid);
         document.getElementById('checkInPaid').textContent = formatCurrency(paid);
         document.getElementById('checkInBalance').textContent = formatCurrency(balance);
+        document.getElementById('checkInRefundAmount').textContent = formatCurrency(Number(row.dataset.refundAmount || 0));
         document.getElementById('checkInRecordPaymentButton').classList.toggle('hidden', paid >= total && total > 0);
         
         const submitBtn = document.querySelector('#checkInForm button[type="submit"]');
@@ -846,8 +864,10 @@
         const paid = Number(row.dataset.paid || 0);
         document.getElementById('checkOutAddOnTotal').textContent = formatCurrency(addOnTotal);
         document.getElementById('checkOutTotal').textContent = formatCurrency(total);
+        document.getElementById('checkOutOriginalTotal').textContent = formatCurrency(Number(row.dataset.originalTotal ?? total));
         document.getElementById('checkOutPaid').textContent = formatCurrency(paid);
         document.getElementById('checkOutBalance').textContent = formatCurrency(Number(row.dataset.balance ?? Math.max(total - paid, 0)));
+        document.getElementById('checkOutRefundAmount').textContent = formatCurrency(Number(row.dataset.refundAmount || 0));
         
         const recordPaymentButton = document.getElementById('recordPaymentButton');
         const submitBtn = document.querySelector('#checkOutForm button[type="submit"]');

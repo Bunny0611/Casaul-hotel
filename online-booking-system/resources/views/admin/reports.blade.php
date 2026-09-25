@@ -130,10 +130,19 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h3 class="text-lg font-semibold mb-4">Monthly Revenue</h3>
-            <div class="relative h-[340px]">
-                <canvas id="monthlyRevenue" class="w-full h-full"></canvas>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h3 class="text-lg font-semibold mb-4">Monthly Revenue</h3>
+                <div class="relative h-[340px]">
+                    <canvas id="monthlyRevenue" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Revenue by Category</h3>
+                <div class="relative h-[340px]">
+                    <canvas id="revenueByCategoryChart" class="w-full h-full"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -173,11 +182,18 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Most Booked Room Types</h3>
-            <div>
-                <div class="w-[620px] h-[520px]">
-                    <canvas id="roomTypeBookingChart" class="w-full h-full max-w-full max-h-full"></canvas>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Most Booked Room Types</h3>
+                <div class="relative h-[360px]">
+                    <canvas id="roomTypeBookingChart" class="w-full h-full"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Reservation by Number of Guests</h3>
+                <div class="relative h-[360px]">
+                    <canvas id="reservationGuestChart" class="w-full h-full"></canvas>
                 </div>
             </div>
         </div>
@@ -369,13 +385,6 @@
         }
     });
 
-    const AUTO_REFRESH_MS = 15000;
-    setInterval(function () {
-        if (!document.hidden) {
-            window.location.reload();
-        }
-    }, AUTO_REFRESH_MS);
-
     const maintenanceStatusCtx = document.getElementById('maintenanceStatusChart')?.getContext('2d');
     const maintenancePriorityCtx = document.getElementById('maintenancePriorityChart')?.getContext('2d');
     const maintenanceCategoryCtx = document.getElementById('maintenanceCategoryChart')?.getContext('2d');
@@ -522,6 +531,56 @@
         });
     }
 
+    const revenueByCategoryCtx = document.getElementById('revenueByCategoryChart')?.getContext('2d');
+    const revenueByCategoryLabels = @json($revenueByCategoryLabels);
+    const revenueByCategoryData = @json($revenueByCategoryData);
+
+    if (revenueByCategoryCtx) {
+        new Chart(revenueByCategoryCtx, {
+            type: 'bar',
+            data: {
+                labels: revenueByCategoryLabels,
+                datasets: [{
+                    label: 'Revenue (₱)',
+                    data: revenueByCategoryData,
+                    backgroundColor: ['#f97316', '#3b82f6', '#14b8a6', '#8b5cf6'],
+                    borderWidth: 0,
+                    borderRadius: 5,
+                    barThickness: 28
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return '₱' + context.raw.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₱' + value.toLocaleString();
+                            }
+                        },
+                        grid: { color: '#e5e7eb' }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
     const reservationTrendCtx = document.getElementById('reservationTrendChart')?.getContext('2d');
     const reservationTrendLabels = @json($reservationTrendLabels);
     const reservationTrendData = @json($reservationTrendData);
@@ -602,6 +661,36 @@
                         categoryPercentage: 0.55,
                         barPercentage: 0.55
                     }
+                }
+            }
+        });
+    }
+
+    const reservationGuestCtx = document.getElementById('reservationGuestChart')?.getContext('2d');
+    const reservationGuestLabels = @json($reservationGuestLabels);
+    const reservationGuestData = @json($reservationGuestData);
+
+    if (reservationGuestCtx) {
+        new Chart(reservationGuestCtx, {
+            type: 'bar',
+            data: {
+                labels: reservationGuestLabels,
+                datasets: [{
+                    label: 'Reservations',
+                    data: reservationGuestData,
+                    backgroundColor: ['#f97316', '#3b82f6', '#14b8a6', '#8b5cf6', '#ec4899'],
+                    borderWidth: 0,
+                    borderRadius: 5,
+                    barThickness: 32
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
                 }
             }
         });

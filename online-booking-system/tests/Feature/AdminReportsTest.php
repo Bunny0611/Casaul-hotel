@@ -43,6 +43,12 @@ class AdminReportsTest extends TestCase
         $response->assertOk();
         $response->assertSee('Comprehensive Reporting System');
         $response->assertSee('Total Revenue');
+        $response->assertSee('Revenue by Category');
+        $response->assertSee('revenueByCategoryChart');
+        $response->assertSee('Reservation by Number of Guests');
+        $response->assertSee('reservationGuestChart');
+        $response->assertSee('Apr 2026');
+        $response->assertSee('Sep 2026');
     }
 
     public function test_maintenance_report_is_shared_between_admin_and_housekeeping(): void

@@ -2403,6 +2403,14 @@ class AdminController extends Controller
 
     public function updateMaintenanceReportStatus(Request $request, MaintenanceReport $maintenanceReport)
     {
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['In Progress', 'Completed'])],
+        ]);
+
+        $maintenanceReport->update([
+            'status' => $validated['status'],
+        ]);
+
         return redirect()->back()->with('success', 'Maintenance report status updated successfully.');
     }
 
@@ -2474,7 +2482,21 @@ class AdminController extends Controller
                 return $group->sum('total_amount');
             });
 
-        $completedRevenueByMonth = $completedRevenueByMonth->slice(max(0, $completedRevenueByMonth->count() - 6));
+        $monthlyEnd = $to ? Carbon::parse($to)->startOfMonth() : Carbon::now()->startOfMonth();
+        $monthlyStart = $from
+            ? Carbon::parse($from)->startOfMonth()
+            : (clone $monthlyEnd)->subMonths(5);
+
+        $monthlyKeys = collect();
+        $month = $monthlyStart->copy();
+        while ($month->lte($monthlyEnd)) {
+            $monthlyKeys->push($month->format('Y-m'));
+            $month->addMonth();
+        }
+
+        $completedRevenueByMonth = $monthlyKeys->mapWithKeys(function ($month) use ($completedRevenueByMonth) {
+            return [$month => (float) ($completedRevenueByMonth->get($month) ?? 0)];
+        });
 
         $monthlyLabels = $completedRevenueByMonth->keys()
             ->map(fn($month) => Carbon::createFromFormat('Y-m', $month)->format('M Y'))
@@ -2483,6 +2505,14 @@ class AdminController extends Controller
         $monthlyRevenue = $completedRevenueByMonth->values()
             ->map(fn($revenue) => (float) $revenue)
             ->all();
+
+        $revenueByCategoryLabels = ['Room', 'Facilities', 'Dining', 'Events'];
+        $revenueByCategoryData = [
+            (float) $completedReservations->where('resource_category', 'rooms')->sum('total_amount'),
+            (float) $completedReservations->where('resource_category', 'facilities')->sum('total_amount'),
+            (float) $completedReservations->where('resource_category', 'dining')->sum('total_amount'),
+            (float) $completedReservations->where('resource_category', 'event')->sum('total_amount'),
+        ];
 
         $roomTypeRevenueCollection = $completedReservations->filter(function ($reservation) {
             return $reservation->room;
@@ -2547,6 +2577,14 @@ class AdminController extends Controller
 
         $mostBookedRoomTypeLabels = $mostBookedRoomTypes->keys()->all();
         $mostBookedRoomTypeData = $mostBookedRoomTypes->values()->map(fn($count) => (int) $count)->all();
+
+        $reservationGuestLabels = ['1 Guest', '2 Guests', '3 Guests', '4 Guests', '5+ Guests'];
+        $reservationGuestData = [0, 0, 0, 0, 0];
+        $reservations->each(function ($reservation) use (&$reservationGuestData) {
+            $guestCount = (int) ($reservation->number_of_guests ?? $reservation->quantity ?? 1);
+            $bucketIndex = min(max($guestCount, 1), 5) - 1;
+            $reservationGuestData[$bucketIndex]++;
+        });
 
         $rooms = Room::orderBy('room_number')->get();
         $resources = $this->applyResourceReservationStatuses($rooms, Facility::get(), Event::get(), DiningTable::get());
@@ -2614,6 +2652,8 @@ class AdminController extends Controller
             'cancelledReservations',
             'monthlyLabels',
             'monthlyRevenue',
+            'revenueByCategoryLabels',
+            'revenueByCategoryData',
             'roomTypeRevenueLabels',
             'roomTypeRevenueData',
             'paymentMethodLabels',
@@ -2624,6 +2664,8 @@ class AdminController extends Controller
             'reservationStatusData',
             'mostBookedRoomTypeLabels',
             'mostBookedRoomTypeData',
+            'reservationGuestLabels',
+            'reservationGuestData',
             'rooms',
             'totalRooms',
             'occupancyRate',

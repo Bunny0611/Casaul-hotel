@@ -115,6 +115,42 @@
             $paid = (float) $bookingRefund->total_paid;
         }
 
+        $chargedAddOns = \App\Models\GuestRequest::with('reservation')
+            ->where('is_billable', true)
+            ->where('billing_status', 'posted')
+            ->get()
+            ->filter(function ($guestRequest) use ($reservation) {
+                $matchesReservationKey = $guestRequest->reservation_type === \App\Models\RoomReservation::class
+                    && (int) $guestRequest->reservation_key === (int) $reservation->id;
+                $matchesLegacyReservation = $guestRequest->reservation
+                    && $guestRequest->reservation->guest_email === $reservation->guest_email
+                    && optional($guestRequest->reservation->check_in)->toDateString() === optional($reservation->check_in)->toDateString();
+
+                return $matchesReservationKey || $matchesLegacyReservation;
+            })
+            ->map(function ($guestRequest) {
+                $quantity = max((int) ($guestRequest->quantity ?? 1), 1);
+                $unitPrice = (float) ($guestRequest->unit_price ?? 0);
+
+                return [
+                    'name' => $guestRequest->request_type,
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'subtotal' => (float) ($guestRequest->subtotal ?? ($unitPrice * $quantity)),
+                ];
+            })
+            ->values()
+            ->all();
+        $recordedPayments = $relatedRows->flatMap(fn ($row) => $row->payments->map(function ($payment) {
+            return [
+                'amount' => (float) $payment->amount,
+                'method' => $payment->payment_method ?: 'N/A',
+                'date' => $payment->payment_date?->format('F j, Y') ?? 'N/A',
+                'reference' => $payment->reference_number ?: 'N/A',
+                'notes' => $payment->notes ?: 'N/A',
+            ];
+        }))->values()->all();
+
         return [
             'room_amount' => $categoryAmounts['rooms'],
             'facilities_amount' => $categoryAmounts['facilities'],
@@ -126,6 +162,9 @@
             'payment_method' => $paymentRow?->payment_method ?: ($latestPayment?->payment_method ?? 'N/A'),
             'reference_number' => $reference ?: 'N/A',
             'payment_proof' => $proof,
+            'charged_add_ons' => $chargedAddOns,
+            'add_on_total' => (float) collect($chargedAddOns)->sum('subtotal'),
+            'recorded_payments' => $recordedPayments,
         ];
     };
     $uniqueCsvValue = function ($value) {
@@ -189,6 +228,10 @@
             'overall_payment_method' => $overallPayment['payment_method'],
             'overall_reference_number' => $overallPayment['reference_number'],
             'overall_payment_proof' => $overallPayment['payment_proof'],
+            'guest_payment_details' => $paymentDetails,
+            'recorded_payments' => $overallPayment['recorded_payments'],
+            'charged_add_ons' => $overallPayment['charged_add_ons'],
+            'add_on_total' => $overallPayment['add_on_total'],
             'room_amount' => $overallPayment['room_amount'],
             'facilities_amount' => $overallPayment['facilities_amount'],
             'event_amount' => $overallPayment['event_amount'],
@@ -412,7 +455,7 @@
                             <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->check_out instanceof \Illuminate\Support\Carbon ? $reservation->check_out->format('M d, Y') : $reservation->check_out }}<br><span class="text-xs text-gray-500">{{ $reservation->check_out_time ? \Illuminate\Support\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'Time not set' }}</span></td>
                             <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
                             <td class="px-6 py-4">
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                <span class="inline-flex whitespace-nowrap items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }} {{ $reservation->status === 'checked-in' ? 'bg-cyan-500' : '' }}">
                                     {{ ucfirst($reservation->status) }}
                                 </span>
                             </td>
@@ -481,7 +524,7 @@
                             <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->quantity ?? 'N/A' }}</td>
                             <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
                             <td class="px-6 py-4">
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                <span class="inline-flex whitespace-nowrap items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }} {{ $reservation->status === 'checked-in' ? 'bg-cyan-500' : '' }}">
                                     {{ ucfirst($reservation->status) }}
                                 </span>
                             </td>
@@ -550,7 +593,7 @@
                             <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->event_end_time ? \Illuminate\Support\Carbon::parse($reservation->event_end_time)->format('g:i A') : 'Time not set' }}</td>
                             <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
                             <td class="px-6 py-4">
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                <span class="inline-flex whitespace-nowrap items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }} {{ $reservation->status === 'checked-in' ? 'bg-cyan-500' : '' }}">
                                     {{ ucfirst($reservation->status) }}
                                 </span>
                             </td>
@@ -615,7 +658,7 @@
                             <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->quantity ?? $reservation->number_of_guests ?? 'N/A' }}</td>
                             <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount, 2) }}</td>
                             <td class="px-6 py-4">
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }}">
+                                <span class="inline-flex whitespace-nowrap items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }} {{ $reservation->status === 'checked-in' ? 'bg-cyan-500' : '' }}">
                                     {{ ucfirst($reservation->status) }}
                                 </span>
                             </td>
@@ -756,9 +799,21 @@
         detailsSections.push(renderAdminDetailsCard(categoryTitles[reservation.category] || 'Reservation Information', (categoryEntries[reservation.category] || []).map(([label, value]) => ({ label, value: value || 'N/A' }))));
         const servicesTitle = reservation.category === 'dining' ? 'Menu/Meals' : 'Selected Services';
         detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">${servicesTitle}</h4><ul class="space-y-2">${services.map((service) => `<li class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">${escapeAdminHtml(service)}</li>`).join('')}</ul></div>`);
-        const categoryAmountLabels = { rooms: 'Room', facilities: 'Facilities', event: 'Event', dining: 'Dining' };
-        detailsSections.push(renderAdminDetailsCard('Reservation Amounts', [
-            { label: categoryAmountLabels[reservation.category] || 'Reservation', value: formatAdminMoney(reservation.total_amount || 0) },
+        const categoryAmountLabels = { Room: 'Room', Facilities: 'Facilities', Event: 'Event', Dining: 'Dining' };
+        const categoryAmounts = reservation.category_amounts || {};
+        const chargedAddOns = Array.isArray(reservation.charged_add_ons) ? reservation.charged_add_ons : [];
+        const chargedAddOnRows = chargedAddOns.length
+            ? chargedAddOns.map((addOn) => `<div class="flex items-center justify-between gap-4 border-b border-gray-200 py-2 last:border-b-0"><div><div class="text-sm font-semibold text-gray-800">${escapeAdminHtml(addOn.name)}</div><div class="text-xs text-gray-500">${escapeAdminHtml(addOn.quantity)} x ${formatAdminMoney(addOn.unit_price)}</div></div><div class="text-sm font-semibold text-gray-800">${formatAdminMoney(addOn.subtotal)}</div></div>`).join('')
+            : '<p class="text-sm text-gray-600">No charged add-ons.</p>';
+        detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">Charged Add-On Services</h4><div>${chargedAddOnRows}</div><div class="mt-3 flex items-center justify-between border-t border-gray-300 pt-3 text-sm font-semibold text-gray-800"><span>Add-On Total</span><span>${formatAdminMoney(reservation.add_on_total || 0)}</span></div></div>`);
+        const amountEntries = Object.entries(categoryAmountLabels)
+            .filter(([label]) => Number(categoryAmounts[label] || 0) > 0)
+            .map(([label, displayLabel]) => ({ label: displayLabel, value: formatAdminMoney(categoryAmounts[label]) }));
+        if (Number(reservation.add_on_total || 0) > 0) {
+            amountEntries.push({ label: 'Add-On Total', value: formatAdminMoney(reservation.add_on_total) });
+        }
+        detailsSections.push(renderAdminDetailsCard('Reservation Amounts', amountEntries.length ? amountEntries : [
+            { label: 'Reservation', value: formatAdminMoney(reservation.total_amount || 0) },
         ]));
         const paymentDetails = parseAdminPaymentDetails(reservation.payment_details);
         const paymentProofUrl = resolveAdminPaymentProof(reservation.overall_payment_proof || reservation.payment_proof || paymentDetails.proof);
@@ -769,10 +824,21 @@
             { label: 'Amount Paid', value: formatAdminMoney(reservation.overall_amount_paid || 0) },
             { label: 'Balance Due', value: formatAdminMoney(reservation.balance_due || 0) },
             { label: 'Refund Amount', value: formatAdminMoney(refundTotal) },
-            { label: 'Payment Method', value: reservation.overall_payment_method || reservation.payment_method || 'N/A' },
-            { label: 'Reference Number', value: reservation.overall_reference_number || paymentDetails.referenceNumber || 'N/A' },
         ]));
-        detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">Payment Proof</h4>${paymentProofUrl ? `<a href="${escapeAdminHtml(paymentProofUrl)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${escapeAdminHtml(paymentProofUrl)}" alt="Payment proof" class="max-h-72 w-full rounded-xl border border-gray-200 bg-white object-contain p-2" /></a>` : '<p class="text-sm text-gray-600">No payment proof uploaded.</p>'}</div>`);
+        const guestPaymentDetails = parseAdminPaymentDetails(reservation.guest_payment_details || reservation.payment_details);
+        const guestPaymentEntries = [
+            ['Payment Method', reservation.payment_method || 'N/A'],
+            ['Account Name', guestPaymentDetails.accountName || 'N/A'],
+            ['Account Number', guestPaymentDetails.accountNumber || 'N/A'],
+            ['Submitted Amount', guestPaymentDetails.amount || 'N/A'],
+            ['Guest Reference', guestPaymentDetails.referenceNumber || 'N/A'],
+        ];
+        detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">Guest Payment Upon Reservation</h4><div class="grid gap-3 sm:grid-cols-2">${guestPaymentEntries.map(([label, value]) => `<div class="rounded-xl border border-gray-200 bg-white p-3"><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">${escapeAdminHtml(label)}</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeAdminHtml(value)}</div></div>`).join('')}</div><div class="mt-4 rounded-xl border border-gray-200 bg-white p-3"><div class="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Proof of Payment</div>${paymentProofUrl ? `<a href="${escapeAdminHtml(paymentProofUrl)}" target="_blank" rel="noopener noreferrer" class="block"><img src="${escapeAdminHtml(paymentProofUrl)}" alt="Guest payment proof" class="max-h-72 w-full rounded-xl border border-gray-200 bg-white object-contain p-2" /></a>` : '<p class="text-sm text-gray-600">No guest payment proof uploaded.</p>'}</div></div>`);
+        const recordedPayments = Array.isArray(reservation.recorded_payments) ? reservation.recorded_payments : [];
+        const recordedPaymentCards = recordedPayments.length
+            ? recordedPayments.map((payment, index) => `<div class="rounded-2xl border border-gray-200 bg-white p-4"><div class="mb-3 text-sm font-semibold text-gray-800">Payment ${index + 1}</div><div class="grid gap-3 sm:grid-cols-2"><div class="rounded-xl border border-gray-200 bg-gray-50 p-3"><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Amount</div><div class="mt-1 text-sm font-semibold text-gray-900">${formatAdminMoney(payment.amount)}</div></div><div class="rounded-xl border border-gray-200 bg-gray-50 p-3"><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Method</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeAdminHtml(payment.method || 'N/A')}</div></div><div class="rounded-xl border border-gray-200 bg-gray-50 p-3"><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Date</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeAdminHtml(payment.date || 'N/A')}</div></div>${payment.reference && payment.reference !== 'N/A' ? `<div class="rounded-xl border border-gray-200 bg-gray-50 p-3"><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Reference</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeAdminHtml(payment.reference)}</div></div>` : ''}${payment.notes && payment.notes !== 'N/A' ? `<div class="rounded-xl border border-gray-200 bg-gray-50 p-3 sm:col-span-2"><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Notes</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeAdminHtml(payment.notes)}</div></div>` : ''}</div></div>`).join('')
+            : '<div class="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600">No front-desk payment recorded.</div>';
+        detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">Front Desk Recorded Payments</h4><div class="space-y-3">${recordedPaymentCards}</div></div>`);
         document.getElementById('adminReservationDetailsContent').innerHTML = detailsSections.join('');
         const modal = document.getElementById('adminReservationDetailsModal');
         modal.classList.remove('hidden');

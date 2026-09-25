@@ -1297,11 +1297,10 @@
         const count = document.querySelectorAll('.room-checkbox:checked').length;
         const label = document.getElementById('bulkSelectedCount');
         if (label) {
-            label.textContent = count + (count === 1 ? ' selected' : ' selected');
+            label.textContent = count + ' selected';
         }
-        const selectAll = document.getElementById('selectAllRoomsHeader');
         const deleteButton = document.querySelector('[data-panel="rooms"] button[onclick="confirmBulkDelete()"]');
-        if (deleteButton) deleteButton.style.display = selectAll && selectAll.checked ? 'inline-flex' : 'none';
+        if (deleteButton) deleteButton.style.display = count > 0 ? 'inline-flex' : 'none';
     }
 
     function toggleAllRoomCheckboxes(source) {
@@ -1314,10 +1313,10 @@
 
     function updateSelectAllCheckbox() {
         const checkboxes = document.querySelectorAll('.room-checkbox');
-        const allChecked = Array.from(checkboxes).every(function (checkbox) {
+        const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every(function (checkbox) {
             return checkbox.checked;
         });
-        const selectAll = document.getElementById('selectAllRooms');
+        const selectAll = document.getElementById('selectAllRoomsHeader');
         if (selectAll) {
             selectAll.checked = allChecked;
         }
@@ -1365,8 +1364,7 @@
         if (label) label.textContent = count + ' selected';
         const panelName = category === 'event' ? 'events' : category;
         const deleteButton = document.querySelector('[data-panel="' + panelName + '"] button[onclick^="confirmBulkInventoryDelete"]');
-        const selectAll = document.querySelector('.inventory-select-all[data-category="' + category + '"]');
-        if (deleteButton) deleteButton.style.display = selectAll && selectAll.checked ? 'inline-flex' : 'none';
+        if (deleteButton) deleteButton.style.display = count > 0 ? 'inline-flex' : 'none';
     }
 
     function confirmBulkInventoryDelete(category) {
@@ -1410,9 +1408,9 @@
         const selectAll = document.querySelector('.' + diningSelectAllClass(type));
         if (selectAll) {
             selectAll.checked = count > 0 && count === checkboxes.length;
-            const deleteButton = document.querySelector('[data-dining-subpanel="' + panelName + '"] button[onclick^="confirmBulkDiningDelete"]');
-            if (deleteButton) deleteButton.style.display = selectAll.checked ? 'inline-flex' : 'none';
         }
+        const deleteButton = document.querySelector('[data-dining-subpanel="' + panelName + '"] button[onclick^="confirmBulkDiningDelete"]');
+        if (deleteButton) deleteButton.style.display = count > 0 ? 'inline-flex' : 'none';
     }
 
     function toggleAllDiningCheckboxes(type, source) {
