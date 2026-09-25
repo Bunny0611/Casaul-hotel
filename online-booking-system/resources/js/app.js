@@ -401,17 +401,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
             messages.forEach((message) => {
                 const key = frontDeskMessageKey(message.message, message.sent_at);
-                const knownReply = frontDeskServerState.get(key);
+                const replies = Array.isArray(message.replies)
+                    ? message.replies
+                    : (message.reply ? [{ reply: message.reply, replied_at: message.replied_at }] : []);
+                const knownReplyCount = frontDeskServerState.get(key);
 
-                if (knownReply === undefined) {
-                    frontDeskServerState.set(key, message.reply || '');
+                if (knownReplyCount === undefined) {
+                    frontDeskServerState.set(key, replies.length);
                     addFrontDeskBubble(message.message, 'user', formatConversationTime(message.sent_at), key);
-                    if (message.reply) {
-                        addFrontDeskBubble(message.reply, 'bot', formatConversationTime(message.replied_at), `${key}:reply`);
-                    }
-                } else if (message.reply && knownReply !== message.reply) {
-                    frontDeskServerState.set(key, message.reply);
-                    addFrontDeskBubble(message.reply, 'bot', formatConversationTime(message.replied_at), `${key}:reply`);
+                    replies.forEach((reply, index) => {
+                        addFrontDeskBubble(reply.reply, 'bot', formatConversationTime(reply.replied_at), `${key}:reply:${index}`);
+                    });
+                } else if (replies.length > knownReplyCount) {
+                    replies.slice(knownReplyCount).forEach((reply, index) => {
+                        addFrontDeskBubble(reply.reply, 'bot', formatConversationTime(reply.replied_at), `${key}:reply:${knownReplyCount + index}`);
+                    });
+                    frontDeskServerState.set(key, replies.length);
                 }
             });
 
@@ -453,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function updateQuickReplies(buttons) {
         const container = document.getElementById('chat-quick-replies');
         container.innerHTML = '';
-        container.style.display = 'none';
+        container.style.display = 'flex';
         faqToggle.style.display = 'flex';
         faqToggle.setAttribute('aria-expanded', 'false');
 
@@ -542,6 +547,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 addMessage(replyData.reply, 'bot', true);
             }
             updateQuickReplies(replyData.quick_replies || defaultQuickReplies);
+            if (pendingAction === 'contact_front_desk') startFrontDeskPolling();
         }, delay);
     }
 
@@ -567,7 +573,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         sendChatbotMessage(message, action, requestType).then((reply) => {
             pendingAction = reply.mode || null;
-            if (pendingAction === 'contact_front_desk') startFrontDeskPolling();
             botReplyFromServer(reply);
         });
     }

@@ -28,6 +28,7 @@ use App\Models\Event;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
 use App\Models\DiningMenu;
+use App\Models\MessageReply;
 use App\Models\ReservationDiningItem;
 use App\Models\GuestRequest;
 use App\Models\Payment;
@@ -292,6 +293,7 @@ class AdminController extends Controller
         $diningTables = DiningTable::orderBy('table_no')->get();
 
         $roomReservations = RoomReservation::with('room')
+            ->whereNotIn('status', ['cancelled'])
             ->whereDate('check_in', '<=', $calendarEnd->toDateString())
             ->whereDate('check_out', '>=', $calendarStart->toDateString())
             ->get();
@@ -300,6 +302,7 @@ class AdminController extends Controller
         // only when the same booking is not already present in room_reservations.
         $legacyRoomReservations = Reservation::with('room')
             ->whereNotNull('room_id')
+            ->whereNotIn('status', ['cancelled'])
             ->whereDate('check_in', '<=', $calendarEnd->toDateString())
             ->whereDate('check_out', '>=', $calendarStart->toDateString())
             ->get();
@@ -381,6 +384,7 @@ class AdminController extends Controller
 
             $segments = [];
             $facilityReservations = FacilityReservation::where('facility_id', $facility->id)
+                ->whereNotIn('status', ['cancelled'])
                 ->where(function ($query) use ($calendarStart, $calendarEnd) {
                     $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
                         ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
@@ -445,6 +449,7 @@ class AdminController extends Controller
 
             $segments = [];
             $eventReservations = EventReservation::where('event_id', $event->id)
+                ->whereNotIn('status', ['cancelled'])
                 ->where(function ($query) use ($calendarStart, $calendarEnd) {
                     $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
                         ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
@@ -2182,7 +2187,7 @@ class AdminController extends Controller
 
     public function messages()
     {
-        $messages = Message::latest()->get();
+        $messages = Message::with('replies')->latest()->get();
         return view('admin.messages', compact('messages'));
     }
 
@@ -2217,8 +2222,12 @@ class AdminController extends Controller
             'replied' => $messages->where('is_replied', true)->count(),
             'total' => $messages->count(),
         ];
+        $selectedMessageId = session('employee_message_recipient');
+        $selectedConversationKey = $conversations
+            ->first(fn ($conversation) => (string) $conversation->latest_message->id === (string) $selectedMessageId)
+            ?->key;
 
-        return view('employee.messages', compact('messages', 'conversations', 'stats'));
+        return view('employee.messages', compact('messages', 'conversations', 'stats', 'selectedConversationKey'));
     }
 
     public function employeeGuestRequests()
@@ -2298,10 +2307,15 @@ class AdminController extends Controller
             'is_replied' => true,
             'replied_at' => now(),
         ]);
+        MessageReply::create([
+            'message_id' => $message->id,
+            'reply' => $validated['admin_reply'],
+            'replied_at' => now(),
+        ]);
 
         $route = $request->routeIs('employee.*') ? 'employee.messages' : 'admin.messages';
 
-        return redirect()->route($route)->with('success', 'Reply sent successfully!');
+        return redirect()->route($route);
     }
 
     public function storeEmployeeMessage(Request $request)
@@ -2319,6 +2333,12 @@ class AdminController extends Controller
                 'is_replied' => true,
                 'replied_at' => now(),
             ]);
+            MessageReply::create([
+                'message_id' => $guestMessage->id,
+                'reply' => $validated['message'],
+                'replied_at' => now(),
+            ]);
+            session()->flash('employee_message_recipient', (int) $validated['recipient']);
         } else {
             Message::create([
                 'customer_name' => $request->user()?->name ?? 'Employee',
@@ -2327,7 +2347,7 @@ class AdminController extends Controller
             ]);
         }
 
-        return redirect()->route('employee.messages')->with('success', 'Message sent successfully.');
+        return redirect()->route('employee.messages');
     }
 
     public function resolveGuestRequest(Request $request, $id)

@@ -162,8 +162,12 @@
                 <input class="field-input" id="search-room-number" type="text" placeholder="e.g. 101">
             </div>
             <div class="field-group">
-                <label class="field-label" for="search-room-type">Search Room Type</label>
-                <input class="field-input" id="search-room-type" type="text" placeholder="e.g. Deluxe">
+                <label class="field-label" for="search-room-type">Filter by Room Type</label>
+                <select class="field-select" id="search-room-type">
+                    <option value="">All Room Types</option>
+                    <option value="standard room">Standard</option>
+                    <option value="deluxe room">Deluxe</option>
+                </select>
             </div>
             <div class="field-group">
                 <label class="field-label" for="filter-status">Filter by Status</label>
@@ -181,9 +185,8 @@
                 <label class="field-label" for="filter-floor">Filter by Floor</label>
                 <select class="field-select" id="filter-floor">
                     <option value="">All Floors</option>
-                    <option value="1">Floor 1</option>
-                    <option value="2">Floor 2</option>
-                    <option value="3">Floor 3</option>
+                    <option value="1st">1st Floor</option>
+                    <option value="2nd">2nd Floor</option>
                 </select>
             </div>
             <button class="secondary-btn" id="reset-filters" type="button">Reset Filters</button>
