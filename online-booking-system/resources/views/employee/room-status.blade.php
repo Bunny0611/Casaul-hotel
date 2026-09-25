@@ -6,6 +6,7 @@
 @php
     $reservations = $reservations ?? collect([]);
     $rooms = $rooms ?? collect([]);
+    $allRooms = $allRooms ?? ($rooms instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator ? $rooms->getCollection() : $rooms);
     $inventoryItems = $inventoryItems ?? collect([]);
     $facilities = $facilities ?? collect([]);
     $events = $events ?? collect([]);
@@ -19,14 +20,14 @@
 
     $stats = [
         'rooms' => [
-            'total' => $rooms->count(),
-            'available' => $rooms->filter(fn ($room) => $room->status === 'available'
+            'total' => $allRooms->count(),
+            'available' => $allRooms->filter(fn ($room) => $room->status === 'available'
                 && in_array($room->cleaning_status, ['clean', 'ready'], true))->count(),
-            'reserved' => $rooms->where('status', 'reserved')->count(),
-            'occupied' => $rooms->where('status', 'occupied')->count(),
-            'dirty' => $rooms->where('cleaning_status', 'dirty')->count(),
-            'cleaning' => $rooms->where('cleaning_status', 'in_progress')->count(),
-            'maintenance' => $rooms->filter(fn ($room) => in_array($room->status, ['maintenance', 'out_of_order'], true)
+            'reserved' => $allRooms->where('status', 'reserved')->count(),
+            'occupied' => $allRooms->where('status', 'occupied')->count(),
+            'dirty' => $allRooms->where('cleaning_status', 'dirty')->count(),
+            'cleaning' => $allRooms->where('cleaning_status', 'in_progress')->count(),
+            'maintenance' => $allRooms->filter(fn ($room) => in_array($room->status, ['maintenance', 'out_of_order'], true)
                 || $room->cleaning_status === 'out_of_order')->count(),
         ],
         'facilities' => [
@@ -231,7 +232,7 @@
                         <thead><tr><th>Facility</th><th>Type</th><th>Location</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
                         <tbody>
                             @foreach($facilities as $item)
-                                <tr data-facility-row data-facility-name="{{ $item->name }}" data-facility-type="Facility" data-facility-location="—" data-facility-capacity="{{ $item->capacity ?: '—' }}" data-facility-status="{{ $item->status }}" data-facility-hours="—" data-facility-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>Facility</td><td>—</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-facility">Details</button></td></tr>
+                                <tr data-facility-row data-facility-name="{{ $item->name }}" data-facility-type="Facility" data-facility-location="{{ $item->location ?: '—' }}" data-facility-capacity="{{ $item->capacity ?: '—' }}" data-facility-status="{{ $item->status }}" data-facility-hours="—" data-facility-description="{{ $item->description ?: '—' }}" data-reservation-status="—" data-guest="—" data-reservation-id="—" data-reservation-date="—" data-start-time="—" data-end-time="—" data-guests="—" data-last-cleaned="—" data-maintenance-status="{{ ucfirst($item->status) }}" data-notes="—"><td>{{ $item->name }}</td><td>Facility</td><td>{{ $item->location ?: '—' }}</td><td>{{ $item->capacity ?: '—' }}</td><td><span class="status-badge {{ $item->status }}">{{ ucfirst($item->status) }}</span></td><td><button class="action-btn" type="button" data-action="view-facility">Details</button></td></tr>
                             @endforeach
                             @if($facilities->isEmpty())
                                 <tr><td colspan="6" class="px-6 py-10 text-center text-gray-500">No facilities added by the admin.</td></tr>
@@ -331,13 +332,48 @@
                 </div>
                 <div class="table-card" data-dining-content="menu">
                     <div class="border-b border-gray-200 px-5 py-4"><h3 class="text-lg font-semibold text-gray-800">Menu / Meals</h3><p class="text-sm text-gray-500">Current menu items and availability</p></div>
-                    <div class="table-scroll"><table class="room-table"><thead><tr><th>Meal</th><th>Category</th><th>Price</th><th>Status</th></tr></thead><tbody>
-                        @forelse($dining as $menu)
-                            <tr><td>{{ $menu->name }}</td><td>{{ $menu->category ?: 'Menu / Meal' }}</td><td>₱{{ number_format((float) $menu->price, 2) }}</td><td><span class="status-badge {{ strtolower($menu->status) }}">{{ ucfirst($menu->status) }}</span></td></tr>
-                        @empty
-                            <tr><td colspan="4" class="px-6 py-10 text-center text-gray-500">No menu items found.</td></tr>
-                        @endforelse
-                    </tbody></table></div>
+
+                    <div class="flex flex-wrap gap-2 border-b border-gray-200 px-5 py-3" role="tablist" aria-label="Meal categories">
+                        @foreach(['Breakfast', 'Appetizer', 'Main Course', 'Soup', 'Salad', 'Dessert', 'Beverage'] as $category)
+                            <button type="button"
+                                data-menu-category-tab="{{ $category }}"
+                                class="rounded-lg border px-4 py-2 text-sm font-semibold transition {{ $loop->first ? 'border-orange-500 bg-orange-500 text-white' : 'border-gray-200 bg-white text-gray-700 hover:bg-orange-50' }}"
+                                role="tab"
+                                aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                                {{ $category }}
+                            </button>
+                        @endforeach
+                    </div>
+
+                    <div class="table-scroll">
+                        <table class="room-table">
+                            <thead>
+                                <tr>
+                                    <th>Meal</th>
+                                    <th>Category</th>
+                                    <th>Price</th>
+                                    <th>Available Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($dining as $menu)
+                                    <tr class="dining-menu-row" data-menu-category="{{ $menu->category ?: 'Breakfast' }}">
+                                        <td>{{ $menu->name }}</td>
+                                        <td>{{ $menu->category ?: 'Menu / Meal' }}</td>
+                                        <td>₱{{ number_format((float) $menu->price, 2) }}</td>
+                                        <td>{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td>
+                                        <td><span class="status-badge {{ strtolower($menu->status) }}">{{ ucfirst($menu->status) }}</span></td>
+                                    </tr>
+                                @empty
+                                    <tr data-dining-menu-empty>
+                                        <td colspan="5" class="px-6 py-10 text-center text-gray-500">No menu items found.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="dining-menu-pagination" class="hidden items-center justify-between border-t border-gray-200 px-4 py-3 text-sm text-gray-600"></div>
                 </div>
                 <div class="table-card" data-dining-content="schedule">
                     <div class="border-b border-gray-200 px-5 py-4"><h3 class="text-lg font-semibold text-gray-800">Dining Schedule</h3><p class="text-sm text-gray-500">Service hours configured by admin</p></div>
@@ -354,7 +390,7 @@
                 <div class="field-group"><label class="field-label" for="dining-search-name">Search Table / Area</label><input class="field-input" id="dining-search-name" type="text" placeholder="e.g. Table 01"></div>
                 <div class="field-group"><label class="field-label" for="dining-search-type">Search Dining Type</label><input class="field-input" id="dining-search-type" type="text" placeholder="e.g. Standard"></div>
                 <div class="field-group"><label class="field-label" for="dining-filter-status">Filter by Status</label><select class="field-select" id="dining-filter-status"><option value="">All Status</option><option value="available">Available</option><option value="reserved">Reserved</option><option value="occupied">Occupied</option></select></div>
-                <div class="field-group"><label class="field-label" for="dining-filter-location">Filter by Location</label><select class="field-select" id="dining-filter-location"><option value="">All Locations</option><option>Main Dining</option><option>Private Area</option></select></div>
+                <div class="field-group"><label class="field-label" for="dining-filter-location">Filter by Location</label><select class="field-select" id="dining-filter-location"><option value="">All Locations</option><option>In-door</option><option>Out-door</option><option>Private</option></select></div>
                 <button class="secondary-btn" type="button">Reset Filters</button>
             </form>
             <div class="order-2 flex flex-wrap gap-2 border-b border-gray-200 pb-3" role="tablist" aria-label="Dining sections">
@@ -535,6 +571,12 @@
                     </tbody>
                 </table>
             </div>
+
+            @if($rooms instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator || $rooms instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                <div class="mt-4 flex justify-center">
+                    {{ $rooms->links('pagination.admin-rooms') }}
+                </div>
+            @endif
         </div>
 
         <div id="empty-state" class="summary-pill" data-reservation-panel="rooms" style="display:none; margin-top:1rem;">
@@ -645,12 +687,100 @@
             });
         }
 
+        function setActiveDiningMenuCategory(category) {
+            const buttons = document.querySelectorAll('[data-menu-category-tab]');
+            const rows = document.querySelectorAll('.dining-menu-row');
+            const emptyRow = document.querySelector('[data-dining-menu-empty]');
+            const pageSize = 5;
+            const categoryRows = Array.from(rows).filter((row) => (row.dataset.menuCategory || 'Breakfast') === category);
+            const totalPages = Math.max(1, Math.ceil(categoryRows.length / pageSize));
+            const pagination = document.getElementById('dining-menu-pagination');
+
+            if (!window.diningMenuPageState) {
+                window.diningMenuPageState = { currentPage: 1 };
+            }
+
+            window.diningMenuPageState.currentPage = Math.min(window.diningMenuPageState.currentPage || 1, totalPages);
+
+            buttons.forEach((button) => {
+                const isActive = button.dataset.menuCategoryTab === category;
+                button.classList.toggle('border-orange-500', isActive);
+                button.classList.toggle('bg-orange-500', isActive);
+                button.classList.toggle('text-white', isActive);
+                button.classList.toggle('border-gray-200', !isActive);
+                button.classList.toggle('bg-white', !isActive);
+                button.classList.toggle('text-gray-700', !isActive);
+                button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            rows.forEach((row) => {
+                row.style.display = 'none';
+            });
+
+            if (emptyRow) {
+                emptyRow.style.display = categoryRows.length > 0 ? 'none' : '';
+            }
+
+            const startIndex = (window.diningMenuPageState.currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+
+            categoryRows.slice(startIndex, endIndex).forEach((row) => {
+                row.style.display = '';
+            });
+
+            if (pagination) {
+                if (categoryRows.length <= pageSize) {
+                    pagination.classList.add('hidden');
+                    pagination.innerHTML = '';
+                    return;
+                }
+
+                pagination.classList.remove('hidden');
+                pagination.classList.add('flex');
+                pagination.innerHTML = `
+                    <span>Page ${window.diningMenuPageState.currentPage} of ${totalPages}</span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" data-menu-page="prev" class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 ${window.diningMenuPageState.currentPage === 1 ? 'cursor-not-allowed opacity-50' : ''}" ${window.diningMenuPageState.currentPage === 1 ? 'disabled' : ''}>Previous</button>
+                        <button type="button" data-menu-page="next" class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 ${window.diningMenuPageState.currentPage === totalPages ? 'cursor-not-allowed opacity-50' : ''}" ${window.diningMenuPageState.currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                    </div>
+                `;
+
+                pagination.querySelector('[data-menu-page="prev"]').addEventListener('click', () => {
+                    if (window.diningMenuPageState.currentPage > 1) {
+                        window.diningMenuPageState.currentPage -= 1;
+                        setActiveDiningMenuCategory(category);
+                    }
+                });
+
+                pagination.querySelector('[data-menu-page="next"]').addEventListener('click', () => {
+                    if (window.diningMenuPageState.currentPage < totalPages) {
+                        window.diningMenuPageState.currentPage += 1;
+                        setActiveDiningMenuCategory(category);
+                    }
+                });
+            }
+        }
+
         document.querySelectorAll('[data-dining-tab]').forEach((button) => {
             button.addEventListener('click', () => setActiveDiningTab(button.dataset.diningTab));
         });
 
+        document.querySelectorAll('[data-menu-category-tab]').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (!window.diningMenuPageState) {
+                    window.diningMenuPageState = { currentPage: 1 };
+                }
+                window.diningMenuPageState.currentPage = 1;
+                setActiveDiningMenuCategory(button.dataset.menuCategoryTab);
+            });
+        });
+
         setActiveReservationTab('rooms');
         setActiveDiningTab('tables');
+        if (!window.diningMenuPageState) {
+            window.diningMenuPageState = { currentPage: 1 };
+        }
+        setActiveDiningMenuCategory('Breakfast');
     });
 </script>
 

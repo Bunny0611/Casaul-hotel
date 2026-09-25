@@ -201,7 +201,8 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
         return view('employee.checkin', compact('checkIns', 'checkOuts', 'occupiedRooms', 'availableRooms'));
     })->name('checkin');
     Route::get('/room-status', function () {
-        $rooms = \App\Models\Room::orderBy('room_number')->get();
+        $allRooms = \App\Models\Room::orderBy('room_number')->get();
+        $rooms = \App\Models\Room::orderBy('room_number')->paginate(10);
         $activeRoomReservations = RoomReservation::query()
             ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
             ->whereDate('check_out', '>=', today())
@@ -293,7 +294,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
             $table->status = $isReservedNow ? 'Reserved' : 'Available';
         });
 
-        return view('employee.room-status', compact('rooms', 'reservations', 'inventoryItems', 'facilities', 'events', 'diningTables', 'dining', 'diningSchedules'));
+        return view('employee.room-status', compact('allRooms', 'rooms', 'reservations', 'inventoryItems', 'facilities', 'events', 'diningTables', 'dining', 'diningSchedules'));
     })->name('room-status');
     Route::patch('/rooms/{id}/status', [HousekeepingController::class, 'updateStatus'])->name('rooms.status');
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
