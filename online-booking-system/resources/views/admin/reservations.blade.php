@@ -109,6 +109,11 @@
         ];
         $grandTotal = array_sum($categoryAmounts);
         $paid = min($paid, $grandTotal);
+        $bookingRefund = $relatedRows->flatMap(fn ($row) => $row->refunds)->sortBy('id')->first();
+        if ($bookingRefund) {
+            $grandTotal = (float) $bookingRefund->original_total;
+            $paid = (float) $bookingRefund->total_paid;
+        }
 
         return [
             'room_amount' => $categoryAmounts['rooms'],
@@ -205,6 +210,8 @@
                 'room_check_out' => $reservation->check_out?->format('Y-m-d') ?? 'N/A',
                 'room_check_out_time' => $reservation->check_out_time ? \Carbon\Carbon::parse($reservation->check_out_time)->format('g:i A') : 'N/A',
                 'room_number_of_guests' => $reservation->number_of_guests ?? 'N/A',
+                'adult_guests' => $reservation->adult_guests,
+                'kid_guests' => $reservation->kid_guests,
                 'room_rate' => $reservation->room?->price ?? 'N/A',
             ];
         } elseif ($category === 'facilities') {
@@ -739,7 +746,7 @@
         ];
         const categoryEntries = {
             rooms: [
-                ['Room Number', reservation.room_number], ['Room Type', reservation.room_type], ['Check-in Date', formatAdminDate(reservation.room_check_in)], ['Check-in Time', reservation.room_check_in_time], ['Check-out Date', formatAdminDate(reservation.room_check_out)], ['Check-out Time', reservation.room_check_out_time], ['Number of Guests', reservation.room_number_of_guests], ['Room Rate', reservation.room_rate && reservation.room_rate !== 'N/A' ? formatAdminMoney(reservation.room_rate) : 'N/A']
+                ['Room Number', reservation.room_number], ['Room Type', reservation.room_type], ['Check-in Date', formatAdminDate(reservation.room_check_in)], ['Check-in Time', reservation.room_check_in_time], ['Check-out Date', formatAdminDate(reservation.room_check_out)], ['Check-out Time', reservation.room_check_out_time], ['Number of Guests', reservation.adult_guests !== null && reservation.adult_guests !== undefined && reservation.kid_guests !== null && reservation.kid_guests !== undefined ? `${reservation.room_number_of_guests} (${reservation.adult_guests} adult, ${reservation.kid_guests} kid)` : reservation.room_number_of_guests], ['Room Rate', reservation.room_rate && reservation.room_rate !== 'N/A' ? formatAdminMoney(reservation.room_rate) : 'N/A']
             ],
             facilities: [['Facility', reservation.facility_name], ['Date', formatAdminDate(reservation.date)], ['Time', reservation.time], ['Quantity', reservation.quantity]],
             event: [['Event', reservation.event_name], ['Event Type', reservation.event_type], ['Event Date', formatAdminDate(reservation.event_date)], ['Start Time', reservation.event_start_time], ['End Time', reservation.event_end_time], ['Event Hours', reservation.event_duration], ['Number of Guests', reservation.event_number_of_guests]],
@@ -755,10 +762,13 @@
         ]));
         const paymentDetails = parseAdminPaymentDetails(reservation.payment_details);
         const paymentProofUrl = resolveAdminPaymentProof(reservation.overall_payment_proof || reservation.payment_proof || paymentDetails.proof);
+        const refundEntries = Array.isArray(reservation.refunds) ? reservation.refunds : [];
+        const refundTotal = refundEntries.reduce((total, refund) => total + Number(String(refund.amount || 0).replace(/,/g, '')), 0);
         detailsSections.push(renderAdminDetailsCard('Payment Summary', [
             { label: 'Grand Total', value: formatAdminMoney(reservation.grand_total || reservation.total_amount || 0) },
             { label: 'Amount Paid', value: formatAdminMoney(reservation.overall_amount_paid || 0) },
             { label: 'Balance Due', value: formatAdminMoney(reservation.balance_due || 0) },
+            { label: 'Refund Amount', value: formatAdminMoney(refundTotal) },
             { label: 'Payment Method', value: reservation.overall_payment_method || reservation.payment_method || 'N/A' },
             { label: 'Reference Number', value: reservation.overall_reference_number || paymentDetails.referenceNumber || 'N/A' },
         ]));

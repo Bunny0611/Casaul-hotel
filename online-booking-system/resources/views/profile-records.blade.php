@@ -383,12 +383,12 @@
         position: relative;
         display: block;
         padding-bottom: 14px;
-        border-bottom: 4px solid #c7d8e8;
+        border-bottom: 4px solid #fed7aa;
     }
 
     .receipt-brand {
         margin: 0;
-        color: #07549a;
+        color: #c2410c;
         font-size: 32px;
         font-weight: 400;
         text-align: center;
@@ -441,7 +441,7 @@
     .receipt-booking h4,
     .receipt-notes h4 {
         margin: 0 0 8px;
-        color: #07549a;
+        color: #c2410c;
         font-size: 14px;
     }
 
@@ -455,7 +455,7 @@
 
     .receipt-heading {
         margin: 0;
-        color: #07549a;
+        color: #c2410c;
         font-size: 32px;
         letter-spacing: 0.04em;
     }
@@ -499,12 +499,12 @@
     .reservation-detail-section {
         margin-top: 18px;
         padding-top: 14px;
-        border-top: 1px solid #d9e5ef;
+        border-top: 1px solid #e2e8f0;
     }
 
     .reservation-detail-section h4 {
         margin: 0 0 10px;
-        color: #07549a;
+        color: #c2410c;
         font-size: 14px;
     }
 
@@ -690,7 +690,7 @@
 
     .receipt-table {
         width: 100%;
-        border: 1px solid #7fa9d0;
+        border: 1px solid #fdba74;
         border-radius: 4px;
         border-spacing: 0;
         overflow: hidden;
@@ -699,14 +699,14 @@
     .receipt-table th {
         padding: 9px 8px;
         color: #fff;
-        background: #07549a;
+        background: #c2410c;
         font-size: 11px;
         text-align: left;
     }
 
     .receipt-table td {
         padding: 9px 8px;
-        border-top: 1px solid #d9e5ef;
+        border-top: 1px solid #e2e8f0;
         color: #4b5563;
         font-size: 12px;
     }
@@ -717,8 +717,8 @@
     }
 
     .receipt-table .receipt-total-row td {
-        border-top: 2px solid #7fa9d0;
-        color: #07549a;
+        border-top: 2px solid #fb923c;
+        color: #c2410c;
         font-weight: 800;
     }
 
@@ -728,7 +728,7 @@
 
     .receipt-notes h4 {
         margin: 0 0 6px;
-        color: #07549a;
+        color: #c2410c;
         font-size: 14px;
     }
 
@@ -751,14 +751,38 @@
         border-radius: 7px;
         padding: 10px 16px;
         color: #fff;
-        background: #d20b26;
+        background: #ea580c;
         font-size: 11px;
         font-weight: 700;
         cursor: pointer;
     }
 
     .receipt-actions .receipt-print-btn {
-        background: #253570;
+        background: #334155;
+    }
+
+    @media print {
+        @page { size: A4 portrait; margin: 6mm; }
+
+        body { margin: 0; background: #fff !important; }
+        .receipt-modal { position: static; display: block !important; padding: 0; background: #fff; }
+        .receipt-card { width: 100%; max-height: none; overflow: visible; padding: 12px; box-shadow: none; }
+        .receipt-close, .receipt-actions, .profile-page > *:not(.receipt-modal) { display: none !important; }
+        .receipt-header, .receipt-title-row, .receipt-booking-details, .receipt-content, .receipt-notes { break-inside: avoid; }
+        .receipt-brand { font-size: 24px; }
+        .receipt-contact, .receipt-subcontact, .receipt-paid-by p, .receipt-booking p, .receipt-notes p { font-size: 10px; }
+        .receipt-heading-row { margin: 12px 0 8px; }
+        .receipt-heading { font-size: 24px; }
+        .receipt-title-row, .receipt-booking-details { margin-bottom: 10px; }
+        .receipt-table { margin: 6px 0 8px; }
+        .receipt-table th, .receipt-table td { padding: 5px 6px; font-size: 10px; }
+        .reservation-detail-section, .reservation-amounts-card, .payment-summary-card { margin-top: 8px; padding-top: 8px; }
+        .reservation-detail-section h4, .reservation-amounts-card h4, .payment-summary-card h4 { margin-bottom: 6px; font-size: 11px; }
+        .reservation-detail-grid, .reservation-amount-grid { gap: 5px 10px; }
+        .reservation-detail-field, .reservation-amount-item { padding: 3px 6px; font-size: 9px; }
+        .reservation-amount-item { padding: 6px; }
+        .payment-proof img { max-height: 120px; }
+        .receipt-notes { margin-top: 8px; }
     }
 
     @media (max-width:700px) {
@@ -1630,20 +1654,16 @@
             const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 10;
-            const imageWidth = pageWidth - (margin * 2);
-            const imageHeight = (canvas.height * imageWidth) / canvas.width;
+            const margin = 6;
+            const maxWidth = pageWidth - (margin * 2);
+            const maxHeight = pageHeight - (margin * 2);
+            const scale = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
+            const imageWidth = canvas.width * scale;
+            const imageHeight = canvas.height * scale;
+            const imageX = (pageWidth - imageWidth) / 2;
+            const imageY = (pageHeight - imageHeight) / 2;
             const imageData = canvas.toDataURL('image/jpeg', 0.95);
-            let remainingHeight = imageHeight;
-            let offset = 0;
-            pdf.addImage(imageData, 'JPEG', margin, margin, imageWidth, imageHeight);
-            remainingHeight -= pageHeight - (margin * 2);
-            while (remainingHeight > 0) {
-                offset += pageHeight - (margin * 2);
-                pdf.addPage();
-                pdf.addImage(imageData, 'JPEG', margin, margin - offset, imageWidth, imageHeight);
-                remainingHeight -= pageHeight - (margin * 2);
-            }
+            pdf.addImage(imageData, 'JPEG', imageX, imageY, imageWidth, imageHeight);
             pdf.save(`${document.getElementById('guest-receipt-number').textContent || 'reservation'}-receipt.pdf`);
         } catch (error) {
             alert('The receipt PDF could not be downloaded. Please try again.');
@@ -1666,10 +1686,11 @@
             .map((style) => style.outerHTML)
             .join('');
         printWindow.document.write(`<html><head><title>${document.getElementById('guest-receipt-number').textContent} Reservation</title>${pageStyles}<style>
-            @page { margin: 12mm; }
+            @page { size: A4 portrait; margin: 6mm; }
             html, body { margin: 0; padding: 0; background: #fff; }
             body { display: block; }
-            .receipt-card { width: 100%; max-height: none; overflow: visible; box-shadow: none; }
+            .receipt-modal { position: static; display: block !important; padding: 0; background: #fff; }
+            .receipt-card { width: 100%; max-height: none; overflow: visible; padding: 12px; box-shadow: none; }
         </style></head><body>${printableReceipt.outerHTML}</body></html>`);
         printWindow.document.close();
         const print = () => {

@@ -121,6 +121,38 @@
         display: none !important;
     }
 
+    .room-management-page .dining-menu-category-tabs {
+        display: flex;
+        gap: 0.625rem;
+        overflow-x: auto;
+        padding: 1rem 1.25rem;
+        scrollbar-width: thin;
+    }
+
+    .room-management-page .dining-menu-category-tab {
+        flex: 0 0 auto;
+        border: 1px solid #eadfd5;
+        border-radius: 0.75rem;
+        background: #fff;
+        padding: 0.6rem 1rem;
+        color: #5b3924;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+    }
+
+    .room-management-page .dining-menu-category-tab:hover {
+        border-color: #fca5a5;
+        background: #fff7f7;
+    }
+
+    .room-management-page .dining-menu-category-tab.is-active {
+        border-color: #f97316;
+        background: #f97316;
+        color: #fff;
+    }
+
     .room-management-page [data-dining-subpanel="tables"] .dining-card-header h3,
     .room-management-page [data-dining-subpanel="menu"] .dining-card-header h3,
     .room-management-page [data-dining-subpanel="schedule"] .dining-card-header h3 {
@@ -382,7 +414,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), @json($room->bed_type ?? "1 Queen Bed"), {{ $room->price }}, {{ $room->adult_guest_price ?? 0 }}, {{ $room->kid_guest_price ?? 0 }}, @json($room->floor), {{ $room->capacity }}, @json($room->status), @json($room->description))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
+                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), @json($room->bed_type ?? "1 Queen Bed"), {{ $room->price }}, {{ $room->adult_guest_price ?? 0 }}, {{ $room->kid_guest_price ?? 0 }}, @json($room->floor), {{ $room->capacity }}, @json($room->status), @json($room->description), @json($room->image))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
                                         <i class='fas fa-edit'></i>
                                     </button>
                                     <button type="button" onclick="changeStatus({{ $room->id }})" class="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 transition hover:bg-emerald-100" aria-label="Change room status">
@@ -516,7 +548,7 @@
                             <thead class="bg-gray-50"><tr><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600"></th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                             <tbody class="divide-y divide-gray-200">
                                 @forelse($dining as $menu)
-                                    <tr class="bg-white"><td class="px-4 py-3 text-sm"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $menu->id }}"></td><td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $menu->name }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ $menu->category ?: 'Menu / Meal' }}</td><td class="px-4 py-3 text-sm text-gray-700">₱{{ number_format((float) $menu->price, 2) }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-4 py-3"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower($menu->status) === 'available' ? 'border-green-200 bg-green-100 text-green-700' : 'border-red-200 bg-red-100 text-red-700' }}">{{ ucfirst($menu->status) }}</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                    <tr class="bg-white" data-dining-type="menus" data-menu-description="{{ e($menu->description ?? '') }}" data-menu-image="{{ e($menu->image ?? '') }}"><td class="px-4 py-3 text-sm"><input type="checkbox" class="h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $menu->id }}"></td><td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $menu->name }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ $menu->category ?: 'Menu / Meal' }}</td><td class="px-4 py-3 text-sm text-gray-700">₱{{ number_format((float) $menu->price, 2) }}</td><td class="px-4 py-3 text-sm text-gray-700">{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-4 py-3"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower($menu->status) === 'available' ? 'border-green-200 bg-green-100 text-green-700' : 'border-red-200 bg-red-100 text-red-700' }}">{{ ucfirst($menu->status) }}</span></td><td class="px-4 py-3 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
                                 @empty
                                     <tr><td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500">No menu items found.</td></tr>
                                 @endforelse
@@ -544,31 +576,38 @@
                         <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="dining-table-select-all h-4 w-4 rounded border-gray-300 text-orange-600" onclick="toggleAllDiningCheckboxes('tables', this)"></th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Table No.</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Type</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Capacity</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Location</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                         <tbody class="divide-y divide-gray-200">
                             @forelse($diningTables as $table)
-                                <tr class="bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-table-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $table->id }}" onclick="updateDiningSelectCount('tables')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $table->table_no }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->type }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->capacity }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->location ?: '—' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower((string) $table->status) === 'reserved' ? 'border-blue-200 bg-blue-100 text-blue-700' : '' }}">{{ ucfirst($table->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="dining-table-row bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-table-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $table->id }}" onclick="updateDiningSelectCount('tables')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $table->table_no }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->type }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->capacity }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $table->location ?: '—' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower((string) $table->status) === 'reserved' ? 'border-blue-200 bg-blue-100 text-blue-700' : '' }}">{{ ucfirst($table->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
                             @empty
                                 <tr><td colspan="7" class="px-6 py-6 !text-center text-sm text-gray-500">No tables found.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
+                <div data-dining-pagination="tables" class="flex items-center justify-between border-t border-gray-200 px-6 py-3 text-sm text-gray-600"></div>
             </div>
         </div>
 
         <div data-dining-subpanel="menu" class="hidden p-5 lg:p-6">
             <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div class="dining-card-header flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-2"><h3 class="text-xl font-semibold text-gray-800">Menu / Meals</h3><div class="flex items-center gap-3"><span id="diningMenusSelectedCount" class="text-sm font-medium text-gray-500">0 selected</span><button type="button" onclick="confirmBulkDiningDelete('menus')" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" aria-label="Delete selected menus"><i class="fas fa-trash"></i></button><button type="button" data-dining-add="menu" class="dining-add-button inline-flex items-center justify-center rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-50"><i class="fas fa-plus mr-2"></i>Add Menu</button></div></div>
+                <div class="dining-menu-category-tabs" role="tablist" aria-label="Meal categories">
+                    @foreach(['Breakfast', 'Appetizer', 'Main Course', 'Soup', 'Salad', 'Dessert', 'Beverage'] as $category)
+                        <button type="button" class="dining-menu-category-tab {{ $loop->first ? 'is-active' : '' }}" data-menu-category-tab="{{ $category }}" role="tab" aria-selected="{{ $loop->first ? 'true' : 'false' }}">{{ $category }}</button>
+                    @endforeach
+                </div>
                 <div class="dining-table-scroll">
                     <table class="min-w-full text-left">
                         <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="dining-menu-select-all h-4 w-4 rounded border-gray-300 text-orange-600" onclick="toggleAllDiningCheckboxes('menus', this)"></th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Name</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Category</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Price</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Available Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                         <tbody class="divide-y divide-gray-200">
                             @forelse($dining as $menu)
-                                <tr class="bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-menu-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $menu->id }}" onclick="updateDiningSelectCount('menus')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $menu->name }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $menu->category ?: 'Menu / Meal' }}</td><td class="px-6 py-4 text-sm text-gray-700">₱{{ number_format((float) $menu->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower($menu->status) === 'available' ? 'border-green-200 bg-green-100 text-green-700' : 'border-red-200 bg-red-100 text-red-700' }}">{{ ucfirst($menu->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="bg-white dining-menu-row" data-menu-category="{{ $menu->category ?: 'Breakfast' }}" data-menu-description="{{ e($menu->description ?? '') }}" data-menu-image="{{ e($menu->image ?? '') }}"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-menu-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $menu->id }}" onclick="updateDiningSelectCount('menus')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $menu->name }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $menu->category ?: 'Menu / Meal' }}</td><td class="px-6 py-4 text-sm text-gray-700">₱{{ number_format((float) $menu->price, 2) }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $menu->available_from && $menu->available_to ? \Illuminate\Support\Carbon::parse($menu->available_from)->format('g:i A') . ' - ' . \Illuminate\Support\Carbon::parse($menu->available_to)->format('g:i A') : 'Any time' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium {{ strtolower($menu->status) === 'available' ? 'border-green-200 bg-green-100 text-green-700' : 'border-red-200 bg-red-100 text-red-700' }}">{{ ucfirst($menu->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
                             @empty
-                                <tr><td colspan="7" class="px-6 py-6 !text-center text-sm text-gray-500">No menu items found.</td></tr>
+                                <tr class="dining-menu-empty"><td colspan="7" class="px-6 py-6 !text-center text-sm text-gray-500">No menu items found.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
+                <div data-dining-pagination="menus" class="flex items-center justify-between border-t border-gray-200 px-6 py-3 text-sm text-gray-600"></div>
             </div>
         </div>
 
@@ -580,13 +619,14 @@
                         <thead class="bg-gray-50"><tr><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500"><input type="checkbox" class="dining-schedule-select-all h-4 w-4 rounded border-gray-300 text-orange-600" onclick="toggleAllDiningCheckboxes('schedules', this)"></th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Meal Period</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Time</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Max Guests</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th><th class="px-6 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">Action</th></tr></thead>
                         <tbody class="divide-y divide-gray-200">
                             @forelse($diningSchedules as $schedule)
-                                <tr class="bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-schedule-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $schedule->id }}" onclick="updateDiningSelectCount('schedules')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $schedule->period }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ \Illuminate\Support\Carbon::parse($schedule->available_from)->format('g:i A') }} - {{ \Illuminate\Support\Carbon::parse($schedule->available_to)->format('g:i A') }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $schedule->max_guests ?: '—' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium">{{ ucfirst($schedule->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
+                                <tr class="dining-schedule-row bg-white"><td class="px-6 py-4 text-sm"><input type="checkbox" class="dining-schedule-checkbox h-4 w-4 rounded border-gray-300 text-orange-600" value="{{ $schedule->id }}" onclick="updateDiningSelectCount('schedules')"></td><td class="px-6 py-4 text-sm font-medium text-gray-900">{{ $schedule->period }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ \Illuminate\Support\Carbon::parse($schedule->available_from)->format('g:i A') }} - {{ \Illuminate\Support\Carbon::parse($schedule->available_to)->format('g:i A') }}</td><td class="px-6 py-4 text-sm text-gray-700">{{ $schedule->max_guests ?: '—' }}</td><td class="px-6 py-4"><span class="inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium">{{ ucfirst($schedule->status) }}</span></td><td class="px-6 py-4 text-right"><div class="flex items-center justify-end gap-2"><button type="button" class="rounded-md border border-blue-200 bg-blue-50 p-2 text-blue-700"><i class="fas fa-edit text-xs"></i></button><button type="button" class="rounded-md border border-red-200 bg-red-50 p-2 text-red-700"><i class="fas fa-trash text-xs"></i></button></div></td></tr>
                             @empty
                                 <tr><td colspan="6" class="px-6 py-6 !text-center text-sm text-gray-500">No dining schedules found.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
+                <div data-dining-pagination="schedules" class="flex items-center justify-between border-t border-gray-200 px-6 py-3 text-sm text-gray-600"></div>
             </div>
         </div>
     </div>
@@ -806,10 +846,13 @@
                     <div id="diningMenuCategoryField">
                         <label class="mb-2 block text-base font-medium text-gray-700">Category <span class="text-red-500">*</span></label>
                         <select name="menu_category" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                            <option value="Dinner">Dinner</option>
                             <option value="Breakfast">Breakfast</option>
-                            <option value="Lunch">Lunch</option>
+                            <option value="Appetizer">Appetizer</option>
+                            <option value="Main Course">Main Course</option>
+                            <option value="Soup">Soup</option>
+                            <option value="Salad">Salad</option>
                             <option value="Dessert">Dessert</option>
+                            <option value="Beverage">Beverage</option>
                         </select>
                     </div>
 
@@ -836,6 +879,11 @@
                     <div id="diningImageField">
                         <label class="mb-2 block text-base font-medium text-gray-700">Image (Optional)</label>
                         <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/webp" class="block w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+
+                    <div id="diningDescriptionField" class="lg:col-span-2">
+                        <label class="mb-2 block text-base font-medium text-gray-700">Description</label>
+                        <textarea name="description" rows="3" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Describe the meal"></textarea>
                     </div>
 
                     <div id="diningMaxGuestsField" class="hidden">
@@ -881,6 +929,7 @@
             <p class="mt-1 text-sm text-gray-500">Update the selected dining details below.</p>
         </div>
         <form id="editDiningForm" class="space-y-4">
+            @csrf
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <label id="editDiningNameLabel" for="editDiningName" class="mb-1 block text-sm font-medium text-gray-700">Name</label>
@@ -889,6 +938,15 @@
                 <div>
                     <label id="editDiningTypeLabel" for="editDiningType" class="mb-1 block text-sm font-medium text-gray-700">Type</label>
                     <input id="editDiningType" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <select id="editDiningMenuCategory" class="hidden w-full rounded-lg border border-gray-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="Breakfast">Breakfast</option>
+                        <option value="Appetizer">Appetizer</option>
+                        <option value="Main Course">Main Course</option>
+                        <option value="Soup">Soup</option>
+                        <option value="Salad">Salad</option>
+                        <option value="Dessert">Dessert</option>
+                        <option value="Beverage">Beverage</option>
+                    </select>
                 </div>
                 <div>
                     <label id="editDiningValueLabel" for="editDiningValue" class="mb-1 block text-sm font-medium text-gray-700">Price (₱)</label>
@@ -897,6 +955,13 @@
                 <div>
                     <label id="editDiningDetailLabel" for="editDiningDetail" class="mb-1 block text-sm font-medium text-gray-700">Location</label>
                     <input id="editDiningDetail" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <select id="editDiningMenuTime" class="hidden w-full rounded-lg border border-gray-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="afternoon-snack">Afternoon Snack</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="all-day">Available All Day</option>
+                    </select>
                 </div>
                 <div>
                     <label for="editDiningStatus" class="mb-1 block text-sm font-medium text-gray-700">Status</label>
@@ -907,6 +972,17 @@
                         <option value="Active">Active</option>
                         <option value="Unavailable">Unavailable</option>
                     </select>
+                </div>
+            </div>
+            <div id="editDiningMenuDetails" class="hidden space-y-4">
+                <div>
+                    <label for="editDiningDescription" class="mb-1 block text-sm font-medium text-gray-700">Description</label>
+                    <textarea id="editDiningDescription" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+                </div>
+                <div>
+                    <label for="editDiningImage" class="mb-1 block text-sm font-medium text-gray-700">Meal Image</label>
+                    <img id="editDiningImagePreview" src="" alt="Current meal image" class="mb-3 hidden h-40 w-full rounded-lg border border-gray-200 object-cover">
+                    <input id="editDiningImage" type="file" accept="image/jpeg,image/png,image/gif,image/webp" class="w-full rounded-lg border border-gray-300 px-3 py-2">
                 </div>
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
@@ -1077,7 +1153,8 @@
             </div>
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700">Room Image (Optional)</label>
-                <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <input id="editRoomImage" type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <img id="editRoomImagePreview" src="" alt="Current room image" class="mt-3 hidden h-40 w-full rounded-lg border border-gray-200 object-cover">
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeEditRoomModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
@@ -1130,7 +1207,7 @@
         document.getElementById('addRoomModal').classList.remove('flex');
     }
 
-    function editRoom(id, roomNumber, roomType, bedType, price, adultGuestPrice, kidGuestPrice, floor, capacity, status, description) {
+    function editRoom(id, roomNumber, roomType, bedType, price, adultGuestPrice, kidGuestPrice, floor, capacity, status, description, image = null) {
         document.getElementById('editRoomId').value = id;
         document.getElementById('editRoomNumber').value = roomNumber;
         document.getElementById('editRoomType').value = roomType;
@@ -1158,6 +1235,15 @@
         document.getElementById('editCapacity').value = capacity;
         document.getElementById('editStatus').value = status;
         document.getElementById('editDescription').value = description || '';
+
+        const roomImageInput = document.getElementById('editRoomImage');
+        const roomImagePreview = document.getElementById('editRoomImagePreview');
+        const roomImageUrl = image ? "{{ asset('storage') }}/" + image : '';
+
+        roomImagePreview.src = roomImageUrl;
+        roomImagePreview.classList.toggle('hidden', !roomImageUrl);
+        roomImageInput.value = '';
+
         var editRoute = "{{ route('admin.rooms.update', ['id' => '__ID__']) }}";
         document.getElementById('editRoomForm').action = editRoute.replace('__ID__', id);
         document.getElementById('editRoomModal').classList.remove('hidden');
@@ -1184,6 +1270,12 @@
     }
 
     function closeEditRoomModal() {
+        const roomImageInput = document.getElementById('editRoomImage');
+        const roomImagePreview = document.getElementById('editRoomImagePreview');
+
+        roomImageInput.value = '';
+        roomImagePreview.src = '';
+        roomImagePreview.classList.add('hidden');
         document.getElementById('editRoomModal').classList.add('hidden');
         document.getElementById('editRoomModal').classList.remove('flex');
     }
@@ -1298,30 +1390,40 @@
         return type === 'tables' ? 'dining-table-select-all' : type === 'menus' ? 'dining-menu-select-all' : 'dining-schedule-select-all';
     }
 
+    function diningCheckboxes(type) {
+        const checkboxes = Array.from(document.querySelectorAll(diningCheckboxSelector(type)));
+        if (type !== 'menus') return checkboxes;
+
+        const activeCategory = document.querySelector('[data-menu-category-tab].is-active')?.getAttribute('data-menu-category-tab');
+        return activeCategory
+            ? checkboxes.filter((checkbox) => checkbox.closest('tr')?.dataset.menuCategory === activeCategory)
+            : checkboxes;
+    }
+
     function updateDiningSelectCount(type) {
-        const selector = diningCheckboxSelector(type);
-        const count = document.querySelectorAll(selector + ':checked').length;
+        const checkboxes = diningCheckboxes(type);
+        const count = checkboxes.filter((checkbox) => checkbox.checked).length;
         const label = document.getElementById('dining' + type.charAt(0).toUpperCase() + type.slice(1) + 'SelectedCount');
         if (label) label.textContent = count + ' selected';
 
         const panelName = diningPanelName(type);
         const selectAll = document.querySelector('.' + diningSelectAllClass(type));
         if (selectAll) {
-            selectAll.checked = count > 0 && count === document.querySelectorAll(selector).length;
+            selectAll.checked = count > 0 && count === checkboxes.length;
             const deleteButton = document.querySelector('[data-dining-subpanel="' + panelName + '"] button[onclick^="confirmBulkDiningDelete"]');
             if (deleteButton) deleteButton.style.display = selectAll.checked ? 'inline-flex' : 'none';
         }
     }
 
     function toggleAllDiningCheckboxes(type, source) {
-        document.querySelectorAll(diningCheckboxSelector(type)).forEach(function (checkbox) {
+        diningCheckboxes(type).forEach(function (checkbox) {
             checkbox.checked = source.checked;
         });
         updateDiningSelectCount(type);
     }
 
     function confirmBulkDiningDelete(type) {
-        const selectedIds = Array.from(document.querySelectorAll(diningCheckboxSelector(type) + ':checked')).map(function (checkbox) {
+        const selectedIds = diningCheckboxes(type).filter((checkbox) => checkbox.checked).map(function (checkbox) {
             return checkbox.value;
         });
         if (!selectedIds.length) {
@@ -1544,7 +1646,7 @@
         const row = button.closest('tr');
         const cells = row.querySelectorAll('td');
         const panel = row.closest('[data-dining-subpanel]');
-        const section = panel ? panel.getAttribute('data-dining-subpanel') : 'tables';
+        const section = row.dataset.diningType || (panel ? panel.getAttribute('data-dining-subpanel') : 'tables');
         const isTable = section === 'tables';
         const isSchedule = section === 'schedule';
         const statusIndex = isSchedule ? 4 : 5;
@@ -1560,6 +1662,38 @@
         document.getElementById('editDiningValue').value = cells[3].textContent.replace('₱', '').trim();
         document.getElementById('editDiningDetail').value = cells[isSchedule ? 2 : 4].textContent.trim();
         document.getElementById('editDiningStatus').value = status;
+        const menuCategory = document.getElementById('editDiningMenuCategory');
+        const typeInput = document.getElementById('editDiningType');
+        menuCategory.classList.toggle('hidden', !(!isTable && !isSchedule));
+        typeInput.classList.toggle('hidden', !isTable && !isSchedule);
+        typeInput.required = isTable || isSchedule;
+        menuCategory.required = !isTable && !isSchedule;
+        if (!isTable && !isSchedule) {
+            menuCategory.value = cells[2].textContent.trim();
+        }
+        const menuTime = document.getElementById('editDiningMenuTime');
+        const detailInput = document.getElementById('editDiningDetail');
+        menuTime.classList.toggle('hidden', !(!isTable && !isSchedule));
+        detailInput.classList.toggle('hidden', !isTable && !isSchedule);
+        detailInput.required = isTable || isSchedule;
+        menuTime.required = !isTable && !isSchedule;
+        if (!isTable && !isSchedule) {
+            const currentTime = cells[4].textContent.trim().toLowerCase();
+            const timeOptions = {
+                '7:00 am - 10:00 am': 'breakfast',
+                '11:00 am - 2:00 pm': 'lunch',
+                '2:00 pm - 5:00 pm': 'afternoon-snack',
+                '6:00 pm - 9:00 pm': 'dinner',
+                'any time': 'all-day',
+            };
+            menuTime.value = timeOptions[currentTime] || 'all-day';
+        }
+        const menuDetails = document.getElementById('editDiningMenuDetails');
+        const imagePreview = document.getElementById('editDiningImagePreview');
+        menuDetails.classList.toggle('hidden', isTable || isSchedule);
+        document.getElementById('editDiningDescription').value = row.dataset.menuDescription || '';
+        imagePreview.src = row.dataset.menuImage ? "{{ asset('storage') }}/" + row.dataset.menuImage : '';
+        imagePreview.classList.toggle('hidden', !row.dataset.menuImage || isTable || isSchedule);
         window.editingDiningRow = row;
         window.editingDiningId = row.querySelector('input[type="checkbox"]').value;
         window.editingDiningType = section;
@@ -1581,11 +1715,46 @@
         const isTable = form.dataset.table === 'true';
         const isSchedule = form.dataset.schedule === 'true';
         const status = document.getElementById('editDiningStatus').value;
+        const isMenu = !isTable && !isSchedule;
         const statusRoute = "{{ route('admin.dining.status', ['type' => '__TYPE__', 'id' => '__ID__']) }}"
             .replace('__TYPE__', window.editingDiningType)
             .replace('__ID__', window.editingDiningId);
 
         try {
+            if (isMenu) {
+                const updateRoute = "{{ route('admin.inventory.update', ['id' => '__ID__']) }}".replace('__ID__', window.editingDiningId);
+                const updateData = new FormData();
+                updateData.append('_token', document.querySelector('#editDiningForm input[name="_token"]').value);
+                updateData.append('_method', 'PUT');
+                updateData.append('category', 'dining');
+                updateData.append('name', document.getElementById('editDiningName').value.trim());
+                updateData.append('menu_category', document.getElementById('editDiningMenuCategory').value);
+                updateData.append('price', value);
+                updateData.append('status', status);
+                updateData.append('description', document.getElementById('editDiningDescription').value.trim());
+                const menuTimeRanges = {
+                    breakfast: ['07:00', '10:00'],
+                    lunch: ['11:00', '14:00'],
+                    'afternoon-snack': ['14:00', '17:00'],
+                    dinner: ['18:00', '21:00'],
+                    'all-day': ['', ''],
+                };
+                const [availableFrom, availableTo] = menuTimeRanges[document.getElementById('editDiningMenuTime').value];
+                updateData.append('available_from', availableFrom);
+                updateData.append('available_to', availableTo);
+                const image = document.getElementById('editDiningImage').files[0];
+                if (image) updateData.append('image', image);
+
+                const updateResponse = await fetch(updateRoute, { method: 'POST', body: updateData, headers: { 'Accept': 'application/json' } });
+                if (!updateResponse.ok) {
+                    const errorPayload = await updateResponse.json().catch(() => ({}));
+                    const errorMessage = errorPayload.message || Object.values(errorPayload.errors || {}).flat()[0];
+                    throw new Error(errorMessage || 'Menu update failed');
+                }
+                window.location.reload();
+                return;
+            }
+
             const response = await fetch(statusRoute, {
                 method: 'PATCH',
                 headers: {
@@ -1598,7 +1767,7 @@
 
             if (!response.ok) throw new Error('Status update failed');
         } catch (error) {
-            alert('Unable to update the dining status. Please try again.');
+            alert(error.message || (isMenu ? 'Unable to update the menu item. Please check the details and try again.' : 'Unable to update the dining status. Please try again.'));
             return;
         }
 
@@ -1663,6 +1832,7 @@
         const addButtons = document.querySelectorAll('.add-panel-button');
         const diningSubTabs = document.querySelectorAll('.dining-subtab');
         const diningSubPanels = document.querySelectorAll('[data-dining-subpanel]');
+        const diningMenuCategoryTabs = document.querySelectorAll('[data-menu-category-tab]');
         const diningPanel = document.querySelector('[data-panel="dining"]');
         const roomFilterPanel = document.getElementById('roomFilterPanel');
         const roomSearch = document.getElementById('roomSearch');
@@ -1731,6 +1901,94 @@
             });
         }
 
+        const diningPageSize = 5;
+        const diningPageState = { tables: 1, menus: 1, schedules: 1 };
+
+        function paginateDiningRows(type, category = null) {
+            const panel = document.querySelector(`[data-dining-subpanel="${type === 'menus' ? 'menu' : type}"]`);
+            if (!panel) return;
+
+            const rowSelector = type === 'tables' ? '.dining-table-row' : type === 'menus' ? '.dining-menu-row' : '.dining-schedule-row';
+            const allRows = Array.from(panel.querySelectorAll(rowSelector));
+            const rows = type === 'menus' && category
+                ? allRows.filter((row) => row.dataset.menuCategory === category)
+                : allRows;
+            const pageCount = Math.max(1, Math.ceil(rows.length / diningPageSize));
+            diningPageState[type] = Math.min(diningPageState[type], pageCount);
+            const page = diningPageState[type];
+            const visibleRows = new Set(rows.slice((page - 1) * diningPageSize, page * diningPageSize));
+
+            allRows.forEach((row) => row.classList.toggle('hidden', !visibleRows.has(row)));
+            const emptyRow = panel.querySelector(type === 'menus' ? '.dining-menu-empty' : 'tbody tr:not([class*="dining-"])');
+            if (emptyRow) emptyRow.classList.toggle('hidden', rows.length > 0);
+
+            const pagination = panel.querySelector(`[data-dining-pagination="${type}"]`);
+            if (!pagination) return;
+            pagination.innerHTML = '';
+            if (rows.length <= diningPageSize) return;
+
+            const summary = document.createElement('span');
+            summary.textContent = `Page ${page} of ${pageCount}`;
+            const controls = document.createElement('div');
+            controls.className = 'flex items-center gap-2';
+            ['Previous', 'Next'].forEach((label) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = label;
+                button.className = 'rounded-lg border border-orange-200 px-3 py-1.5 text-orange-600 disabled:cursor-not-allowed disabled:opacity-40';
+                button.disabled = label === 'Previous' ? page === 1 : page === pageCount;
+                button.addEventListener('click', () => {
+                    diningPageState[type] += label === 'Previous' ? -1 : 1;
+                    paginateDiningRows(type, category);
+                });
+                controls.appendChild(button);
+            });
+            pagination.append(summary, controls);
+        }
+
+        function filterDiningMenu(category) {
+            const menuPanel = document.querySelector('[data-dining-subpanel="menu"]');
+            if (!menuPanel) return;
+
+            diningPageState.menus = 1;
+            const visibleRows = menuPanel.querySelectorAll(`.dining-menu-row[data-menu-category="${category}"]`).length;
+
+            const emptyRow = menuPanel.querySelector('.dining-menu-empty');
+            if (emptyRow) {
+                emptyRow.classList.toggle('hidden', visibleRows > 0);
+                emptyRow.querySelector('td').textContent = visibleRows > 0 ? '' : 'No menu items found in this category.';
+            }
+            paginateDiningRows('menus', category);
+        }
+
+        function normalizeDiningMenuCategory(category) {
+            const value = (category || '').trim().toLowerCase();
+            const categoryMap = {
+                breakfast: 'Breakfast',
+                appetizer: 'Appetizer',
+                appetisers: 'Appetizer',
+                appetizers: 'Appetizer',
+                'main course': 'Main Course',
+                'main-course': 'Main Course',
+                maincourse: 'Main Course',
+                lunch: 'Main Course',
+                dinner: 'Main Course',
+                'afternoon snacks': 'Appetizer',
+                'afternoon-snacks': 'Appetizer',
+                snack: 'Appetizer',
+                snacks: 'Appetizer',
+                soup: 'Soup',
+                salad: 'Salad',
+                dessert: 'Dessert',
+                beverage: 'Beverage',
+                beverages: 'Beverage',
+                drinks: 'Beverage',
+                drink: 'Beverage'
+            };
+
+            return categoryMap[value] || 'Breakfast';
+        }
+
         function activateTab(targetName) {
             tabButtons.forEach(function(btn) {
                 const isActive = btn.getAttribute('data-tab') === targetName;
@@ -1766,6 +2024,37 @@
                 activateDiningSubTab(this.getAttribute('data-dining-subtab'));
             });
         });
+
+        diningMenuCategoryTabs.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const category = this.getAttribute('data-menu-category-tab');
+
+                diningMenuCategoryTabs.forEach(function (tab) {
+                    const isActive = tab === button;
+                    tab.classList.toggle('is-active', isActive);
+                    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+
+                document.querySelectorAll('.dining-menu-checkbox').forEach(function (checkbox) {
+                    checkbox.checked = false;
+                });
+                const menuSelectAll = document.querySelector('.dining-menu-select-all');
+                if (menuSelectAll) menuSelectAll.checked = false;
+                updateDiningSelectCount('menus');
+
+                filterDiningMenu(category);
+            });
+        });
+
+        if (diningMenuCategoryTabs.length) {
+            document.querySelectorAll('[data-dining-subpanel="menu"] .dining-menu-row').forEach(function (row) {
+                row.dataset.menuCategory = normalizeDiningMenuCategory(row.dataset.menuCategory);
+            });
+            filterDiningMenu(diningMenuCategoryTabs[0].getAttribute('data-menu-category-tab'));
+        }
+
+        paginateDiningRows('tables');
+        paginateDiningRows('schedules');
 
         if (diningPanel) {
             diningPanel.addEventListener('click', function (event) {

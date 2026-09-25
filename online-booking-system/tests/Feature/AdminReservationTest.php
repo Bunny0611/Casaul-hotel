@@ -21,6 +21,7 @@ class AdminReservationTest extends TestCase
 
         $this->assertSame(500.0, $method->invoke($controller, 3000.0, 2500.0, 3000.0));
         $this->assertSame(0.0, $method->invoke($controller, 3000.0, 2500.0, 2000.0));
+        $this->assertSame(700.0, $method->invoke($controller, 4000.0, 2500.0, 3200.0));
         $this->assertSame(0.0, $method->invoke($controller, 3000.0, 3500.0, 3000.0));
         $this->assertSame(0.0, $method->invoke($controller, 3000.0, 2500.0, 0.0));
     }

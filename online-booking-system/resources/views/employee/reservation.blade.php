@@ -185,6 +185,11 @@
         }
         $grandTotal = round(array_sum($categoryAmounts) + $addOnTotal, 2);
         $paid = min($paid, $grandTotal);
+        $bookingRefund = $relatedRows->flatMap(fn ($row) => $row->refunds)->sortBy('id')->first();
+        if ($bookingRefund) {
+            $grandTotal = (float) $bookingRefund->original_total;
+            $paid = (float) $bookingRefund->total_paid;
+        }
         $recordedPayments = $relatedRows->flatMap(fn ($row) => $row->payments->map(function ($payment) {
             return [
                 'amount' => (float) $payment->amount,
@@ -1286,9 +1291,15 @@
                 <div data-standard-reservation-field>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Number of Guests</label>
                     <input type="number" name="number_of_guests" value="{{ old('number_of_guests') }}" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    <input type="hidden" name="adult_guests" value="{{ old('adult_guests') }}">
-                    <input type="hidden" name="kid_guests" value="{{ old('kid_guests') }}">
                     @error('number_of_guests')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                </div>
+                <div data-standard-reservation-field>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Extra Adults</label>
+                    <input type="number" name="adult_guests" value="{{ old('adult_guests') }}" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div data-standard-reservation-field>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Extra Kids</label>
+                    <input type="number" name="kid_guests" value="{{ old('kid_guests') }}" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
             <div class="hidden md:col-span-2" data-facility-reservation-field>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1814,7 +1825,7 @@
             { label: 'Check-in Time', value: reservation.room_check_in_time || 'N/A' },
             { label: 'Check-out Date', value: formatDateValue(reservation.room_check_out || 'N/A') },
             { label: 'Check-out Time', value: reservation.room_check_out_time || 'N/A' },
-            { label: 'Number of Guests', value: reservation.room_number_of_guests !== undefined && reservation.room_number_of_guests !== null && reservation.room_number_of_guests !== '' && reservation.room_number_of_guests !== 'N/A' ? reservation.room_number_of_guests : 'N/A' },
+            { label: 'Number of Guests', value: reservation.adult_guests !== null && reservation.adult_guests !== undefined && reservation.kid_guests !== null && reservation.kid_guests !== undefined ? `${reservation.room_number_of_guests} (${reservation.adult_guests} adult, ${reservation.kid_guests} kid)` : (reservation.room_number_of_guests !== undefined && reservation.room_number_of_guests !== null && reservation.room_number_of_guests !== '' && reservation.room_number_of_guests !== 'N/A' ? reservation.room_number_of_guests : 'N/A') },
             { label: 'Room Rate', value: reservation.room_rate && reservation.room_rate !== 'N/A' ? formatMoney(reservation.room_rate) : 'N/A' },
         ];
 
@@ -1899,28 +1910,6 @@
 
         const refundEntries = Array.isArray(reservation.refunds) ? reservation.refunds : [];
         const refundTotal = refundEntries.reduce((total, refund) => total + Number(String(refund.amount || 0).replace(/,/g, '')), 0);
-        const refundRows = refundEntries.length
-            ? refundEntries.map((refund) => `
-                <div class="grid gap-3 border-b border-gray-200 py-2 last:border-b-0 sm:grid-cols-5">
-                    <div><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Category</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(refund.category || 'Reservation')}</div></div>
-                    <div><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Amount</div><div class="mt-1 text-sm font-semibold text-gray-900">${formatMoney(refund.amount || 0)}</div></div>
-                    <div><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Reason</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(refund.reason || 'N/A')}</div></div>
-                    <div><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Status</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(refund.status || 'N/A')}</div></div>
-                    <div><div class="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Date</div><div class="mt-1 text-sm font-semibold text-gray-900">${escapeHtml(refund.date || 'N/A')}</div></div>
-                </div>
-            `).join('')
-            : '<p class="text-sm text-gray-600">No refund recorded.</p>';
-        detailsSections.push(`
-            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                <h4 class="mb-3 text-base font-semibold text-gray-800">Refund Summary</h4>
-                ${refundRows}
-                <div class="mt-3 flex items-center justify-between border-t border-gray-300 pt-3 text-sm font-semibold text-gray-800">
-                    <span>Total Refund Amount</span>
-                    <span>${formatMoney(refundTotal)}</span>
-                </div>
-            </div>
-        `);
-
         const paymentRecord = window.employeePaymentMap?.[`${category}:${reservation.id}`] || {};
         const guestPaymentDetails = reservation.guest_payment_details || paymentRecord.guest_payment_details || reservation.payment_details || '';
         const paymentDetails = parseEmployeePaymentDetails(guestPaymentDetails);
@@ -1932,6 +1921,7 @@
             { label: 'Grand Total', value: formatMoney(reservation.grand_total || reservation.total_amount || 0) },
             { label: 'Amount Paid', value: formatMoney(reservation.overall_amount_paid || 0) },
             { label: 'Balance Due', value: formatMoney(reservation.balance_due || 0) },
+            { label: 'Refund Amount', value: formatMoney(refundTotal) },
         ];
         detailsSections.push(renderDetailsCard('Payment Summary', paymentSummaryEntries));
 

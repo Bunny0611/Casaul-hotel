@@ -60,11 +60,12 @@
 
     .employee-chat-thread {
         display: flex;
-        min-height: 360px;
-        max-height: 470px;
+        min-height: 260px;
+        max-height: 360px;
         flex-direction: column;
         gap: 0.75rem;
         overflow-y: auto;
+        scrollbar-gutter: stable;
         border: 1px solid #e5e7eb;
         border-radius: 0.75rem;
         background: #f8fafc;
@@ -73,7 +74,7 @@
 
     .employee-chat-empty {
         display: flex;
-        min-height: 360px;
+        min-height: 260px;
         align-items: center;
         justify-content: center;
         color: #6b7280;
@@ -168,25 +169,19 @@
 
     <!-- Filter Buttons -->
     <div class="flex gap-2">
-        <button class="flex items-center gap-2 rounded-lg border-2 border-orange-500 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-100">
+        <button type="button" onclick="window.location.href='{{ route('employee.messages', ['filter' => 'today']) }}'" class="flex items-center gap-2 rounded-lg {{ $filter === 'today' ? 'border-2 border-orange-500 bg-orange-50 text-orange-600' : 'border border-gray-300 bg-white text-gray-700' }} px-4 py-2 text-sm font-medium transition hover:bg-gray-50">
             <i class="fas fa-calendar-day"></i> Today
         </button>
-        <button class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+        <button type="button" onclick="window.location.href='{{ route('employee.messages', ['filter' => 'week']) }}'" class="flex items-center gap-2 rounded-lg {{ $filter === 'week' ? 'border-2 border-orange-500 bg-orange-50 text-orange-600' : 'border border-gray-300 bg-white text-gray-700' }} px-4 py-2 text-sm font-medium transition hover:bg-gray-50">
             <i class="fas fa-calendar-week"></i> This Week
         </button>
-        <button class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+        <button type="button" onclick="window.location.href='{{ route('employee.messages', ['filter' => 'all']) }}'" class="flex items-center gap-2 rounded-lg {{ $filter === 'all' ? 'border-2 border-orange-500 bg-orange-50 text-orange-600' : 'border border-gray-300 bg-white text-gray-700' }} px-4 py-2 text-sm font-medium transition hover:bg-gray-50">
             <i class="fas fa-envelope-open"></i> All Messages
         </button>
-        <button class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+        <button type="button" onclick="window.location.href='{{ route('employee.messages', ['filter' => 'unread']) }}'" class="flex items-center gap-2 rounded-lg {{ $filter === 'unread' ? 'border-2 border-orange-500 bg-orange-50 text-orange-600' : 'border border-gray-300 bg-white text-gray-700' }} px-4 py-2 text-sm font-medium transition hover:bg-gray-50">
             <i class="fas fa-star"></i> Unread
         </button>
     </div>
-
-    @if(session('success'))
-        <div class="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-            {{ session('success') }}
-        </div>
-    @endif
 
     <!-- Main Content Grid -->
     <div class="grid grid-cols-2 gap-6">
@@ -257,12 +252,12 @@
                 @endif
             </div>
 
-            <form id="employee-reply-form" action="{{ route('employee.messages.store') }}" method="POST" class="employee-reply-form mt-4 space-y-4 {{ $conversations->isEmpty() ? 'is-disabled' : '' }}">
+            <form id="employee-reply-form" action="{{ route('employee.messages.store') }}" method="POST" class="employee-reply-form mt-3 space-y-2 {{ $conversations->isEmpty() ? 'is-disabled' : '' }}">
                 @csrf
                 <input type="hidden" id="employee-recipient" name="recipient" value="{{ $conversations->first()?->latest_message?->id }}">
 
                 <div>
-                    <label class="mb-2 block text-xs font-semibold text-gray-600 uppercase">Quick Templates</label>
+                    <label class="mb-1 block text-xs font-semibold text-gray-600 uppercase">Quick Templates</label>
                     <div class="employee-template-buttons">
                         <button type="button" class="employee-template-btn" onclick="insertEmployeeTemplate('We will assist you shortly.')">Assisting Soon</button>
                         <button type="button" class="employee-template-btn" onclick="insertEmployeeTemplate('Your request has been completed.')">Completed</button>
@@ -272,8 +267,8 @@
                 </div>
 
                 <div>
-                    <label class="mb-2 block text-xs font-semibold text-gray-600 uppercase">Reply</label>
-                    <textarea id="employeeReplyMessage" name="message" rows="6" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Type your message here..."></textarea>
+                    <label class="mb-1 block text-xs font-semibold text-gray-600 uppercase">Reply</label>
+                    <textarea id="employeeReplyMessage" name="message" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Type your message here..."></textarea>
                 </div>
 
                 <div class="flex gap-2">
@@ -292,11 +287,17 @@
             'name' => $conversation->name,
             'recipient' => $conversation->latest_message->id,
             'messages' => $conversation->messages->map(function ($message) {
+                $replies = $message->replies->isNotEmpty()
+                    ? $message->replies
+                    : ($message->admin_reply ? collect([(object) ['reply' => $message->admin_reply, 'replied_at' => $message->replied_at]]) : collect());
+
                 return [
                     'guest' => $message->message,
-                    'reply' => $message->admin_reply,
+                    'replies' => $replies->map(fn ($reply) => [
+                        'reply' => $reply->reply,
+                        'replied_at' => $reply->replied_at?->format('M j, Y g:i A'),
+                    ])->values(),
                     'sent_at' => $message->created_at?->format('M j, Y g:i A'),
-                    'replied_at' => $message->replied_at?->format('M j, Y g:i A'),
                 ];
             })->values(),
         ]];
@@ -323,7 +324,7 @@
                 <div class="employee-chat-bubble">${escapeEmployeeMessage(message.guest)}</div>
                 <span class="employee-chat-time">Guest · ${message.sent_at || ''}</span>
             </div>
-            ${message.reply ? `<div class="employee-chat-message front-desk"><div class="employee-chat-bubble">${escapeEmployeeMessage(message.reply)}</div><span class="employee-chat-time">Front Desk · ${message.replied_at || ''}</span></div>` : ''}
+            ${(message.replies || []).map((reply) => `<div class="employee-chat-message front-desk"><div class="employee-chat-bubble">${escapeEmployeeMessage(reply.reply)}</div><span class="employee-chat-time">Front Desk · ${reply.replied_at || ''}</span></div>`).join('')}
         `).join('');
         thread.scrollTop = thread.scrollHeight;
     }
@@ -340,7 +341,10 @@
         textarea.focus();
     }
 
-    if (Object.keys(employeeConversations).length) {
+    const initialConversationKey = @json($selectedConversationKey);
+    if (initialConversationKey && employeeConversations[initialConversationKey]) {
+        selectEmployeeConversation(initialConversationKey);
+    } else if (Object.keys(employeeConversations).length) {
         selectEmployeeConversation(Object.keys(employeeConversations)[0]);
     }
 </script>

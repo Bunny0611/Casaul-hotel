@@ -82,6 +82,30 @@ class RoomBulkDeleteTest extends TestCase
         $this->assertEquals(3, Room::count());
     }
 
+    public function test_admin_room_edit_modal_displays_current_room_image(): void
+    {
+        Room::create([
+            'room_number' => '201',
+            'room_type' => 'Deluxe Room',
+            'bed_type' => '1 Queen Bed',
+            'price' => 5200,
+            'adult_guest_price' => 0,
+            'kid_guest_price' => 0,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'status' => 'available',
+            'description' => 'Great view',
+            'image' => 'rooms/deluxe-room.jpg',
+        ]);
+
+        $response = $this->actingAs($this->admin())->get(route('admin.rooms'));
+
+        $response->assertOk();
+        $response->assertSee('id="editRoomImagePreview"', false);
+        $response->assertSee('Current room image', false);
+        $response->assertSee('rooms/deluxe-room.jpg', false);
+    }
+
     public function test_bulk_delete_ignores_invalid_ids(): void
     {
         $this->seedRooms();

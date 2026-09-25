@@ -541,7 +541,7 @@ nav a:hover{
     top: calc(100% + 12px);
     right: 0;
     width: 280px;
-    background: #fff;
+    background: #f8f9fc;
     border-radius: 18px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.2);
     padding: 10px;
@@ -1769,6 +1769,17 @@ nav a:hover{
     object-fit: cover;
 }
 
+.reservation-card-image-placeholder {
+    display: flex;
+    width: 100%;
+    height: 190px;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
 .reservation-card-body {
     padding: 18px;
     display: flex;
@@ -2677,7 +2688,7 @@ footer::before{
     height: min(720px, calc(100dvh - 120px));
     min-height: 420px;
     max-height: calc(100dvh - 32px);
-    background: #fff;
+    background: transparent;
     border-radius: 24px;
     box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
     display: flex;
@@ -2906,7 +2917,7 @@ footer::before{
     gap: 10px;
     padding: 12px 18px 8px;
     flex-shrink: 0;
-    background: linear-gradient(180deg, #ffffff 0%, #f8f9fc 100%);
+    background: #f8f9fc;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
     max-height: 26%;
     overflow-y: auto;
@@ -2918,7 +2929,7 @@ footer::before{
     padding: 9px 16px;
     border: 1.5px solid var(--brand);
     border-radius: 999px;
-    background: #fff;
+    background: transparent;
     color: var(--brand);
     font-family: inherit;
     font-size: 13px;

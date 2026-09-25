@@ -28,6 +28,7 @@ use App\Models\Event;
 use App\Models\DiningTable;
 use App\Models\DiningSchedule;
 use App\Models\DiningMenu;
+use App\Models\MessageReply;
 use App\Models\ReservationDiningItem;
 use App\Models\GuestRequest;
 use App\Models\Payment;
@@ -292,6 +293,7 @@ class AdminController extends Controller
         $diningTables = DiningTable::orderBy('table_no')->get();
 
         $roomReservations = RoomReservation::with('room')
+            ->whereNotIn('status', ['cancelled'])
             ->whereDate('check_in', '<=', $calendarEnd->toDateString())
             ->whereDate('check_out', '>=', $calendarStart->toDateString())
             ->get();
@@ -300,6 +302,7 @@ class AdminController extends Controller
         // only when the same booking is not already present in room_reservations.
         $legacyRoomReservations = Reservation::with('room')
             ->whereNotNull('room_id')
+            ->whereNotIn('status', ['cancelled'])
             ->whereDate('check_in', '<=', $calendarEnd->toDateString())
             ->whereDate('check_out', '>=', $calendarStart->toDateString())
             ->get();
@@ -381,6 +384,7 @@ class AdminController extends Controller
 
             $segments = [];
             $facilityReservations = FacilityReservation::where('facility_id', $facility->id)
+                ->whereNotIn('status', ['cancelled'])
                 ->where(function ($query) use ($calendarStart, $calendarEnd) {
                     $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
                         ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
@@ -445,6 +449,7 @@ class AdminController extends Controller
 
             $segments = [];
             $eventReservations = EventReservation::where('event_id', $event->id)
+                ->whereNotIn('status', ['cancelled'])
                 ->where(function ($query) use ($calendarStart, $calendarEnd) {
                     $query->whereBetween('check_in', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
                         ->orWhereBetween('check_out', [$calendarStart->toDateString(), $calendarEnd->toDateString()])
@@ -639,7 +644,7 @@ class AdminController extends Controller
         ]);
         $facilities = Facility::orderBy('name')->paginate(5, ['*'], 'facilities_page')->appends(['tab' => 'facilities']);
         $events = Event::orderBy('name')->paginate(5, ['*'], 'events_page')->appends(['tab' => 'events']);
-        $dining = DiningMenu::orderBy('name')->paginate(5, ['*'], 'dining_page')->appends(['tab' => 'dining']);
+        $dining = DiningMenu::orderBy('name')->get();
         $diningTables = DiningTable::orderBy('table_no')->get();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $activeTab = request()->query('tab', 'rooms');
@@ -738,6 +743,7 @@ class AdminController extends Controller
             'category' => ['required', 'in:facilities,event,dining'],
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
+            'menu_category' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
             'pricing_basis' => ['required_if:category,facilities,event', 'nullable', 'string', 'in:Per Stay,Per Person,Per Vehicle,Per Stay + Per Vehicle,Per Hour,Per Day,Fixed Price,Per Event'],
@@ -746,11 +752,11 @@ class AdminController extends Controller
             'status' => ['required', 'string', 'max:50'],
             'location' => ['nullable', 'string', 'max:255'],
             'capacity' => ['nullable', 'integer', 'min:1'],
-            'available_from' => ['required_if:category,event', 'nullable', 'date_format:H:i', Rule::in($eventTimeOptions)],
-            'available_to' => ['required_if:category,event', 'nullable', 'date_format:H:i', 'after:available_from', Rule::in($eventTimeOptions)],
+            'available_from' => ['nullable', 'date_format:H:i', Rule::when($request->input('category') === 'event', ['required', Rule::in($eventTimeOptions)])],
+            'available_to' => ['nullable', 'date_format:H:i', 'after:available_from', Rule::when($request->input('category') === 'event', ['required', Rule::in($eventTimeOptions)])],
             'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
             'quantity' => ['nullable', 'integer', 'min:0'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
         if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
             $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
@@ -813,7 +819,8 @@ class AdminController extends Controller
             'capacity' => ['nullable', 'integer', 'min:1'],
             'location' => ['nullable', 'string', 'max:255'],
             'max_guests' => ['nullable', 'integer', 'min:1'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
+            'description' => ['nullable', 'string'],
             'status' => ['required', 'string', 'max:50'],
         ]);
 
@@ -843,6 +850,7 @@ class AdminController extends Controller
                 'status' => strtolower($validated['status']),
                 'available_from' => $validated['available_from'] ?? null,
                 'available_to' => $validated['available_to'] ?? null,
+                'description' => $validated['description'] ?? null,
                 'image' => $image,
             ]);
         }
@@ -858,6 +866,7 @@ class AdminController extends Controller
         $validated = $request->validate([
             'category' => ['required', 'in:facilities,event,dining'],
             'name' => ['required', 'string', 'max:255'],
+            'menu_category' => ['required_if:category,dining', 'nullable', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -871,7 +880,7 @@ class AdminController extends Controller
             'available_to' => ['required_if:category,event', 'nullable', 'date_format:H:i', 'after:available_from', Rule::in($eventTimeOptions)],
             'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
             'quantity' => ['nullable', 'integer', 'min:0'],
-            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
         if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
             $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
@@ -895,7 +904,24 @@ class AdminController extends Controller
             ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? $item->scheduling_requirement ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
             : ($category === 'event'
                 ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'duration_hours' => $validated['duration_hours'] ?? $item->duration_hours ?? 4, 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
-                : $validated));
+                : [
+                    'name' => $validated['name'],
+                    'category' => $validated['menu_category'] ?? $item->category,
+                    'description' => $validated['description'] ?? null,
+                    'price' => $validated['price'],
+                    'status' => $validated['status'],
+                    'available_from' => array_key_exists('available_from', $validated) ? $validated['available_from'] : $item->available_from,
+                    'available_to' => array_key_exists('available_to', $validated) ? $validated['available_to'] : $item->available_to,
+                    'quantity' => $validated['quantity'] ?? $item->quantity,
+                    ...($request->hasFile('image') ? ['image' => $validated['image']] : []),
+                ]));
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Inventory item updated successfully.',
+                'item' => $item->fresh(),
+            ]);
+        }
 
         return redirect()->route('admin.rooms')->with('success', 'Inventory item updated successfully.');
     }
@@ -2134,13 +2160,14 @@ class AdminController extends Controller
         $finalTotal = max($finalTotal, 0);
         $totalPaid = max($totalPaid, 0);
 
-        if ($finalTotal >= $originalTotal || $totalPaid < $finalTotal) {
+        if ($finalTotal >= $originalTotal) {
             return 0.0;
         }
 
         $reduction = $originalTotal - $finalTotal;
+        $overpayment = $totalPaid - $finalTotal;
 
-        return round(min(max($totalPaid, 0), $reduction), 2);
+        return round(min(max($overpayment, 0), $reduction), 2);
     }
 
     private function createRefundIfDue($reservation, float $originalTotal, float $finalTotal, float $totalPaid, ?string $reason): void
@@ -2181,13 +2208,25 @@ class AdminController extends Controller
 
     public function messages()
     {
-        $messages = Message::latest()->get();
-        return view('admin.messages', compact('messages'));
+        return view('admin.messages');
     }
 
-    public function employeeMessages()
+    public function employeeMessages(Request $request)
     {
         $messages = Message::latest()->get();
+        $filter = $request->query('filter', 'today');
+
+        if (!in_array($filter, ['today', 'week', 'all', 'unread'], true)) {
+            $filter = 'today';
+        }
+
+        $messages = match ($filter) {
+            'today' => $messages->filter(fn ($message) => $message->created_at?->isToday()),
+            'week' => $messages->filter(fn ($message) => $message->created_at?->greaterThanOrEqualTo(now()->startOfWeek())),
+            'unread' => $messages->where('is_replied', false),
+            default => $messages,
+        };
+
         $conversations = $messages
             ->groupBy('customer_email')
             ->map(function ($conversationMessages) {
@@ -2216,8 +2255,12 @@ class AdminController extends Controller
             'replied' => $messages->where('is_replied', true)->count(),
             'total' => $messages->count(),
         ];
+        $selectedMessageId = session('employee_message_recipient');
+        $selectedConversationKey = $conversations
+            ->first(fn ($conversation) => (string) $conversation->latest_message->id === (string) $selectedMessageId)
+            ?->key;
 
-        return view('employee.messages', compact('messages', 'conversations', 'stats'));
+        return view('employee.messages', compact('messages', 'conversations', 'stats', 'selectedConversationKey', 'filter'));
     }
 
     public function employeeGuestRequests()
@@ -2297,10 +2340,15 @@ class AdminController extends Controller
             'is_replied' => true,
             'replied_at' => now(),
         ]);
+        MessageReply::create([
+            'message_id' => $message->id,
+            'reply' => $validated['admin_reply'],
+            'replied_at' => now(),
+        ]);
 
         $route = $request->routeIs('employee.*') ? 'employee.messages' : 'admin.messages';
 
-        return redirect()->route($route)->with('success', 'Reply sent successfully!');
+        return redirect()->route($route);
     }
 
     public function storeEmployeeMessage(Request $request)
@@ -2318,6 +2366,12 @@ class AdminController extends Controller
                 'is_replied' => true,
                 'replied_at' => now(),
             ]);
+            MessageReply::create([
+                'message_id' => $guestMessage->id,
+                'reply' => $validated['message'],
+                'replied_at' => now(),
+            ]);
+            session()->flash('employee_message_recipient', (int) $validated['recipient']);
         } else {
             Message::create([
                 'customer_name' => $request->user()?->name ?? 'Employee',
@@ -2326,7 +2380,7 @@ class AdminController extends Controller
             ]);
         }
 
-        return redirect()->route('employee.messages')->with('success', 'Message sent successfully.');
+        return redirect()->route('employee.messages');
     }
 
     public function resolveGuestRequest(Request $request, $id)

@@ -275,8 +275,13 @@
                     <i class="fas fa-chevron-down text-xs"></i>
                     <div class="dropdown-menu">
                         <button type="button" class="dropdown-item active" data-value="All Types">All Types</button>
-                        <button type="button" class="dropdown-item" data-value="Deluxe">Deluxe</button>
-                        <button type="button" class="dropdown-item" data-value="Standard">Standard</button>
+                        <button type="button" class="dropdown-item" data-value="Deluxe Room" data-type-views="rooms">Deluxe</button>
+                        <button type="button" class="dropdown-item" data-value="Standard Room" data-type-views="rooms">Standard</button>
+                        <button type="button" class="dropdown-item" data-value="Indoor" data-type-views="dining">Indoor</button>
+                        <button type="button" class="dropdown-item" data-value="Outdoor" data-type-views="dining">Outdoor</button>
+                        <button type="button" class="dropdown-item" data-value="Private" data-type-views="dining">Private</button>
+                        <button type="button" class="dropdown-item" data-value="Birthday" data-type-views="events">Birthday</button>
+                        <button type="button" class="dropdown-item" data-value="Wedding" data-type-views="events">Wedding</button>
                     </div>
                 </div>
 
@@ -427,8 +432,25 @@
 
         function applyCalendarFilter() {
             const roomView = document.querySelector('[data-dropdown="roomView"] .dropdown-label')?.textContent.trim() || 'Rooms';
-            const typeValue = document.querySelector('[data-dropdown="typeFilter"] .dropdown-label')?.textContent.trim() || 'All Types';
             const rangeValue = document.querySelector('[data-dropdown="viewMode"] .dropdown-label')?.textContent.trim() || 'Weekly';
+            const normalizedView = roomView.toLowerCase();
+            const viewKey = ['rooms', 'facilities', 'events', 'dining'].includes(normalizedView) ? normalizedView : 'rooms';
+            const typeFilter = document.querySelector('[data-dropdown="typeFilter"]');
+            const typeLabel = typeFilter?.querySelector('.dropdown-label');
+            const typeItems = typeFilter?.querySelectorAll('.dropdown-item[data-type-views]') || [];
+
+            typeItems.forEach((item) => {
+                item.style.display = item.dataset.typeViews.split(' ').includes(viewKey) ? 'block' : 'none';
+            });
+
+            const selectedType = typeLabel?.textContent.trim() || 'All Types';
+            const selectedTypeItem = Array.from(typeItems).find((item) => item.dataset.value === selectedType);
+            if (selectedType !== 'All Types' && selectedTypeItem?.style.display !== 'block') {
+                typeLabel.textContent = 'All Types';
+                typeFilter?.querySelector('[data-value="All Types"]')?.classList.add('active');
+            }
+
+            const typeValue = typeLabel?.textContent.trim() || 'All Types';
             const visibleDays = { Weekly: 7, Monthly: 31 };
             const maxVisible = visibleDays[rangeValue] || 7;
             const gridColumns = `repeat(${maxVisible}, minmax(72px, 1fr))`;
@@ -456,8 +478,6 @@
                 bar.style.width = `${(span / maxVisible) * 100}%`;
             });
 
-            const normalizedView = roomView.toLowerCase();
-            const viewKey = ['rooms', 'facilities', 'events', 'dining'].includes(normalizedView) ? normalizedView : 'rooms';
             const viewDetails = {
                 rooms: { label: 'Room', icon: 'fa-bed' },
                 facilities: { label: 'Facility', icon: 'fa-spa' },
