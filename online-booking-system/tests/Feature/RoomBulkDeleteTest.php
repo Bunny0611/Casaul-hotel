@@ -117,4 +117,14 @@ class RoomBulkDeleteTest extends TestCase
         $response->assertRedirect(route('admin.rooms'));
         $this->assertEquals(2, Room::count());
     }
+
+    public function test_room_selection_toolbar_shows_delete_button_when_items_are_selected(): void
+    {
+        $this->seedRooms();
+
+        $response = $this->actingAs($this->admin())->get(route('admin.rooms'));
+
+        $response->assertOk();
+        $response->assertSee('count > 0 ? \'inline-flex\' : \'none\'', false);
+    }
 }
