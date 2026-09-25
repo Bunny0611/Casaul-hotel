@@ -1374,30 +1374,40 @@
         return type === 'tables' ? 'dining-table-select-all' : type === 'menus' ? 'dining-menu-select-all' : 'dining-schedule-select-all';
     }
 
+    function diningCheckboxes(type) {
+        const checkboxes = Array.from(document.querySelectorAll(diningCheckboxSelector(type)));
+        if (type !== 'menus') return checkboxes;
+
+        const activeCategory = document.querySelector('[data-menu-category-tab].is-active')?.getAttribute('data-menu-category-tab');
+        return activeCategory
+            ? checkboxes.filter((checkbox) => checkbox.closest('tr')?.dataset.menuCategory === activeCategory)
+            : checkboxes;
+    }
+
     function updateDiningSelectCount(type) {
-        const selector = diningCheckboxSelector(type);
-        const count = document.querySelectorAll(selector + ':checked').length;
+        const checkboxes = diningCheckboxes(type);
+        const count = checkboxes.filter((checkbox) => checkbox.checked).length;
         const label = document.getElementById('dining' + type.charAt(0).toUpperCase() + type.slice(1) + 'SelectedCount');
         if (label) label.textContent = count + ' selected';
 
         const panelName = diningPanelName(type);
         const selectAll = document.querySelector('.' + diningSelectAllClass(type));
         if (selectAll) {
-            selectAll.checked = count > 0 && count === document.querySelectorAll(selector).length;
+            selectAll.checked = count > 0 && count === checkboxes.length;
             const deleteButton = document.querySelector('[data-dining-subpanel="' + panelName + '"] button[onclick^="confirmBulkDiningDelete"]');
             if (deleteButton) deleteButton.style.display = selectAll.checked ? 'inline-flex' : 'none';
         }
     }
 
     function toggleAllDiningCheckboxes(type, source) {
-        document.querySelectorAll(diningCheckboxSelector(type)).forEach(function (checkbox) {
+        diningCheckboxes(type).forEach(function (checkbox) {
             checkbox.checked = source.checked;
         });
         updateDiningSelectCount(type);
     }
 
     function confirmBulkDiningDelete(type) {
-        const selectedIds = Array.from(document.querySelectorAll(diningCheckboxSelector(type) + ':checked')).map(function (checkbox) {
+        const selectedIds = diningCheckboxes(type).filter((checkbox) => checkbox.checked).map(function (checkbox) {
             return checkbox.value;
         });
         if (!selectedIds.length) {
@@ -2008,6 +2018,13 @@
                     tab.classList.toggle('is-active', isActive);
                     tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
                 });
+
+                document.querySelectorAll('.dining-menu-checkbox').forEach(function (checkbox) {
+                    checkbox.checked = false;
+                });
+                const menuSelectAll = document.querySelector('.dining-menu-select-all');
+                if (menuSelectAll) menuSelectAll.checked = false;
+                updateDiningSelectCount('menus');
 
                 filterDiningMenu(category);
             });
