@@ -2134,13 +2134,14 @@ class AdminController extends Controller
         $finalTotal = max($finalTotal, 0);
         $totalPaid = max($totalPaid, 0);
 
-        if ($finalTotal >= $originalTotal || $totalPaid < $finalTotal) {
+        if ($finalTotal >= $originalTotal) {
             return 0.0;
         }
 
         $reduction = $originalTotal - $finalTotal;
+        $overpayment = $totalPaid - $finalTotal;
 
-        return round(min(max($totalPaid, 0), $reduction), 2);
+        return round(min(max($overpayment, 0), $reduction), 2);
     }
 
     private function createRefundIfDue($reservation, float $originalTotal, float $finalTotal, float $totalPaid, ?string $reason): void
