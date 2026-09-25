@@ -169,16 +169,16 @@
 
     <!-- Filter Buttons -->
     <div class="flex gap-2">
-        <button class="flex items-center gap-2 rounded-lg border-2 border-orange-500 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-600 transition hover:bg-orange-100">
+        <button type="button" onclick="window.location.href='{{ route('employee.messages', ['filter' => 'today']) }}'" class="flex items-center gap-2 rounded-lg {{ $filter === 'today' ? 'border-2 border-orange-500 bg-orange-50 text-orange-600' : 'border border-gray-300 bg-white text-gray-700' }} px-4 py-2 text-sm font-medium transition hover:bg-gray-50">
             <i class="fas fa-calendar-day"></i> Today
         </button>
-        <button class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+        <button type="button" onclick="window.location.href='{{ route('employee.messages', ['filter' => 'week']) }}'" class="flex items-center gap-2 rounded-lg {{ $filter === 'week' ? 'border-2 border-orange-500 bg-orange-50 text-orange-600' : 'border border-gray-300 bg-white text-gray-700' }} px-4 py-2 text-sm font-medium transition hover:bg-gray-50">
             <i class="fas fa-calendar-week"></i> This Week
         </button>
-        <button class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+        <button type="button" onclick="window.location.href='{{ route('employee.messages', ['filter' => 'all']) }}'" class="flex items-center gap-2 rounded-lg {{ $filter === 'all' ? 'border-2 border-orange-500 bg-orange-50 text-orange-600' : 'border border-gray-300 bg-white text-gray-700' }} px-4 py-2 text-sm font-medium transition hover:bg-gray-50">
             <i class="fas fa-envelope-open"></i> All Messages
         </button>
-        <button class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+        <button type="button" onclick="window.location.href='{{ route('employee.messages', ['filter' => 'unread']) }}'" class="flex items-center gap-2 rounded-lg {{ $filter === 'unread' ? 'border-2 border-orange-500 bg-orange-50 text-orange-600' : 'border border-gray-300 bg-white text-gray-700' }} px-4 py-2 text-sm font-medium transition hover:bg-gray-50">
             <i class="fas fa-star"></i> Unread
         </button>
     </div>

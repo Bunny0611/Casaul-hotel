@@ -163,7 +163,10 @@ class HomeController extends Controller
 
     public function reservation()
     {
-        $rooms = Room::where('status', 'available')->get();
+        $rooms = Room::where('status', 'available')
+            ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
+            ->orderBy('room_number')
+            ->get();
 
         $facilities = Facility::whereIn('status', ['available', 'limited'])
             ->orderBy('name')
@@ -860,7 +863,11 @@ class HomeController extends Controller
     
     public function accommodation()
     {
-        $rooms = Room::where('status', 'available')->get();
+        $rooms = Room::where('status', 'available')
+            ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
+            ->orderBy('room_number')
+            ->get();
+
         return view('accommodation', compact('rooms'));
     }
 

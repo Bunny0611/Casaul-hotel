@@ -25,33 +25,40 @@
             @forelse($rooms->take(5) as $index => $room)
                 <article class="accommodation-room-card">
                     @if($index === 0)<span class="accommodation-room-badge">Best Seller</span>@endif
-                    <div class="accommodation-room-image"><img src="{{ $room->image ? asset('images/' . $room->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}"></div>
+                    @php
+                        $roomImage = $room->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($room->image)
+                            ? asset('storage/' . $room->image)
+                            : asset('image/Royal-Suite-room.jpg');
+                    @endphp
+                    <div class="accommodation-room-image"><img src="{{ $roomImage }}" alt="{{ $room->room_type }}"></div>
                     <div class="accommodation-room-content">
                         <h3>{{ $room->room_type }}</h3>
+                        <p class="accommodation-room-number">Room {{ $room->room_number ?? 'N/A' }}</p>
                         <p class="accommodation-room-price">₱{{ number_format($room->price, 2) }} <span>/ night</span></p>
                         <p class="accommodation-room-description">{{ $room->description ?? 'Comfortable and spacious room.' }}</p>
                         <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> 2 Guests</span><span><i class="fas fa-bed"></i> 1 Bed</span><span><i class="fas fa-wifi"></i> Wi-Fi</span><span><i class="fas fa-snowflake"></i> AC</span></div>
                     </div>
-                    <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room->room_type }}" data-room-price="₱{{ number_format($room->price, 2) }}" data-room-description="{{ $room->description ?? 'Comfortable and spacious room.' }}" data-room-image="{{ $room->image ? asset('images/' . $room->image) : asset('image/Royal-Suite-room.jpg') }}">View Details</button>
+                    <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room->room_type }}" data-room-number="{{ $room->room_number ?? 'N/A' }}" data-room-price="₱{{ number_format($room->price, 2) }}" data-room-description="{{ $room->description ?? 'Comfortable and spacious room.' }}" data-room-image="{{ $roomImage }}">View Details</button>
                 </article>
             @empty
                 @foreach([
-                    ['slug' => 'deluxe-room', 'name' => 'Deluxe Room', 'price' => '3,000.00', 'description' => 'Comfortable and spacious room.', 'image' => 'image/Royal-Suite-room.jpg'],
-                    ['slug' => 'executive-room', 'name' => 'Deluxe Room', 'price' => '3,500.00', 'description' => 'Comfortable and spacious room.', 'image' => 'image/HM.jpg'],
-                    ['slug' => 'presidential-room', 'name' => 'Deluxe Room', 'price' => '4,200.00', 'description' => 'Elegant and relaxing atmosphere.', 'image' => 'image/Royal-Suite-room.jpg'],
-                    ['slug' => 'standard-room', 'name' => 'Deluxe Room', 'price' => '4,000.00', 'description' => 'Bright and relaxing atmosphere.', 'image' => 'image/HM.jpg'],
-                    ['slug' => 'deluxe-room', 'name' => 'Deluxe Room', 'price' => '3,800.00', 'description' => 'Bright and cozy room.', 'image' => 'image/Royal-Suite-room.jpg'],
+                    ['slug' => 'deluxe-room', 'name' => 'Deluxe Room', 'room_number' => '101', 'price' => '3,000.00', 'description' => 'Comfortable and spacious room.', 'image' => 'image/Royal-Suite-room.jpg'],
+                    ['slug' => 'executive-room', 'name' => 'Deluxe Room', 'room_number' => '102', 'price' => '3,500.00', 'description' => 'Comfortable and spacious room.', 'image' => 'image/HM.jpg'],
+                    ['slug' => 'presidential-room', 'name' => 'Deluxe Room', 'room_number' => '103', 'price' => '4,200.00', 'description' => 'Elegant and relaxing atmosphere.', 'image' => 'image/Royal-Suite-room.jpg'],
+                    ['slug' => 'standard-room', 'name' => 'Deluxe Room', 'room_number' => '104', 'price' => '4,000.00', 'description' => 'Bright and relaxing atmosphere.', 'image' => 'image/HM.jpg'],
+                    ['slug' => 'deluxe-room', 'name' => 'Deluxe Room', 'room_number' => '105', 'price' => '3,800.00', 'description' => 'Bright and cozy room.', 'image' => 'image/Royal-Suite-room.jpg'],
                 ] as $index => $room)
                     <article class="accommodation-room-card">
                         @if($index === 0)<span class="accommodation-room-badge">Best Seller</span>@endif
                         <div class="accommodation-room-image"><img src="{{ asset($room['image']) }}" alt="{{ $room['name'] }}"></div>
                         <div class="accommodation-room-content">
                             <h3>{{ $room['name'] }}</h3>
+                            <p class="accommodation-room-number">Room {{ $room['room_number'] }}</p>
                             <p class="accommodation-room-price">₱{{ $room['price'] }} <span>/ night</span></p>
                             <p class="accommodation-room-description">{{ $room['description'] }}</p>
                             <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> 2 Guests</span><span><i class="fas fa-bed"></i> 1 Bed</span><span><i class="fas fa-wifi"></i> Wi-Fi</span><span><i class="fas fa-snowflake"></i> AC</span></div>
                         </div>
-                        <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room['name'] }}" data-room-price="₱{{ $room['price'] }}" data-room-description="{{ $room['description'] }}" data-room-image="{{ asset($room['image']) }}">View Details</button>
+                        <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room['name'] }}" data-room-number="{{ $room['room_number'] }}" data-room-price="₱{{ $room['price'] }}" data-room-description="{{ $room['description'] }}" data-room-image="{{ asset($room['image']) }}">View Details</button>
                     </article>
                 @endforeach
             @endforelse
@@ -71,6 +78,7 @@
             <div class="accommodation-details-copy">
                 <p class="accommodation-eyebrow">Room Details</p>
                 <h2 id="accommodation-details-title"></h2>
+                <p class="accommodation-room-number" id="accommodation-details-room-number"></p>
                 <p class="accommodation-details-price" id="accommodation-details-price"></p>
                 <p id="accommodation-details-description"></p>
                 <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> 2 Guests</span><span><i class="fas fa-bed"></i> 1 Bed</span><span><i class="fas fa-wifi"></i> Wi-Fi</span><span><i class="fas fa-snowflake"></i> AC</span></div>
@@ -83,6 +91,7 @@
     document.querySelectorAll('.accommodation-details-trigger').forEach(function (button) {
         button.addEventListener('click', function () {
             document.getElementById('accommodation-details-title').textContent = button.dataset.roomName;
+            document.getElementById('accommodation-details-room-number').textContent = 'Room ' + (button.dataset.roomNumber || 'N/A');
             document.getElementById('accommodation-details-price').textContent = button.dataset.roomPrice + ' / night';
             document.getElementById('accommodation-details-description').textContent = button.dataset.roomDescription;
             document.getElementById('accommodation-details-image').src = button.dataset.roomImage;

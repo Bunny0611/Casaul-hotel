@@ -414,7 +414,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), @json($room->bed_type ?? "1 Queen Bed"), {{ $room->price }}, {{ $room->adult_guest_price ?? 0 }}, {{ $room->kid_guest_price ?? 0 }}, @json($room->floor), {{ $room->capacity }}, @json($room->status), @json($room->description))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
+                                    <button type='button' onclick='editRoom({{ $room->id }}, @json($room->room_number), @json($room->room_type), @json($room->bed_type ?? "1 Queen Bed"), {{ $room->price }}, {{ $room->adult_guest_price ?? 0 }}, {{ $room->kid_guest_price ?? 0 }}, @json($room->floor), {{ $room->capacity }}, @json($room->status), @json($room->description), @json($room->image))' class='inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 transition hover:bg-blue-100' aria-label='Edit room'>
                                         <i class='fas fa-edit'></i>
                                     </button>
                                     <button type="button" onclick="changeStatus({{ $room->id }})" class="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700 transition hover:bg-emerald-100" aria-label="Change room status">
@@ -1153,7 +1153,8 @@
             </div>
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-700">Room Image (Optional)</label>
-                <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <input id="editRoomImage" type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <img id="editRoomImagePreview" src="" alt="Current room image" class="mt-3 hidden h-40 w-full rounded-lg border border-gray-200 object-cover">
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeEditRoomModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
@@ -1206,7 +1207,7 @@
         document.getElementById('addRoomModal').classList.remove('flex');
     }
 
-    function editRoom(id, roomNumber, roomType, bedType, price, adultGuestPrice, kidGuestPrice, floor, capacity, status, description) {
+    function editRoom(id, roomNumber, roomType, bedType, price, adultGuestPrice, kidGuestPrice, floor, capacity, status, description, image = null) {
         document.getElementById('editRoomId').value = id;
         document.getElementById('editRoomNumber').value = roomNumber;
         document.getElementById('editRoomType').value = roomType;
@@ -1234,6 +1235,15 @@
         document.getElementById('editCapacity').value = capacity;
         document.getElementById('editStatus').value = status;
         document.getElementById('editDescription').value = description || '';
+
+        const roomImageInput = document.getElementById('editRoomImage');
+        const roomImagePreview = document.getElementById('editRoomImagePreview');
+        const roomImageUrl = image ? "{{ asset('storage') }}/" + image : '';
+
+        roomImagePreview.src = roomImageUrl;
+        roomImagePreview.classList.toggle('hidden', !roomImageUrl);
+        roomImageInput.value = '';
+
         var editRoute = "{{ route('admin.rooms.update', ['id' => '__ID__']) }}";
         document.getElementById('editRoomForm').action = editRoute.replace('__ID__', id);
         document.getElementById('editRoomModal').classList.remove('hidden');
@@ -1260,6 +1270,12 @@
     }
 
     function closeEditRoomModal() {
+        const roomImageInput = document.getElementById('editRoomImage');
+        const roomImagePreview = document.getElementById('editRoomImagePreview');
+
+        roomImageInput.value = '';
+        roomImagePreview.src = '';
+        roomImagePreview.classList.add('hidden');
         document.getElementById('editRoomModal').classList.add('hidden');
         document.getElementById('editRoomModal').classList.remove('flex');
     }

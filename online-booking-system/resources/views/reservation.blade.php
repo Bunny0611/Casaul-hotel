@@ -612,10 +612,17 @@
                         @php($kidGuestPrice = (float) ($room->kid_guest_price ?? ($extraGuestPrice / 2)))
                         @php($roomCapacity = max(1, (int) ($room->capacity ?? 2)))
                         @php($roomTypeFilter = str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other'))
-                        <article class="reservation-card" data-category="room" data-room-type="{{ $roomTypeFilter }}" data-price="{{ $room->price }}" data-name="{{ $room->room_type }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}" data-kid-guest-price="{{ $kidGuestPrice }}">
-                            <img src="{{ $room->image ? asset(str_starts_with($room->image, 'rooms/') ? 'storage/' . $room->image : $room->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $room->room_type }}">
+                        @php($roomStoragePath = str_starts_with((string) $room->image, 'storage/') ? substr($room->image, 8) : $room->image)
+                        @php($roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath) ? asset('storage/' . $roomStoragePath) : null)
+                        <article class="reservation-card" data-category="room" data-room-type="{{ $roomTypeFilter }}" data-price="{{ $room->price }}" data-name="{{ $room->room_type }} • Room {{ $room->room_number }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}" data-kid-guest-price="{{ $kidGuestPrice }}">
+                            @if($roomImage)
+                                <img src="{{ $roomImage }}" alt="{{ $room->room_type }}">
+                            @else
+                                <div class="reservation-card-image-placeholder" aria-label="No room image">No room image</div>
+                            @endif
                             <div class="reservation-card-body">
                                 <h4>{{ $room->room_type }}</h4>
+                                <p class="reservation-room-number">Room {{ $room->room_number }}</p>
                                 <div class="reservation-card-meta">
                                     <span><i class="fas fa-users"></i>{{ $room->capacity ?? 2 }} Guests</span>
                                     <span><i class="fas fa-bed"></i>{{ $room->bed_type ?? '1 Queen Bed' }}</span>
@@ -638,7 +645,7 @@
                                 </div>
                                 <div class="reservation-card-footer">
                                     <span class="price">₱{{ number_format($room->price, 0) }}/night</span>
-                                    <button type="button" class="select-option-btn" data-title="{{ $room->room_type }}" data-price="{{ $room->price }}" data-room-id="{{ $room->id }}">Add to Reservation</button>
+                                    <button type="button" class="select-option-btn" data-title="{{ $room->room_type }} • Room {{ $room->room_number }}" data-price="{{ $room->price }}" data-room-id="{{ $room->id }}">Add to Reservation</button>
                                 </div>
                             </div>
                         </article>

@@ -2208,13 +2208,25 @@ class AdminController extends Controller
 
     public function messages()
     {
-        $messages = Message::with('replies')->latest()->get();
-        return view('admin.messages', compact('messages'));
+        return view('admin.messages');
     }
 
-    public function employeeMessages()
+    public function employeeMessages(Request $request)
     {
         $messages = Message::latest()->get();
+        $filter = $request->query('filter', 'today');
+
+        if (!in_array($filter, ['today', 'week', 'all', 'unread'], true)) {
+            $filter = 'today';
+        }
+
+        $messages = match ($filter) {
+            'today' => $messages->filter(fn ($message) => $message->created_at?->isToday()),
+            'week' => $messages->filter(fn ($message) => $message->created_at?->greaterThanOrEqualTo(now()->startOfWeek())),
+            'unread' => $messages->where('is_replied', false),
+            default => $messages,
+        };
+
         $conversations = $messages
             ->groupBy('customer_email')
             ->map(function ($conversationMessages) {
@@ -2248,7 +2260,7 @@ class AdminController extends Controller
             ->first(fn ($conversation) => (string) $conversation->latest_message->id === (string) $selectedMessageId)
             ?->key;
 
-        return view('employee.messages', compact('messages', 'conversations', 'stats', 'selectedConversationKey'));
+        return view('employee.messages', compact('messages', 'conversations', 'stats', 'selectedConversationKey', 'filter'));
     }
 
     public function employeeGuestRequests()

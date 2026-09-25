@@ -1769,6 +1769,17 @@ nav a:hover{
     object-fit: cover;
 }
 
+.reservation-card-image-placeholder {
+    display: flex;
+    width: 100%;
+    height: 190px;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
 .reservation-card-body {
     padding: 18px;
     display: flex;

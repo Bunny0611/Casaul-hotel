@@ -94,4 +94,41 @@ class RoomPaginationTest extends TestCase
         $response->assertOk();
         $this->assertStringNotContainsString('page=2', $response->getContent());
     }
+
+    public function test_available_rooms_are_sorted_by_room_number_on_the_accommodation_page(): void
+    {
+        Room::query()->delete();
+
+        Room::create([
+            'room_number' => '203',
+            'room_type' => 'Deluxe Room',
+            'price' => 5000,
+            'floor' => '2',
+            'capacity' => 2,
+            'status' => 'available',
+        ]);
+
+        Room::create([
+            'room_number' => '101',
+            'room_type' => 'Standard Room',
+            'price' => 3500,
+            'floor' => '1',
+            'capacity' => 2,
+            'status' => 'available',
+        ]);
+
+        Room::create([
+            'room_number' => '105',
+            'room_type' => 'Standard Room',
+            'price' => 3500,
+            'floor' => '1',
+            'capacity' => 2,
+            'status' => 'available',
+        ]);
+
+        $response = $this->get(route('accommodation'));
+
+        $response->assertOk();
+        $response->assertSeeInOrder(['Room 101', 'Room 105', 'Room 203']);
+    }
 }
