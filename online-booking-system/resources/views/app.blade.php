@@ -30,9 +30,14 @@
 
 <nav>
 
-    <div class="logo">
-        <img src="{{ asset('image/LOGO.png') }}" alt="Casaul Hotel Logo" class="logo-img">
-        CASAUL HOTEL
+    <div class="logo" aria-label="CASAUL Hotel">
+        <div class="logo-mark">
+            <img src="{{ asset('image/LOGO.png') }}" alt="Casaul Hotel Logo" class="logo-img">
+        </div>
+        <div class="logo-text">
+            <span class="logo-name">CASAUL HOTEL</span>
+            <span class="logo-tag">LUXURY &amp; COMFORT</span>
+        </div>
     </div>
 
     <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
