@@ -19,13 +19,34 @@
          .sidebar {
     background-color: #800000 !important;
     background-image: none !important;
+    border: 0 !important;
+    outline: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
 }
 .sidebar nav,
 .sidebar .mt-auto,
 .sidebar .p-6 {
     background: transparent !important;
 }
-.sidebar nav,
+.sidebar nav {
+    position: static;
+    top: auto;
+    left: auto;
+    right: auto;
+    width: 100%;
+    gap: 1.125rem;
+    padding: 0 0.75rem;
+    z-index: auto;
+    box-shadow: none;
+    border: 0;
+    border-radius: 0;
+    backdrop-filter: none;
+}
+.sidebar nav a::after {
+    content: none;
+    display: none;
+}
 .room-pagination {
     position: static;
 }
@@ -55,20 +76,27 @@
             justify-content: flex-start;
             align-items: center;
             margin: 0.08rem 0;
-            border-radius: 0.9rem;
+            border: 0 !important;
+            border-radius: 0 !important;
+            outline: 0 !important;
+            box-shadow: none !important;
             transition: all 0.25s ease;
             color: rgba(255,255,255,0.9);
         }
 
         .nav-item:hover {
             background: rgba(255,255,255,0.14);
-            transform: translateX(4px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            transform: none;
+            box-shadow: none;
         }
 
         .nav-item.active {
             background: rgba(255,255,255,0.2);
-            border-left: 4px solid #ff6b35;
+            border-left: 0;
+        }
+
+        .nav-item:focus-visible {
+            background: rgba(255,255,255,0.3);
         }
 
         .nav-item i {
