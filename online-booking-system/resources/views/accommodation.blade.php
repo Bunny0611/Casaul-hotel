@@ -21,26 +21,26 @@
         <div class="accommodation-reference-hero-image">
             <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="Elegant CASAUL Hotel guest room">
         </div>
-        <div class="accommodation-booking-bar" aria-label="Room search" data-reservation-url="{{ route('reservation') }}">
+        <div class="accommodation-booking-bar" aria-label="Room search" data-accommodation-url="{{ route('accommodation') }}" data-searched="{{ $hasSearched ? 'true' : 'false' }}" data-guests="{{ $guestCount }}" data-room-type="{{ $selectedRoomType }}">
             <button class="accommodation-booking-field" type="button" data-date-target="accommodation-check-in">
-                <i class="far fa-calendar-alt"></i><span><small>Check-in</small><strong data-date-label="accommodation-check-in">Sep 28, 2026</strong></span><b>⌄</b>
-                <input id="accommodation-check-in" type="date" value="2026-09-28" min="2026-09-26" aria-label="Check-in date">
+                <i class="far fa-calendar-alt"></i><span><small>Check-in</small><strong data-date-label="accommodation-check-in">{{ \Carbon\Carbon::parse($checkInDate)->format('M j, Y') }}</strong></span><b>⌄</b>
+                <input id="accommodation-check-in" type="date" value="{{ $checkInDate }}" min="{{ today()->toDateString() }}" aria-label="Check-in date">
             </button>
             <button class="accommodation-booking-field" type="button" data-date-target="accommodation-check-out">
-                <i class="far fa-calendar-alt"></i><span><small>Check-out</small><strong data-date-label="accommodation-check-out">Sep 30, 2026</strong></span><b>⌄</b>
-                <input id="accommodation-check-out" type="date" value="2026-09-30" min="2026-09-28" aria-label="Check-out date">
+                <i class="far fa-calendar-alt"></i><span><small>Check-out</small><strong data-date-label="accommodation-check-out">{{ \Carbon\Carbon::parse($checkOutDate)->format('M j, Y') }}</strong></span><b>⌄</b>
+                <input id="accommodation-check-out" type="date" value="{{ $checkOutDate }}" min="{{ $checkInDate }}" aria-label="Check-out date">
             </button>
             <div class="accommodation-booking-control">
                 <button class="accommodation-booking-field" type="button" aria-expanded="false" aria-controls="accommodation-guests-popover">
-                    <i class="far fa-user"></i><span><small>Guests</small><strong id="accommodation-guests-label">2 Guests</strong></span><b>⌄</b>
+                    <i class="far fa-user"></i><span><small>Guests</small><strong id="accommodation-guests-label">{{ $guestCount }} Guest{{ $guestCount === 1 ? '' : 's' }}</strong></span><b>⌄</b>
                 </button>
                 <div class="accommodation-selector-popover" id="accommodation-guests-popover" hidden>
-                    <span>Guests</span><button type="button" data-counter="guests" data-step="-1" aria-label="Decrease guests">−</button><strong id="accommodation-guests-count">2</strong><button type="button" data-counter="guests" data-step="1" aria-label="Increase guests">+</button>
+                    <span>Guests</span><button type="button" data-counter="guests" data-step="-1" aria-label="Decrease guests">−</button><strong id="accommodation-guests-count">{{ $guestCount }}</strong><button type="button" data-counter="guests" data-step="1" aria-label="Increase guests">+</button>
                 </div>
             </div>
             <div class="accommodation-booking-control">
                 <button class="accommodation-booking-field" type="button" aria-expanded="false" aria-controls="accommodation-rooms-popover">
-                    <i class="fas fa-bed"></i><span><small>Rooms</small><strong id="accommodation-rooms-label">Deluxe Room</strong></span><b>⌄</b>
+                    <i class="fas fa-bed"></i><span><small>Rooms</small><strong id="accommodation-rooms-label">{{ $selectedRoomType }}</strong></span><b>⌄</b>
                 </button>
                 <div class="accommodation-selector-popover" id="accommodation-rooms-popover" hidden>
                     <button type="button" class="accommodation-room-type-option" data-room-type="Deluxe Room">Deluxe Room</button>
@@ -48,7 +48,7 @@
                 </div>
             </div>
             <button class="accommodation-booking-search" type="button"><i class="fas fa-search"></i> Search</button>
-            <p class="accommodation-booking-error" role="alert" aria-live="polite"></p>
+            <p class="accommodation-booking-error {{ $searchError ? 'is-visible' : '' }}" role="alert" aria-live="polite">{{ $searchError }}</p>
         </div>
     </section>
 
@@ -58,49 +58,32 @@
             <div class="accommodation-heading-rule"><span></span><i class="fas fa-bed"></i><span></span></div>
         </header>
 
+        @if($rooms->isNotEmpty())
         <div class="accommodation-room-grid">
-            @forelse($rooms->take(5) as $index => $room)
+            @foreach($rooms as $index => $room)
                 <article class="accommodation-room-card">
                     @if($index === 0)<span class="accommodation-room-badge">Best Seller</span>@endif
                     @php
-                        $roomImage = $room->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($room->image)
-                            ? asset('storage/' . $room->image)
-                            : asset('image/Royal-Suite-room.jpg');
+                        $roomStoragePath = str_starts_with((string) $room->image, 'storage/') ? substr($room->image, 8) : $room->image;
+                        $roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath)
+                            ? asset('storage/' . $roomStoragePath)
+                            : null;
                     @endphp
-                    <div class="accommodation-room-image"><img src="{{ $roomImage }}" alt="{{ $room->room_type }}"></div>
+                    <div class="accommodation-room-image">@if($roomImage)<img src="{{ $roomImage }}" alt="{{ $room->room_type }}">@endif</div>
                     <div class="accommodation-room-content">
                         <h3>{{ $room->room_type }}</h3>
                         <p class="accommodation-room-number">Room {{ $room->room_number ?? 'N/A' }}</p>
                         <p class="accommodation-room-price">₱{{ number_format($room->price, 2) }} <span>/ night</span></p>
-                        <p class="accommodation-room-description">{{ $room->description ?? 'Comfortable and spacious room.' }}</p>
-                        <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> 2 Guests</span><span><i class="fas fa-bed"></i> 1 Bed</span><span><i class="fas fa-wifi"></i> Wi-Fi</span><span><i class="fas fa-snowflake"></i> AC</span></div>
+                        <p class="accommodation-room-description">{{ $room->description ?? 'Description unavailable.' }}</p>
+                        <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> {{ $room->capacity }} Guests</span><span><i class="fas fa-bed"></i> {{ $room->bed_type ?? 'Bed details unavailable' }}</span></div>
                     </div>
-                    <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room->room_type }}" data-room-number="{{ $room->room_number ?? 'N/A' }}" data-room-price="₱{{ number_format($room->price, 2) }}" data-room-description="{{ $room->description ?? 'Comfortable and spacious room.' }}" data-room-image="{{ $roomImage }}">View Details</button>
+                    <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room->room_type }}" data-room-number="{{ $room->room_number ?? 'N/A' }}" data-room-price="₱{{ number_format($room->price, 2) }}" data-room-description="{{ $room->description ?? 'Description unavailable.' }}" data-room-image="{{ $roomImage ?? '' }}" data-room-capacity="{{ $room->capacity }}" data-room-bed-type="{{ $room->bed_type ?? 'Bed details unavailable' }}">View Details</button>
                 </article>
-            @empty
-                @foreach([
-                    ['slug' => 'deluxe-room', 'name' => 'Deluxe Room', 'room_number' => '101', 'price' => '3,000.00', 'description' => 'Comfortable and spacious room.', 'image' => 'image/Royal-Suite-room.jpg'],
-                    ['slug' => 'executive-room', 'name' => 'Deluxe Room', 'room_number' => '102', 'price' => '3,500.00', 'description' => 'Comfortable and spacious room.', 'image' => 'image/HM.jpg'],
-                    ['slug' => 'presidential-room', 'name' => 'Deluxe Room', 'room_number' => '103', 'price' => '4,200.00', 'description' => 'Elegant and relaxing atmosphere.', 'image' => 'image/Royal-Suite-room.jpg'],
-                    ['slug' => 'standard-room', 'name' => 'Deluxe Room', 'room_number' => '104', 'price' => '4,000.00', 'description' => 'Bright and relaxing atmosphere.', 'image' => 'image/HM.jpg'],
-                    ['slug' => 'deluxe-room', 'name' => 'Deluxe Room', 'room_number' => '105', 'price' => '3,800.00', 'description' => 'Bright and cozy room.', 'image' => 'image/Royal-Suite-room.jpg'],
-                ] as $index => $room)
-                    <article class="accommodation-room-card">
-                        @if($index === 0)<span class="accommodation-room-badge">Best Seller</span>@endif
-                        <div class="accommodation-room-image"><img src="{{ asset($room['image']) }}" alt="{{ $room['name'] }}"></div>
-                        <div class="accommodation-room-content">
-                            <h3>{{ $room['name'] }}</h3>
-                            <p class="accommodation-room-number">Room {{ $room['room_number'] }}</p>
-                            <p class="accommodation-room-price">₱{{ $room['price'] }} <span>/ night</span></p>
-                            <p class="accommodation-room-description">{{ $room['description'] }}</p>
-                            <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> 2 Guests</span><span><i class="fas fa-bed"></i> 1 Bed</span><span><i class="fas fa-wifi"></i> Wi-Fi</span><span><i class="fas fa-snowflake"></i> AC</span></div>
-                        </div>
-                        <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room['name'] }}" data-room-number="{{ $room['room_number'] }}" data-room-price="₱{{ $room['price'] }}" data-room-description="{{ $room['description'] }}" data-room-image="{{ asset($room['image']) }}">View Details</button>
-                    </article>
-                @endforeach
-            @endforelse
+                    @endforeach
         </div>
-        <p id="accommodation-no-room-results" hidden>No rooms match your selected search criteria.</p>
+        @elseif($hasSearched)
+            <div id="accommodation-no-room-results"><strong>No rooms available</strong><p>No rooms match your selected dates, guest count, and room type.</p></div>
+        @endif
     </section>
 
     <section class="accommodation-benefits" aria-label="Why guests love CASAUL Hotel">
@@ -119,7 +102,7 @@
                 <p class="accommodation-room-number" id="accommodation-details-room-number"></p>
                 <p class="accommodation-details-price" id="accommodation-details-price"></p>
                 <p id="accommodation-details-description"></p>
-                <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> 2 Guests</span><span><i class="fas fa-bed"></i> 1 Bed</span><span><i class="fas fa-wifi"></i> Wi-Fi</span><span><i class="fas fa-snowflake"></i> AC</span></div>
+                <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> <span id="accommodation-details-capacity"></span> Guests</span><span><i class="fas fa-bed"></i> <span id="accommodation-details-bed-type"></span></span></div>
             </div>
         </div>
     </div>
@@ -132,8 +115,12 @@
             document.getElementById('accommodation-details-room-number').textContent = 'Room ' + (button.dataset.roomNumber || 'N/A');
             document.getElementById('accommodation-details-price').textContent = button.dataset.roomPrice + ' / night';
             document.getElementById('accommodation-details-description').textContent = button.dataset.roomDescription;
-            document.getElementById('accommodation-details-image').src = button.dataset.roomImage;
-            document.getElementById('accommodation-details-image').alt = button.dataset.roomName;
+            const detailsImage = document.getElementById('accommodation-details-image');
+            if (button.dataset.roomImage) detailsImage.src = button.dataset.roomImage;
+            else detailsImage.removeAttribute('src');
+            detailsImage.alt = button.dataset.roomName;
+            document.getElementById('accommodation-details-capacity').textContent = button.dataset.roomCapacity;
+            document.getElementById('accommodation-details-bed-type').textContent = button.dataset.roomBedType;
             document.getElementById('accommodation-details-modal').classList.add('is-open');
             document.getElementById('accommodation-details-modal').setAttribute('aria-hidden', 'false');
         });
@@ -156,8 +143,8 @@
         const checkIn = document.getElementById('accommodation-check-in');
         const checkOut = document.getElementById('accommodation-check-out');
         const error = bookingBar.querySelector('.accommodation-booking-error');
-        const counters = { guests: 2 };
-        let selectedRoomType = 'Deluxe Room';
+        const counters = { guests: Number(bookingBar.dataset.guests) || 2 };
+        let selectedRoomType = bookingBar.dataset.roomType;
         const formatDate = function (value) {
             if (!value) return 'Select date';
             return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -228,26 +215,27 @@
             let message = '';
             if (!checkIn.value) message = 'Please select a check-in date.';
             else if (!checkOut.value) message = 'Please select a check-out date.';
-            else if (checkOut.value < checkIn.value) message = 'Check-out must be after check-in.';
+            else if (checkOut.value <= checkIn.value) message = 'Check-out must be after check-in.';
             else if (counters.guests < 1) message = 'Please select at least one guest.';
             else if (!selectedRoomType) message = 'Please select a room type.';
             error.textContent = message;
             error.classList.toggle('is-visible', Boolean(message));
             if (message) return;
 
-            const selectedType = selectedRoomType.toLowerCase();
-            const roomCards = document.querySelectorAll('.accommodation-room-card');
-            const noResults = document.getElementById('accommodation-no-room-results');
-            let visibleRoomCount = 0;
-            roomCards.forEach(function (card) {
-                const roomType = card.querySelector('h3')?.textContent.trim().toLowerCase() || '';
-                const matchesType = roomType === selectedType;
-                card.hidden = !matchesType;
-                if (matchesType) visibleRoomCount += 1;
-            });
-            noResults.hidden = visibleRoomCount > 0;
-            document.getElementById('rooms').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const searchUrl = new URL(bookingBar.dataset.accommodationUrl, window.location.origin);
+            searchUrl.search = new URLSearchParams({
+                search: '1',
+                check_in: checkIn.value,
+                check_out: checkOut.value,
+                guests: String(counters.guests),
+                room_type: selectedRoomType
+            }).toString();
+            window.location.assign(searchUrl.toString());
         });
+
+        if (bookingBar.dataset.searched === 'true') {
+            document.getElementById('rooms').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }());
 </script>
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class Room extends Model
 {
@@ -24,6 +25,25 @@ class Room extends Model
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    public function roomReservations()
+    {
+        return $this->hasMany(RoomReservation::class);
+    }
+
+    public function scopeAvailableForDates(Builder $query, $checkIn, $checkOut): Builder
+    {
+        $withoutOverlap = function ($reservations) use ($checkIn, $checkOut) {
+            $reservations
+                ->whereNotIn('status', ['cancelled', 'completed'])
+                ->whereDate('check_in', '<', $checkOut)
+                ->whereDate('check_out', '>', $checkIn);
+        };
+
+        return $query
+            ->whereDoesntHave('roomReservations', $withoutOverlap)
+            ->whereDoesntHave('reservations', $withoutOverlap);
     }
 
     public function housekeepingTasks()
