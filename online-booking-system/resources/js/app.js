@@ -72,20 +72,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    const nav = document.querySelector('nav');
-    let lastScroll = 0;
+    const nav = document.querySelector('nav.site-header');
+    const applyHeaderScrollState = () => {
+        if (!nav) return;
+        nav.classList.toggle('scrolled', window.scrollY > 50);
+    };
 
-    window.addEventListener('scroll', () => {
-        const currentScroll = window.pageYOffset;
-        
-        if (currentScroll > 100) {
-            nav.style.boxShadow = '0 8px 32px rgba(30, 58, 95, 0.25)';
-        } else {
-            nav.style.boxShadow = '0 4px 20px rgba(30, 58, 95, 0.15)';
-        }
-
-        lastScroll = currentScroll;
-    });
+    applyHeaderScrollState();
+    window.addEventListener('scroll', applyHeaderScrollState, { passive: true });
 
    
     document.querySelectorAll('.btn').forEach(btn => {

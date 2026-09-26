@@ -28,7 +28,7 @@
 <div class="floating-element floating-element-2"></div>
 <div class="floating-element floating-element-3"></div>
 
-<nav>
+<nav class="site-header" aria-label="Main navigation">
 
     <div class="logo" aria-label="CASAUL Hotel">
         <div class="logo-mark">
@@ -275,7 +275,16 @@
 @vite('resources/js/app.js')
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    (function () {
+        const siteHeader = document.querySelector('nav.site-header');
+        const applyHeaderScrollState = function () {
+            if (!siteHeader) return;
+            siteHeader.classList.toggle('scrolled', window.scrollY > 50);
+        };
+
+        applyHeaderScrollState();
+        window.addEventListener('scroll', applyHeaderScrollState, { passive: true });
+
         const navToggle = document.getElementById('nav-toggle');
         const navMenu = document.getElementById('nav-menu');
 
@@ -292,7 +301,7 @@
                 });
             });
         }
-    });
+    })();
 </script>
 
 </body>

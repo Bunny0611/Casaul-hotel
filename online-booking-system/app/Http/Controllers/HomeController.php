@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class HomeController extends Controller
@@ -716,7 +717,23 @@ class HomeController extends Controller
             $reservation = DB::transaction(function () use ($validated) {
                 $room = Room::query()->whereKey($validated['room_id'])->lockForUpdate()->firstOrFail();
 
-                if (RoomAvailability::conflict($room, $validated['check_in'], $validated['check_out'])) {
+                $hasConflict = RoomReservation::query()
+                    ->where('room_id', $validated['room_id'])
+                    ->whereNotIn('status', ['cancelled', 'completed'])
+                    ->whereDate('check_in', '<', $validated['check_out'])
+                    ->whereDate('check_out', '>', $validated['check_in'])
+                    ->exists();
+
+                if (!$hasConflict) {
+                    $hasConflict = Reservation::query()
+                        ->where('room_id', $validated['room_id'])
+                        ->whereNotIn('status', ['cancelled', 'completed'])
+                        ->whereDate('check_in', '<', $validated['check_out'])
+                        ->whereDate('check_out', '>', $validated['check_in'])
+                        ->exists();
+                }
+
+                if ($hasConflict) {
                     throw ValidationException::withMessages([
                         'room_id' => 'Sorry, this room is no longer available for your selected dates. Please choose another room.',
                     ]);
@@ -885,14 +902,56 @@ class HomeController extends Controller
         return redirect()->route('reservation')->with('success', 'Your reservation request has been submitted. We will contact you soon.');
     }
     
-    public function accommodation()
+    public function accommodation(Request $request)
     {
-        $rooms = Room::where('status', 'available')
-            ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
-            ->orderBy('room_number')
-            ->get();
+        $hasSearched = $request->boolean('search');
+        $searchError = null;
+        $searchCriteria = [];
+        $roomsQuery = Room::query()->where('status', 'available');
 
-        return view('accommodation', compact('rooms'));
+        if ($hasSearched) {
+            $validator = Validator::make($request->query(), [
+                'check_in' => ['required', 'date', 'after_or_equal:today'],
+                'check_out' => ['required', 'date', 'after:check_in'],
+                'guests' => ['required', 'integer', 'min:1'],
+                'room_type' => ['required', 'in:Deluxe Room,Standard Room'],
+            ]);
+
+            if ($validator->fails()) {
+                $searchError = $validator->errors()->first();
+                $rooms = collect();
+            } else {
+                $searchCriteria = $validator->validated();
+                $rooms = $roomsQuery
+                    ->where('room_type', $searchCriteria['room_type'])
+                    ->where('capacity', '>=', $searchCriteria['guests'])
+                    ->availableForDates($searchCriteria['check_in'], $searchCriteria['check_out'])
+                    ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
+                    ->orderBy('room_number')
+                    ->get();
+            }
+        } else {
+            $rooms = $roomsQuery
+                ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
+                ->orderBy('room_number')
+                ->limit(5)
+                ->get();
+        }
+
+        $checkInDate = $searchCriteria['check_in'] ?? now()->addDays(2)->toDateString();
+        $checkOutDate = $searchCriteria['check_out'] ?? now()->addDays(4)->toDateString();
+        $guestCount = (int) ($searchCriteria['guests'] ?? 2);
+        $selectedRoomType = $searchCriteria['room_type'] ?? 'Deluxe Room';
+
+        return view('accommodation', compact(
+            'rooms',
+            'hasSearched',
+            'searchError',
+            'checkInDate',
+            'checkOutDate',
+            'guestCount',
+            'selectedRoomType'
+        ));
     }
 
     public function profile()
