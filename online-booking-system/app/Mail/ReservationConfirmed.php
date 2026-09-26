@@ -26,7 +26,7 @@ class ReservationConfirmed extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.reservation-confirmed',
+            markdown: 'emails.reservation-confirmed',
         );
     }
 }
