@@ -17,10 +17,6 @@
         display: none;
     }
 
-    body.report-pdf-rendering > *:not(.report-export-document) {
-        visibility: hidden !important;
-    }
-
     .report-export-document .report-export-header {
         margin-bottom: 24px;
         padding-bottom: 16px;
@@ -63,9 +59,12 @@
     .report-export-document canvas,
     .report-export-document .report-export-chart {
         display: block;
-        max-width: 100%;
+        width: auto;
         height: auto !important;
-        object-fit: contain;
+        max-width: 100%;
+        max-height: 100%;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .report-export-document .shadow-lg,
@@ -73,9 +72,25 @@
         box-shadow: none !important;
     }
 
+    .report-export-document [class~="h-[240px]"] {
+        height: 280px !important;
+    }
+
+    .report-export-document [class~="h-[280px]"] {
+        height: 320px !important;
+    }
+
+    .report-export-document [class~="h-[320px]"] {
+        height: 360px !important;
+    }
+
+    .report-export-document [class~="h-[360px]"] {
+        height: 400px !important;
+    }
+
     @media print {
         @page {
-            size: A4 landscape;
+            size: 13in 8in;
             margin: 12mm;
         }
 
@@ -525,7 +540,7 @@
                 if (!clonedCanvas) return;
 
                 const chartImage = document.createElement('img');
-                chartImage.className = 'report-export-chart';
+                chartImage.className = `${sourceCanvas.className} report-export-chart`;
                 chartImage.alt = '';
                 chartImage.width = sourceCanvas.width;
                 chartImage.height = sourceCanvas.height;
@@ -602,8 +617,9 @@
                 reportDocument.style.position = 'absolute';
                 reportDocument.style.top = '0';
                 reportDocument.style.left = '0';
-                reportDocument.style.zIndex = '9999';
-                document.body.classList.add('report-pdf-rendering');
+                reportDocument.style.opacity = '0';
+                reportDocument.style.pointerEvents = 'none';
+                reportDocument.id = 'reportPdfRenderTarget';
                 document.body.appendChild(reportDocument);
 
                 try {
@@ -612,10 +628,14 @@
                         scale: 2,
                         backgroundColor: '#ffffff',
                         useCORS: true,
-                        logging: false
+                        logging: false,
+                        onclone: clonedDocument => {
+                            const clonedReport = clonedDocument.getElementById('reportPdfRenderTarget');
+                            if (clonedReport) clonedReport.style.opacity = '1';
+                        }
                     });
                     const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+                    const pdf = new jsPDF({ unit: 'mm', format: [330.2, 203.2], orientation: 'landscape' });
                     const margin = 12;
                     const pageWidth = pdf.internal.pageSize.getWidth();
                     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -650,10 +670,11 @@
                         }
                     }
 
-                    pdf.save(`${(reportTitles[activeTab] || 'hotel-report').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`);
+                    const tabName = (reportTitles[activeTab] || 'Hotel Report').replace(/\s+Report$/, '');
+                    const filename = `${tabName.replace(/[^a-z0-9]+/gi, '_')}_Report.pdf`;
+                    pdf.save(filename);
                 } finally {
                     reportDocument.remove();
-                    document.body.classList.remove('report-pdf-rendering');
                     downloadPdfBtn.disabled = false;
                 }
             });
