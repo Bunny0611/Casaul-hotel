@@ -31,26 +31,68 @@ body{
     line-height:1.5;
 }
 
-nav{
+nav.site-header{
     position: fixed;
     top: 18px;
     left: 28px;
     right: 28px;
     width: auto;
-    background: #8e1d1d;
+    background: #7a2528;
     display: flex;
     align-items: center;
     gap: 18px;
-    padding: 12px 18px 12px 18px;
+    min-height: 72px;
+    padding: 12px 18px;
     z-index: 1000;
+    overflow: visible;
     box-shadow: 0 14px 30px rgba(0,0,0,0.18);
     border: 1px solid rgba(244, 201, 112, 0.52);
     border-radius: 20px;
+    isolation: isolate;
+    filter: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition:
+        height 0.3s ease,
+        width 0.3s ease,
+        top 0.3s ease,
+        background 0.3s ease,
+        box-shadow 0.3s ease;
 }
 
-nav::before {
-    content: none;
+nav.site-header::before {
+    content: "";
+    position: absolute;
+    left: -35px;
+    right: -35px;
+    top: -35px;
+    bottom: -35px;
+    z-index: -2;
+    border-radius: 42px;
+    background: radial-gradient(ellipse at center, rgba(130, 45, 50, 0.52) 0%, rgba(100, 25, 30, 0.45) 45%, rgba(100, 25, 30, 0.0) 78%);
+    filter: blur(30px);
+    opacity: 0;
     pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+
+nav.site-header.scrolled::before {
+    opacity: 1;
+}
+
+nav.site-header > * {
+    position: relative;
+    z-index: 1;
+}
+
+nav.site-header.scrolled {
+    top: 10px;
+    min-height: 60px;
+    background: rgba(122, 37, 40, 0.96);
+    box-shadow:
+        0 0 25px rgba(100, 25, 30, 0.45),
+        0 15px 45px rgba(50, 10, 10, 0.40),
+        0 25px 60px rgba(50, 10, 10, 0.20);
 }
 
 .nav-toggle {
@@ -63,6 +105,11 @@ nav::before {
     gap: 12px;
     color: #f5e7d0;
     flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
+
+nav.site-header.scrolled .logo {
+    transform: scale(0.98);
 }
 
 .logo-mark {
@@ -74,6 +121,12 @@ nav::before {
     place-items: center;
     background: rgba(255,255,255,0.06);
     box-shadow: inset 0 0 0 2px rgba(255,255,255,0.14);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+nav.site-header.scrolled .logo-mark {
+    width: 38px;
+    height: 38px;
 }
 
 .logo-img{
@@ -81,6 +134,10 @@ nav::before {
     width: auto;
     display: block;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.18));
+}
+
+nav.site-header.scrolled .logo-img {
+    height: 24px;
 }
 
 .logo-text {
@@ -3703,22 +3760,61 @@ body:has(.home-reference-page) nav { background: #a4000b; box-shadow: none; }
 
 /* Accommodation page reference layout */
 body:has(.accommodation-reference-page) { background: #fbf8f2; color: #3e2a23; }
-body:has(.accommodation-reference-page) nav { background: #a4000b; box-shadow: none; }
+body:has(.accommodation-reference-page) nav.site-header { background: #7a2528; box-shadow: 0 14px 30px rgba(0,0,0,0.18); }
 .accommodation-reference-page { width: 100%; padding: 76px 0 14px; background: linear-gradient(180deg, #fffdf9 0%, #faf6ee 100%); font-family: 'DM Sans', Poppins, sans-serif; }
-.accommodation-reference-hero, .accommodation-benefits { width: min(1230px, calc(100% - 24px)); margin: 0 auto; }
+.accommodation-reference-hero { width: min(1230px, calc(100% - 56px)); margin: 0 auto; }
+.accommodation-benefits { width: min(1230px, calc(100% - 24px)); margin: 0 auto; }
 .accommodation-rooms-section { width: min(1230px, calc(100% - 24px)); margin: 0 auto; }
-.accommodation-reference-hero { position: relative; display: block; min-height: 250px; height: 510px; max-height: 510px; margin-top: 18px; overflow: hidden; border: 1px solid #eadfce; border-radius: 16px; background: #fffdf8; box-shadow: 0 8px 18px rgba(70, 45, 28, .08); }
-.accommodation-reference-hero-copy { position: absolute; z-index: 2; left: 28px; top: 50%; width: min(470px, calc(100% - 44px)); transform: translateY(-50%); display: flex; flex-direction: column; justify-content: center; padding: 20px 18px 20px 12px; background: transparent; }
-.accommodation-eyebrow { display: flex; align-items: center; gap: 9px; margin: 0 0 7px; color: #d7ae59; font-size: .78rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; text-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.accommodation-reference-hero { position: relative; display: block; min-height: 250px; height: 510px; max-height: 510px; margin-top: 18px; overflow: visible; border: 1px solid #eadfce; border-radius: 16px; background: #fffdf8; box-shadow: 0 8px 18px rgba(70, 45, 28, .08); }
+.accommodation-reference-hero-copy { position: absolute; z-index: 2; left: 28px; top: 42%; width: min(560px, calc(100% - 44px)); transform: translateY(-50%); display: flex; flex-direction: column; justify-content: center; padding: 16px 18px 16px 12px; background: transparent; }
+.accommodation-eyebrow { display: flex; align-items: center; gap: 9px; margin: 0 0 10px; color: #e2b968; font-size: .72rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; text-shadow: 0 1px 4px rgba(0,0,0,.35); }
 .accommodation-eyebrow span { width: 18px; height: 1px; background: #d7ae59; }
-.accommodation-reference-hero h1 { margin: 0; color: #f3efe7; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.25rem, 3vw, 2rem); line-height: 1.02; text-shadow: 0 1px 5px rgba(0,0,0,.25); }
-.accommodation-reference-hero h1 strong { color: #d3202b; }
-.accommodation-hero-text { margin: 9px 0 10px; color: #f4ede4; font-size: 1rem; line-height: 1.55; text-shadow: 0 1px 5px rgba(0,0,0,.22); }
-.accommodation-check-button { display: inline-flex; align-items: center; gap: 7px; width: fit-content; padding: 9px 14px; border: 1px solid #d7ae59; border-radius: 3px; color: #f5df9e; background: rgba(22, 12, 8, .12); font-size: .82rem; font-weight: 800; text-decoration: none; text-transform: uppercase; box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 6px 14px rgba(0,0,0,.12); }
-.accommodation-check-button:hover { background: rgba(52, 32, 19, .18); }
-.accommodation-reference-hero-image { position: relative; width: 100%; height: 100%; overflow: hidden; }
-.accommodation-reference-hero-image::before { position: absolute; z-index: 1; inset: 0; width: 100%; content: ''; background: linear-gradient(90deg, rgba(15, 9, 7, .28) 0%, rgba(15, 9, 7, .12) 26%, rgba(15, 9, 7, 0) 60%); }
+.accommodation-reference-hero h1 { margin: 0; color: #fffaf1; font-family: 'Libre Baskerville', Georgia, serif; font-size: clamp(1.7rem, 3.2vw, 2.65rem); line-height: 1.05; text-shadow: 0 2px 8px rgba(0,0,0,.42); }
+.accommodation-reference-hero h1 strong { color: #e0b65c; font-style: italic; }
+.accommodation-hero-text { margin: 12px 0 8px; color: #fffaf1; font-size: .92rem; line-height: 1.45; text-shadow: 0 1px 5px rgba(0,0,0,.35); }
+.accommodation-rating { margin: 0 0 12px; color: #f5eee4; font-size: .78rem; text-shadow: 0 1px 4px rgba(0,0,0,.32); }
+.accommodation-rating span { color: #e6b74e; letter-spacing: 2px; font-size: .95rem; }
+.accommodation-rating b { margin: 0 4px; color: #d7ae59; }
+.accommodation-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.accommodation-check-button, .accommodation-explore-button { display: inline-flex; align-items: center; gap: 9px; width: fit-content; min-height: 42px; padding: 9px 14px; border: 1px solid #d7ae59; border-radius: 4px; color: #fff8e9; background: #bd9145; font-size: .72rem; font-weight: 800; text-decoration: none; text-transform: uppercase; box-shadow: 0 6px 14px rgba(0,0,0,.14); }
+.accommodation-check-button b, .accommodation-explore-button b { margin-left: 4px; font-size: 1rem; font-weight: 400; }
+.accommodation-explore-button { color: #fffaf1; background: rgba(25, 14, 9, .14); border-color: rgba(255,255,255,.7); }
+.accommodation-check-button:hover { background: #d0a455; }
+.accommodation-explore-button:hover { background: rgba(52, 32, 19, .32); }
+.accommodation-hero-benefits { display: flex; flex-wrap: wrap; gap: 0; margin-top: 17px; color: #f7efe4; font-size: .68rem; text-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.accommodation-hero-benefits span { display: inline-flex; align-items: center; gap: 7px; padding: 0 14px; border-right: 1px solid rgba(255,255,255,.4); }
+.accommodation-hero-benefits span:first-child { padding-left: 0; }
+.accommodation-hero-benefits span:last-child { border-right: 0; }
+.accommodation-hero-benefits i { color: #e1b45a; font-size: .75rem; }
+:is(.accommodation-hero-actions, .accommodation-hero-benefits) { transform: translateY(24px); }
+.accommodation-reference-hero-image { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 15px; }
+.accommodation-reference-hero-image::before { position: absolute; z-index: 1; inset: 0; width: 100%; content: ''; background: linear-gradient(90deg, rgba(15, 9, 7, .62) 0%, rgba(15, 9, 7, .33) 30%, rgba(15, 9, 7, .04) 62%, rgba(15, 9, 7, 0) 78%); }
 .accommodation-reference-hero-image img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 58%; }
+.accommodation-booking-bar { position: absolute; z-index: 3; right: 28px; bottom: 18px; left: 28px; display: grid; grid-template-columns: 1.05fr 1.05fr .9fr .85fr 1.05fr; align-items: center; min-height: 74px; padding: 8px 10px 8px 16px; border: 1px solid rgba(255,255,255,.48); border-radius: 13px; background: rgba(255,250,242,.92); box-shadow: 0 12px 24px rgba(35,20,11,.22); }
+.accommodation-booking-field { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 48px; padding: 0 14px; border-right: 1px solid rgba(92,65,42,.25); color: #211b17; }
+.accommodation-booking-field > i { color: #171513; font-size: 1.15rem; }
+.accommodation-booking-field span { display: flex; flex-direction: column; min-width: 0; }
+.accommodation-booking-field small { color: #665c53; font-size: .61rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.accommodation-booking-field strong { overflow: hidden; font-size: .78rem; white-space: nowrap; text-overflow: ellipsis; }
+.accommodation-booking-field > b { margin-left: auto; color: #aa8a5b; font-size: 1rem; font-weight: 400; }
+.accommodation-booking-search { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 51px; margin-left: 14px; border-radius: 9px; color: #fff8e9; background: #a47c3d; font-size: .75rem; font-weight: 800; letter-spacing: .13em; text-decoration: none; text-transform: uppercase; }
+.accommodation-booking-search:hover { background: #bd9145; }
+.accommodation-booking-field { position: relative; border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.accommodation-booking-field:focus-visible, .accommodation-booking-search:focus-visible { outline: 2px solid #8a642c; outline-offset: -2px; }
+.accommodation-booking-field input[type="date"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.accommodation-booking-control { position: relative; min-width: 0; }
+.accommodation-booking-control > .accommodation-booking-field { width: 100%; }
+.accommodation-selector-popover { position: absolute; z-index: 30; top: calc(100% + 8px); right: 14px; display: flex; align-items: center; gap: 10px; min-width: 174px; padding: 12px; border: 1px solid #eadfce; border-radius: 8px; background: #fffdf8; box-shadow: 0 12px 24px rgba(35,20,11,.2); color: #211b17; }
+.accommodation-selector-popover[hidden] { display: none; }
+.accommodation-selector-popover > span { margin-right: auto; color: #665c53; font-size: .72rem; font-weight: 700; }
+.accommodation-selector-popover > strong { min-width: 18px; text-align: center; }
+.accommodation-selector-popover > button { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid #d7ae59; border-radius: 50%; color: #8a642c; background: #fff; cursor: pointer; font-size: 1rem; line-height: 1; }
+.accommodation-selector-popover > button:hover { background: #f8edd7; }
+#accommodation-rooms-popover { flex-direction: column; align-items: stretch; gap: 6px; }
+.accommodation-room-type-option { width: 100% !important; height: auto !important; min-height: 30px; padding: 6px 8px; border: 0 !important; border-radius: 4px !important; color: #211b17 !important; background: transparent !important; font: inherit; font-size: .74rem !important; text-align: left; cursor: pointer; }
+.accommodation-room-type-option:hover { background: #f8edd7 !important; }
+.accommodation-booking-error { position: absolute; z-index: 4; top: -30px; left: 16px; display: none; margin: 0; padding: 4px 9px; border-radius: 4px; color: #fff; background: rgba(98,35,28,.92); font-size: .7rem; line-height: 1.2; }
+.accommodation-booking-error.is-visible { display: block; }
 .accommodation-rooms-section { padding-top: 13px; }
 .accommodation-section-heading { margin-bottom: 11px; text-align: center; }
 .accommodation-section-heading h2 { margin: 0; color: #4a3026; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.35rem; text-transform: uppercase; }
@@ -3761,7 +3857,8 @@ body:has(.accommodation-reference-page) nav { background: #a4000b; box-shadow: n
 .accommodation-benefits p { margin: 0; color: #74665d; font-size: .85rem; line-height: 1.5; }
 @media (max-width: 900px) { .accommodation-room-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .accommodation-room-image { height: 150px; flex-basis: 150px; } }
 @media (max-width: 650px) { .accommodation-reference-page { padding-top: 66px; } .accommodation-reference-hero { display: flex; flex-direction: column; } .accommodation-reference-hero-copy { padding: 26px 20px 22px; } .accommodation-reference-hero-image { height: 190px; } .accommodation-desktop-break { display: none; } .accommodation-room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .accommodation-room-image { height: 105px; flex-basis: 105px; } .accommodation-benefits { grid-template-columns: 1fr; gap: 13px; padding: 16px; } .accommodation-benefits article { padding: 0; border-right: 0; } }
-@media (max-width: 390px) { .accommodation-reference-hero, .accommodation-rooms-section, .accommodation-benefits { width: calc(100% - 24px); } .accommodation-room-grid { grid-template-columns: 1fr; } }
+@media (max-width: 650px) { .accommodation-reference-hero { height: 510px; display: block; } .accommodation-reference-hero-copy { left: 16px; top: 43%; width: calc(100% - 32px); padding: 12px 10px; } .accommodation-reference-hero h1 { font-size: clamp(1.45rem, 7vw, 2rem); } .accommodation-hero-text { font-size: .8rem; } .accommodation-hero-benefits { gap: 7px 0; font-size: .58rem; } .accommodation-hero-benefits span { padding: 0 8px; } .accommodation-booking-bar { right: 12px; bottom: 12px; left: 12px; grid-template-columns: repeat(2, 1fr); gap: 0; padding: 7px; } .accommodation-booking-field { padding: 4px 7px; border-bottom: 1px solid rgba(92,65,42,.2); } .accommodation-booking-field:nth-child(2n) { border-right: 0; } .accommodation-booking-search { grid-column: 1 / -1; margin: 7px 0 0; } }
+@media (max-width: 390px) { .accommodation-reference-hero { width: calc(100% - 56px); } .accommodation-rooms-section, .accommodation-benefits { width: calc(100% - 24px); } .accommodation-room-grid { grid-template-columns: 1fr; } }
 
 footer{
     background: #0b1220;

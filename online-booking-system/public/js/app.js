@@ -250,6 +250,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    const siteHeader = document.querySelector('nav.site-header');
+    const applyHeaderScrollState = () => {
+        if (!siteHeader) return;
+        siteHeader.classList.toggle('scrolled', window.scrollY > 50);
+    };
+    applyHeaderScrollState();
+    window.addEventListener('scroll', applyHeaderScrollState, { passive: true });
+
     const searchToggle = document.getElementById('nav-search-toggle');
     const searchForm = document.getElementById('nav-search-form');
     const searchInput = document.getElementById('nav-search-input');
