@@ -6,6 +6,7 @@ use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StaffMessageController;
 use App\Models\Message;
 use App\Models\InventoryItem;
 use App\Models\Reservation;
@@ -307,6 +308,8 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
 
     Route::post('/messages', [AdminController::class, 'storeEmployeeMessage'])->name('messages.store');
     Route::post('/messages/{id}/reply', [AdminController::class, 'replyMessage'])->name('messages.reply');
+    Route::post('/messages/{id}/forward', [StaffMessageController::class, 'forwardGuestMessage'])->name('messages.forward');
+    Route::post('/staff-messages', [StaffMessageController::class, 'store'])->name('staff-messages.store');
 });
 
 // --- Protected Admin Routes (requires authentication) ---
@@ -346,6 +349,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/guests', [AdminController::class, 'guests'])->name('guests');
     Route::get('/messages', [AdminController::class, 'messages'])->name('messages');
     Route::post('/messages/{id}/reply', [AdminController::class, 'replyMessage'])->name('messages.reply');
+    Route::post('/staff-messages', [StaffMessageController::class, 'store'])->name('staff-messages.store');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
     Route::patch('/maintenance-reports/{maintenanceReport}/status', [AdminController::class, 'updateMaintenanceReportStatus'])->name('maintenance-reports.status');
     Route::get('/reports/export-csv', [AdminController::class, 'exportReportsCsv'])->name('reports.export.csv');
@@ -376,6 +380,7 @@ Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:
     Route::patch('/guest-requests/{id}', [HousekeepingController::class, 'updateGuestRequest'])->name('guest-requests.update');
     Route::post('/guest-requests/{id}/mark-delivered', [HousekeepingController::class, 'markGuestRequestDelivered'])->name('guest-requests.mark-delivered');
     Route::get('/messages', [HousekeepingController::class, 'messages'])->name('messages');
+    Route::post('/staff-messages', [StaffMessageController::class, 'store'])->name('staff-messages.store');
     Route::get('/maintenance-report', [HousekeepingController::class, 'maintenanceReport'])->name('maintenance-report');
     Route::post('/maintenance-report', [HousekeepingController::class, 'storeMaintenanceReport'])->name('maintenance-report.store');
     Route::put('/maintenance-report/{maintenanceReport}', [HousekeepingController::class, 'updateMaintenanceReport'])->name('maintenance-report.update');

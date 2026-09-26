@@ -116,12 +116,131 @@
         font-size: 0.6875rem;
     }
 
+    .employee-forward-button {
+        margin-top: 0.35rem;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        color: #c2410c;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .employee-forward-button:hover {
+        color: #9a3412;
+        text-decoration: underline;
+    }
+
+    .employee-forward-form[hidden] {
+        display: none !important;
+    }
+
+    .employee-forward-form {
+        display: grid;
+        gap: 0.65rem;
+        margin-top: 0.75rem;
+        border: 1px solid #fed7aa;
+        border-radius: 0.75rem;
+        background: #fffaf5;
+        padding: 0.9rem;
+    }
+
+    .employee-forward-form select,
+    .employee-forward-form textarea {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        background: #fff;
+        padding: 0.6rem 0.7rem;
+        font-size: 0.875rem;
+    }
+
+    .employee-forward-form textarea {
+        min-height: 68px;
+        resize: vertical;
+    }
+
     .employee-reply-form.is-disabled {
         opacity: 0.55;
         pointer-events: none;
     }
+
+    .employee-channel-switcher {
+        display: flex;
+        width: fit-content;
+        max-width: 100%;
+        gap: 0.35rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: #f3f4f6;
+        padding: 0.3rem;
+    }
+
+    .employee-channel-tab {
+        display: inline-flex;
+        min-height: 2.75rem;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        border: 1px solid transparent;
+        border-radius: 0.55rem;
+        background: transparent;
+        padding: 0.55rem 0.9rem;
+        color: #4b5563;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .employee-channel-tab[aria-selected="true"] {
+        border-color: #e5e7eb;
+        background: #fff;
+        color: #c2410c;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+
+    .employee-channel-count {
+        display: inline-flex;
+        min-width: 1.25rem;
+        height: 1.25rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: #ffedd5;
+        padding: 0 0.35rem;
+        color: #9a3412;
+        font-size: 0.7rem;
+    }
+
+    .employee-channel-panel[hidden] {
+        display: none !important;
+    }
+
+    @media (max-width: 480px) {
+        .employee-channel-switcher {
+            width: 100%;
+        }
+
+        .employee-channel-tab {
+            flex: 1;
+            padding-inline: 0.45rem;
+        }
+    }
 </style>
 <div class="space-y-6">
+    <div class="employee-channel-switcher" role="tablist" aria-label="Message channels">
+        <button type="button" id="employee-guest-tab" class="employee-channel-tab" role="tab" aria-selected="true" aria-controls="employee-guest-channel" onclick="switchEmployeeMessageChannel('guest')">
+            <i class="fas fa-user"></i> Guest Inbox
+            @if(($stats['unread'] ?? 0) > 0)<span class="employee-channel-count">{{ $stats['unread'] }}</span>@endif
+        </button>
+        <button type="button" id="employee-staff-tab" class="employee-channel-tab" role="tab" aria-selected="false" aria-controls="employee-staff-channel" onclick="switchEmployeeMessageChannel('staff')">
+            <i class="fas fa-users"></i> Staff Chat
+        </button>
+    </div>
+
+    <section id="employee-guest-channel" class="employee-channel-panel space-y-6" role="tabpanel" aria-labelledby="employee-guest-tab">
+        <p class="text-sm text-gray-500">Private conversations between guests and employees.</p>
     <!-- Stats Cards -->
     <div class="grid grid-cols-3 gap-4">
         <!-- Unread Messages -->
@@ -191,7 +310,7 @@
                 <div class="rounded-lg bg-orange-100 p-2 text-orange-600">
                     <i class="fas fa-comments text-lg"></i>
                 </div>
-                <h3 class="text-lg font-semibold text-gray-800">Guest Message Box</h3>
+                <h3 class="text-lg font-semibold text-gray-800">Guest Conversations</h3>
             </div>
 
             @forelse($conversations as $conversation)
@@ -252,6 +371,38 @@
                 @endif
             </div>
 
+            <form id="employee-forward-form" class="employee-forward-form" method="POST" hidden>
+                @csrf
+                <div>
+                    <h4 class="font-semibold text-gray-800">Write a staff handoff</h4>
+                    <p id="employee-forward-preview" class="mt-1 text-xs text-gray-500">Include the item or issue, room, approximate time, and next step. Only your summary is sent; the guest's name, email, and original message stay private.</p>
+                </div>
+                <label class="text-xs font-semibold text-gray-600" for="employee-forward-recipient">Send to staff</label>
+                <select id="employee-forward-recipient" name="recipient_id" required>
+                    <option value="">Select a staff member...</option>
+                    @foreach($staffConversations as $staffConversation)
+                        <option value="{{ $staffConversation->contact->id }}">{{ $staffConversation->contact->name }} ({{ ucfirst($staffConversation->contact->role) }})</option>
+                    @endforeach
+                </select>
+                <div>
+                    <label class="mb-1 block text-xs font-semibold text-gray-600 uppercase">Quick handoff templates</label>
+                    <div class="employee-template-buttons">
+                        <button type="button" class="employee-template-btn" onclick="insertEmployeeHandoffTemplate('Room [room]: Please deliver [item] around [time].')">Item delivery</button>
+                        <button type="button" class="employee-template-btn" onclick="insertEmployeeHandoffTemplate('Room [room]: Please complete [cleaning request] around [time].')">Room cleaning</button>
+                        <button type="button" class="employee-template-btn" onclick="insertEmployeeHandoffTemplate('Room [room]: Please provide or replace [linen or amenity] around [time].')">Linens or amenities</button>
+                        <button type="button" class="employee-template-btn" onclick="insertEmployeeHandoffTemplate('Room [room]: Please inspect [issue] and update the front desk.')">Room issue</button>
+                        <button type="button" class="employee-template-btn" onclick="insertEmployeeHandoffTemplate('Please follow up on [request] for Room [room] by [time].')">Guest request</button>
+                        <button type="button" class="employee-template-btn" onclick="insertEmployeeHandoffTemplate('Please contact the guest in Room [room] about [issue] and update the front desk.')">Staff follow-up</button>
+                    </div>
+                </div>
+                <label class="text-xs font-semibold text-gray-600" for="employee-forward-note">Staff message</label>
+                <textarea id="employee-forward-note" name="note" maxlength="1000" required placeholder="Room 204 needs extra towels around 2 PM. Please deliver when available."></textarea>
+                <div class="flex justify-end gap-2">
+                    <button type="button" id="employee-forward-cancel" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700">Cancel</button>
+                    <button type="submit" class="rounded-lg bg-orange-500 px-3 py-2 text-sm font-semibold text-white"><i class="fas fa-paper-plane"></i> Send handoff</button>
+                </div>
+            </form>
+
             <form id="employee-reply-form" action="{{ route('employee.messages.store') }}" method="POST" class="employee-reply-form mt-3 space-y-2 {{ $conversations->isEmpty() ? 'is-disabled' : '' }}">
                 @csrf
                 <input type="hidden" id="employee-recipient" name="recipient" value="{{ $conversations->first()?->latest_message?->id }}">
@@ -280,6 +431,12 @@
             </form>
         </div>
     </div>
+    </section>
+
+    <section id="employee-staff-channel" class="employee-channel-panel" role="tabpanel" aria-labelledby="employee-staff-tab" hidden>
+        <p class="mb-4 text-sm text-gray-500">Internal conversations visible only to staff.</p>
+        @include('shared.staff-messages')
+    </section>
 </div>
 @php
     $employeeConversationData = $conversations->mapWithKeys(function ($conversation) {
@@ -292,6 +449,7 @@
                     : ($message->admin_reply ? collect([(object) ['reply' => $message->admin_reply, 'replied_at' => $message->replied_at]]) : collect());
 
                 return [
+                    'id' => $message->id,
                     'guest' => $message->message,
                     'replies' => $replies->map(fn ($reply) => [
                         'reply' => $reply->reply,
@@ -317,17 +475,35 @@
         document.getElementById('employee-chat-title').textContent = conversation.name;
         document.getElementById('employee-recipient').value = conversation.recipient;
         document.getElementById('employee-reply-form').classList.remove('is-disabled');
+        document.getElementById('employee-forward-form').hidden = true;
 
         const thread = document.getElementById('employee-chat-thread');
         thread.innerHTML = conversation.messages.map((message) => `
             <div class="employee-chat-message guest">
                 <div class="employee-chat-bubble">${escapeEmployeeMessage(message.guest)}</div>
                 <span class="employee-chat-time">Guest · ${message.sent_at || ''}</span>
+                <button type="button" class="employee-forward-button" data-forward-message="${message.id}"><i class="fas fa-share"></i> Forward to staff</button>
             </div>
             ${(message.replies || []).map((reply) => `<div class="employee-chat-message front-desk"><div class="employee-chat-bubble">${escapeEmployeeMessage(reply.reply)}</div><span class="employee-chat-time">Front Desk · ${reply.replied_at || ''}</span></div>`).join('')}
         `).join('');
         thread.scrollTop = thread.scrollHeight;
     }
+
+    document.getElementById('employee-chat-thread').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-forward-message]');
+        if (!button) return;
+        const messageId = button.dataset.forwardMessage;
+        const form = document.getElementById('employee-forward-form');
+        form.action = "{{ route('employee.messages.forward', ['id' => '__MESSAGE_ID__']) }}".replace('__MESSAGE_ID__', messageId);
+        form.hidden = false;
+        document.getElementById('employee-forward-recipient').focus();
+    });
+
+    document.getElementById('employee-forward-cancel').addEventListener('click', () => {
+        const form = document.getElementById('employee-forward-form');
+        form.reset();
+        form.hidden = true;
+    });
 
     function escapeEmployeeMessage(value) {
         return String(value || '').replace(/[&<>'"]/g, (character) => ({
@@ -341,11 +517,26 @@
         textarea.focus();
     }
 
+    function insertEmployeeHandoffTemplate(text) {
+        const textarea = document.getElementById('employee-forward-note');
+        textarea.value = textarea.value ? textarea.value + '\n\n' + text : text;
+        textarea.focus();
+    }
+
+    function switchEmployeeMessageChannel(channel) {
+        const isStaff = channel === 'staff';
+        document.getElementById('employee-guest-tab').setAttribute('aria-selected', String(!isStaff));
+        document.getElementById('employee-staff-tab').setAttribute('aria-selected', String(isStaff));
+        document.getElementById('employee-guest-channel').hidden = isStaff;
+        document.getElementById('employee-staff-channel').hidden = !isStaff;
+    }
+
     const initialConversationKey = @json($selectedConversationKey);
     if (initialConversationKey && employeeConversations[initialConversationKey]) {
         selectEmployeeConversation(initialConversationKey);
     } else if (Object.keys(employeeConversations).length) {
         selectEmployeeConversation(Object.keys(employeeConversations)[0]);
     }
+    switchEmployeeMessageChannel(new URLSearchParams(window.location.search).has('staff_id') ? 'staff' : 'guest');
 </script>
 @endsection

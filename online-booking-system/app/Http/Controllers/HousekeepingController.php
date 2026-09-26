@@ -9,7 +9,7 @@ use App\Models\Room;
 use App\Models\Reservation;
 use App\Models\Staff;
 use App\Models\MaintenanceReport;
-use App\Models\Message;
+use App\Support\StaffMessageInbox;
 
 class HousekeepingController extends Controller
 {
@@ -600,17 +600,7 @@ class HousekeepingController extends Controller
 
     public function messages()
     {
-        $messages = Message::latest()->get();
-        
-        $stats = [
-            'unread' => $messages->where('is_replied', false)->count(),
-            'replied' => $messages->where('is_replied', true)->count(),
-            'total' => $messages->count(),
-        ];
-        
-        $dateFilter = 'today';
-
-        return view('housekeeping.messages', compact('messages', 'stats', 'dateFilter'));
+        return view('housekeeping.staff-messages', app(StaffMessageInbox::class)->for(auth()->user()));
     }
 
     public function updateStatus(Request $request, $id)

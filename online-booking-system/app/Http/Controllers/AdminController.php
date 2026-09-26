@@ -29,6 +29,7 @@ use App\Models\DiningTable;
 use App\Models\DiningSchedule;
 use App\Models\DiningMenu;
 use App\Models\MessageReply;
+use App\Support\StaffMessageInbox;
 use App\Models\ReservationDiningItem;
 use App\Models\GuestRequest;
 use App\Models\Payment;
@@ -2350,7 +2351,7 @@ class AdminController extends Controller
 
     public function messages()
     {
-        return view('admin.messages');
+        return view('admin.messages', app(StaffMessageInbox::class)->for(auth()->user()));
     }
 
     public function employeeMessages(Request $request)
@@ -2402,7 +2403,10 @@ class AdminController extends Controller
             ->first(fn ($conversation) => (string) $conversation->latest_message->id === (string) $selectedMessageId)
             ?->key;
 
-        return view('employee.messages', compact('messages', 'conversations', 'stats', 'selectedConversationKey', 'filter'));
+        return view('employee.messages', array_merge(
+            compact('messages', 'conversations', 'stats', 'selectedConversationKey', 'filter'),
+            app(StaffMessageInbox::class)->for($request->user())
+        ));
     }
 
     public function employeeGuestRequests()
@@ -2472,6 +2476,8 @@ class AdminController extends Controller
 
     public function replyMessage(Request $request, $id)
     {
+        abort_unless($request->user()?->role === 'employee', 403);
+
         $message = Message::findOrFail($id);
         $validated = $request->validate([
             'admin_reply' => 'required|string',
@@ -2496,31 +2502,22 @@ class AdminController extends Controller
     public function storeEmployeeMessage(Request $request)
     {
         $validated = $request->validate([
-            'recipient' => ['required', 'string', 'max:255'],
-            'subject' => ['nullable', 'string', 'max:255'],
-            'message' => ['required', 'string'],
+            'recipient' => ['required', 'integer', 'exists:messages,id'],
+            'message' => ['required', 'string', 'max:5000'],
         ]);
 
-        if (ctype_digit($validated['recipient'])) {
-            $guestMessage = Message::findOrFail((int) $validated['recipient']);
-            $guestMessage->update([
-                'admin_reply' => $validated['message'],
-                'is_replied' => true,
-                'replied_at' => now(),
-            ]);
-            MessageReply::create([
-                'message_id' => $guestMessage->id,
-                'reply' => $validated['message'],
-                'replied_at' => now(),
-            ]);
-            session()->flash('employee_message_recipient', (int) $validated['recipient']);
-        } else {
-            Message::create([
-                'customer_name' => $request->user()?->name ?? 'Employee',
-                'customer_email' => $request->user()?->email ?? 'employee@casaul.com',
-                'message' => $validated['message'],
-            ]);
-        }
+        $guestMessage = Message::findOrFail((int) $validated['recipient']);
+        $guestMessage->update([
+            'admin_reply' => $validated['message'],
+            'is_replied' => true,
+            'replied_at' => now(),
+        ]);
+        MessageReply::create([
+            'message_id' => $guestMessage->id,
+            'reply' => $validated['message'],
+            'replied_at' => now(),
+        ]);
+        session()->flash('employee_message_recipient', (int) $validated['recipient']);
 
         return redirect()->route('employee.messages');
     }
