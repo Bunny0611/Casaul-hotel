@@ -19,7 +19,7 @@
             </div>
         </div>
         <div class="accommodation-reference-hero-image">
-            <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="Elegant CASAUL Hotel guest room">
+            <img src="{{ asset('storage/rooms/1790407340_6ab772ac29efa.png') }}" alt="Elegant CASAUL Hotel guest room">
         </div>
         <div class="accommodation-booking-bar" aria-label="Room search" data-accommodation-url="{{ route('accommodation') }}" data-searched="{{ $hasSearched ? 'true' : 'false' }}" data-guests="{{ $guestCount }}" data-room-type="{{ $selectedRoomType }}">
             <button class="accommodation-booking-field" type="button" data-date-target="accommodation-check-in">
