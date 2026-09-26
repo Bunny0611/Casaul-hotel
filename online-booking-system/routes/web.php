@@ -27,6 +27,7 @@ Route::get('/accommodation', [HomeController::class, 'accommodation'])->name('ac
 Route::get('/accommodation/{slug}', [HomeController::class, 'roomDetail'])->name('accommodation.room');
 Route::middleware(['auth:guest', 'verified', 'role:guest'])->group(function () {
     Route::get('/reservation', [HomeController::class, 'reservation'])->name('reservation');
+    Route::get('/reservation/availability', [HomeController::class, 'roomAvailability'])->name('reservation.availability');
     Route::post('/reservation', [HomeController::class, 'storeReservation'])->name('reservation.store');
 });
 Route::post('/send-message', [HomeController::class, 'sendMessage'])->name('send.message');
@@ -87,6 +88,8 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
         return redirect()->route('employee.reservation')->with('error', 'Please use the reservation action menu to update the status.');
     })->name('reservations.status.get');
     Route::post('/reservations/{id}/payments', [AdminController::class, 'storePayment'])->name('reservations.payments.store');
+    Route::get('/reservations/{id}/extension-options', [AdminController::class, 'roomExtensionOptions'])->name('reservations.extension-options');
+    Route::post('/reservations/{id}/extend', [AdminController::class, 'extendRoomReservation'])->name('reservations.extend');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::post('/reservations/bulk-delete', [AdminController::class, 'bulkDestroyReservations'])->name('reservations.bulk-destroy');
     Route::get('/checkin', function () {
@@ -336,6 +339,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
     Route::post('/reservations/{id}/payments', [AdminController::class, 'storePayment'])->name('reservations.payments.store');
+    Route::get('/reservations/{id}/extension-options', [AdminController::class, 'roomExtensionOptions'])->name('reservations.extension-options');
+    Route::post('/reservations/{id}/extend', [AdminController::class, 'extendRoomReservation'])->name('reservations.extend');
     Route::delete('/reservations/{id}', [AdminController::class, 'destroyReservation'])->name('reservations.destroy');
     Route::post('/reservations/bulk-delete', [AdminController::class, 'bulkDestroyReservations'])->name('reservations.bulk-destroy');
     Route::get('/guests', [AdminController::class, 'guests'])->name('guests');

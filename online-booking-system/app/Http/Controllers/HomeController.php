@@ -21,6 +21,7 @@ use App\Models\FacilityReservation;
 use App\Models\DiningReservation;
 use App\Models\GuestRequest;
 use App\Support\ReservationPricing;
+use App\Support\RoomAvailability;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -163,7 +164,7 @@ class HomeController extends Controller
 
     public function reservation()
     {
-        $rooms = Room::where('status', 'available')
+        $rooms = Room::query()
             ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
             ->orderBy('room_number')
             ->get();
@@ -226,6 +227,34 @@ class HomeController extends Controller
             ->values();
 
         return view('reservation', compact('rooms', 'facilities', 'events', 'dining', 'diningByCategory', 'diningSchedules', 'diningTables', 'diningReservations'));
+    }
+
+    public function roomAvailability(Request $request)
+    {
+        $validated = $request->validate([
+            'check_in' => ['required', 'date'],
+            'check_out' => ['required', 'date', 'after:check_in'],
+        ]);
+
+        $rooms = Room::query()
+            ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
+            ->orderBy('room_number')
+            ->get()
+            ->map(function (Room $room) use ($validated) {
+                $conflict = RoomAvailability::conflict($room, $validated['check_in'], $validated['check_out']);
+
+                return [
+                    'id' => $room->id,
+                    'available' => $conflict === null,
+                    'conflict' => $conflict ? [
+                        'guest_name' => $conflict->guest_name,
+                        'check_in' => $conflict->check_in?->format('Y-m-d'),
+                        'check_out' => $conflict->check_out?->format('Y-m-d'),
+                    ] : null,
+                ];
+            });
+
+        return response()->json(['rooms' => $rooms]);
     }
 
     public function dining()
@@ -519,6 +548,17 @@ class HomeController extends Controller
             $validated['amount_paid'] = 0;
         }
 
+        if (($validated['category'] ?? null) === 'event') {
+            $eventDate = Carbon::parse($validated['check_in'])->startOfDay();
+            $minimumEventDate = Carbon::today()->addDay()->startOfDay();
+
+            if ($eventDate->lt($minimumEventDate)) {
+                throw ValidationException::withMessages([
+                    'check_in' => 'Event reservations must be booked at least 1 day in advance. Same-day bookings are not allowed.',
+                ]);
+            }
+        }
+
         $paymentProofFile = match ($validated['payment_method']) {
             'GCash' => $request->file('gcash_payment_proof'),
             'Maya' => $request->file('maya_payment_proof'),
@@ -674,25 +714,9 @@ class HomeController extends Controller
             $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
             $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
             $reservation = DB::transaction(function () use ($validated) {
-                Room::query()->whereKey($validated['room_id'])->lockForUpdate()->firstOrFail();
+                $room = Room::query()->whereKey($validated['room_id'])->lockForUpdate()->firstOrFail();
 
-                $hasConflict = RoomReservation::query()
-                    ->where('room_id', $validated['room_id'])
-                    ->whereNotIn('status', ['cancelled', 'completed'])
-                    ->whereDate('check_in', '<', $validated['check_out'])
-                    ->whereDate('check_out', '>', $validated['check_in'])
-                    ->exists();
-
-                if (!$hasConflict) {
-                    $hasConflict = Reservation::query()
-                        ->where('room_id', $validated['room_id'])
-                        ->whereNotIn('status', ['cancelled', 'completed'])
-                        ->whereDate('check_in', '<', $validated['check_out'])
-                        ->whereDate('check_out', '>', $validated['check_in'])
-                        ->exists();
-                }
-
-                if ($hasConflict) {
+                if (RoomAvailability::conflict($room, $validated['check_in'], $validated['check_out'])) {
                     throw ValidationException::withMessages([
                         'room_id' => 'Sorry, this room is no longer available for your selected dates. Please choose another room.',
                     ]);

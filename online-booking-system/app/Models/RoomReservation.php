@@ -15,6 +15,7 @@ class RoomReservation extends Model
 
     protected $fillable = [
         'room_id',
+        'stay_group_id',
         'guest_name',
         'guest_email',
         'guest_phone',

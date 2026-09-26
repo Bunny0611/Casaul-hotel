@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Guest;
 use App\Models\Room;
 use App\Models\Reservation;
 use App\Models\Staff;
+use App\Models\RoomReservation;
+use App\Http\Controllers\HomeController;
+use Illuminate\Http\Request;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -196,6 +200,8 @@ class AdminReservationTest extends TestCase
 
     public function test_public_booking_rejects_overlapping_room_reservation(): void
     {
+        $guest = Guest::factory()->create();
+        $this->actingAs($guest, 'guest');
         $room = Room::create([
             'room_number' => '204',
             'room_type' => 'Deluxe',
@@ -231,16 +237,252 @@ class AdminReservationTest extends TestCase
         ]);
         $this->assertDatabaseCount('room_reservations', 1);
         $this->assertDatabaseHas('room_reservations', [
-            'guest_email' => 'first@example.com',
+            'guest_email' => $guest->email,
             'room_id' => $room->id,
         ]);
-        $this->assertDatabaseMissing('room_reservations', [
-            'guest_email' => 'second@example.com',
+    }
+
+    public function test_extension_options_report_future_reservation_and_available_transfer_room(): void
+    {
+        $this->actingAs(Staff::factory()->create(['role' => 'employee']));
+        $room = Room::create([
+            'room_number' => '203',
+            'room_type' => 'Deluxe',
+            'price' => 2500,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'status' => 'occupied',
         ]);
+        $availableRoom = Room::create([
+            'room_number' => '204',
+            'room_type' => 'Deluxe',
+            'price' => 1800,
+            'floor' => '2nd',
+            'capacity' => 4,
+            'bed_type' => '2 Queen Beds',
+            'status' => 'available',
+        ]);
+        $current = RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => 'Guest A',
+            'guest_email' => 'guest-a@example.com',
+            'guest_phone' => '09190000001',
+            'check_in' => today()->subDays(1),
+            'check_out' => today()->addDay(),
+            'number_of_guests' => 2,
+            'status' => 'checked-in',
+            'total_amount' => 5000,
+        ]);
+        RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => 'Guest B',
+            'guest_email' => 'guest-b@example.com',
+            'guest_phone' => '09190000002',
+            'check_in' => today()->addDay(),
+            'check_out' => today()->addDays(3),
+            'number_of_guests' => 2,
+            'status' => 'confirmed',
+            'total_amount' => 5000,
+        ]);
+
+        $this->get(route('employee.reservation'))
+            ->assertOk()
+            ->assertSee('Extend Stay');
+
+        $response = $this->getJson(route('employee.reservations.extension-options', $current->id) . '?check_out=' . today()->addDays(3)->toDateString());
+
+        $response->assertOk()
+            ->assertJsonPath('current_room_available', false)
+            ->assertJsonPath('conflict.guest_name', 'Guest B')
+            ->assertJsonPath('conflict.check_in', today()->addDay()->toDateString());
+        $this->assertContains(
+            (int) $availableRoom->id,
+            array_map('intval', collect($response->json('available_rooms'))->pluck('id')->all())
+        );
+    }
+
+    public function test_extension_cannot_overwrite_future_reservation(): void
+    {
+        $this->actingAs(Staff::factory()->create(['role' => 'employee']));
+        $room = Room::create([
+            'room_number' => '203',
+            'room_type' => 'Deluxe',
+            'price' => 2500,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'status' => 'occupied',
+        ]);
+        $current = RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => 'Guest A',
+            'guest_email' => 'guest-a@example.com',
+            'guest_phone' => '09190000001',
+            'check_in' => today()->subDays(1),
+            'check_out' => today()->addDay(),
+            'number_of_guests' => 2,
+            'status' => 'checked-in',
+            'total_amount' => 5000,
+        ]);
+        $future = RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => 'Guest B',
+            'guest_email' => 'guest-b@example.com',
+            'guest_phone' => '09190000002',
+            'check_in' => today()->addDay(),
+            'check_out' => today()->addDays(3),
+            'number_of_guests' => 2,
+            'status' => 'confirmed',
+            'total_amount' => 5000,
+        ]);
+
+        $this->from(route('employee.reservation'))
+            ->post(route('employee.reservations.extend', $current->id), [
+                'check_out' => today()->addDays(3)->toDateString(),
+                'room_id' => $room->id,
+            ])
+            ->assertRedirect(route('employee.reservation'))
+            ->assertSessionHasErrors('room_id');
+
+        $this->assertSame(today()->addDay()->toDateString(), $current->fresh()->check_out->toDateString());
+        $this->assertSame(today()->addDays(3)->toDateString(), $future->fresh()->check_out->toDateString());
+        $this->assertSame('confirmed', $future->fresh()->status);
+        $this->assertDatabaseCount('room_reservations', 2);
+    }
+
+    public function test_extension_transfer_creates_linked_room_segment_and_adds_only_extension_charge(): void
+    {
+        $this->actingAs(Staff::factory()->create(['role' => 'employee']));
+        $currentRoom = Room::create([
+            'room_number' => '203',
+            'room_type' => 'Deluxe',
+            'price' => 2500,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'status' => 'occupied',
+        ]);
+        $nextRoom = Room::create([
+            'room_number' => '204',
+            'room_type' => 'Deluxe',
+            'price' => 1800,
+            'floor' => '2nd',
+            'capacity' => 4,
+            'status' => 'available',
+        ]);
+        $current = RoomReservation::create([
+            'room_id' => $currentRoom->id,
+            'guest_name' => 'Guest A',
+            'guest_email' => 'guest-a@example.com',
+            'guest_phone' => '09190000001',
+            'check_in' => today()->subDay(),
+            'check_out' => today()->addDay(),
+            'number_of_guests' => 2,
+            'status' => 'checked-in',
+            'total_amount' => 5000,
+            'amount_paid' => 700,
+        ]);
+
+        $this->post(route('employee.reservations.extend', $current->id), [
+            'check_out' => today()->addDays(3)->toDateString(),
+            'room_id' => $nextRoom->id,
+        ])->assertRedirect(route('employee.reservation'));
+
+        $current->refresh();
+        $extension = RoomReservation::where('stay_group_id', $current->stay_group_id)
+            ->whereKeyNot($current->id)
+            ->firstOrFail();
+        $this->assertSame(today()->addDay()->toDateString(), $current->check_out->toDateString());
+        $this->assertSame(5000.0, (float) $current->total_amount);
+        $this->assertSame(700.0, (float) $current->amount_paid);
+        $this->assertSame($nextRoom->id, $extension->room_id);
+        $this->assertSame(today()->addDay()->toDateString(), $extension->check_in->toDateString());
+        $this->assertSame(today()->addDays(3)->toDateString(), $extension->check_out->toDateString());
+        $this->assertSame(3600.0, (float) $extension->total_amount);
+        $this->assertSame(0.0, (float) $extension->amount_paid);
+        $this->assertSame($current->stay_group_id, $extension->stay_group_id);
+    }
+
+    public function test_room_availability_uses_stay_dates_and_keeps_occupied_rooms_listed(): void
+    {
+        $room = Room::create([
+            'room_number' => '205',
+            'room_type' => 'Standard',
+            'price' => 1800,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'status' => 'occupied',
+        ]);
+        RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => 'Future Guest',
+            'guest_email' => 'future@example.com',
+            'guest_phone' => '09190000003',
+            'check_in' => today()->addDays(10),
+            'check_out' => today()->addDays(13),
+            'number_of_guests' => 2,
+            'status' => 'confirmed',
+            'total_amount' => 5400,
+        ]);
+
+        $page = app(HomeController::class)->reservation();
+        $listedRooms = $page->getData()['rooms'];
+        $this->assertTrue($listedRooms->contains('id', $room->id));
+
+        $available = app(HomeController::class)->roomAvailability(Request::create('/reservation/availability', 'GET', [
+            'check_in' => today()->addDays(3)->toDateString(),
+            'check_out' => today()->addDays(6)->toDateString(),
+        ]))->getData(true);
+        $overlapping = app(HomeController::class)->roomAvailability(Request::create('/reservation/availability', 'GET', [
+            'check_in' => today()->addDays(11)->toDateString(),
+            'check_out' => today()->addDays(12)->toDateString(),
+        ]))->getData(true);
+
+        $this->assertTrue(collect($available['rooms'])->firstWhere('id', $room->id)['available']);
+        $this->assertFalse(collect($overlapping['rooms'])->firstWhere('id', $room->id)['available']);
+    }
+
+    public function test_same_room_extension_adds_room_charge_without_changing_amount_paid(): void
+    {
+        $this->actingAs(Staff::factory()->create(['role' => 'employee']));
+        $room = Room::create([
+            'room_number' => '206',
+            'room_type' => 'Deluxe',
+            'price' => 2500,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'status' => 'occupied',
+        ]);
+        $current = RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => 'Guest A',
+            'guest_email' => 'guest-a@example.com',
+            'guest_phone' => '09190000001',
+            'check_in' => today()->subDay(),
+            'check_out' => today()->addDay(),
+            'number_of_guests' => 2,
+            'status' => 'checked-in',
+            'total_amount' => 5000,
+            'amount_paid' => 700,
+        ]);
+
+        $this->post(route('employee.reservations.extend', $current->id), [
+            'check_out' => today()->addDays(3)->toDateString(),
+            'room_id' => $room->id,
+        ])->assertRedirect(route('employee.reservation'));
+
+        $this->assertSame(today()->addDays(3)->toDateString(), $current->fresh()->check_out->toDateString());
+        $this->assertSame(10000.0, (float) $current->fresh()->total_amount);
+        $this->assertSame(700.0, (float) $current->fresh()->amount_paid);
+        $this->assertDatabaseCount('room_reservations', 1);
     }
 
     public function test_public_booking_can_create_an_event_reservation(): void
     {
+        $guest = Guest::factory()->create([
+            'email' => 'event@example.com',
+            'name' => 'Event Guest',
+            'contact_no' => '09191234569',
+        ]);
+
         $event = \App\Models\Event::create([
             'name' => 'Garden Hall',
             'event_type' => 'Wedding',
@@ -253,7 +495,7 @@ class AdminReservationTest extends TestCase
         ]);
 
         $eventDate = now()->addDay()->format('Y-m-d');
-        $response = $this->post(route('reservation.store'), [
+        $response = $this->actingAs($guest, 'guest')->post(route('reservation.store'), [
             'category' => 'event',
             'event_id' => $event->id,
             'event_type' => 'Wedding',
@@ -264,6 +506,8 @@ class AdminReservationTest extends TestCase
             'check_out' => $eventDate,
             'check_in_time' => '10:00',
             'check_out_time' => '18:00',
+            'event_start_time' => '10:00',
+            'event_end_time' => '18:00',
             'number_of_guests' => 50,
             'total_amount' => 25000,
             'payment_method' => 'Cash / Pay at Hotel',
@@ -274,6 +518,49 @@ class AdminReservationTest extends TestCase
             'event_id' => $event->id,
             'guest_email' => 'event@example.com',
             'number_of_guests' => 50,
+        ]);
+    }
+
+    public function test_public_booking_rejects_same_day_event_reservation(): void
+    {
+        $guest = Guest::factory()->create([
+            'email' => 'late@example.com',
+            'name' => 'Late Guest',
+            'contact_no' => '09191234568',
+        ]);
+
+        $event = \App\Models\Event::create([
+            'name' => 'Same Day Event',
+            'event_type' => 'Birthday',
+            'description' => 'No same-day bookings',
+            'price' => 15000,
+            'pricing_basis' => 'Per Event',
+            'capacity' => 40,
+            'location' => 'Pool Deck',
+            'status' => 'available',
+        ]);
+
+        $response = $this->actingAs($guest, 'guest')->post(route('reservation.store'), [
+            'category' => 'event',
+            'event_id' => $event->id,
+            'event_type' => 'Birthday',
+            'guest_name' => 'Late Guest',
+            'guest_email' => 'late@example.com',
+            'guest_phone' => '09191234568',
+            'check_in' => now()->format('Y-m-d'),
+            'check_out' => now()->format('Y-m-d'),
+            'check_in_time' => '09:00',
+            'check_out_time' => '15:00',
+            'event_start_time' => '09:00',
+            'event_end_time' => '15:00',
+            'number_of_guests' => 20,
+            'total_amount' => 15000,
+            'payment_method' => 'Cash / Pay at Hotel',
+        ]);
+
+        $response->assertSessionHasErrors('check_in');
+        $this->assertDatabaseMissing('event_reservations', [
+            'guest_email' => 'late@example.com',
         ]);
     }
 }

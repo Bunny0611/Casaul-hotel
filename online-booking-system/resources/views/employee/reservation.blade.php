@@ -451,6 +451,7 @@
                                         ])
                                         <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details"><i class="fas fa-eye"></i></button>
                                         <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50" title="Edit reservation"><i class="fas fa-pen"></i></button>
+                                        @if($reservation->status === 'checked-in')<button type="button" onclick="openRoomExtension({{ $reservation->id }}, {{ $reservation->room_id }}, '{{ $reservation->check_out?->format('Y-m-d') }}', '{{ addslashes($reservation->room?->room_number ?? '') }}')" class="rounded-lg px-2 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50" title="Extend stay">Extend Stay</button>@endif
                                         <button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions"><i class="fas fa-ellipsis-v"></i></button>
                                         <div class="employee-reservation-menu absolute right-0 top-10 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">
                                             @if($reservation->status === 'pending')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Confirm Reservation</button>@endif
@@ -532,6 +533,7 @@
                             ])
                             <button type="button" onclick="showEmployeeReservationDetails(this)" data-reservation='@json($reservationDetails)' class="rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700"><i class="fas fa-eye mr-1"></i>View</button>
                             <button type="button" onclick='editReservation(@json($reservation))' class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700"><i class="fas fa-pen mr-1"></i>Edit</button>
+                            @if($reservation->status === 'checked-in')<button type="button" onclick="openRoomExtension({{ $reservation->id }}, {{ $reservation->room_id }}, '{{ $reservation->check_out?->format('Y-m-d') }}', '{{ addslashes($reservation->room?->room_number ?? '') }}')" class="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">Extend Stay</button>@endif
                             <div class="relative"><button type="button" onclick="toggleEmployeeReservationMenu(this)" class="rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"><i class="fas fa-ellipsis-v"></i></button><div class="employee-reservation-menu absolute bottom-10 right-0 z-20 hidden w-48 rounded-xl border border-gray-200 bg-white p-1 shadow-lg">@if($reservation->status === 'pending')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'confirmed')" class="block w-full px-3 py-2 text-left text-sm">Confirm Reservation</button>@endif @if($reservation->status === 'confirmed')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'checked-in')" class="block w-full px-3 py-2 text-left text-sm">Mark as Checked-in</button>@endif @if($reservation->status === 'checked-in')<button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'completed')" class="block w-full px-3 py-2 text-left text-sm">Mark as Checked-out</button>@endif <button type="button" onclick="changeReservationStatus({{ $reservation->id }}, 'cancelled')" class="block w-full px-3 py-2 text-left text-sm">Cancel Reservation</button><form action="{{ route('employee.reservations.destroy', $reservation->id) }}" method="POST" onsubmit="event.stopPropagation(); return confirm('Delete this reservation?');">@csrf<input type="hidden" name="_method" value="DELETE"><button type="submit" class="block w-full px-3 py-2 text-left text-sm text-red-600">Delete Reservation</button></form></div></div>
                         </div>
                     </div>
@@ -1351,6 +1353,38 @@
     </div>
 </div>
 
+<div id="roomExtensionModal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="roomExtensionTitle">
+    <div class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-gray-200 p-5">
+            <h2 id="roomExtensionTitle" class="text-lg font-semibold text-gray-900">Extend Stay</h2>
+            <button type="button" onclick="closeRoomExtension()" class="rounded p-2 text-gray-500 hover:bg-gray-100" aria-label="Close"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="roomExtensionForm" method="POST" class="space-y-4 p-5">
+            @csrf
+            <input type="hidden" name="check_out" id="extensionRequestedCheckout">
+            <input type="hidden" name="room_id" id="extensionTargetRoom">
+            <div class="grid gap-3 sm:grid-cols-2">
+                <p class="text-sm text-gray-700"><span class="font-semibold">Current room:</span> <span id="extensionCurrentRoom"></span></p>
+                <p class="text-sm text-gray-700"><span class="font-semibold">Current checkout:</span> <span id="extensionCurrentCheckout"></span></p>
+                <label class="text-sm font-semibold text-gray-700">Requested checkout
+                    <input id="extensionCheckoutInput" type="date" required class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 font-normal">
+                </label>
+                <p id="extensionPeriod" class="self-end text-sm text-gray-600"></p>
+            </div>
+            <div id="extensionFeedback" class="hidden rounded-lg border p-4 text-sm" role="status"></div>
+            <div id="extensionDecisionActions" class="hidden flex flex-wrap gap-2">
+                <button id="extensionKeepCheckout" type="button" onclick="closeRoomExtension()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700">Keep Current Checkout Date</button>
+                <button id="extensionFindRoom" type="button" onclick="showExtensionRooms()" class="rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white">Find Another Available Room</button>
+            </div>
+            <div id="extensionRoomChoices" class="hidden space-y-3"></div>
+            <div class="flex justify-end gap-2 border-t border-gray-100 pt-4">
+                <button type="button" onclick="closeRoomExtension()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700">Cancel</button>
+                <button type="button" onclick="checkRoomExtension()" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Check Availability</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <form id="reservationStatusForm" action="" method="POST">
     @csrf
     @method('PATCH')
@@ -2045,6 +2079,129 @@
         modal.classList.add('hidden');
         modal.classList.remove('flex');
     }
+
+    let extensionReservationId = null;
+    let extensionCurrentRoomId = null;
+    let extensionCurrentRoomNumber = '';
+    let extensionCurrentRoomAvailable = false;
+    let extensionAvailableRooms = [];
+
+    function openRoomExtension(reservationId, roomId, checkout, roomNumber) {
+        extensionReservationId = reservationId;
+        extensionCurrentRoomId = roomId;
+        extensionCurrentRoomNumber = roomNumber;
+        extensionCurrentRoomAvailable = false;
+        const modal = document.getElementById('roomExtensionModal');
+        const checkoutInput = document.getElementById('extensionCheckoutInput');
+        const checkoutDate = new Date(`${checkout}T12:00:00`);
+        const minimum = new Date(checkoutDate);
+        minimum.setDate(minimum.getDate() + 1);
+        const defaultDate = new Date(minimum);
+        defaultDate.setDate(defaultDate.getDate() + 1);
+        checkoutInput.min = minimum.toISOString().slice(0, 10);
+        checkoutInput.value = defaultDate.toISOString().slice(0, 10);
+        document.getElementById('extensionCurrentRoom').textContent = `Room ${roomNumber}`;
+        document.getElementById('extensionCurrentCheckout').textContent = checkout;
+        document.getElementById('extensionPeriod').textContent = `Extension starts ${checkout}`;
+        document.getElementById('extensionFeedback').classList.add('hidden');
+        document.getElementById('extensionDecisionActions').classList.add('hidden');
+        document.getElementById('extensionRoomChoices').classList.add('hidden');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeRoomExtension() {
+        const modal = document.getElementById('roomExtensionModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        extensionReservationId = null;
+        extensionCurrentRoomId = null;
+    }
+
+    async function checkRoomExtension() {
+        const checkout = document.getElementById('extensionCheckoutInput').value;
+        const feedback = document.getElementById('extensionFeedback');
+        const actions = document.getElementById('extensionDecisionActions');
+        const roomsPanel = document.getElementById('extensionRoomChoices');
+        if (!checkout) return;
+
+        feedback.textContent = 'Checking room availability…';
+        feedback.className = 'rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700';
+        feedback.classList.remove('hidden');
+        actions.classList.add('hidden');
+        roomsPanel.classList.add('hidden');
+
+        try {
+            const url = "{{ route('employee.reservations.extension-options', ['id' => '__ID__']) }}".replace('__ID__', extensionReservationId);
+            const response = await fetch(`${url}?check_out=${encodeURIComponent(checkout)}`, { headers: { 'Accept': 'application/json' } });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || result.errors?.check_out?.[0] || 'Unable to check availability.');
+            extensionAvailableRooms = result.available_rooms || [];
+            extensionCurrentRoomAvailable = result.current_room_available;
+            document.getElementById('extensionRequestedCheckout').value = result.extension_check_out;
+            document.getElementById('extensionPeriod').textContent = `Requested extension: ${result.extension_check_in} – ${result.extension_check_out}`;
+            actions.classList.remove('hidden');
+            actions.querySelector('.extension-same-room-button')?.remove();
+            if (result.conflict) {
+                feedback.className = 'rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900';
+                feedback.innerHTML = `<strong>Room ${escapeHtml(extensionCurrentRoomNumber)} is unavailable for the requested extension dates.</strong><br><br><strong>Existing reservation:</strong><br>${escapeHtml(result.conflict.guest_name)}<br>${escapeHtml(result.conflict.check_in)} – ${escapeHtml(result.conflict.check_out)}`;
+                document.getElementById('extensionFindRoom').classList.remove('hidden');
+            } else {
+                feedback.className = 'rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900';
+                feedback.textContent = `Room ${extensionCurrentRoomNumber} is available for the requested extension dates.`;
+                document.getElementById('extensionFindRoom').classList.remove('hidden');
+                const extendButton = document.createElement('button');
+                extendButton.type = 'button';
+                extendButton.className = 'extension-same-room-button rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white';
+                extendButton.textContent = `Extend in Room ${extensionCurrentRoomNumber}`;
+                extendButton.onclick = () => submitRoomExtension(extensionCurrentRoomId);
+                actions.prepend(extendButton);
+            }
+            if (result.conflict && extensionAvailableRooms.length === 0) {
+                document.getElementById('extensionFindRoom').classList.remove('hidden');
+            }
+        } catch (error) {
+            feedback.className = 'rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900';
+            feedback.textContent = error.message;
+        }
+    }
+
+    function showExtensionRooms() {
+        const panel = document.getElementById('extensionRoomChoices');
+        panel.classList.remove('hidden');
+        if (!extensionAvailableRooms.length) {
+            panel.innerHTML = extensionCurrentRoomAvailable
+                ? '<p class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">No other rooms are available for these dates. The current room can still be extended.</p>'
+                : '<p class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">No available rooms for the requested extension dates.<br><br>The guest must keep the original checkout date or choose a different available date range.</p>';
+            return;
+        }
+        const checkout = document.getElementById('extensionRequestedCheckout').value;
+        const start = document.getElementById('extensionCurrentCheckout').textContent;
+        panel.innerHTML = `<h3 class="font-semibold text-gray-900">Available Rooms</h3>${extensionAvailableRooms.map(room => `<article class="rounded-lg border border-gray-200 p-4"><div class="flex flex-wrap items-start justify-between gap-3"><div><h4 class="font-semibold">${escapeHtml(room.room_type)} ${escapeHtml(room.room_number)}</h4><p class="text-sm text-gray-600">${escapeHtml(room.bed_type || 'Room')} · Capacity: ${escapeHtml(room.capacity || 'N/A')}</p><p class="mt-1 text-sm text-gray-600">${escapeHtml(start)} – ${escapeHtml(checkout)}</p></div><span class="text-sm font-semibold text-emerald-700">Available</span></div><button type="button" onclick="submitRoomExtension(${Number(room.id)})" class="mt-3 rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white">Transfer to Room ${escapeHtml(room.room_number)}</button></article>`).join('')}`;
+    }
+
+    function submitRoomExtension(roomId) {
+        if (!roomId) return;
+        const form = document.getElementById('roomExtensionForm');
+        form.action = "{{ route('employee.reservations.extend', ['id' => '__ID__']) }}".replace('__ID__', extensionReservationId);
+        document.getElementById('extensionTargetRoom').value = roomId;
+        form.submit();
+    }
+
+    document.getElementById('extensionCheckoutInput').addEventListener('change', function () {
+        extensionAvailableRooms = [];
+        document.getElementById('extensionFeedback').classList.add('hidden');
+        document.getElementById('extensionDecisionActions').classList.add('hidden');
+        document.getElementById('extensionRoomChoices').classList.add('hidden');
+    });
+
+    Object.assign(window, {
+        openRoomExtension,
+        closeRoomExtension,
+        checkRoomExtension,
+        showExtensionRooms,
+        submitRoomExtension,
+    });
 
     document.addEventListener('click', function (event) {
         if (!event.target.closest('.employee-reservation-menu') && !event.target.closest('[title="More actions"]')) {

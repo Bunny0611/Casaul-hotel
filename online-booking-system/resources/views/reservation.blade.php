@@ -623,6 +623,7 @@
                             <div class="reservation-card-body">
                                 <h4>{{ $room->room_type }}</h4>
                                 <p class="reservation-room-number">Room {{ $room->room_number }}</p>
+                                <p class="room-date-availability text-sm font-semibold text-gray-500" data-room-availability="{{ $room->id }}">Select dates to check availability</p>
                                 <div class="reservation-card-meta">
                                     <span><i class="fas fa-users"></i>{{ $room->capacity ?? 2 }} Guests</span>
                                     <span><i class="fas fa-bed"></i>{{ $room->bed_type ?? '1 Queen Bed' }}</span>
@@ -710,7 +711,7 @@
                                 <p class="text-muted">{{ $event->event_type }} · ₱{{ number_format($event->price, 0) }} / {{ strtolower(str_replace('Per ', '', $event->pricing_basis ?? 'Event')) }} · Maximum {{ $event->capacity }} guests</p>
                                 <div class="event-options">
                                     <label class="field-label" for="eventDate-{{ $event->id }}">Event Date</label>
-                                    <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date">
+                                    <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}">
                                     <div class="event-time-row">
                                         <div>
                                             <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
@@ -1736,6 +1737,61 @@
 
         checkIn.addEventListener('change', updateSummary);
         checkOut.addEventListener('change', updateSummary);
+        let roomAvailabilityRequest = 0;
+        async function refreshRoomAvailability() {
+            const cards = document.querySelectorAll('.reservation-card[data-category="room"]');
+            const requestId = ++roomAvailabilityRequest;
+            const hasDates = checkIn.value && checkOut.value && checkOut.value > checkIn.value;
+            if (!hasDates) {
+                cards.forEach(card => {
+                    const status = card.querySelector('[data-room-availability]');
+                    const button = card.querySelector('.select-option-btn');
+                    status.textContent = 'Select dates to check availability';
+                    status.className = 'room-date-availability text-sm font-semibold text-gray-500';
+                    button.disabled = true;
+                    button.textContent = 'Choose dates first';
+                });
+                return;
+            }
+
+            try {
+                const url = `{{ route('reservation.availability') }}?check_in=${encodeURIComponent(checkIn.value)}&check_out=${encodeURIComponent(checkOut.value)}`;
+                const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                const result = await response.json();
+                if (!response.ok || requestId !== roomAvailabilityRequest) return;
+                result.rooms.forEach(room => {
+                    const card = document.querySelector(`.reservation-card[data-room-id="${room.id}"]`);
+                    if (!card) return;
+                    const status = card.querySelector('[data-room-availability]');
+                    const button = card.querySelector('.select-option-btn');
+                    status.textContent = room.available ? '🟢 Available for selected dates' : '🔴 Unavailable for selected dates';
+                    status.className = `room-date-availability text-sm font-semibold ${room.available ? 'text-emerald-700' : 'text-red-700'}`;
+                    button.disabled = !room.available;
+                    button.textContent = room.available ? (reservationRoomId.value === String(room.id) ? 'Selected' : 'Add to Reservation') : 'Unavailable';
+                    if (!room.available && reservationRoomId.value === String(room.id)) {
+                        selectedRoom = null;
+                        roomPrice = 0;
+                        selectedFacilities = [];
+                        reservationRoomId.value = '';
+                        selectedAdults = 0;
+                        selectedKids = 0;
+                        selectedExtraGuests = 0;
+                        document.querySelectorAll('.room-extra-guests').forEach(select => select.value = '0');
+                    }
+                });
+                updateSummary();
+            } catch (error) {
+                cards.forEach(card => {
+                    const status = card.querySelector('[data-room-availability]');
+                    status.textContent = 'Availability could not be checked';
+                    status.className = 'room-date-availability text-sm font-semibold text-amber-700';
+                    card.querySelector('.select-option-btn').disabled = true;
+                });
+            }
+        }
+        checkIn.addEventListener('change', refreshRoomAvailability);
+        checkOut.addEventListener('change', refreshRoomAvailability);
+        refreshRoomAvailability();
         [diningSchedule, diningTable, diningDate].forEach(field => field?.addEventListener('change', updateSummary));
         paymentMethodChoices.forEach(choice => choice.addEventListener('click', function () {
             selectedPaymentMethod = this.dataset.paymentMethod;
@@ -2548,12 +2604,19 @@
                     const [hours, minutes] = time.split(':').map(Number);
                     return (hours * 60) + minutes;
                 };
+                const minimumEventDate = new Date();
+                minimumEventDate.setHours(0, 0, 0, 0);
+                minimumEventDate.setDate(minimumEventDate.getDate() + 1);
+                const selectedEventDateValue = new Date(`${eventSelection.date}T00:00:00`);
                 const eventDuration = timeToMinutes(eventSelection.endTime) - timeToMinutes(eventSelection.startTime);
                 const configuredDuration = Math.max(1, Number(eventCard?.dataset.durationHours || eventSelection.durationHours || 4));
                 const pricingBasis = String(eventCard?.dataset.pricingBasis || eventSelection.pricingBasis || '').toLowerCase();
                 const availableFrom = eventCard?.dataset.availableFrom || '';
                 const availableTo = eventCard?.dataset.availableTo || '';
 
+                if (selectedEventDateValue < minimumEventDate) {
+                    return 'Event reservations must be booked at least 1 day in advance. Same-day bookings are not allowed.';
+                }
                 if (eventDuration <= 0) {
                     return 'The event end time must be after the start time.';
                 }

@@ -35,8 +35,10 @@ use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Guest;
 use App\Support\ReservationPricing;
+use App\Support\RoomAvailability;
 use App\Support\GuestOrigin;
 use App\Support\ComprehensiveReportExcelExporter;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -1524,7 +1526,16 @@ class AdminController extends Controller
         if ($category === 'rooms') {
             $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
             $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
-            $reservation = RoomReservation::create($validated);
+            $reservation = DB::transaction(function () use ($validated) {
+                $room = Room::query()->whereKey($validated['room_id'])->lockForUpdate()->firstOrFail();
+                if (RoomAvailability::conflict($room, $validated['check_in'], $validated['check_out'])) {
+                    throw ValidationException::withMessages([
+                        'room_id' => 'This room is already reserved for the selected dates. Please choose another room or date range.',
+                    ]);
+                }
+
+                return RoomReservation::create($validated);
+            });
         } elseif ($category === 'event') {
             $validated['event_start_time'] = $validated['event_start_time'] ?? $validated['check_in_time'] ?? null;
             $validated['event_end_time'] = $validated['event_end_time'] ?? $validated['check_out_time'] ?? null;
@@ -1993,7 +2004,20 @@ class AdminController extends Controller
             $attributes['facility_end_time'] = $validated['check_out_time'] ?? null;
         }
 
-        $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
+        if ($validated['category'] === 'rooms') {
+            DB::transaction(function () use ($validated, $reservation, $attributes) {
+                $room = Room::query()->whereKey($validated['room_id'])->lockForUpdate()->firstOrFail();
+                if (RoomAvailability::conflict($room, $validated['check_in'], $validated['check_out'], $reservation)) {
+                    throw ValidationException::withMessages([
+                        'room_id' => 'This room is already reserved for the selected dates. Please choose another room or date range.',
+                    ]);
+                }
+
+                $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
+            });
+        } else {
+            $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
+        }
 
         $finalTotal = round((float) ($validated['total_amount'] ?? 0), 2);
 
@@ -2021,6 +2045,121 @@ class AdminController extends Controller
         return $request->routeIs('employee.reservations.update')
             ? redirect()->route('employee.reservation')->with('success', $updateMessage)
             : redirect()->route('admin.reservations')->with('success', $updateMessage);
+    }
+
+    public function roomExtensionOptions(Request $request, $id)
+    {
+        $reservation = RoomReservation::with('room')->findOrFail($id);
+        $validated = $request->validate(['check_out' => ['required', 'date']]);
+        $extensionStart = $reservation->check_out->toDateString();
+        $extensionEnd = Carbon::parse($validated['check_out'])->toDateString();
+
+        if ($extensionEnd <= $extensionStart) {
+            throw ValidationException::withMessages(['check_out' => 'Choose a checkout date after the current checkout date.']);
+        }
+
+        $conflict = RoomAvailability::conflict($reservation->room, $extensionStart, $extensionEnd, $reservation);
+        $availableRooms = Room::query()
+            ->whereKeyNot($reservation->room_id)
+            ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
+            ->orderBy('room_number')
+            ->get()
+            ->filter(fn (Room $room) => !RoomAvailability::conflict($room, $extensionStart, $extensionEnd))
+            ->map(fn (Room $room) => [
+                'id' => $room->id,
+                'room_number' => $room->room_number,
+                'room_type' => $room->room_type,
+                'bed_type' => $room->bed_type,
+                'capacity' => $room->capacity,
+                'price' => (float) $room->price,
+            ])
+            ->values();
+
+        return response()->json([
+            'extension_check_in' => $extensionStart,
+            'extension_check_out' => $extensionEnd,
+            'current_room' => $reservation->room?->room_number,
+            'current_room_available' => $conflict === null,
+            'conflict' => $conflict ? [
+                'guest_name' => $conflict->guest_name,
+                'check_in' => $conflict->check_in?->format('Y-m-d'),
+                'check_out' => $conflict->check_out?->format('Y-m-d'),
+            ] : null,
+            'available_rooms' => $availableRooms,
+        ]);
+    }
+
+    public function extendRoomReservation(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'check_out' => ['required', 'date'],
+            'room_id' => ['required', 'exists:rooms,id'],
+        ]);
+
+        DB::transaction(function () use ($validated, $id) {
+            $reservation = RoomReservation::query()->whereKey($id)->lockForUpdate()->firstOrFail();
+            if ($reservation->status !== 'checked-in') {
+                throw ValidationException::withMessages(['reservation' => 'Only an active checked-in stay can be extended.']);
+            }
+
+            $extensionStart = $reservation->check_out->toDateString();
+            $extensionEnd = Carbon::parse($validated['check_out'])->toDateString();
+            if ($extensionEnd <= $extensionStart) {
+                throw ValidationException::withMessages(['check_out' => 'Choose a checkout date after the current checkout date.']);
+            }
+
+            $room = Room::query()->whereKey($validated['room_id'])->lockForUpdate()->firstOrFail();
+            $ignore = (int) $room->id === (int) $reservation->room_id ? $reservation : null;
+            $conflict = RoomAvailability::conflict($room, $extensionStart, $extensionEnd, $ignore);
+            if ($conflict) {
+                throw ValidationException::withMessages([
+                    'room_id' => 'Room ' . $room->room_number . ' is unavailable for the requested extension dates. Choose another available room or keep the current checkout date.',
+                ]);
+            }
+
+            $additionalCharge = ReservationPricing::room(
+                $room,
+                $extensionStart,
+                $extensionEnd,
+                (int) ($reservation->number_of_guests ?? 1),
+                $reservation->adult_guests,
+                $reservation->kid_guests
+            );
+
+            if ((int) $room->id === (int) $reservation->room_id) {
+                $reservation->update([
+                    'check_out' => $extensionEnd,
+                    'total_amount' => round((float) $reservation->total_amount + $additionalCharge, 2),
+                ]);
+
+                return;
+            }
+
+            $stayGroupId = $reservation->stay_group_id ?: (string) Str::uuid();
+            $reservation->update(['stay_group_id' => $stayGroupId]);
+            RoomReservation::create([
+                'room_id' => $room->id,
+                'stay_group_id' => $stayGroupId,
+                'guest_name' => $reservation->guest_name,
+                'guest_email' => $reservation->guest_email,
+                'guest_phone' => $reservation->guest_phone,
+                'check_in' => $extensionStart,
+                'room_check_in_time' => $reservation->room_check_out_time,
+                'check_out' => $extensionEnd,
+                'room_check_out_time' => $reservation->room_check_out_time,
+                'number_of_guests' => $reservation->number_of_guests,
+                'adult_guests' => $reservation->adult_guests,
+                'kid_guests' => $reservation->kid_guests,
+                'status' => 'confirmed',
+                'total_amount' => $additionalCharge,
+                'payment_method' => $reservation->payment_method,
+                'amount_paid' => 0,
+                'special_requests' => 'Extension transfer from reservation #' . $reservation->id,
+            ]);
+        });
+
+        $route = $request->routeIs('admin.*') ? 'admin.reservations' : 'employee.reservation';
+        return redirect()->route($route)->with('success', 'Stay extension saved. Additional charges were added without changing payment history.');
     }
 
     public function destroyReservation(Request $request, $id)
