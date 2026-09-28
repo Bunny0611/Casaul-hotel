@@ -25,7 +25,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY . /var/www/html
 
 RUN mkdir -p /run /var/www/.postgresql storage/framework/{cache,data,sessions,views,testing} storage/logs bootstrap/cache \
-    && if [ ! -f .env ]; then cp .env.example .env; fi \
     && composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader \
     && npm install --no-fund --no-audit \
     && npm run build \
