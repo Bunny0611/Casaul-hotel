@@ -24,13 +24,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY . /var/www/html
 
+
 RUN if [ ! -f .env ]; then cp .env.example .env; fi \
     && composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader \
     && npm install --no-fund --no-audit \
     && npm run build \
     && php artisan key:generate --force \
     && php artisan storage:link \
-    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public
+    && mkdir -p /run /var/www/.postgresql storage/framework/{cache,sessions,views,testing} storage/logs bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/build \
+    && chmod 700 /var/www/.postgresql
 
 EXPOSE 8000
 
