@@ -44,7 +44,8 @@ RUN mkdir -p /run /var/www/.postgresql storage/framework/{cache,data,sessions,vi
 EXPOSE 8000
 
 # Use a startup script to cache configs using Railway's environment variables, then run PHP-FPM and Nginx concurrently
-CMD php artisan config:clear \
+CMD php artisan migrate --force \
+    && php artisan config:clear \
     && php artisan cache:clear \
     && nginx \
     && php-fpm
