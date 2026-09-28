@@ -2,12 +2,19 @@ node_modules
 vendor
 .git
 .gitignore
-storage/logs
-storage/framework/cache
-storage/framework/sessions
-storage/framework/views
 npm-debug.log
 .env
 .env.*
 !.env.example
 .DS_Store
+
+# Keep Laravel runtime folders available in the container.
+storage/*
+!storage/framework
+!storage/framework/cache
+!storage/framework/sessions
+!storage/framework/views
+!storage/framework/testing
+!storage/logs
+!storage/app
+!bootstrap/cache
