@@ -9,4 +9,5 @@ storage/framework/views
 npm-debug.log
 .env
 .env.*
+!.env.example
 .DS_Store
