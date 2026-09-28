@@ -46,6 +46,5 @@ EXPOSE 8000
 # Use a startup script to cache configs using Railway's environment variables, then run PHP-FPM and Nginx concurrently
 CMD php artisan config:clear \
     && php artisan cache:clear \
-    && php artisan migrate --force \
     && nginx \
     && php-fpm
