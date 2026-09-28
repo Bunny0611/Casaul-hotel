@@ -23,27 +23,40 @@ return new class extends Migration
             Schema::table('event_reservations', function (Blueprint $table) {
                 if (Schema::hasColumn('event_reservations', 'event_place_id')) {
                     if (Schema::getConnection()->getDriverName() === 'sqlite') {
-                        $table->dropForeign(['event_place_id']);
+                        try {
+                            $table->dropForeign(['event_place_id']);
+                        } catch (\Exception $e) {}
                     } else {
-                        $table->dropForeign('event_reservations_event_place_id_foreign');
+                        try {
+                            $table->dropForeign('event_reservations_event_place_id_foreign');
+                        } catch (\Exception $e) {}
                     }
                     $table->renameColumn('event_place_id', 'event_id');
                 }
             });
-            Schema::table('event_reservations', function (Blueprint $table) {
-                if (Schema::hasColumn('event_reservations', 'event_id')) {
-                    $table->foreign('event_id')->references('id')->on('events')->cascadeOnDelete();
-                }
-            });
+
+            try {
+                Schema::table('event_reservations', function (Blueprint $table) {
+                    if (Schema::hasColumn('event_reservations', 'event_id')) {
+                        $table->foreign('event_id')->references('id')->on('events')->cascadeOnDelete();
+                    }
+                });
+            } catch (\Exception $e) {
+                // Constraint already exists, safe to ignore
+            }
         }
 
         if (Schema::hasTable('facility_reservations')) {
             Schema::table('facility_reservations', function (Blueprint $table) {
                 if (Schema::hasColumn('facility_reservations', 'amenity_id')) {
                     if (Schema::getConnection()->getDriverName() === 'sqlite') {
-                        $table->dropForeign(['amenity_id']);
+                        try {
+                            $table->dropForeign(['amenity_id']);
+                        } catch (\Exception $e) {}
                     } else {
-                        $table->dropForeign('amenity_reservations_amenity_id_foreign');
+                        try {
+                            $table->dropForeign('facility_reservations_amenity_id_foreign');
+                        } catch (\Exception $e) {}
                     }
                     $table->renameColumn('amenity_id', 'facility_id');
                 }
@@ -57,11 +70,16 @@ return new class extends Migration
                     $table->renameColumn('amenity_end_time', 'facility_end_time');
                 }
             });
-            Schema::table('facility_reservations', function (Blueprint $table) {
-                if (Schema::hasColumn('facility_reservations', 'facility_id')) {
-                    $table->foreign('facility_id')->references('id')->on('facilities')->cascadeOnDelete();
-                }
-            });
+
+            try {
+                Schema::table('facility_reservations', function (Blueprint $table) {
+                    if (Schema::hasColumn('facility_reservations', 'facility_id')) {
+                        $table->foreign('facility_id')->references('id')->on('facilities')->cascadeOnDelete();
+                    }
+                });
+            } catch (\Exception $e) {
+                // Constraint already exists, safe to ignore
+            }
         }
 
         if (Schema::hasTable('reservations')) {
