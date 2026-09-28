@@ -1,4 +1,5 @@
-<?
+<?php
+
 namespace App\Mail;
 
 use Illuminate\Support\Facades\Http;
@@ -21,20 +22,17 @@ class CloudflareTransport extends AbstractTransport
     protected function doSend(SentMessage $message): void
     {
         $email = MessageConverter::toEmail($message->getOriginalMessage());
-        $fromAddress = $email->getFrom()[0];
-
-        $toRecipients = array_map(fn($addr) => [
-            'email' => $addr->getAddress(),
-            'name' => $addr->getName()
-        ], $email->getTo());
+        
+        $fromAddress = $email->getFrom()[0]->getAddress();
+        
+        // Cloudflare REST API accepts 'to' as an array of strings or single string depending on schema, 
+        // passing an array of email address strings resolves schema validation errors.
+        $toRecipients = array_map(fn($addr) => $addr->getAddress(), $email->getTo());
 
         $payload = [
-            'from' => [
-                'email' => $fromAddress->getAddress(),
-                'name' => $fromAddress->getName(),
-            ],
-            'to' => $toRecipients,
-            'subject' => $email->getSubject(),
+            'from' => $fromAddress,
+            'to' => count($toRecipients) === 1 ? $toRecipients[0] : $toRecipients,
+            'subject' => $email->getSubject() ?? '',
         ];
 
         if ($email->getTextBody()) {
