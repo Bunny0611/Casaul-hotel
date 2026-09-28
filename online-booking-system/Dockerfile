@@ -1,11 +1,13 @@
-FROM php:8.2-cli
+FROM php:8.2-fpm
 
 WORKDIR /var/www/html
 
+# Install system dependencies and Nginx
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     unzip \
+    nginx \
     libpng-dev \
     libjpeg-dev \
     libwebp-dev \
@@ -22,17 +24,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy Nginx configuration template
+COPY docker/nginx.conf /etc/nginx/sites-available/default
+
 COPY . /var/www/html
 
+# Create required framework storage directories first to avoid missing path exceptions during composer install
 RUN mkdir -p /run /var/www/.postgresql storage/framework/{cache,data,sessions,views,testing} storage/logs bootstrap/cache \
     && composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader \
     && npm install --no-fund --no-audit \
     && npm run build \
-    && php artisan key:generate --force \
     && php artisan storage:link \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/build \
     && chmod 700 /var/www/.postgresql
 
 EXPOSE 8000
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Use a startup script to cache configs using Railway's environment variables, then run PHP-FPM and Nginx concurrently
+CMD php artisan config:clear \
+    && php artisan cache:clear \
+    && php artisan migrate --force \
+    && nginx \
+    && php-fpm
