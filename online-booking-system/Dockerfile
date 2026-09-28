@@ -20,9 +20,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     npm \
     && docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install pdo_mysql gd zip intl bcmath opcache pcntl \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
 
 # Copy Nginx configuration template
 COPY docker/nginx.conf /etc/nginx/sites-available/default
