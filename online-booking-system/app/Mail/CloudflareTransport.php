@@ -1,3 +1,4 @@
+<?
 namespace App\Mail;
 
 use Illuminate\Support\Facades\Http;
@@ -20,10 +21,8 @@ class CloudflareTransport extends AbstractTransport
     protected function doSend(SentMessage $message): void
     {
         $email = MessageConverter::toEmail($message->getOriginalMessage());
-
         $fromAddress = $email->getFrom()[0];
-        
-        // Format recipients for Cloudflare REST API
+
         $toRecipients = array_map(fn($addr) => [
             'email' => $addr->getAddress(),
             'name' => $addr->getName()
@@ -50,7 +49,7 @@ class CloudflareTransport extends AbstractTransport
             ->post("https://api.cloudflare.com/client/v4/accounts/{$this->accountId}/email/sending/send", $payload);
 
         if ($response->failed()) {
-            throw new \RuntimeException('Cloudflare Email API error: ' . $response->body());
+            throw new \RuntimeException('Cloudflare REST API Error: ' . $response->body());
         }
     }
 

@@ -36,6 +36,9 @@ return [
     */
 
     'mailers' => [
+        'cloudflare' => [
+            'transport' => 'cloudflare',
+        ],
 
         'smtp' => [
             'transport' => 'smtp',
