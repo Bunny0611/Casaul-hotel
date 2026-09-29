@@ -1,6 +1,16 @@
 <x-mail::message>
+@php
+    $roomImagePath = ltrim((string) $reservation->room?->image, '/');
+    if (str_starts_with($roomImagePath, 'storage/')) {
+        $roomImagePath = substr($roomImagePath, 8);
+    }
+    $roomImageUrl = $roomImagePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomImagePath)
+        ? asset('storage/' . $roomImagePath)
+        : asset('image/Royal-Suite-room.jpg');
+@endphp
+
 <div style="margin: 0 0 22px; overflow: hidden; border-radius: 8px;">
-    <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="A room at Casaul Hotel" width="570" style="display: block; width: 100%; max-width: 570px; height: auto; border: 0;">
+    <img src="{{ $roomImageUrl }}" alt="{{ $reservation->room?->room_type ?? 'A room at Casaul Hotel' }}" width="570" style="display: block; width: 100%; max-width: 570px; height: auto; border: 0;">
 </div>
 
 <p style="margin: 0 0 8px; color: #cc0925; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">Reservation Update</p>
