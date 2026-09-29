@@ -162,6 +162,117 @@ document.addEventListener('DOMContentLoaded', function () {
         const setName = (select, field) => {
             field.value = select.selectedOptions[0]?.dataset.name || '';
         };
+        const createCountrySearch = () => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'auth-country-combobox';
+            const input = document.createElement('input');
+            input.className = 'auth-country-search';
+            input.type = 'text';
+            input.placeholder = 'Select country';
+            input.autocomplete = 'off';
+            input.required = true;
+            input.setAttribute('role', 'combobox');
+            input.setAttribute('aria-autocomplete', 'list');
+            input.setAttribute('aria-expanded', 'false');
+            const list = document.createElement('div');
+            list.className = 'auth-country-options';
+            list.id = 'guest-country-options';
+            list.setAttribute('role', 'listbox');
+            input.setAttribute('aria-controls', list.id);
+            wrapper.append(input, list);
+            countrySelect.after(wrapper);
+            countrySelect.classList.add('auth-country-native-select');
+            countrySelect.required = false;
+
+            let activeIndex = -1;
+            let selectedValue = countrySelect.value;
+            const close = () => {
+                wrapper.classList.remove('open');
+                input.setAttribute('aria-expanded', 'false');
+                input.removeAttribute('aria-activedescendant');
+                activeIndex = -1;
+            };
+            const choose = (option) => {
+                if (!option) return;
+                countrySelect.value = option.value;
+                selectedValue = option.value;
+                input.value = option.dataset.name;
+                input.setCustomValidity('');
+                setName(countrySelect, nameFields.country);
+                close();
+                countrySelect.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+            const renderOptions = () => {
+                const query = input.value.trim().toLocaleLowerCase();
+                const countries = Array.from(countrySelect.options).slice(1)
+                    .filter((option) => option.dataset.name.toLocaleLowerCase().includes(query));
+                list.replaceChildren();
+                if (countries.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'auth-country-empty';
+                    empty.textContent = 'No countries found';
+                    empty.setAttribute('role', 'option');
+                    empty.setAttribute('aria-disabled', 'true');
+                    list.append(empty);
+                } else {
+                    countries.forEach((option, index) => {
+                        const item = document.createElement('button');
+                        item.className = 'auth-country-option';
+                        item.type = 'button';
+                        item.id = `guest-country-option-${index}`;
+                        item.dataset.code = option.value;
+                        item.textContent = option.dataset.name;
+                        item.setAttribute('role', 'option');
+                        item.setAttribute('aria-selected', String(option.value === countrySelect.value));
+                        item.addEventListener('click', () => choose(option));
+                        list.append(item);
+                    });
+                }
+                wrapper.classList.add('open');
+                input.setAttribute('aria-expanded', 'true');
+                activeIndex = -1;
+            };
+            input.addEventListener('focus', renderOptions);
+            input.addEventListener('input', () => {
+                input.setCustomValidity('');
+                countrySelect.value = '';
+                renderOptions();
+            });
+            input.addEventListener('keydown', (event) => {
+                const options = list.querySelectorAll('.auth-country-option');
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    if (!wrapper.classList.contains('open')) renderOptions();
+                    if (options.length === 0) return;
+                    activeIndex = (activeIndex + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+                    options.forEach((option, index) => option.classList.toggle('active', index === activeIndex));
+                    input.setAttribute('aria-activedescendant', options[activeIndex].id);
+                    options[activeIndex].scrollIntoView({ block: 'nearest' });
+                } else if (event.key === 'Enter' && wrapper.classList.contains('open')) {
+                    event.preventDefault();
+                    if (activeIndex >= 0 && options[activeIndex]) {
+                        choose(countrySelect.querySelector(`option[value="${options[activeIndex].dataset.code}"]`));
+                    } else if (options.length === 1) {
+                        options[0].click();
+                    }
+                } else if (event.key === 'Escape') {
+                    close();
+                    countrySelect.value = selectedValue;
+                    input.value = countrySelect.selectedOptions[0]?.dataset.name || '';
+                    setName(countrySelect, nameFields.country);
+                }
+            });
+            document.addEventListener('click', (event) => {
+                if (!wrapper.contains(event.target)) close();
+            });
+            signupForm.addEventListener('submit', (event) => {
+                if (countrySelect.value) return;
+                event.preventDefault();
+                input.setCustomValidity('Select a country from the suggestions.');
+                input.reportValidity();
+            });
+            return input;
+        };
         const getPhilippineData = async (path) => {
             const response = await fetch(`https://psgc.gitlab.io/api/${path}`);
             if (!response.ok) throw new Error('Unable to load Philippine locations');
@@ -206,8 +317,10 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         setOptions(countrySelect, Country.getAllCountries().map((country) => ({ code: country.isoCode, name: country.name })), 'Select country');
+        if (oldValues.country) countrySelect.value = oldValues.country;
+        const countrySearch = createCountrySearch();
         if (oldValues.country) {
-            countrySelect.value = oldValues.country;
+            countrySearch.value = countrySelect.selectedOptions[0]?.dataset.name || '';
             setName(countrySelect, nameFields.country);
             loadRegions(countrySelect.value).catch(() => setOptions(regionSelect, [], 'Locations unavailable'));
         }
