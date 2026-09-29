@@ -163,7 +163,7 @@
     .reservation-hero .eyebrow { margin:0; color:#68738a; font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
     .reservation-hero h1 { max-width:560px; margin:8px 0 10px; color:#172033; font-size:31px; line-height:1.12; letter-spacing:-.02em; }
     .reservation-hero p { max-width:520px; margin:0; color:#69748b; font-size:13px; line-height:1.5; }
-    .reservation-hero::after { content:''; display:block; grid-column:2; grid-row:1 / span 3; align-self:stretch; min-height:156px; border-radius:0 0 0 60px; background:linear-gradient(90deg,rgba(244,246,251,0) 0%,rgba(244,246,251,.04) 15%,rgba(244,246,251,0) 35%), url('{{ $rooms->first()?->image ? asset(str_starts_with($rooms->first()->image, 'rooms/') ? 'storage/' . $rooms->first()->image : $rooms->first()->image) : asset('image/Royal-Suite-room.jpg') }}') center/cover; }
+    .reservation-hero::after { content:''; display:block; grid-column:2; grid-row:1 / span 3; align-self:stretch; min-height:156px; border-radius:0 0 0 60px; background:linear-gradient(90deg,rgba(244,246,251,0) 0%,rgba(244,246,251,.04) 15%,rgba(244,246,251,0) 35%), url('{{ $rooms->first()?->image ? secure_asset(str_starts_with($rooms->first()->image, 'rooms/') ? 'storage/' . $rooms->first()->image : $rooms->first()->image) : secure_asset('image/Royal-Suite-room.jpg') }}') center/cover; }
 
     .reservation-shell { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:18px; max-width:970px; margin:0 auto; padding:0; }
     .reservation-left { min-width:0; }
@@ -613,7 +613,7 @@
                         @php($roomCapacity = max(1, (int) ($room->capacity ?? 2)))
                         @php($roomTypeFilter = str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other'))
                         @php($roomStoragePath = str_starts_with((string) $room->image, 'storage/') ? substr($room->image, 8) : $room->image)
-                        @php($roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath) ? asset('storage/' . $roomStoragePath) : null)
+                        @php($roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath) ? secure_asset('storage/' . $roomStoragePath) : null)
                         <article class="reservation-card" data-category="room" data-room-type="{{ $roomTypeFilter }}" data-price="{{ $room->price }}" data-name="{{ $room->room_type }} • Room {{ $room->room_number }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}" data-kid-guest-price="{{ $kidGuestPrice }}">
                             @if($roomImage)
                                 <img src="{{ $roomImage }}" alt="{{ $room->room_type }}">
@@ -1755,7 +1755,7 @@
             }
 
             try {
-                const url = `{{ route('reservation.availability') }}?check_in=${encodeURIComponent(checkIn.value)}&check_out=${encodeURIComponent(checkOut.value)}`;
+                const url = `/reservation/availability?check_in=${encodeURIComponent(checkIn.value)}&check_out=${encodeURIComponent(checkOut.value)}`;
                 const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
                 const result = await response.json();
                 if (!response.ok || requestId !== roomAvailabilityRequest) return;
