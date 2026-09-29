@@ -745,6 +745,7 @@ class AdminController extends Controller
     public function storeInventoryItem(Request $request)
     {
         $eventTimeOptions = collect(range(8, 22))->map(fn ($hour) => sprintf('%02d:00', $hour))->all();
+        $eventVenueOptions = ['Ground Floor', '2nd Floor', 'Garden', 'Private Room', 'Poolside', 'Rooftop'];
         $validated = $request->validate([
             'category' => ['required', 'in:facilities,event,dining'],
             'name' => ['required', 'string', 'max:255'],
@@ -755,15 +756,23 @@ class AdminController extends Controller
             'pricing_basis' => ['required_if:category,facilities,event', 'nullable', 'string', 'in:Per Stay,Per Person,Per Vehicle,Per Stay + Per Vehicle,Per Hour,Per Day,Fixed Price,Per Event'],
             'scheduling_requirement' => ['required_if:category,facilities', 'nullable', 'string', 'in:No Additional Schedule,Date Required,Date & Time Required'],
             'event_type' => ['nullable', 'string', 'in:Birthday,Wedding'],
-            'status' => ['required', 'string', 'max:50'],
-            'location' => ['nullable', 'string', 'max:255'],
-            'capacity' => ['nullable', 'integer', 'min:1'],
+            'status' => ['required', 'string', 'max:50', Rule::when($request->input('category') === 'event', [Rule::in(['available', 'unavailable'])])],
+            'location' => ['nullable', 'string', 'max:255', Rule::when($request->input('category') === 'event', ['required', Rule::in($eventVenueOptions)])],
+            'capacity' => ['nullable', 'integer', 'min:1', Rule::when($request->input('category') === 'event', ['required'])],
             'available_from' => ['nullable', 'date_format:H:i', Rule::when($request->input('category') === 'event', ['required', Rule::in($eventTimeOptions)])],
             'available_to' => ['nullable', 'date_format:H:i', 'after:available_from', Rule::when($request->input('category') === 'event', ['required', Rule::in($eventTimeOptions)])],
-            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24', Rule::when($request->input('category') === 'event', ['required'])],
+            'inclusions' => ['nullable', 'array'],
+            'inclusions.*' => ['nullable', 'string', 'max:255'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
+        $validated['inclusions'] = collect($validated['inclusions'] ?? [])
+            ->map(fn ($inclusion) => trim((string) $inclusion))
+            ->filter()
+            ->unique(fn ($inclusion) => mb_strtolower($inclusion))
+            ->values()
+            ->all();
         if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
             $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
             $availableHours = Carbon::parse($validated['available_from'])->diffInHours(Carbon::parse($validated['available_to']));
@@ -799,6 +808,7 @@ class AdminController extends Controller
                 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'location' => $validated['location'] ?? null,
                 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null,
                 'duration_hours' => $validated['duration_hours'] ?? 4,
+                'inclusions' => $validated['inclusions'],
                 'status' => $validated['status'], 'image' => $validated['image'] ?? null,
             ]),
             default => DiningMenu::create([
@@ -869,6 +879,7 @@ class AdminController extends Controller
         $category = $request->input('category');
         $item = $category === 'facilities' ? Facility::findOrFail($id) : ($category === 'event' ? Event::findOrFail($id) : DiningMenu::findOrFail($id));
         $eventTimeOptions = collect(range(8, 22))->map(fn ($hour) => sprintf('%02d:00', $hour))->all();
+        $eventVenueOptions = ['Ground Floor', '2nd Floor', 'Garden', 'Private Room', 'Poolside', 'Rooftop'];
         $validated = $request->validate([
             'category' => ['required', 'in:facilities,event,dining'],
             'name' => ['required', 'string', 'max:255'],
@@ -879,15 +890,24 @@ class AdminController extends Controller
             'pricing_basis' => ['required_if:category,facilities,event', 'nullable', 'string', 'in:Per Stay,Per Person,Per Vehicle,Per Stay + Per Vehicle,Per Hour,Per Day,Fixed Price,Per Event'],
             'scheduling_requirement' => ['nullable', 'string', 'in:No Additional Schedule,Date Required,Date & Time Required'],
             'event_type' => ['nullable', 'string', 'in:Birthday,Wedding'],
-            'status' => ['required', 'string', 'max:50'],
-            'location' => ['nullable', 'string', 'max:255'],
-            'capacity' => ['nullable', 'integer', 'min:1'],
+            'status' => ['required', 'string', 'max:50', Rule::when($request->input('category') === 'event', [Rule::in(['available', 'unavailable'])])],
+            'location' => ['nullable', 'string', 'max:255', Rule::when($request->input('category') === 'event', ['required', Rule::in($eventVenueOptions)])],
+            'capacity' => ['nullable', 'integer', 'min:1', Rule::when($request->input('category') === 'event', ['required'])],
             'available_from' => ['required_if:category,event', 'nullable', 'date_format:H:i', Rule::in($eventTimeOptions)],
             'available_to' => ['required_if:category,event', 'nullable', 'date_format:H:i', 'after:available_from', Rule::in($eventTimeOptions)],
-            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24', Rule::when($request->input('category') === 'event', ['required'])],
+            'inclusions' => ['nullable', 'array'],
+            'inclusions.*' => ['nullable', 'string', 'max:255'],
+            'inclusions_present' => ['nullable', 'boolean'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
+        $validated['inclusions'] = collect($validated['inclusions'] ?? [])
+            ->map(fn ($inclusion) => trim((string) $inclusion))
+            ->filter()
+            ->unique(fn ($inclusion) => mb_strtolower($inclusion))
+            ->values()
+            ->all();
         if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
             $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
             $availableHours = Carbon::parse($validated['available_from'])->diffInHours(Carbon::parse($validated['available_to']));
@@ -909,7 +929,7 @@ class AdminController extends Controller
         $item->update($category === 'facilities'
             ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? $item->scheduling_requirement ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
             : ($category === 'event'
-                ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'duration_hours' => $validated['duration_hours'] ?? $item->duration_hours ?? 4, 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
+                ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'duration_hours' => $validated['duration_hours'] ?? $item->duration_hours ?? 4, 'inclusions' => $request->boolean('inclusions_present') ? ($validated['inclusions'] ?? []) : ($item->inclusions ?? []), 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
                 : [
                     'name' => $validated['name'],
                     'category' => $validated['menu_category'] ?? $item->category,

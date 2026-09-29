@@ -495,6 +495,50 @@ class AdminReservationTest extends TestCase
         $this->assertDatabaseCount('room_reservations', 1);
     }
 
+    public function test_admin_can_save_event_package_inclusions_and_clear_them_on_edit(): void
+    {
+        $admin = Staff::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin, 'web');
+
+        $response = $this->post(route('admin.inventory.store'), [
+            'category' => 'event',
+            'event_type' => 'Birthday',
+            'name' => 'Birthday Premium Test',
+            'description' => 'A test event package.',
+            'price' => 8000,
+            'pricing_basis' => 'Per Event',
+            'duration_hours' => 4,
+            'capacity' => 30,
+            'location' => 'Garden',
+            'available_from' => '08:00',
+            'available_to' => '22:00',
+            'status' => 'available',
+            'inclusions' => ['Themed decoration', 'Birthday cake', '', ' birthday cake '],
+        ]);
+
+        $response->assertRedirect(route('admin.rooms'));
+        $event = \App\Models\Event::where('name', 'Birthday Premium Test')->firstOrFail();
+        $this->assertSame(['Themed decoration', 'Birthday cake'], $event->inclusions);
+
+        $this->put(route('admin.inventory.update', $event->id), [
+            'category' => 'event',
+            'event_type' => 'Birthday',
+            'name' => 'Birthday Premium Test',
+            'description' => 'A test event package.',
+            'price' => 8000,
+            'pricing_basis' => 'Per Event',
+            'duration_hours' => 4,
+            'capacity' => 30,
+            'location' => 'Garden',
+            'available_from' => '08:00',
+            'available_to' => '22:00',
+            'status' => 'available',
+            'inclusions_present' => 1,
+        ])->assertRedirect(route('admin.rooms'));
+
+        $this->assertSame([], $event->fresh()->inclusions);
+    }
+
     public function test_public_booking_can_create_an_event_reservation(): void
     {
         $guest = Guest::factory()->create([
