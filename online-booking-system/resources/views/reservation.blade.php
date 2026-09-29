@@ -196,6 +196,7 @@
     .reservation-card img { width:100%; height:130px; flex:0 0 130px; object-fit:cover; }
     .reservation-card-body { gap:6px; padding:9px; }
     #diningMenuGrid .reservation-card-body { flex:1; }
+    #facilities-tab .reservation-card-body { flex:1; }
     .reservation-card h4 { font-size:11px; }
     .reservation-card-meta { gap:8px; min-height:34px; align-items:flex-start; font-size:9px; line-height:1.35; }
     .reservation-card-body > p { min-height:40px; margin:0; color:#788398; font-size:9px; line-height:1.45; }
