@@ -505,6 +505,7 @@ class HomeController extends Controller
             'facility_id' => 'nullable|string',
             'facility_quantity' => 'nullable|integer|min:1',
             'event_id' => 'nullable|string',
+            'event_addons' => ['nullable', 'json', 'max:10000'],
             'event_type' => 'nullable|string|max:100',
             'number_of_guests' => 'nullable|integer|min:1',
             'room_number_of_guests' => 'nullable|integer|min:1',
@@ -611,6 +612,18 @@ class HomeController extends Controller
             abort_if(!empty($invalidEventIds), 422, 'One or more selected event packages are invalid.');
 
             $validated['event_id'] = implode(',', $eventIds);
+            $requestedAddonGroups = json_decode($validated['event_addons'] ?? '[]', true);
+            abort_if(!is_array($requestedAddonGroups), 422, 'The selected event add-ons are invalid.');
+            $addonIndexesByEvent = [];
+            foreach ($requestedAddonGroups as $addonGroup) {
+                abort_if(!is_array($addonGroup) || !isset($addonGroup['event_id']) || !is_array($addonGroup['addon_indexes'] ?? null), 422, 'The selected event add-ons are invalid.');
+                $addonEventId = (string) $addonGroup['event_id'];
+                abort_if(!in_array($addonEventId, $eventIds, true) || array_key_exists($addonEventId, $addonIndexesByEvent), 422, 'The selected event add-ons do not match the selected package.');
+                abort_if(count(array_unique($addonGroup['addon_indexes'], SORT_REGULAR)) !== count($addonGroup['addon_indexes']), 422, 'An event add-on cannot be selected more than once.');
+                $addonIndexesByEvent[$addonEventId] = $addonGroup['addon_indexes'];
+            }
+            $selectedEventAddons = [];
+            $eventAddonTotal = 0;
             foreach ($eventIds as $eventId) {
                 $event = Event::find($eventId);
                 abort_if($event?->capacity && !empty($validated['number_of_guests']) && $validated['number_of_guests'] > $event->capacity, 422, 'The selected guest count exceeds the package capacity.');
@@ -633,8 +646,26 @@ class HomeController extends Controller
                     $submittedDuration = max(1, $start->diffInHours($end));
                     abort_if($pricingBasis === 'per hour' && $submittedDuration > $configuredDuration, 422, 'This event allows a maximum duration of '.$configuredDuration.' hours.');
                     $validated['duration_hours'] = $submittedDuration;
+
+                    foreach ($addonIndexesByEvent[$eventId] ?? [] as $requestedAddonIndex) {
+                        $addonIndex = filter_var($requestedAddonIndex, FILTER_VALIDATE_INT);
+                        abort_if($addonIndex === false || $addonIndex < 0, 422, 'One or more selected event add-ons are invalid.');
+                        $addon = $event->optional_addons[$addonIndex] ?? null;
+                        abort_if(!$addon || !filter_var($addon['available'] ?? false, FILTER_VALIDATE_BOOLEAN), 422, 'One or more selected event add-ons are no longer available.');
+                        $addonPrice = round((float) ($addon['price'] ?? 0), 2);
+                        $selectedEventAddons[] = [
+                            'event_id' => $event->id,
+                            'name' => $addon['name'],
+                            'description' => $addon['description'] ?? null,
+                            'price' => $addonPrice,
+                        ];
+                        $eventAddonTotal += $addonPrice;
+                    }
                 }
             }
+            $validated['selected_addons'] = $selectedEventAddons;
+        } else {
+            $eventAddonTotal = 0;
         }
 
         if (!empty($validated['dining_id'])) {
@@ -706,7 +737,7 @@ class HomeController extends Controller
         if (!empty($validated['event_start_time']) && !empty($validated['event_end_time'])) {
             $eventDurationHours = max(1, Carbon::parse($validated['event_start_time'])->diffInHours(Carbon::parse($validated['event_end_time'])));
         }
-        $eventTotal = ReservationPricing::events($events, $validated['number_of_guests'], $eventDurationHours);
+        $eventTotal = ReservationPricing::events($events, $validated['number_of_guests'], $eventDurationHours) + $eventAddonTotal;
         $diningTotal = ReservationPricing::dining($diningSelections);
         $categoryTotal = match ($category) {
             'rooms' => $roomTotal,
@@ -765,7 +796,7 @@ class HomeController extends Controller
                 'event_id', 'guest_name', 'guest_email', 'guest_phone',
                 'event_type', 'check_in', 'event_start_time', 'check_out',
                 'event_end_time', 'duration_hours', 'number_of_guests', 'status', 'total_amount',
-                'payment_method', 'payment_details', 'amount_paid', 'special_requests',
+                'payment_method', 'payment_details', 'amount_paid', 'special_requests', 'selected_addons',
             ])->all());
         } elseif ($category === 'facilities') {
             $facility = $facilities->firstOrFail();

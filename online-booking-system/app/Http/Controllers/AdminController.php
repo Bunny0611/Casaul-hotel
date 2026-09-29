@@ -742,6 +742,16 @@ class AdminController extends Controller
         return $file->storeAs('rooms', $filename, 'public');
     }
 
+    protected function normalizeEventAddons(array $addons): array
+    {
+        return collect($addons)->map(fn ($addon) => [
+            'name' => trim((string) $addon['name']),
+            'description' => filled($addon['description'] ?? null) ? trim((string) $addon['description']) : null,
+            'price' => round((float) $addon['price'], 2),
+            'available' => filter_var($addon['available'] ?? false, FILTER_VALIDATE_BOOLEAN),
+        ])->values()->all();
+    }
+
     public function storeInventoryItem(Request $request)
     {
         $eventTimeOptions = collect(range(8, 22))->map(fn ($hour) => sprintf('%02d:00', $hour))->all();
@@ -764,6 +774,11 @@ class AdminController extends Controller
             'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24', Rule::when($request->input('category') === 'event', ['required'])],
             'inclusions' => ['nullable', 'array'],
             'inclusions.*' => ['nullable', 'string', 'max:255'],
+            'optional_addons' => ['nullable', 'array'],
+            'optional_addons.*.name' => ['required', 'string', 'max:255'],
+            'optional_addons.*.description' => ['nullable', 'string', 'max:1000'],
+            'optional_addons.*.price' => ['required', 'numeric', 'min:0'],
+            'optional_addons.*.available' => ['nullable', 'boolean'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
@@ -773,6 +788,7 @@ class AdminController extends Controller
             ->unique(fn ($inclusion) => mb_strtolower($inclusion))
             ->values()
             ->all();
+        $validated['optional_addons'] = $this->normalizeEventAddons($validated['optional_addons'] ?? []);
         if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
             $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
             $availableHours = Carbon::parse($validated['available_from'])->diffInHours(Carbon::parse($validated['available_to']));
@@ -809,6 +825,7 @@ class AdminController extends Controller
                 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null,
                 'duration_hours' => $validated['duration_hours'] ?? 4,
                 'inclusions' => $validated['inclusions'],
+                'optional_addons' => $validated['optional_addons'],
                 'status' => $validated['status'], 'image' => $validated['image'] ?? null,
             ]),
             default => DiningMenu::create([
@@ -899,6 +916,12 @@ class AdminController extends Controller
             'inclusions' => ['nullable', 'array'],
             'inclusions.*' => ['nullable', 'string', 'max:255'],
             'inclusions_present' => ['nullable', 'boolean'],
+            'optional_addons' => ['nullable', 'array'],
+            'optional_addons.*.name' => ['required', 'string', 'max:255'],
+            'optional_addons.*.description' => ['nullable', 'string', 'max:1000'],
+            'optional_addons.*.price' => ['required', 'numeric', 'min:0'],
+            'optional_addons.*.available' => ['nullable', 'boolean'],
+            'optional_addons_present' => ['nullable', 'boolean'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
@@ -908,6 +931,7 @@ class AdminController extends Controller
             ->unique(fn ($inclusion) => mb_strtolower($inclusion))
             ->values()
             ->all();
+        $validated['optional_addons'] = $this->normalizeEventAddons($validated['optional_addons'] ?? []);
         if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
             $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
             $availableHours = Carbon::parse($validated['available_from'])->diffInHours(Carbon::parse($validated['available_to']));
@@ -929,7 +953,7 @@ class AdminController extends Controller
         $item->update($category === 'facilities'
             ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? $item->scheduling_requirement ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
             : ($category === 'event'
-                ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'duration_hours' => $validated['duration_hours'] ?? $item->duration_hours ?? 4, 'inclusions' => $request->boolean('inclusions_present') ? ($validated['inclusions'] ?? []) : ($item->inclusions ?? []), 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
+                ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'duration_hours' => $validated['duration_hours'] ?? $item->duration_hours ?? 4, 'inclusions' => $request->boolean('inclusions_present') ? ($validated['inclusions'] ?? []) : ($item->inclusions ?? []), 'optional_addons' => $request->boolean('optional_addons_present') ? ($validated['optional_addons'] ?? []) : ($item->optional_addons ?? []), 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
                 : [
                     'name' => $validated['name'],
                     'category' => $validated['menu_category'] ?? $item->category,

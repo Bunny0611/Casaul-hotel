@@ -252,6 +252,12 @@
     .event-reservation-field-copy input { width:110px; max-width:100%; min-height:28px; padding:4px 7px; border:1px solid #e4d9d6; border-radius:5px; color:#4a3034; background:#fff; font-size:11px; }
     .event-reservation-field-chevron { color:#a99b9c; font-size:11px; }
     .event-reservation-field[aria-disabled="true"] { cursor:default; }
+    .event-reservation-field:disabled { cursor:not-allowed; opacity:.68; }
+    .event-reservation-addon-options { display:grid; gap:7px; padding:9px 0 10px 42px; border-bottom:1px solid #eee8e5; }
+    .event-reservation-addon-option { display:flex; align-items:center; gap:9px; padding:8px 9px; border:1px solid #eee8e5; border-radius:7px; background:#fff; cursor:pointer; }
+    .event-reservation-addon-option input { accent-color:#a91427; }
+    .event-reservation-addon-option span { flex:1; color:#594649; font-size:10px; }
+    .event-reservation-addon-option strong { color:#96232e; font-size:10px; }
     .event-reservation-total { display:flex; justify-content:space-between; align-items:center; margin:5px 0 15px; padding:15px 0 0; border-top:1px solid #e9dfdc; color:#402329; font-size:13px; font-weight:700; }
     .event-reservation-total strong { color:#96232e; font-size:17px; }
     .event-reservation-actions { display:grid; gap:8px; }
@@ -773,7 +779,7 @@
                 <p class="event-empty-state" hidden>No packages are currently available in this category.</p>
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
-                        <article class="reservation-card event-package-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-location="{{ $event->location ?? '' }}" data-capacity="{{ $event->capacity }}" data-available-from="{{ $event->available_from ?: '08:00' }}" data-available-to="{{ $event->available_to ?: '22:00' }}" data-duration-hours="{{ $event->duration_hours ?: 4 }}">
+                        <article class="reservation-card event-package-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-location="{{ $event->location ?? '' }}" data-optional-addons="{{ json_encode($event->optional_addons ?? []) }}" data-capacity="{{ $event->capacity }}" data-available-from="{{ $event->available_from ?: '08:00' }}" data-available-to="{{ $event->available_to ?: '22:00' }}" data-duration-hours="{{ $event->duration_hours ?: 4 }}">
                             @if($event->image)
                                 <img src="{{ asset('storage/' . ltrim($event->image, '/')) }}" alt="{{ $event->name }}">
                             @endif
@@ -800,11 +806,11 @@
                                     @endforeach
                                 </ul>
                                 <div class="event-options-source" aria-hidden="true">
-                                    <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \\Carbon\\Carbon::tomorrow()->format('Y-m-d') }}" tabindex="-1">
+                                    <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}" tabindex="-1">
                                     <select id="eventStart-{{ $event->id }}" class="field-input event-start-time" tabindex="-1">
                                         <option value="">Select start time</option>
                                         @for($hour = 8; $hour <= 22; $hour++)
-                                            <option value="{{ sprintf('%02d:00', $hour) }}">{{ \\Carbon\\Carbon::createFromTime($hour)->format('g:i A') }}</option>
+                                            <option value="{{ sprintf('%02d:00', $hour) }}">{{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}</option>
                                         @endfor
                                     </select>
                                     <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="{{ $event->duration_hours ?: 4 }}" step="1" value="{{ $event->duration_hours ?: 4 }}" {{ strtolower($event->pricing_basis ?? '') === 'per person' ? 'readonly' : '' }} tabindex="-1">
@@ -1015,11 +1021,12 @@
                     <span class="event-reservation-field-copy"><strong>Venue</strong><span id="eventReservationVenue">Default venue</span></span>
                     <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
                 </div>
-                <div class="event-reservation-field" aria-disabled="true">
+                <button type="button" class="event-reservation-field" id="eventReservationAddonsToggle" disabled aria-disabled="true" aria-expanded="false" aria-controls="eventReservationAddonOptions">
                     <span class="event-reservation-field-icon"><i class="fas fa-plus" aria-hidden="true"></i></span>
-                    <span class="event-reservation-field-copy"><strong>Add-ons</strong><span>None</span></span>
+                    <span class="event-reservation-field-copy"><strong>Add-ons</strong><span id="eventReservationAddonsValue">No add-ons available</span></span>
                     <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
-                </div>
+                </button>
+                <div class="event-reservation-addon-options" id="eventReservationAddonOptions" hidden></div>
             </div>
             <div class="event-reservation-total"><span>Total</span><strong id="eventReservationTotal">₱0</strong></div>
             <div class="event-reservation-actions">
@@ -1291,6 +1298,7 @@
     <input type="hidden" name="facility_duration_hours" id="reservationFacilityDuration">
     <input type="hidden" name="facility_start_time" id="reservationFacilityStartTime">
     <input type="hidden" name="event_id" id="reservationEventId">
+    <input type="hidden" name="event_addons" id="reservationEventAddons" value="[]">
     <input type="hidden" name="event_type" id="reservationEventType">
     <input type="hidden" name="number_of_guests" id="reservationEventGuests">
     <input type="hidden" name="room_number_of_guests" id="reservationRoomGuests">
@@ -1336,6 +1344,9 @@
         const eventReservationGuestsInput = document.getElementById('eventReservationGuestsInput');
         const eventReservationVenue = document.getElementById('eventReservationVenue');
         const eventReservationTotal = document.getElementById('eventReservationTotal');
+        const eventReservationAddonsToggle = document.getElementById('eventReservationAddonsToggle');
+        const eventReservationAddonsValue = document.getElementById('eventReservationAddonsValue');
+        const eventReservationAddonOptions = document.getElementById('eventReservationAddonOptions');
         const reservationForm = document.getElementById('reservationForm');
         const reservationRoomId = document.getElementById('reservationRoomId');
         const reservationCheckIn = document.getElementById('reservationCheckIn');
@@ -1360,6 +1371,7 @@
         const reservationFacilityDuration = document.getElementById('reservationFacilityDuration');
         const reservationFacilityStartTime = document.getElementById('reservationFacilityStartTime');
         const reservationEventId = document.getElementById('reservationEventId');
+        const reservationEventAddons = document.getElementById('reservationEventAddons');
         const reservationEventType = document.getElementById('reservationEventType');
         const reservationEventGuests = document.getElementById('reservationEventGuests');
         const reservationAdultGuests = document.getElementById('reservationAdultGuests');
@@ -1576,16 +1588,25 @@
         const getEventCharge = (event) => {
             const price = Number(event.price || 0);
             const pricingBasis = String(event.pricingBasis || '').toLowerCase();
+            let packageCharge = price;
 
             if (pricingBasis === 'per person') {
-                return price * Math.max(1, Number(event.guests) || 1);
+                packageCharge = price * Math.max(1, Number(event.guests) || 1);
+            } else if (pricingBasis === 'per hour') {
+                packageCharge = price * Math.max(1, Number(event.durationHours) || 1);
             }
 
-            if (pricingBasis === 'per hour') {
-                return price * Math.max(1, Number(event.durationHours) || 1);
+            const addonsCharge = (event.addons || []).reduce((sum, addon) => sum + Number(addon.price || 0), 0);
+            return packageCharge + addonsCharge;
+        };
+        const getAvailableEventAddons = (card) => {
+            try {
+                return JSON.parse(card.dataset.optionalAddons || '[]')
+                    .map((addon, index) => ({ ...addon, index }))
+                    .filter(addon => addon.available === true || addon.available === 1 || addon.available === '1');
+            } catch (error) {
+                return [];
             }
-
-            return price;
         };
         const getSelectedEventCount = () => selectedEvent.length;
         const getSelectedDiningCount = () => selectedDining.length;
@@ -1762,7 +1783,7 @@
             const stayNights = getStayNights();
             const roomTotal = roomPrice * stayNights;
             const extraGuestsTotal = ((selectedAdults * selectedAdultPrice) + (selectedKids * selectedKidPrice)) * stayNights;
-            const selectedEventTitles = selectedEvent.map(item => item.title).join(', ');
+            const selectedEventTitles = selectedEvent.map(item => `${item.title}${item.addons?.length ? ` (Add-ons: ${item.addons.map(addon => addon.name).join(', ')})` : ''}`).join(', ');
             const selectedDiningTitles = getDiningSelectionPreview(selectedDining);
             const selectedDiningSchedule = [...new Set(selectedDining.map(item => item.schedule).filter(Boolean))].join(', ');
             const selectedDiningTable = [...new Set(selectedDining.map(item => item.table).filter(Boolean))].join(', ');
@@ -1873,7 +1894,7 @@
                 : 'No facilities selected';
             confirmEventTitle.textContent = selectedEvent.length ? selectedEvent.map(item => item.title).join(', ') : 'None';
             confirmEventDining.textContent = selectedEvent.length
-                ? selectedEvent.map(item => `${item.type || 'Event'} • ${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}`).join(', ')
+                ? selectedEvent.map(item => `${item.type || 'Event'} • ${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}${item.addons?.length ? ` • Add-ons: ${item.addons.map(addon => `${addon.name} (${formatCurrencyValue(addon.price)})`).join(', ')}` : ''}`).join(', ')
                 : 'No event selected';
             confirmDiningTitle.textContent = selectedDining.length
                 ? getDiningSelectionPreview(selectedDining)
@@ -1923,6 +1944,10 @@
             reservationFacilityDuration.value = selectedFacilities.find(item => String(item.pricingBasis || '').toLowerCase() === 'per hour')?.durationHours || '';
             reservationFacilityStartTime.value = selectedFacilities[0]?.time || '';
             reservationEventId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
+            reservationEventAddons.value = JSON.stringify(selectedEvent.map(item => ({
+                event_id: item.id,
+                addon_indexes: (item.addons || []).map(addon => addon.index),
+            })));
             reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
             reservationEventGuests.value = selectedEvent.length
                 ? (selectedEventGuests || '')
@@ -2043,6 +2068,50 @@
             eventReservationModal.setAttribute('aria-hidden', 'true');
         }
 
+        function renderEventReservationAddons(selectedPackage) {
+            const availableAddons = selectedPackage.availableAddons || [];
+            eventReservationAddonOptions.replaceChildren();
+            eventReservationAddonOptions.hidden = availableAddons.length === 0;
+            eventReservationAddonsToggle.disabled = availableAddons.length === 0;
+            eventReservationAddonsToggle.setAttribute('aria-disabled', String(availableAddons.length === 0));
+            eventReservationAddonsToggle.setAttribute('aria-expanded', 'false');
+            if (availableAddons.length === 0) {
+                eventReservationAddonsValue.textContent = 'No add-ons available';
+                return;
+            }
+
+            const selectedAddons = selectedPackage.addons || [];
+            eventReservationAddonsValue.textContent = selectedAddons.length
+                ? selectedAddons.map(addon => `${addon.name} ${formatCurrencyValue(addon.price)}`).join(', ')
+                : 'None';
+            availableAddons.forEach(addon => {
+                const option = document.createElement('label');
+                option.className = 'event-reservation-addon-option';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = selectedAddons.some(selected => Number(selected.index) === addon.index);
+                const name = document.createElement('span');
+                name.textContent = addon.name;
+                const price = document.createElement('strong');
+                price.textContent = formatCurrencyValue(addon.price);
+                checkbox.addEventListener('change', () => {
+                    selectedPackage.addons = selectedPackage.addons || [];
+                    if (checkbox.checked) {
+                        selectedPackage.addons.push({
+                            index: addon.index,
+                            name: addon.name,
+                            price: Number(addon.price || 0),
+                        });
+                    } else {
+                        selectedPackage.addons = selectedPackage.addons.filter(selected => Number(selected.index) !== addon.index);
+                    }
+                    updateSummary();
+                });
+                option.append(checkbox, name, price);
+                eventReservationAddonOptions.append(option);
+            });
+        }
+
         function updateEventReservationPopup() {
             const selectedPackage = activeEventCard
                 ? selectedEvent.find(item => item.id === activeEventCard.dataset.eventId)
@@ -2075,6 +2144,7 @@
             eventReservationGuestsInput.value = guestInput?.value || '1';
             eventReservationGuestsInput.max = guestInput?.max || activeEventCard.dataset.capacity || '';
             eventReservationVenue.textContent = activeEventCard.dataset.location || 'Default venue';
+            renderEventReservationAddons(selectedPackage);
             eventReservationTotal.textContent = `₱${calculateTotal().toLocaleString()}`;
         }
 
@@ -2089,6 +2159,13 @@
         eventReservationModal.addEventListener('click', function (event) {
             if (event.target === eventReservationModal) {
                 closeEventReservationPopup();
+                return;
+            }
+
+            const addonsToggle = event.target.closest('#eventReservationAddonsToggle');
+            if (addonsToggle && !addonsToggle.disabled) {
+                eventReservationAddonOptions.hidden = !eventReservationAddonOptions.hidden;
+                addonsToggle.setAttribute('aria-expanded', String(!eventReservationAddonOptions.hidden));
                 return;
             }
 
@@ -2548,6 +2625,8 @@
                             startTime: card.querySelector('.event-start-time')?.value || '',
                             endTime: eventEndTime,
                             durationHours: Number(card.querySelector('.event-duration')?.value || card.dataset.durationHours || 4),
+                            availableAddons: getAvailableEventAddons(card),
+                            addons: [],
                         });
                         activeEventCard = card;
                         shouldOpenEventPopup = true;

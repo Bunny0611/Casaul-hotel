@@ -616,11 +616,19 @@ class AdminReservationTest extends TestCase
             'available_to' => '22:00',
             'status' => 'available',
             'inclusions' => ['Themed decoration', 'Birthday cake', '', ' birthday cake '],
+            'optional_addons' => [
+                ['name' => 'Birthday Cake', 'description' => 'Custom birthday cake', 'price' => 1000, 'available' => '1'],
+                ['name' => 'Live Music', 'description' => 'Acoustic set', 'price' => 2500, 'available' => '0'],
+            ],
         ]);
 
         $response->assertRedirect(route('admin.rooms'));
         $event = \App\Models\Event::where('name', 'Birthday Premium Test')->firstOrFail();
         $this->assertSame(['Themed decoration', 'Birthday cake'], $event->inclusions);
+        $this->assertSame([
+                ['name' => 'Birthday Cake', 'description' => 'Custom birthday cake', 'price' => 1000, 'available' => true],
+                ['name' => 'Live Music', 'description' => 'Acoustic set', 'price' => 2500, 'available' => false],
+        ], $event->optional_addons);
 
         $this->put(route('admin.inventory.update', $event->id), [
             'category' => 'event',
@@ -636,9 +644,16 @@ class AdminReservationTest extends TestCase
             'available_to' => '22:00',
             'status' => 'available',
             'inclusions_present' => 1,
+            'optional_addons_present' => 1,
+            'optional_addons' => [
+                ['name' => 'Premium Birthday Cake', 'description' => 'Two-tier cake', 'price' => 1800, 'available' => '1'],
+            ],
         ])->assertRedirect(route('admin.rooms'));
 
         $this->assertSame([], $event->fresh()->inclusions);
+        $this->assertSame([
+            ['name' => 'Premium Birthday Cake', 'description' => 'Two-tier cake', 'price' => 1800, 'available' => true],
+        ], $event->fresh()->optional_addons);
     }
 
     public function test_public_booking_can_create_an_event_reservation(): void
@@ -685,6 +700,70 @@ class AdminReservationTest extends TestCase
             'guest_email' => 'event@example.com',
             'number_of_guests' => 50,
         ]);
+    }
+
+    public function test_public_event_booking_saves_and_charges_selected_active_addons(): void
+    {
+        $guest = Guest::factory()->create([
+            'email' => 'addons@example.com',
+            'name' => 'Add-on Guest',
+            'contact_no' => '09191234568',
+        ]);
+        $event = \App\Models\Event::create([
+            'name' => 'Add-on Test Package',
+            'event_type' => 'Birthday',
+            'description' => 'Test package',
+            'price' => 5000,
+            'pricing_basis' => 'Per Event',
+            'capacity' => 40,
+            'location' => 'Garden',
+            'status' => 'available',
+            'optional_addons' => [
+                ['name' => 'Cake', 'description' => 'Custom cake', 'price' => 1000, 'available' => true],
+                ['name' => 'Live Music', 'description' => null, 'price' => 2500, 'available' => true],
+                ['name' => 'Unavailable Extra', 'description' => null, 'price' => 9000, 'available' => false],
+            ],
+        ]);
+        $eventDate = now()->addDay()->format('Y-m-d');
+
+        $response = $this->actingAs($guest, 'guest')->post(route('reservation.store'), [
+            'category' => 'event',
+            'event_id' => $event->id,
+            'event_addons' => json_encode([['event_id' => (string) $event->id, 'addon_indexes' => [0, 1]]]),
+            'event_type' => 'Birthday',
+            'guest_name' => 'Add-on Guest',
+            'guest_email' => 'addons@example.com',
+            'guest_phone' => '09191234568',
+            'check_in' => $eventDate,
+            'check_out' => $eventDate,
+            'event_start_time' => '10:00',
+            'event_end_time' => '14:00',
+            'number_of_guests' => 20,
+            'total_amount' => 5000,
+            'payment_method' => 'Cash / Pay at Hotel',
+        ]);
+
+        $response->assertRedirect(route('reservation'));
+        $reservation = \App\Models\EventReservation::where('guest_email', 'addons@example.com')->firstOrFail();
+        $this->assertSame(8500.0, (float) $reservation->total_amount);
+        $this->assertSame(['Cake', 'Live Music'], array_column($reservation->selected_addons, 'name'));
+
+        $this->post(route('reservation.store'), [
+            'category' => 'event',
+            'event_id' => $event->id,
+            'event_addons' => json_encode([['event_id' => (string) $event->id, 'addon_indexes' => [2]]]),
+            'event_type' => 'Birthday',
+            'guest_name' => 'Add-on Guest',
+            'guest_email' => 'addons@example.com',
+            'guest_phone' => '09191234568',
+            'check_in' => $eventDate,
+            'check_out' => $eventDate,
+            'event_start_time' => '10:00',
+            'event_end_time' => '14:00',
+            'number_of_guests' => 20,
+            'total_amount' => 5000,
+            'payment_method' => 'Cash / Pay at Hotel',
+        ])->assertUnprocessable();
     }
 
     public function test_public_booking_rejects_same_day_event_reservation(): void
