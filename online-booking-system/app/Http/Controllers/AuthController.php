@@ -139,6 +139,7 @@ class AuthController extends Controller
 
         Auth::guard('guest')->login($guest, true);
         $request->session()->regenerate();
+        $request->session()->flash('profile_edit_open', true);
 
         return redirect()->route('profile.edit');
     }
@@ -273,10 +274,17 @@ class AuthController extends Controller
      */
     public function verifyGuestEmail(Request $request, string $id, string $hash)
     {
-        abort_unless($request->hasValidSignature(), 403);
+        if (! $request->hasValidSignature()) {
+            return redirect()->route('home', ['auth' => 'signin'])
+                ->withErrors(['email' => 'This verification link is invalid or has expired. Please request a new verification email.']);
+        }
 
-        $guest = Guest::findOrFail($id);
-        abort_unless(hash_equals(sha1($guest->getEmailForVerification()), $hash), 403);
+        $guest = Guest::find($id);
+
+        if (! $guest || ! hash_equals(sha1($guest->getEmailForVerification()), $hash)) {
+            return redirect()->route('home', ['auth' => 'signin'])
+                ->withErrors(['email' => 'This verification link is invalid or has expired. Please request a new verification email.']);
+        }
 
         if (! $guest->hasVerifiedEmail() && $guest->markEmailAsVerified()) {
             event(new Verified($guest));

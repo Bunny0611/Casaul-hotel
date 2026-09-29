@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy Nginx configuration template
 COPY docker/nginx.conf /etc/nginx/sites-available/default
+RUN printf 'upload_max_filesize=8M\npost_max_size=10M\n' > /usr/local/etc/php/conf.d/uploads.ini
 
 COPY . /var/www/html
 

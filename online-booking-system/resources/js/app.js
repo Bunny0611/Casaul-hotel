@@ -133,12 +133,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (capitalizeWords) {
-                const sanitized = value.replace(/[^a-zA-Z\s]/g, '');
-                return sanitized
-                    .split(/\s+/)
-                    .filter(Boolean)
-                    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-                    .join(' ');
+                const sanitized = value.replace(/[^a-zA-Z\s]/g, '').replace(/\s+/g, ' ');
+                return sanitized.toUpperCase();
             }
 
             return value;
@@ -908,7 +904,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     toggleBtn.addEventListener('click', () => toggleChat(!isOpen));
-    closeBtn.addEventListener('click', () => toggleChat(false));
+    closeBtn?.addEventListener('click', () => toggleChat(false));
     faqToggle.addEventListener('click', () => {
         const isExpanded = faqToggle.getAttribute('aria-expanded') === 'true';
         faqToggle.setAttribute('aria-expanded', String(!isExpanded));

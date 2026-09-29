@@ -1,6 +1,9 @@
 @extends('app')
 
 @section('content')
+@php
+    $profileEditOpen = session('profile_edit_open', false) || $errors->any();
+@endphp
 
 <div class="profile-page">
     <section class="profile-hero">
@@ -44,13 +47,13 @@
                 @endif
                 <p class="profile-meta"><i class="fas fa-id-badge"></i> Guest Account</p>
             </div>
-            <button type="button" class="profile-edit-trigger" id="profileEditTrigger" aria-controls="profileEditForm" aria-expanded="{{ $errors->any() ? 'true' : 'false' }}">
+            <button type="button" class="profile-edit-trigger" id="profileEditTrigger" aria-controls="profileEditForm" aria-expanded="{{ $profileEditOpen ? 'true' : 'false' }}">
                 <i class="fas fa-pen"></i>
                 <span>Edit Profile</span>
             </button>
         </div>
 
-        <form method="POST" action="{{ route('profile.update') }}" class="profile-edit-card{{ $errors->any() ? ' is-open' : '' }}" id="profileEditForm">
+        <form method="POST" action="{{ route('profile.update') }}" class="profile-edit-card{{ $profileEditOpen ? ' is-open' : '' }}" id="profileEditForm">
             @csrf
             @method('PUT')
             <div class="profile-edit-heading">
