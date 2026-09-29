@@ -189,6 +189,7 @@
     .field-input { width:100%; min-height:34px; box-sizing:border-box; border:1px solid #e1e5ec; border-radius:7px; padding:7px 10px; color:#8993a6; background:#fff; font-size:10px; }
     .room-guest-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
     .reservation-card-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; align-items:stretch; }
+    #facilities-tab .reservation-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .room-type-tabs { display:flex; gap:6px; margin:0 0 12px; padding:4px; border-radius:8px; background:#fff1f2; }
     .room-type-tab { flex:1; border:0; border-radius:6px; padding:8px 10px; color:#b42318; background:transparent; font-size:11px; font-weight:700; cursor:pointer; }
     .room-type-tab.active { color:#fff; background:linear-gradient(90deg,#cc0925,#f97316); box-shadow:0 3px 8px rgba(204,9,37,.18); }
@@ -696,8 +697,14 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($facilities as $facility)
+                        @php
+                            $facilityImagePath = ltrim((string) $facility->image, '/');
+                            if (str_starts_with($facilityImagePath, 'storage/')) {
+                                $facilityImagePath = substr($facilityImagePath, strlen('storage/'));
+                            }
+                        @endphp
                         <article class="reservation-card" data-category="facilities" data-price="{{ $facility->price }}" data-pricing-basis="{{ $facility->pricing_basis ?? 'Per Stay' }}" data-title="{{ $facility->name }}" data-facility-id="{{ $facility->id }}" data-capacity="{{ $facility->capacity ?? '' }}" data-location="{{ $facility->location ?? '' }}" data-scheduling="{{ $facility->scheduling_requirement ?? 'No Additional Schedule' }}">
-                            <img src="{{ $facility->image ? secure_asset('storage/' . ltrim($facility->image, '/')) : secure_asset('image/Royal-Suite-room.jpg') }}" alt="{{ $facility->name }}">
+                            <img src="{{ $facilityImagePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($facilityImagePath) ? secure_asset('storage/' . $facilityImagePath) : secure_asset('image/Royal-Suite-room.jpg') }}" alt="{{ $facility->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $facility->name }}</h4>
                                 <p>{{ $facility->description ?: 'Premium guest add-on for your stay.' }}</p>
