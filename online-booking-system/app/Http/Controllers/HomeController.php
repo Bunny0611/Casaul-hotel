@@ -43,12 +43,19 @@ class HomeController extends Controller
         if ($rooms->isNotEmpty()) {
             return $rooms
                 ->map(function (Room $room) {
+                    $roomImage = ltrim((string) $room->image, '/');
+                    if (str_starts_with($roomImage, 'storage/')) {
+                        $roomImage = substr($roomImage, 8);
+                    }
+
                     return [
                         'slug' => Str::slug($room->room_type ?? 'room'),
                         'name' => $room->room_type ?? 'Room',
                         'price' => '₱' . number_format((float) $room->price, 2),
                         'tagline' => 'Comfortable accommodation for a restful stay.',
-                        'image' => $room->image ? 'images/' . $room->image : 'image/Royal-Suite-room.jpg',
+                        'image' => $roomImage && Storage::disk('public')->exists($roomImage)
+                            ? 'storage/' . $roomImage
+                            : 'image/Royal-Suite-room.jpg',
                         'description' => $room->description ?? 'Enjoy a comfortable room with thoughtful facilities and a welcoming atmosphere.',
                         'features' => ['2 Guests', '1 Bed', 'Wi‑Fi', 'Air conditioning'],
                     ];
@@ -1432,11 +1439,18 @@ class HomeController extends Controller
             $databaseRoom = Room::query()->get()->first(fn ($candidate) => Str::slug($candidate->room_type) === $slug);
 
             if ($databaseRoom) {
+                $roomImage = ltrim((string) $databaseRoom->image, '/');
+                if (str_starts_with($roomImage, 'storage/')) {
+                    $roomImage = substr($roomImage, 8);
+                }
+
                 $room = [
                     'name' => $databaseRoom->room_type,
                     'price' => '₱' . number_format((float) $databaseRoom->price, 2),
                     'tagline' => 'Comfortable accommodation for a restful stay.',
-                    'image' => $databaseRoom->image ? 'images/' . $databaseRoom->image : 'image/Royal-Suite-room.jpg',
+                    'image' => $roomImage && Storage::disk('public')->exists($roomImage)
+                        ? 'storage/' . $roomImage
+                        : 'image/Royal-Suite-room.jpg',
                     'description' => $databaseRoom->description ?? 'Enjoy a comfortable room with thoughtful facilities and a welcoming atmosphere.',
                     'features' => ['Comfortable bedding', 'Private bath', 'High-speed Wi-Fi', 'Air conditioning'],
                 ];
