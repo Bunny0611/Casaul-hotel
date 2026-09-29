@@ -125,6 +125,39 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    const formatNameInput = (input, { capitalizeWords = false, addMiddleInitialDot = false } = {}) => {
+        const formatValue = (value) => {
+            if (addMiddleInitialDot) {
+                const cleaned = value.replace(/[^a-zA-Z]/g, '').slice(0, 1);
+                return cleaned ? `${cleaned.toUpperCase()}.` : '';
+            }
+
+            if (capitalizeWords) {
+                return value
+                    .toLowerCase()
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                    .join(' ');
+            }
+
+            return value;
+        };
+
+        input.addEventListener('input', () => {
+            const value = input.value;
+            input.value = formatValue(value);
+        });
+    };
+
+    const firstNameInput = signupForm?.querySelector('input[name="first_name"]');
+    const lastNameInput = signupForm?.querySelector('input[name="last_name"]');
+    const middleInitialInput = signupForm?.querySelector('input[name="middle_initial"]');
+
+    if (firstNameInput) formatNameInput(firstNameInput, { capitalizeWords: true });
+    if (lastNameInput) formatNameInput(lastNameInput, { capitalizeWords: true });
+    if (middleInitialInput) formatNameInput(middleInitialInput, { addMiddleInitialDot: true });
+
     if (signupEmailInput && signUpView && !signUpView.classList.contains('auth-hidden')
         && /email|registered|taken/i.test(authMessage?.textContent || '')) {
         window.setTimeout(() => signupEmailInput.focus(), 0);
