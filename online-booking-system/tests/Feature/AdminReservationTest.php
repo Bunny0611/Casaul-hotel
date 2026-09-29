@@ -52,6 +52,50 @@ class AdminReservationTest extends TestCase
         );
     }
 
+    public function test_facility_pricing_uses_the_selected_basis_and_duration(): void
+    {
+        $hourlyFacility = new \App\Models\Facility(['price' => 100, 'pricing_basis' => 'Per Hour']);
+        $dailyFacility = new \App\Models\Facility(['price' => 100, 'pricing_basis' => 'Per Day']);
+        $personFacility = new \App\Models\Facility(['price' => 100, 'pricing_basis' => 'Per Person']);
+        $combinedFacility = new \App\Models\Facility(['price' => 100, 'pricing_basis' => 'Per Stay + Per Vehicle']);
+
+        $this->assertSame(300.0, \App\Support\ReservationPricing::facilities(collect([$hourlyFacility]), 1, '2026-09-29', '2026-09-29', 3));
+        $this->assertSame(200.0, \App\Support\ReservationPricing::facilities(collect([$dailyFacility]), 1, '2026-09-29', '2026-09-29', 25));
+        $this->assertSame(400.0, \App\Support\ReservationPricing::facilities(collect([$personFacility]), 4, '2026-09-29', '2026-09-29', 1));
+        $this->assertSame(500.0, \App\Support\ReservationPricing::facilities(collect([$combinedFacility]), 3, '2026-09-29', '2026-10-01', 1));
+    }
+
+    public function test_employee_facility_table_displays_facility_time_and_quantity(): void
+    {
+        $employee = Staff::factory()->create(['role' => 'employee']);
+        $facility = \App\Models\Facility::create([
+            'name' => 'Conference Room Test',
+            'price' => 1500,
+            'pricing_basis' => 'Per Stay',
+            'status' => 'available',
+        ]);
+        \App\Models\FacilityReservation::create([
+            'facility_id' => $facility->id,
+            'facility_quantity' => 3,
+            'guest_name' => 'Facility Table Guest',
+            'guest_email' => 'facility-table@example.com',
+            'guest_phone' => '09191234589',
+            'check_in' => '2026-10-01',
+            'facility_start_time' => '15:00',
+            'check_out' => '2026-10-01',
+            'facility_end_time' => '17:00',
+            'number_of_guests' => 3,
+            'status' => 'confirmed',
+            'total_amount' => 1500,
+        ]);
+
+        $this->actingAs($employee)
+            ->get(route('employee.reservation'))
+            ->assertOk()
+            ->assertSeeText('3:00 PM - 5:00 PM')
+            ->assertSeeText('Quantity: 3');
+    }
+
     public function test_reservation_confirmation_email_uses_the_booked_room_image(): void
     {
         Storage::fake('public');
@@ -235,7 +279,7 @@ class AdminReservationTest extends TestCase
         $facility = \App\Models\Facility::create([
             'name' => 'Pool Access Test',
             'price' => 500,
-            'pricing_basis' => 'Per Stay',
+            'pricing_basis' => 'Per Hour',
             'status' => 'available',
         ]);
         $checkIn = today()->addDay()->toDateString();
@@ -250,9 +294,11 @@ class AdminReservationTest extends TestCase
             'guest_email' => 'room-facility@example.com',
             'guest_phone' => '09191234589',
             'check_in' => $checkIn,
-            'check_in_time' => '15:00',
+            'check_in_time' => '14:00',
+            'facility_start_time' => '15:00',
             'check_out' => $roomCheckOut,
             'check_out_time' => '15:00',
+            'facility_duration_hours' => 2,
             'number_of_guests' => 6,
             'room_number_of_guests' => 6,
             'adult_guests' => 1,
@@ -269,6 +315,9 @@ class AdminReservationTest extends TestCase
 
         $facilityReservation = \App\Models\FacilityReservation::where('guest_email', 'room-facility@example.com')->firstOrFail();
         $this->assertSame($checkIn, $facilityReservation->check_out->toDateString());
+        $this->assertSame('15:00', $facilityReservation->facility_start_time);
+        $this->assertSame(1000.0, (float) $facilityReservation->total_amount);
+        $this->assertSame('17:00', $facilityReservation->facility_end_time);
     }
 
     public function test_public_booking_rejects_overlapping_room_reservation(): void

@@ -813,6 +813,7 @@
             grid-template-columns: 1fr;
         }
     }
+
 </style>
 
 <div class="profile-page">
@@ -881,7 +882,13 @@
                                         collect([$facility]),
                                         (int) ($reservation->facility_quantity ?? $reservation->quantity ?? 1),
                                         $reservation->check_in,
-                                        $reservation->check_out
+                                        $reservation->check_out,
+                                        \App\Support\ReservationPricing::facilityDurationHours(
+                                            $reservation->check_in,
+                                            $reservation->facility_start_time ?? $reservation->check_in_time,
+                                            $reservation->check_out,
+                                            $reservation->facility_end_time ?? $reservation->check_out_time
+                                        )
                                     );
                                     $reservationReceiptLines[] = [
                                         'quantity' => 1,
@@ -1604,74 +1611,14 @@
         document.getElementById('guest-receipt-modal').setAttribute('aria-hidden', 'true');
     });
 
-    const loadReceiptPdfTools = () => Promise.all([
-        new Promise((resolve, reject) => {
-            if (window.html2canvas) {
-                resolve();
-                return;
-            }
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        }),
-        new Promise((resolve, reject) => {
-            if (window.jspdf?.jsPDF) {
-                resolve();
-                return;
-            }
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        }),
-    ]);
-
-    const downloadGuestReceiptAsPdf = async () => {
+    const downloadGuestReceiptAsPdf = () => {
         const modal = document.getElementById('guest-receipt-modal');
         const downloadButton = document.getElementById('guest-receipt-download-btn');
-        const originalLabel = downloadButton.innerHTML;
-        downloadButton.disabled = true;
-        downloadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
-        try {
-            await loadReceiptPdfTools();
-            const receiptCard = modal.querySelector('.receipt-card');
-            const printableReceipt = receiptCard.cloneNode(true);
-            printableReceipt.querySelector('.receipt-close')?.remove();
-            printableReceipt.querySelector('.receipt-actions')?.remove();
-            printableReceipt.style.position = 'absolute';
-            printableReceipt.style.left = '-10000px';
-            printableReceipt.style.top = '0';
-            printableReceipt.style.width = `${receiptCard.offsetWidth}px`;
-            printableReceipt.style.maxHeight = 'none';
-            printableReceipt.style.height = 'auto';
-            printableReceipt.style.overflow = 'visible';
-            document.body.appendChild(printableReceipt);
-            const canvas = await window.html2canvas(printableReceipt, { scale: 2, backgroundColor: '#ffffff' });
-            printableReceipt.remove();
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 6;
-            const maxWidth = pageWidth - (margin * 2);
-            const maxHeight = pageHeight - (margin * 2);
-            const scale = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
-            const imageWidth = canvas.width * scale;
-            const imageHeight = canvas.height * scale;
-            const imageX = (pageWidth - imageWidth) / 2;
-            const imageY = (pageHeight - imageHeight) / 2;
-            const imageData = canvas.toDataURL('image/jpeg', 0.95);
-            pdf.addImage(imageData, 'JPEG', imageX, imageY, imageWidth, imageHeight);
-            pdf.save(`${document.getElementById('guest-receipt-number').textContent || 'reservation'}-receipt.pdf`);
-        } catch (error) {
-            alert('The receipt PDF could not be downloaded. Please try again.');
-        } finally {
-            downloadButton.disabled = false;
-            downloadButton.innerHTML = originalLabel;
-        }
+        window.downloadReceiptPdf(
+            modal.querySelector('.receipt-card'),
+            `${document.getElementById('guest-receipt-number').textContent || 'reservation'}-receipt.pdf`,
+            downloadButton
+        );
     };
 
     const printGuestReceipt = () => {
