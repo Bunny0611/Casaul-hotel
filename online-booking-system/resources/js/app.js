@@ -759,6 +759,7 @@ document.addEventListener('DOMContentLoaded', function () {
         container.style.display = 'flex';
         faqToggle.style.display = 'flex';
         faqToggle.setAttribute('aria-expanded', 'false');
+        faqToggle.textContent = 'Show Quick Questions';
 
         if (!buttons || buttons.length === 0) {
             container.style.display = 'none';

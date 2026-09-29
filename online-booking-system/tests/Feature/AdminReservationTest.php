@@ -218,6 +218,59 @@ class AdminReservationTest extends TestCase
         ]);
     }
 
+    public function test_public_facility_booking_keeps_the_room_checkout_and_guest_breakdown(): void
+    {
+        $guest = Guest::factory()->create([
+            'email' => 'room-facility@example.com',
+            'name' => 'Room and Facility Guest',
+        ]);
+        $room = Room::create([
+            'room_number' => '207',
+            'room_type' => 'Deluxe Room',
+            'price' => 2500,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'status' => 'available',
+        ]);
+        $facility = \App\Models\Facility::create([
+            'name' => 'Pool Access Test',
+            'price' => 500,
+            'pricing_basis' => 'Per Stay',
+            'status' => 'available',
+        ]);
+        $checkIn = today()->addDay()->toDateString();
+        $roomCheckOut = today()->addDays(3)->toDateString();
+
+        $this->actingAs($guest, 'guest')->post(route('reservation.store'), [
+            'room_id' => $room->id,
+            'facility_id' => (string) $facility->id,
+            'facility_quantity' => 1,
+            'duration_hours' => 2,
+            'guest_name' => 'Room and Facility Guest',
+            'guest_email' => 'room-facility@example.com',
+            'guest_phone' => '09191234589',
+            'check_in' => $checkIn,
+            'check_in_time' => '15:00',
+            'check_out' => $roomCheckOut,
+            'check_out_time' => '15:00',
+            'number_of_guests' => 6,
+            'room_number_of_guests' => 6,
+            'adult_guests' => 1,
+            'kid_guests' => 1,
+            'total_amount' => 10000,
+            'payment_method' => 'Cash / Pay at Hotel',
+        ])->assertRedirect(route('reservation'));
+
+        $roomReservation = RoomReservation::where('guest_email', 'room-facility@example.com')->firstOrFail();
+        $this->assertSame($roomCheckOut, $roomReservation->check_out->toDateString());
+        $this->assertSame(6, $roomReservation->number_of_guests);
+        $this->assertSame(1, $roomReservation->adult_guests);
+        $this->assertSame(1, $roomReservation->kid_guests);
+
+        $facilityReservation = \App\Models\FacilityReservation::where('guest_email', 'room-facility@example.com')->firstOrFail();
+        $this->assertSame($checkIn, $facilityReservation->check_out->toDateString());
+    }
+
     public function test_public_booking_rejects_overlapping_room_reservation(): void
     {
         $guest = Guest::factory()->create();

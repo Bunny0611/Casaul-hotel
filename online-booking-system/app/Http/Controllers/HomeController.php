@@ -751,7 +751,7 @@ class HomeController extends Controller
                 return RoomReservation::create(collect($validated)->only([
                     'room_id', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
                     'room_check_in_time', 'check_out', 'room_check_out_time',
-                    'number_of_guests', 'status', 'total_amount', 'payment_method',
+                    'number_of_guests', 'adult_guests', 'kid_guests', 'status', 'total_amount', 'payment_method',
                     'payment_details', 'amount_paid', 'special_requests',
                 ])->all());
             });
@@ -777,17 +777,17 @@ class HomeController extends Controller
             $facilityStartTime = $validated['check_in_time'] ?? '00:00';
             $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $facilityStartTime)
                 ->addHours($durationHours);
-            $validated['check_out'] = $endTime->toDateString();
+            $facilityCheckOut = $endTime->toDateString();
             $validated['facility_start_time'] = $facilityStartTime;
             $validated['facility_end_time'] = $endTime->format('H:i');
             $validated['facility_quantity'] = $facilityQuantity;
             $validated['total_amount'] = $facilityTotal;
             $reservation = FacilityReservation::create(collect($validated)->only([
                 'facility_id', 'facility_quantity', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
-                'facility_start_time', 'check_out', 'facility_end_time',
+                'facility_start_time', 'facility_end_time',
                 'number_of_guests', 'status', 'total_amount', 'payment_method',
                 'payment_details', 'amount_paid', 'special_requests',
-            ])->all());
+            ])->merge(['check_out' => $facilityCheckOut])->all());
 
             if (!empty($validated['room_id'])) {
                 RoomReservation::create([
@@ -800,6 +800,8 @@ class HomeController extends Controller
                     'check_out' => $validated['check_out'],
                     'room_check_out_time' => $validated['check_out_time'] ?? null,
                     'number_of_guests' => $roomGuestCount,
+                    'adult_guests' => $validated['adult_guests'] ?? null,
+                    'kid_guests' => $validated['kid_guests'] ?? null,
                     'status' => 'pending',
                     'total_amount' => $roomTotal,
                     'payment_method' => $validated['payment_method'],
@@ -866,6 +868,8 @@ class HomeController extends Controller
                 'check_out' => $validated['check_out'],
                 'room_check_out_time' => $validated['check_out_time'] ?? null,
                 'number_of_guests' => $roomGuestCount,
+                'adult_guests' => $validated['adult_guests'] ?? null,
+                'kid_guests' => $validated['kid_guests'] ?? null,
                 'status' => 'pending',
                 'total_amount' => $roomTotal,
                 'payment_method' => $validated['payment_method'],
