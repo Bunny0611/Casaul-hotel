@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => CheckRole::class,
         ]);
+        $middleware->validateCsrfTokens(except: ['logout']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
