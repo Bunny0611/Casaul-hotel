@@ -178,6 +178,7 @@ class HomeController extends Controller
             ->get();
 
         $facilities = Facility::whereIn('status', ['available', 'limited'])
+            ->orderByRaw("CASE WHEN scheduling_requirement = 'No Additional Schedule' THEN 0 ELSE 1 END")
             ->orderBy('name')
             ->get();
 
