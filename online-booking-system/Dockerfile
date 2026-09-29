@@ -48,5 +48,6 @@ EXPOSE 8000
 CMD php artisan migrate --force \
     && php artisan config:clear \
     && php artisan cache:clear \
+    && php artisan view:clear \
     && nginx \
     && php-fpm
