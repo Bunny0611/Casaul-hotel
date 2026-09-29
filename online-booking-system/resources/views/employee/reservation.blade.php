@@ -1417,8 +1417,11 @@
             dining: 'Dining'
         };
 
-        function setActiveReservationTab(tabKey) {
-            const reservationType = reservationTypeLabels[tabKey] || reservationTypeLabels.rooms;
+        function setActiveReservationTab(tabKey, updateUrl = false) {
+            if (!reservationTypeLabels[tabKey]) {
+                tabKey = 'rooms';
+            }
+            const reservationType = reservationTypeLabels[tabKey];
 
             document.querySelectorAll('[data-reservation-tab]').forEach((button) => {
                 const isActive = button.dataset.reservationTab === tabKey;
@@ -1477,6 +1480,12 @@
             document.getElementById('addReservationButtonText').textContent = `Add ${reservationType} Reservation`;
             document.getElementById('reservationModalTitle').textContent = `Add ${reservationType} Reservation`;
             document.getElementById('reservationCategory').value = canonicalReservationCategory(tabKey);
+
+            if (updateUrl) {
+                const params = new URLSearchParams(window.location.search);
+                params.set('tab', tabKey);
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`);
+            }
         }
 
         function updateDiningReservationTotal() {
@@ -1630,7 +1639,7 @@
         }
 
         document.querySelectorAll('[data-reservation-tab]').forEach((button) => {
-            button.addEventListener('click', () => setActiveReservationTab(button.dataset.reservationTab));
+            button.addEventListener('click', () => setActiveReservationTab(button.dataset.reservationTab, true));
         });
 
         document.querySelector('[data-reservation-input="facilities"]')?.addEventListener('change', updateFacilityReservationTotal);
@@ -1664,7 +1673,7 @@
             document.querySelector('[data-dining-time-end]').value = event.target.value;
         });
 
-        setActiveReservationTab('rooms');
+        setActiveReservationTab(new URLSearchParams(window.location.search).get('tab') || 'rooms');
     });
 
     function changeReservationStatus(id, status) {

@@ -208,13 +208,12 @@
     #events-tab .event-category-tab { flex:1; min-height:36px; border:1px solid transparent; border-radius:6px; color:#4b5563; background:transparent; font-size:11px; font-weight:700; cursor:pointer; transition:background .16s ease,color .16s ease,border-color .16s ease; }
     #events-tab .event-category-tab.active { color:#fff; background:#94151d; box-shadow:0 3px 8px rgba(148,21,29,.18); }
     #events-tab .event-category-tab:focus-visible,
-    #events-tab .event-options-disclosure summary:focus-visible { outline:2px solid #e3aa32; outline-offset:2px; }
-    #events-tab .reservation-card-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; align-items:stretch; }
+    #events-tab .reservation-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:stretch; }
     #events-tab .reservation-card-grid > [hidden] { display:none !important; }
     #events-tab .event-package-card { min-height:100%; border:1px solid #e8eaf0; border-radius:9px; box-shadow:0 3px 9px rgba(24,36,64,.045); transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease; }
     #events-tab .event-package-card.is-selected { border:2px solid #f0b33d; box-shadow:0 4px 12px rgba(194,139,28,.16); }
-    #events-tab .event-package-card > img { width:100%; height:112px; flex:0 0 112px; object-fit:cover; }
-    #events-tab .event-package-body { flex:1; gap:7px; padding:11px; }
+    #events-tab .event-package-card > img { width:100%; height:130px; flex:0 0 130px; object-fit:cover; }
+    #events-tab .event-package-body { flex:1; gap:7px; padding:9px; }
     #events-tab .event-package-body h4 { color:#172033; font-size:13px; line-height:1.3; }
     #events-tab .event-package-price { display:flex; align-items:baseline; flex-wrap:wrap; gap:5px; margin:0; }
     #events-tab .event-package-price .price { min-height:0; margin:0; color:#a41120; font-size:15px; }
@@ -223,17 +222,43 @@
     #events-tab .event-package-features { display:grid; gap:5px; margin:0; padding:0; color:#667186; font-size:10px; line-height:1.35; list-style:none; }
     #events-tab .event-package-features li { display:flex; align-items:flex-start; gap:6px; }
     #events-tab .event-package-features i { margin-top:2px; color:#77869b; font-size:9px; }
-    #events-tab .event-options-disclosure { margin-top:2px; border-top:1px solid #edf0f4; }
-    #events-tab .event-options-disclosure summary { padding:8px 0 2px; color:#8f1620; font-size:10px; font-weight:700; cursor:pointer; }
-    #events-tab .event-options { padding-top:9px; }
-    #events-tab .event-options .field-label { margin-top:7px; font-size:10px; }
-    #events-tab .event-options .field-input { min-height:32px; font-size:10px; }
+    #events-tab .event-options-source { position:fixed; top:50%; left:50%; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none; }
     #events-tab .reservation-card-footer { margin-top:auto; padding-top:4px; }
     #events-tab .select-option-btn { min-height:34px; border-color:#b51c28; border-radius:7px; color:#a41120; font-size:10px; }
     #events-tab .event-package-card.is-selected .select-option-btn { border-color:#94151d; color:#fff; background:#94151d; }
     #events-tab .event-empty-state { margin:0; padding:22px 12px; border:1px dashed #d9dde5; border-radius:8px; color:#788398; font-size:11px; text-align:center; }
-    @media (max-width:700px) { #events-tab .reservation-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    @media (max-width:520px) { #events-tab .reservation-card-grid { grid-template-columns:1fr; } #events-tab .event-package-card > img { height:160px; flex-basis:160px; } }
+    .event-reservation-modal { position:fixed; inset:0; z-index:10010; display:none; align-items:center; justify-content:center; padding:24px max(24px, calc((100vw - 1120px) / 2)); background:rgba(25,20,21,.42); }
+    .event-reservation-modal.is-open { display:flex; }
+    .event-reservation-card { width:min(410px,100%); max-height:calc(100vh - 48px); overflow-y:auto; box-sizing:border-box; padding:22px; border:1px solid #f0e8e5; border-radius:16px; background:#fffdfa; color:#3b2025; box-shadow:0 24px 70px rgba(35,18,20,.24); }
+    .event-reservation-header { display:flex; align-items:center; gap:11px; margin-bottom:17px; }
+    .event-reservation-heading-icon,.event-reservation-field-icon { display:grid; place-items:center; flex:0 0 auto; border-radius:50%; background:#f4eeee; color:#9a2631; }
+    .event-reservation-heading-icon { width:36px; height:36px; font-size:15px; }
+    .event-reservation-header h2 { flex:1; margin:0; color:#402329; font-size:17px; }
+    .event-reservation-close { display:grid; place-items:center; width:32px; height:32px; border:0; border-radius:50%; color:#715d60; background:transparent; font-size:15px; cursor:pointer; }
+    .event-reservation-close:hover { background:#f5eded; }
+    .event-reservation-package { display:grid; grid-template-columns:92px minmax(0,1fr); gap:13px; align-items:center; padding:0 0 16px; border-bottom:1px solid #ece5e2; }
+    .event-reservation-package img { width:92px; height:92px; border-radius:9px; object-fit:cover; background:#f1ece8; }
+    .event-reservation-package-copy { min-width:0; }
+    .event-reservation-type { display:block; margin-bottom:4px; color:#a2594b; font-size:10px; font-weight:700; text-transform:capitalize; }
+    .event-reservation-package h3 { margin:0 0 4px; color:#402329; font-size:14px; line-height:1.3; }
+    .event-reservation-description { margin:0 0 7px; color:#796c6d; font-size:10px; line-height:1.45; }
+    .event-reservation-price { color:#9e202c; font-size:13px; font-weight:800; }
+    .event-reservation-fields { margin:5px 0 0; }
+    .event-reservation-field { display:grid; grid-template-columns:32px minmax(0,1fr) 16px; gap:10px; align-items:center; width:100%; min-height:61px; padding:8px 0; border:0; border-bottom:1px solid #eee8e5; text-align:left; color:inherit; background:transparent; cursor:pointer; }
+    .event-reservation-field-icon { width:30px; height:30px; color:#78686a; background:#f3f1ef; font-size:11px; }
+    .event-reservation-field-copy { display:flex; min-width:0; flex-direction:column; gap:4px; }
+    .event-reservation-field-copy strong { color:#4a3034; font-size:11px; }
+    .event-reservation-field-copy span { overflow:hidden; color:#887a7b; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+    .event-reservation-field-copy input { width:110px; max-width:100%; min-height:28px; padding:4px 7px; border:1px solid #e4d9d6; border-radius:5px; color:#4a3034; background:#fff; font-size:11px; }
+    .event-reservation-field-chevron { color:#a99b9c; font-size:11px; }
+    .event-reservation-field[aria-disabled="true"] { cursor:default; }
+    .event-reservation-total { display:flex; justify-content:space-between; align-items:center; margin:5px 0 15px; padding:15px 0 0; border-top:1px solid #e9dfdc; color:#402329; font-size:13px; font-weight:700; }
+    .event-reservation-total strong { color:#96232e; font-size:17px; }
+    .event-reservation-actions { display:grid; gap:8px; }
+    .event-reservation-continue { min-height:43px; border:0; border-radius:7px; color:#fff; background:linear-gradient(100deg,#a91427,#e66a24); font-size:12px; font-weight:800; cursor:pointer; box-shadow:0 5px 12px rgba(169,20,39,.18); }
+    .event-reservation-clear { min-height:34px; border:0; color:#8b7375; background:transparent; font-size:11px; font-weight:700; cursor:pointer; }
+    .event-reservation-continue:focus-visible,.event-reservation-close:focus-visible,.event-reservation-field:focus-visible,.event-reservation-clear:focus-visible { outline:2px solid #d89a38; outline-offset:2px; }
+    @media (max-width:600px) { .event-reservation-modal { justify-content:center; padding:14px; } .event-reservation-card { max-height:calc(100vh - 28px); padding:18px; } }
     .reservation-card-footer { display:block; }
     .reservation-card .price { display:block; min-height:16px; margin-bottom:7px; color:#d20b26; font-size:11px; font-weight:800; }
     .select-option-btn { width:100%; padding:7px 8px; border:1px solid #ff9aa7; border-radius:7px; color:#d20b26; background:#fff; font-size:10px; }
@@ -744,7 +769,7 @@
                 <p class="event-empty-state" hidden>No packages are currently available in this category.</p>
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
-                        <article class="reservation-card event-package-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}" data-available-from="{{ $event->available_from ?: '08:00' }}" data-available-to="{{ $event->available_to ?: '22:00' }}" data-duration-hours="{{ $event->duration_hours ?: 4 }}">
+                        <article class="reservation-card event-package-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-location="{{ $event->location ?? '' }}" data-capacity="{{ $event->capacity }}" data-available-from="{{ $event->available_from ?: '08:00' }}" data-available-to="{{ $event->available_to ?: '22:00' }}" data-duration-hours="{{ $event->duration_hours ?: 4 }}">
                             @if($event->image)
                                 <img src="{{ asset('storage/' . ltrim($event->image, '/')) }}" alt="{{ $event->name }}">
                             @endif
@@ -754,48 +779,33 @@
                                 @if($event->description)
                                     <p class="event-package-description">{{ $event->description }}</p>
                                 @endif
+                                @php
+                                    $eventFeatures = collect([
+                                        $event->capacity ? 'Up to ' . $event->capacity . ' guests' : null,
+                                        ($event->duration_hours ?: 4) . '-hour venue',
+                                        $event->location ? 'Venue: ' . $event->location : null,
+                                    ])->merge($event->inclusions ?? [])
+                                        ->map(fn ($feature) => trim((string) $feature))
+                                        ->filter()
+                                        ->unique(fn ($feature) => mb_strtolower($feature))
+                                        ->values();
+                                @endphp
                                 <ul class="event-package-features">
-                                    @if($event->capacity)
-                                        <li><i class="fas fa-check" aria-hidden="true"></i> Maximum {{ $event->capacity }} guests</li>
-                                    @endif
-                                    <li><i class="fas fa-check" aria-hidden="true"></i> {{ $event->duration_hours ?: 4 }}-hour venue</li>
-                                    @if($event->location)
-                                        <li><i class="fas fa-check" aria-hidden="true"></i> {{ $event->location }}</li>
-                                    @endif
+                                    @foreach($eventFeatures as $feature)
+                                        <li><i class="fas fa-check" aria-hidden="true"></i> {{ $feature }}</li>
+                                    @endforeach
                                 </ul>
-                                <details class="event-options-disclosure">
-                                    <summary>Set date, time and guests</summary>
-                                    <div class="event-options">
-                                        <label class="field-label" for="eventDate-{{ $event->id }}">Event Date</label>
-                                        <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}">
-                                        <div class="event-time-row">
-                                            <div>
-                                                <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
-                                                <select id="eventStart-{{ $event->id }}" class="field-input event-start-time">
-                                                    @php
-                                                        $eventFeatures = collect([
-                                                            $event->capacity ? 'Up to ' . $event->capacity . ' guests' : null,
-                                                            ($event->duration_hours ?: 4) . '-hour venue',
-                                                            $event->location ? 'Venue: ' . $event->location : null,
-                                                        ])->merge($event->inclusions ?? [])
-                                                            ->map(fn ($feature) => trim((string) $feature))
-                                                            ->filter()
-                                                            ->unique(fn ($feature) => mb_strtolower($feature))
-                                                            ->values();
-                                                    @endphp
-                                                    <option value="">Select start time</option>
-                                                    @for($hour = 8; $hour <= 22; $hour++)
-                                                        <option value="{{ sprintf('%02d:00', $hour) }}">{{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}</option>
-                                                    @endfor
-                                                </select>
-                                                        @foreach($eventFeatures as $feature)
-                                                            <li><i class="fas fa-check" aria-hidden="true"></i> {{ $feature }}</li>
-                                                        @endforeach
-                                        <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="{{ $event->duration_hours ?: 4 }}" step="1" value="{{ $event->duration_hours ?: 4 }}" {{ strtolower($event->pricing_basis ?? '') === 'per person' ? 'readonly' : '' }}>
-                                        <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests (max {{ $event->capacity }})</label>
-                                        <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric">
-                                    </div>
-                                </details>
+                                <div class="event-options-source" aria-hidden="true">
+                                    <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \\Carbon\\Carbon::tomorrow()->format('Y-m-d') }}" tabindex="-1">
+                                    <select id="eventStart-{{ $event->id }}" class="field-input event-start-time" tabindex="-1">
+                                        <option value="">Select start time</option>
+                                        @for($hour = 8; $hour <= 22; $hour++)
+                                            <option value="{{ sprintf('%02d:00', $hour) }}">{{ \\Carbon\\Carbon::createFromTime($hour)->format('g:i A') }}</option>
+                                        @endfor
+                                    </select>
+                                    <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="{{ $event->duration_hours ?: 4 }}" step="1" value="{{ $event->duration_hours ?: 4 }}" {{ strtolower($event->pricing_basis ?? '') === 'per person' ? 'readonly' : '' }} tabindex="-1">
+                                    <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric" tabindex="-1">
+                                </div>
                                 <div class="reservation-card-footer">
                                     <button type="button" class="select-option-btn" data-title="{{ $event->name }}" data-price="{{ $event->price }}">Select Package</button>
                                 </div>
@@ -957,6 +967,62 @@
                 </div>
             </div>
         </aside>
+    </div>
+
+    <div class="event-reservation-modal" id="eventReservationModal" aria-hidden="true">
+        <section class="event-reservation-card" role="dialog" aria-modal="true" aria-labelledby="eventReservationTitle" tabindex="-1">
+            <header class="event-reservation-header">
+                <span class="event-reservation-heading-icon"><i class="far fa-calendar-alt" aria-hidden="true"></i></span>
+                <h2 id="eventReservationTitle">Your Reservation</h2>
+                <button type="button" class="event-reservation-close" id="eventReservationClose" aria-label="Close reservation summary"><i class="fas fa-times" aria-hidden="true"></i></button>
+            </header>
+            <div class="event-reservation-package">
+                <img id="eventReservationImage" src="" alt="">
+                <div class="event-reservation-package-copy">
+                    <span class="event-reservation-type" id="eventReservationType"></span>
+                    <h3 id="eventReservationPackageName"></h3>
+                    <p class="event-reservation-description" id="eventReservationDescription"></p>
+                    <strong class="event-reservation-price" id="eventReservationPackagePrice"></strong>
+                </div>
+            </div>
+            <div class="event-reservation-fields">
+                <button type="button" class="event-reservation-field" data-event-popup-field="date">
+                    <span class="event-reservation-field-icon"><i class="far fa-calendar" aria-hidden="true"></i></span>
+                    <span class="event-reservation-field-copy"><strong>Event Date</strong><span id="eventReservationDate">Select date</span></span>
+                    <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="event-reservation-field" data-event-popup-field="startTime">
+                    <span class="event-reservation-field-icon"><i class="far fa-clock" aria-hidden="true"></i></span>
+                    <span class="event-reservation-field-copy"><strong>Start Time</strong><span id="eventReservationStartTime">Select time</span></span>
+                    <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="event-reservation-field" data-event-popup-field="endTime">
+                    <span class="event-reservation-field-icon"><i class="far fa-clock" aria-hidden="true"></i></span>
+                    <span class="event-reservation-field-copy"><strong>End Time</strong><span id="eventReservationEndTime">Select time</span></span>
+                    <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
+                </button>
+                <div class="event-reservation-field">
+                    <span class="event-reservation-field-icon"><i class="fas fa-users" aria-hidden="true"></i></span>
+                    <label class="event-reservation-field-copy" for="eventReservationGuestsInput"><strong>Number of Guests</strong><input id="eventReservationGuestsInput" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
+                    <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
+                </div>
+                <div class="event-reservation-field" aria-disabled="true">
+                    <span class="event-reservation-field-icon"><i class="fas fa-map-marker-alt" aria-hidden="true"></i></span>
+                    <span class="event-reservation-field-copy"><strong>Venue</strong><span id="eventReservationVenue">Default venue</span></span>
+                    <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
+                </div>
+                <div class="event-reservation-field" aria-disabled="true">
+                    <span class="event-reservation-field-icon"><i class="fas fa-plus" aria-hidden="true"></i></span>
+                    <span class="event-reservation-field-copy"><strong>Add-ons</strong><span>None</span></span>
+                    <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
+                </div>
+            </div>
+            <div class="event-reservation-total"><span>Total</span><strong id="eventReservationTotal">₱0</strong></div>
+            <div class="event-reservation-actions">
+                <button type="button" class="event-reservation-continue" id="eventReservationContinue">Continue to Details <span aria-hidden="true">→</span></button>
+                <button type="button" class="event-reservation-clear" id="eventReservationClear">Clear All</button>
+            </div>
+        </section>
     </div>
 
     <div class="confirmation-modal" id="confirmationModal" aria-hidden="true" style="position:fixed; inset:0; justify-content:center; align-items:center; background:rgba(15,23,42,0.6); padding:24px; z-index:9999; display:none;">
@@ -1252,6 +1318,18 @@
         const confirmBtn = document.getElementById('confirmReservationBtn');
         const seeReceiptBtn = document.getElementById('seeReceiptBtn');
         const clearBtn = document.getElementById('clearReservationBtn');
+        const eventReservationModal = document.getElementById('eventReservationModal');
+        const eventReservationImage = document.getElementById('eventReservationImage');
+        const eventReservationType = document.getElementById('eventReservationType');
+        const eventReservationPackageName = document.getElementById('eventReservationPackageName');
+        const eventReservationDescription = document.getElementById('eventReservationDescription');
+        const eventReservationPackagePrice = document.getElementById('eventReservationPackagePrice');
+        const eventReservationDate = document.getElementById('eventReservationDate');
+        const eventReservationStartTime = document.getElementById('eventReservationStartTime');
+        const eventReservationEndTime = document.getElementById('eventReservationEndTime');
+        const eventReservationGuestsInput = document.getElementById('eventReservationGuestsInput');
+        const eventReservationVenue = document.getElementById('eventReservationVenue');
+        const eventReservationTotal = document.getElementById('eventReservationTotal');
         const reservationForm = document.getElementById('reservationForm');
         const reservationRoomId = document.getElementById('reservationRoomId');
         const reservationCheckIn = document.getElementById('reservationCheckIn');
@@ -1410,6 +1488,7 @@
         let selectedRoomCapacity = 2;
         let selectedFacilities = [];
         let selectedEvent = [];
+        let activeEventCard = null;
         let selectedDining = [];
         let selectedAdults = 0;
         let selectedKids = 0;
@@ -1639,12 +1718,27 @@
             return normalizedValue;
         };
 
+        const activateReservationTab = (tabId, updateUrl = false) => {
+            const targetTab = Array.from(tabs).find(tab => tab.dataset.tab === tabId);
+            const targetPanel = document.getElementById(tabId);
+            if (!targetTab || !targetPanel) {
+                return;
+            }
+
+            tabs.forEach(tab => tab.classList.toggle('active', tab === targetTab));
+            panels.forEach(panel => panel.classList.toggle('active', panel === targetPanel));
+
+            if (updateUrl) {
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#${tabId}`);
+            }
+        };
+
+        const initialTabId = window.location.hash.slice(1);
+        activateReservationTab(initialTabId || 'room-tab');
+
         tabs.forEach(tab => {
             tab.addEventListener('click', function () {
-                tabs.forEach(btn => btn.classList.remove('active'));
-                panels.forEach(panel => panel.classList.remove('active'));
-                this.classList.add('active');
-                document.getElementById(this.dataset.tab).classList.add('active');
+                activateReservationTab(this.dataset.tab, true);
             });
         });
         const updateSummary = () => {
@@ -1822,6 +1916,7 @@
             reservationTotalAmount.value = total;
             reservationCheckIn.value = bookingDate;
             reservationCheckOut.value = bookingEndDate;
+            updateEventReservationPopup();
         };
 
         checkIn.addEventListener('change', updateSummary);
@@ -1923,6 +2018,103 @@
             const extraGuestsTotal = ((selectedAdults * selectedAdultPrice) + (selectedKids * selectedKidPrice)) * stayNights;
             return (roomPrice * stayNights) + facilitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
         };
+
+        function closeEventReservationPopup() {
+            eventReservationModal.classList.remove('is-open');
+            eventReservationModal.setAttribute('aria-hidden', 'true');
+        }
+
+        function updateEventReservationPopup() {
+            const selectedPackage = activeEventCard
+                ? selectedEvent.find(item => item.id === activeEventCard.dataset.eventId)
+                : null;
+            if (!selectedPackage || !activeEventCard) {
+                if (selectedEvent.length === 0) closeEventReservationPopup();
+                return;
+            }
+
+            const packageImage = activeEventCard.querySelector('img');
+            if (packageImage) {
+                eventReservationImage.src = packageImage.src;
+                eventReservationImage.alt = selectedPackage.title;
+                eventReservationImage.hidden = false;
+            } else {
+                eventReservationImage.removeAttribute('src');
+                eventReservationImage.alt = '';
+                eventReservationImage.hidden = true;
+            }
+            eventReservationType.textContent = selectedPackage.type || 'Event package';
+            eventReservationPackageName.textContent = selectedPackage.title;
+            eventReservationDescription.textContent = activeEventCard.querySelector('.event-package-description')?.textContent.trim() || selectedPackage.type || '';
+            const pricingBasis = String(selectedPackage.pricingBasis || 'Per Event');
+            const pricingUnit = pricingBasis.replace(/^Per\s+/i, '').toLowerCase();
+            eventReservationPackagePrice.textContent = `₱${Number(selectedPackage.price || 0).toLocaleString()} / ${pricingUnit}`;
+            eventReservationDate.textContent = selectedPackage.date ? formatDisplayDate(selectedPackage.date) : 'Select date';
+            eventReservationStartTime.textContent = selectedPackage.startTime ? formatDisplayTime(selectedPackage.startTime) : 'Select time';
+            eventReservationEndTime.textContent = selectedPackage.endTime ? formatDisplayTime(selectedPackage.endTime) : 'Select time';
+            const guestInput = activeEventCard.querySelector('.event-guests');
+            eventReservationGuestsInput.value = guestInput?.value || '1';
+            eventReservationGuestsInput.max = guestInput?.max || activeEventCard.dataset.capacity || '';
+            eventReservationVenue.textContent = activeEventCard.dataset.location || 'Default venue';
+            eventReservationTotal.textContent = `₱${calculateTotal().toLocaleString()}`;
+        }
+
+        function openEventReservationPopup(card) {
+            activeEventCard = card;
+            updateEventReservationPopup();
+            eventReservationModal.classList.add('is-open');
+            eventReservationModal.setAttribute('aria-hidden', 'false');
+            document.getElementById('eventReservationClose').focus();
+        }
+
+        eventReservationModal.addEventListener('click', function (event) {
+            if (event.target === eventReservationModal) {
+                closeEventReservationPopup();
+                return;
+            }
+
+            const field = event.target.closest('[data-event-popup-field]');
+            if (!field || !activeEventCard) return;
+
+            const inputSelector = {
+                date: '.event-date',
+                startTime: '.event-start-time',
+                endTime: '.event-start-time',
+            }[field.dataset.eventPopupField];
+            const input = inputSelector ? activeEventCard.querySelector(inputSelector) : null;
+            if (!input) return;
+
+            input.focus();
+            if (typeof input.showPicker === 'function') {
+                try { input.showPicker(); } catch (error) { input.focus(); }
+            } else if (input.tagName === 'SELECT') {
+                input.click();
+            }
+        });
+
+        eventReservationGuestsInput.addEventListener('change', function () {
+            if (!activeEventCard) return;
+            const guestInput = activeEventCard.querySelector('.event-guests');
+            if (!guestInput) return;
+            guestInput.value = this.value;
+            guestInput.dispatchEvent(new Event('change', { bubbles: true }));
+            updateEventReservationPopup();
+        });
+
+        document.getElementById('eventReservationClose').addEventListener('click', closeEventReservationPopup);
+        document.getElementById('eventReservationContinue').addEventListener('click', function () {
+            closeEventReservationPopup();
+            confirmBtn.click();
+        });
+        document.getElementById('eventReservationClear').addEventListener('click', function () {
+            clearBtn.click();
+            closeEventReservationPopup();
+        });
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && eventReservationModal.classList.contains('is-open')) {
+                closeEventReservationPopup();
+            }
+        });
 
         const syncDiningQuantity = (card, nextValue) => {
             const input = card.querySelector('.dining-quantity');
@@ -2246,6 +2438,7 @@
                 const price = Number(this.dataset.price);
                 const card = this.closest('.reservation-card');
                 const category = card.dataset.category;
+                let shouldOpenEventPopup = false;
 
                 if (category === 'room') {
                     const isSameRoomSelected = selectedRoom === title && roomPrice === price;
@@ -2335,12 +2528,20 @@
                             endTime: eventEndTime,
                             durationHours: Number(card.querySelector('.event-duration')?.value || card.dataset.durationHours || 4),
                         });
+                        activeEventCard = card;
+                        shouldOpenEventPopup = true;
                         card.classList.add('is-selected');
                         this.textContent = 'Selected';
                     } else {
                         selectedEvent.splice(eventIndex, 1);
                         card.classList.remove('is-selected');
                         this.textContent = 'Select Package';
+                        if (activeEventCard === card) {
+                            const mostRecentSelection = selectedEvent[selectedEvent.length - 1];
+                            activeEventCard = mostRecentSelection
+                                ? Array.from(document.querySelectorAll('#events-tab .event-package-card')).find(eventCard => eventCard.dataset.eventId === mostRecentSelection.id) || null
+                                : null;
+                        }
                     }
                 } else if (category === 'dining') {
                     const diningIndex = selectedDining.findIndex(item => item.id === card.dataset.diningId);
@@ -2364,6 +2565,7 @@
                 }
 
                 updateSummary();
+                if (shouldOpenEventPopup) openEventReservationPopup(card);
             });
         });
 
@@ -2374,14 +2576,10 @@
                     return;
                 }
 
-                tabs.forEach(tab => tab.classList.remove('active'));
-                panels.forEach(panel => panel.classList.remove('active'));
-
                 const targetTab = Array.from(tabs).find(tab => tab.dataset.tab === targetId);
                 const targetPanel = document.getElementById(targetId);
                 if (targetTab && targetPanel) {
-                    targetTab.classList.add('active');
-                    targetPanel.classList.add('active');
+                    activateReservationTab(targetId, true);
                     targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
@@ -2919,6 +3117,7 @@
             selectedRoom = null;
             selectedFacilities = [];
             selectedEvent = [];
+            activeEventCard = null;
             selectedDining = [];
             diningSchedule.value = '';
             diningTable.value = '';
@@ -2934,8 +3133,10 @@
             selectedKidPrice = 325;
             document.querySelectorAll('.room-extra-guests').forEach(select => select.value = '0');
             items.forEach(btn => {
-                btn.textContent = 'Add to Reservation';
+                const card = btn.closest('.reservation-card');
+                btn.textContent = card.dataset.category === 'event' ? 'Select Package' : 'Add to Reservation';
                 btn.disabled = false;
+                card.classList.remove('is-selected');
             });
             paymentMethodChoices.forEach(button => button.classList.toggle('selected', button.dataset.paymentMethod === selectedPaymentMethod));
             updateSummary();

@@ -917,7 +917,13 @@
         const panels = document.querySelectorAll('[data-panel]');
         const panelStats = document.querySelectorAll('[data-panel-stats]');
 
-        function activateTab(targetName) {
+        function activateTab(targetName, updateUrl = false) {
+            if (!Array.from(tabButtons).some(function(btn) {
+                return btn.getAttribute('data-tab') === targetName;
+            })) {
+                return;
+            }
+
             tabButtons.forEach(function(btn) {
                 const isActive = btn.getAttribute('data-tab') === targetName;
                 btn.classList.toggle('bg-orange-500', isActive);
@@ -931,11 +937,20 @@
             panelStats.forEach(function(stats) {
                 stats.classList.toggle('hidden', stats.getAttribute('data-panel-stats') !== targetName);
             });
+
+            if (updateUrl) {
+                const params = new URLSearchParams(window.location.search);
+                params.set('tab', targetName);
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`);
+            }
         }
+
+        const requestedTab = new URLSearchParams(window.location.search).get('tab');
+        activateTab(requestedTab || 'rooms');
 
         tabButtons.forEach(function(button) {
             button.addEventListener('click', function () {
-                activateTab(this.getAttribute('data-tab'));
+                activateTab(this.getAttribute('data-tab'), true);
             });
         });
     });
