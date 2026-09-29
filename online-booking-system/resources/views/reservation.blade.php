@@ -2,8 +2,6 @@
 
 @section('content')
 
-@php($guest = auth('guest')->user())
-
 <style>
     /* Reservation page - visual refresh (scoped) */
     :root {

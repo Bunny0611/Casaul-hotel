@@ -172,6 +172,7 @@ class HomeController extends Controller
 
     public function reservation()
     {
+        $guest = auth('guest')->user();
         $rooms = Room::query()
             ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
             ->orderBy('room_number')
@@ -235,7 +236,7 @@ class HomeController extends Controller
             ])
             ->values();
 
-        return view('reservation', compact('rooms', 'facilities', 'events', 'dining', 'diningByCategory', 'diningSchedules', 'diningTables', 'diningReservations'));
+        return view('reservation', compact('guest', 'rooms', 'facilities', 'events', 'dining', 'diningByCategory', 'diningSchedules', 'diningTables', 'diningReservations'));
     }
 
     public function roomAvailability(Request $request)
