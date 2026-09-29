@@ -1639,12 +1639,27 @@
             return normalizedValue;
         };
 
+        const activateReservationTab = (tabId, updateUrl = false) => {
+            const targetTab = Array.from(tabs).find(tab => tab.dataset.tab === tabId);
+            const targetPanel = document.getElementById(tabId);
+            if (!targetTab || !targetPanel) {
+                return;
+            }
+
+            tabs.forEach(tab => tab.classList.toggle('active', tab === targetTab));
+            panels.forEach(panel => panel.classList.toggle('active', panel === targetPanel));
+
+            if (updateUrl) {
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#${tabId}`);
+            }
+        };
+
+        const initialTabId = window.location.hash.slice(1);
+        activateReservationTab(initialTabId || 'room-tab');
+
         tabs.forEach(tab => {
             tab.addEventListener('click', function () {
-                tabs.forEach(btn => btn.classList.remove('active'));
-                panels.forEach(panel => panel.classList.remove('active'));
-                this.classList.add('active');
-                document.getElementById(this.dataset.tab).classList.add('active');
+                activateReservationTab(this.dataset.tab, true);
             });
         });
         const updateSummary = () => {
@@ -2374,14 +2389,10 @@
                     return;
                 }
 
-                tabs.forEach(tab => tab.classList.remove('active'));
-                panels.forEach(panel => panel.classList.remove('active'));
-
                 const targetTab = Array.from(tabs).find(tab => tab.dataset.tab === targetId);
                 const targetPanel = document.getElementById(targetId);
                 if (targetTab && targetPanel) {
-                    targetTab.classList.add('active');
-                    targetPanel.classList.add('active');
+                    activateReservationTab(targetId, true);
                     targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
