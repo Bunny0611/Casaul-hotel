@@ -3264,7 +3264,7 @@ body:has(.auth-modal-backdrop.open) {
     --room-gold: #c9974a;
     min-height: 100vh;
     overflow: hidden;
-    padding: 20px 0 0;
+    padding: 108px 0 0;
     background: var(--room-cream);
     color: var(--room-ink);
     font-family: 'DM Sans', Poppins, sans-serif;
@@ -3273,7 +3273,6 @@ body:has(.auth-modal-backdrop.open) {
 body:has(.room-detail-page) { background: var(--room-cream, #f7f2e9); }
 body:has(.room-detail-page) > .page-loader,
 body:has(.room-detail-page) > .floating-element,
-body:has(.room-detail-page) > .site-header,
 body:has(.room-detail-page) > footer { display: none; }
 
 .room-detail-page .room-detail-hero {
@@ -3530,7 +3529,7 @@ body:has(.room-detail-page) > footer { display: none; }
 .room-stay-botanical-right { right: calc((1120px - 100vw) / 2); }
 
 @media (max-width: 800px) {
-    .room-detail-page { padding-top: 14px; }
+    .room-detail-page { padding-top: 92px; }
     .room-detail-page .room-detail-hero { width: calc(100% - 28px); }
     .room-detail-page .room-detail-hero-inner { grid-template-columns: 1fr; gap: 20px; padding: 20px; }
     .room-detail-page .room-detail-copy h1 { font-size: 36px; }
