@@ -4048,9 +4048,142 @@ body:has(.accommodation-reference-page) nav.site-header { background: #7a2528; b
 .accommodation-benefits h3 { margin: 0 0 4px; color: #4d3329; font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; text-transform: uppercase; }
 .accommodation-benefits p { margin: 0; color: #74665d; font-size: .85rem; line-height: 1.5; }
 @media (max-width: 900px) { .accommodation-room-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .accommodation-room-image { height: 150px; flex-basis: 150px; } }
-@media (max-width: 650px) { .accommodation-reference-page { padding-top: 66px; } .accommodation-reference-hero { display: flex; flex-direction: column; } .accommodation-reference-hero-copy { padding: 26px 20px 22px; } .accommodation-reference-hero-image { height: 190px; } .accommodation-desktop-break { display: none; } .accommodation-room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .accommodation-room-image { height: 105px; flex-basis: 105px; } .accommodation-benefits { grid-template-columns: 1fr; gap: 13px; padding: 16px; } .accommodation-benefits article { padding: 0; border-right: 0; } }
-@media (max-width: 650px) { .accommodation-reference-hero { height: 510px; display: block; } .accommodation-reference-hero-copy { left: 16px; top: 43%; width: calc(100% - 32px); padding: 12px 10px; } .accommodation-reference-hero h1 { font-size: clamp(1.45rem, 7vw, 2rem); } .accommodation-hero-text { font-size: .8rem; } .accommodation-hero-benefits { gap: 7px 0; font-size: .58rem; } .accommodation-hero-benefits span { padding: 0 8px; } .accommodation-booking-bar { right: 12px; bottom: 12px; left: 12px; grid-template-columns: repeat(2, 1fr); gap: 0; padding: 7px; } .accommodation-booking-field { padding: 4px 7px; border-bottom: 1px solid rgba(92,65,42,.2); } .accommodation-booking-field:nth-child(2n) { border-right: 0; } .accommodation-booking-search { grid-column: 1 / -1; margin: 7px 0 0; } }
-@media (max-width: 390px) { .accommodation-reference-hero { width: calc(100% - 56px); } .accommodation-rooms-section, .accommodation-benefits { width: calc(100% - 24px); } .accommodation-room-grid { grid-template-columns: 1fr; } }
+@media (max-width: 650px) {
+    .accommodation-reference-page { padding-top: 66px; }
+    .accommodation-reference-hero {
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 28px);
+        height: auto;
+        min-height: 0;
+        max-height: none;
+        overflow: hidden;
+        border-radius: 16px;
+    }
+    .accommodation-reference-hero-copy {
+        position: relative;
+        left: auto;
+        top: auto;
+        width: 100%;
+        padding: clamp(28px, 8vw, 42px) clamp(18px, 6vw, 28px) 18px;
+        transform: none;
+    }
+    .accommodation-reference-hero-image {
+        position: absolute;
+        inset: 0;
+        height: auto;
+        border-radius: inherit;
+    }
+    .accommodation-reference-hero-image::before {
+        background: linear-gradient(180deg, rgba(15, 9, 7, .72), rgba(15, 9, 7, .48) 62%, rgba(15, 9, 7, .3));
+    }
+    .accommodation-reference-hero-image img { object-position: center 54%; }
+    .accommodation-eyebrow {
+        display: block;
+        max-width: 100%;
+        margin-bottom: 12px;
+        font-size: clamp(.62rem, 2.6vw, .72rem);
+        letter-spacing: .09em;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+    .accommodation-eyebrow span { display: inline-block; margin: 0 5px; vertical-align: middle; }
+    .accommodation-reference-hero h1 {
+        max-width: 15ch;
+        font-size: clamp(1.65rem, 7.2vw, 2.3rem);
+        line-height: 1.16;
+        text-wrap: balance;
+    }
+    .accommodation-reference-hero h1 br { display: none; }
+    .accommodation-hero-text {
+        max-width: 36ch;
+        margin: 12px 0 18px;
+        font-size: clamp(.84rem, 3.5vw, .96rem);
+        line-height: 1.55;
+    }
+    .accommodation-desktop-break { display: none; }
+    .accommodation-hero-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        transform: none;
+    }
+    .accommodation-check-button,
+    .accommodation-explore-button {
+        justify-content: center;
+        width: min(250px, 100%);
+        min-height: 40px;
+        padding: 9px 14px;
+        font-size: clamp(.65rem, 2.7vw, .72rem);
+    }
+    .accommodation-explore-button { color: #fff8e9; background: #bd9145; border-color: #d7ae59; }
+    .accommodation-explore-button:hover { background: #d0a455; }
+    .accommodation-hero-benefits {
+        justify-content: center;
+        gap: 8px 0;
+        margin-top: 16px;
+        font-size: clamp(.58rem, 2.5vw, .68rem);
+        transform: none;
+    }
+    .accommodation-hero-benefits span { padding: 0 8px; }
+    .accommodation-booking-bar {
+        position: relative;
+        inset: auto;
+        z-index: 3;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 5px;
+        width: calc(100% - 24px);
+        min-height: 0;
+        margin: 0 auto 12px;
+        padding: 8px;
+        border: 1px solid rgba(255,255,255,.7);
+        border-radius: 10px;
+        background: rgba(255,250,242,.96);
+    }
+    .accommodation-booking-field,
+    .accommodation-booking-control > .accommodation-booking-field {
+        width: 100%;
+        min-height: 52px;
+        gap: 7px;
+        padding: 6px;
+        border: 1px solid #eee4d5;
+        border-radius: 6px;
+        background: #fffdf8;
+    }
+    .accommodation-booking-field > i { flex: 0 0 auto; font-size: .95rem; }
+    .accommodation-booking-field span { flex: 1; }
+    .accommodation-booking-field small { font-size: .58rem; }
+    .accommodation-booking-field strong {
+        overflow: visible;
+        font-size: clamp(.68rem, 2.8vw, .78rem);
+        white-space: normal;
+        text-overflow: clip;
+        overflow-wrap: anywhere;
+    }
+    .accommodation-booking-field > b { margin-left: 0; }
+    .accommodation-booking-search {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-height: 42px;
+        margin: 2px 0 0;
+    }
+    .accommodation-booking-error {
+        position: static;
+        grid-column: 1 / -1;
+        margin: 2px 4px 0;
+    }
+    .accommodation-room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .accommodation-room-image { height: 105px; flex-basis: 105px; }
+    .accommodation-benefits { grid-template-columns: 1fr; gap: 13px; padding: 16px; }
+    .accommodation-benefits article { padding: 0; border-right: 0; }
+}
+@media (max-width: 390px) {
+    .accommodation-rooms-section, .accommodation-benefits { width: calc(100% - 24px); }
+    .accommodation-room-grid { grid-template-columns: 1fr; }
+}
 
 footer{
     background: #0b1220;
