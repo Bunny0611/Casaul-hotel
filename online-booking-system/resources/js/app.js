@@ -162,30 +162,30 @@ document.addEventListener('DOMContentLoaded', function () {
         const setName = (select, field) => {
             field.value = select.selectedOptions[0]?.dataset.name || '';
         };
-        const createCountrySearch = () => {
+        const createSearchableSelect = (select, placeholder, emptyText, fieldName) => {
             const wrapper = document.createElement('div');
-            wrapper.className = 'auth-country-combobox';
+            wrapper.className = 'auth-search-select';
             const input = document.createElement('input');
-            input.className = 'auth-country-search';
+            input.className = 'auth-search-input';
             input.type = 'text';
-            input.placeholder = 'Select country';
+            input.placeholder = placeholder;
             input.autocomplete = 'off';
             input.required = true;
             input.setAttribute('role', 'combobox');
             input.setAttribute('aria-autocomplete', 'list');
             input.setAttribute('aria-expanded', 'false');
             const list = document.createElement('div');
-            list.className = 'auth-country-options';
-            list.id = 'guest-country-options';
+            list.className = 'auth-search-options';
             list.setAttribute('role', 'listbox');
-            input.setAttribute('aria-controls', list.id);
+            input.setAttribute('aria-controls', `${select.id}-options`);
+            list.id = `${select.id}-options`;
             wrapper.append(input, list);
-            countrySelect.after(wrapper);
-            countrySelect.classList.add('auth-country-native-select');
-            countrySelect.required = false;
+            select.after(wrapper);
+            select.classList.add('auth-select-native');
+            select.required = false;
 
             let activeIndex = -1;
-            let selectedValue = countrySelect.value;
+            let selectedValue = select.value;
             const close = () => {
                 wrapper.classList.remove('open');
                 input.setAttribute('aria-expanded', 'false');
@@ -194,36 +194,39 @@ document.addEventListener('DOMContentLoaded', function () {
             };
             const choose = (option) => {
                 if (!option) return;
-                countrySelect.value = option.value;
+                select.value = option.value;
                 selectedValue = option.value;
                 input.value = option.dataset.name;
                 input.setCustomValidity('');
-                setName(countrySelect, nameFields.country);
+                if (fieldName) {
+                    const field = nameFields[fieldName];
+                    if (field) setName(select, field);
+                }
                 close();
-                countrySelect.dispatchEvent(new Event('change', { bubbles: true }));
+                select.dispatchEvent(new Event('change', { bubbles: true }));
             };
             const renderOptions = () => {
                 const query = input.value.trim().toLocaleLowerCase();
-                const countries = Array.from(countrySelect.options).slice(1)
+                const filtered = Array.from(select.options).slice(1)
                     .filter((option) => option.dataset.name.toLocaleLowerCase().includes(query));
                 list.replaceChildren();
-                if (countries.length === 0) {
+                if (filtered.length === 0) {
                     const empty = document.createElement('div');
-                    empty.className = 'auth-country-empty';
-                    empty.textContent = 'No countries found';
+                    empty.className = 'auth-search-empty';
+                    empty.textContent = emptyText;
                     empty.setAttribute('role', 'option');
                     empty.setAttribute('aria-disabled', 'true');
                     list.append(empty);
                 } else {
-                    countries.forEach((option, index) => {
+                    filtered.forEach((option, index) => {
                         const item = document.createElement('button');
-                        item.className = 'auth-country-option';
+                        item.className = 'auth-search-option';
                         item.type = 'button';
-                        item.id = `guest-country-option-${index}`;
+                        item.id = `${select.id}-option-${index}`;
                         item.dataset.code = option.value;
                         item.textContent = option.dataset.name;
                         item.setAttribute('role', 'option');
-                        item.setAttribute('aria-selected', String(option.value === countrySelect.value));
+                        item.setAttribute('aria-selected', String(option.value === select.value));
                         item.addEventListener('click', () => choose(option));
                         list.append(item);
                     });
@@ -232,14 +235,27 @@ document.addEventListener('DOMContentLoaded', function () {
                 input.setAttribute('aria-expanded', 'true');
                 activeIndex = -1;
             };
+            const restore = () => {
+                close();
+                select.value = selectedValue;
+                input.value = select.selectedOptions[0]?.dataset.name || '';
+                if (fieldName) {
+                    const field = nameFields[fieldName];
+                    if (field) setName(select, field);
+                }
+            };
             input.addEventListener('focus', renderOptions);
             input.addEventListener('input', () => {
                 input.setCustomValidity('');
-                countrySelect.value = '';
+                select.value = '';
+                if (fieldName) {
+                    const field = nameFields[fieldName];
+                    if (field) field.value = '';
+                }
                 renderOptions();
             });
             input.addEventListener('keydown', (event) => {
-                const options = list.querySelectorAll('.auth-country-option');
+                const options = list.querySelectorAll('.auth-search-option');
                 if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
                     event.preventDefault();
                     if (!wrapper.classList.contains('open')) renderOptions();
@@ -251,25 +267,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (event.key === 'Enter' && wrapper.classList.contains('open')) {
                     event.preventDefault();
                     if (activeIndex >= 0 && options[activeIndex]) {
-                        choose(countrySelect.querySelector(`option[value="${options[activeIndex].dataset.code}"]`));
+                        choose(select.querySelector(`option[value="${options[activeIndex].dataset.code}"]`));
                     } else if (options.length === 1) {
                         options[0].click();
                     }
                 } else if (event.key === 'Escape') {
-                    close();
-                    countrySelect.value = selectedValue;
-                    input.value = countrySelect.selectedOptions[0]?.dataset.name || '';
-                    setName(countrySelect, nameFields.country);
+                    restore();
                 }
             });
             document.addEventListener('click', (event) => {
                 if (!wrapper.contains(event.target)) close();
             });
             signupForm.addEventListener('submit', (event) => {
-                if (countrySelect.value) return;
+                if (select.value) return;
                 event.preventDefault();
-                input.setCustomValidity('Select a country from the suggestions.');
+                input.setCustomValidity(`Select a ${fieldName || 'value'} from the suggestions.`);
                 input.reportValidity();
+            });
+            select.addEventListener('change', () => {
+                selectedValue = select.value;
+                input.value = select.selectedOptions[0]?.dataset.name || '';
             });
             return input;
         };
@@ -297,10 +314,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (oldValues.province) provinceSelect.value = oldValues.province;
             setName(provinceSelect, nameFields.province);
+            if (provinceSelect.selectedOptions[0]) provinceSearch.value = provinceSelect.selectedOptions[0].dataset.name || '';
             if (provinceSelect.value) {
                 await loadCities(countryCode, provinceSelect.value);
                 if (oldValues.city) citySelect.value = oldValues.city;
                 setName(citySelect, nameFields.city);
+                if (citySelect.selectedOptions[0]) citySearch.value = citySelect.selectedOptions[0].dataset.name || '';
             }
         };
         const loadRegions = async (countryCode) => {
@@ -313,17 +332,25 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (oldValues.region) regionSelect.value = oldValues.region;
             setName(regionSelect, nameFields.region);
+            if (regionSelect.selectedOptions[0]) regionSearch.value = regionSelect.selectedOptions[0].dataset.name || '';
             if (regionSelect.value) await loadProvinces(countryCode, regionSelect.value);
         };
 
         setOptions(countrySelect, Country.getAllCountries().map((country) => ({ code: country.isoCode, name: country.name })), 'Select country');
+        const countrySearch = createSearchableSelect(countrySelect, 'Select country', 'No countries found', 'country');
+        const regionSearch = createSearchableSelect(regionSelect, 'Select region/state', 'No regions found', 'region');
+        const provinceSearch = createSearchableSelect(provinceSelect, 'Select province/area', 'No provinces found', 'province');
+        const citySearch = createSearchableSelect(citySelect, 'Select city', 'No cities found', 'city');
+
         if (oldValues.country) countrySelect.value = oldValues.country;
-        const countrySearch = createCountrySearch();
         if (oldValues.country) {
             countrySearch.value = countrySelect.selectedOptions[0]?.dataset.name || '';
             setName(countrySelect, nameFields.country);
             loadRegions(countrySelect.value).catch(() => setOptions(regionSelect, [], 'Locations unavailable'));
         }
+        if (oldValues.region) regionSearch.value = regionSelect.selectedOptions[0]?.dataset.name || '';
+        if (oldValues.province) provinceSearch.value = provinceSelect.selectedOptions[0]?.dataset.name || '';
+        if (oldValues.city) citySearch.value = citySelect.selectedOptions[0]?.dataset.name || '';
         countrySelect.addEventListener('change', async () => {
             setName(countrySelect, nameFields.country);
             oldValues.region = '';
