@@ -133,11 +133,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             if (capitalizeWords) {
-                return value
-                    .toLowerCase()
+                const sanitized = value.replace(/[^a-zA-Z\s]/g, '');
+                return sanitized
                     .split(/\s+/)
                     .filter(Boolean)
-                    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
                     .join(' ');
             }
 
@@ -494,17 +494,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         modalTriggers.forEach((trigger) => trigger.addEventListener('click', openModal));
         closeModalBtn?.addEventListener('click', closeModal);
-        authModal.addEventListener('click', (event) => {
-            if (event.target === authModal) {
-                closeModal();
-            }
-        });
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') {
-                closeModal();
-            }
-        });
 
         let isSignUp = signUpView?.classList.contains('auth-hidden') === false;
         switchBtn?.addEventListener('click', () => {
