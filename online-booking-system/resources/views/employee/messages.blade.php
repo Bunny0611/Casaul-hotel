@@ -523,12 +523,21 @@
         textarea.focus();
     }
 
-    function switchEmployeeMessageChannel(channel) {
+    function switchEmployeeMessageChannel(channel, updateUrl = true) {
+        if (!['guest', 'staff'].includes(channel)) {
+            channel = 'guest';
+        }
         const isStaff = channel === 'staff';
         document.getElementById('employee-guest-tab').setAttribute('aria-selected', String(!isStaff));
         document.getElementById('employee-staff-tab').setAttribute('aria-selected', String(isStaff));
         document.getElementById('employee-guest-channel').hidden = isStaff;
         document.getElementById('employee-staff-channel').hidden = !isStaff;
+
+        if (updateUrl) {
+            const params = new URLSearchParams(window.location.search);
+            params.set('channel', channel);
+            window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`);
+        }
     }
 
     const initialConversationKey = @json($selectedConversationKey);
@@ -537,6 +546,8 @@
     } else if (Object.keys(employeeConversations).length) {
         selectEmployeeConversation(Object.keys(employeeConversations)[0]);
     }
-    switchEmployeeMessageChannel(new URLSearchParams(window.location.search).has('staff_id') ? 'staff' : 'guest');
+    const messageParams = new URLSearchParams(window.location.search);
+    const initialChannel = messageParams.get('channel') || (messageParams.has('staff_id') ? 'staff' : 'guest');
+    switchEmployeeMessageChannel(initialChannel, false);
 </script>
 @endsection

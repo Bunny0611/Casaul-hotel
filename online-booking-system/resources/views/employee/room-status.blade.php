@@ -648,9 +648,12 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        function setActiveReservationTab(tabKey) {
+        function setActiveReservationTab(tabKey, updateUrl = false) {
             const buttons = document.querySelectorAll('[data-reservation-tab]');
             const panels = document.querySelectorAll('[data-reservation-panel]');
+            if (!Array.from(buttons).some((button) => button.dataset.reservationTab === tabKey)) {
+                tabKey = 'rooms';
+            }
 
             buttons.forEach((button) => {
                 const isActive = button.dataset.reservationTab === tabKey;
@@ -666,15 +669,26 @@
                 panel.classList.toggle('hidden', panel.dataset.reservationPanel !== tabKey);
             });
 
+            if (updateUrl) {
+                const params = new URLSearchParams(window.location.search);
+                params.set('tab', tabKey);
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`);
+            }
+
         }
 
         const tabButtons = document.querySelectorAll('[data-reservation-tab]');
         tabButtons.forEach((button) => {
-            button.addEventListener('click', () => setActiveReservationTab(button.dataset.reservationTab));
+            button.addEventListener('click', () => setActiveReservationTab(button.dataset.reservationTab, true));
         });
 
-        function setActiveDiningTab(tabKey) {
-            document.querySelectorAll('[data-dining-tab]').forEach((button) => {
+        function setActiveDiningTab(tabKey, updateUrl = false) {
+            const buttons = document.querySelectorAll('[data-dining-tab]');
+            if (!Array.from(buttons).some((button) => button.dataset.diningTab === tabKey)) {
+                tabKey = 'tables';
+            }
+
+            buttons.forEach((button) => {
                 const isActive = button.dataset.diningTab === tabKey;
                 button.classList.toggle('bg-orange-500', isActive);
                 button.classList.toggle('text-white', isActive);
@@ -685,6 +699,12 @@
             document.querySelectorAll('[data-dining-content]').forEach((panel) => {
                 panel.classList.toggle('hidden', panel.dataset.diningContent !== tabKey);
             });
+
+            if (updateUrl) {
+                const params = new URLSearchParams(window.location.search);
+                params.set('dining_tab', tabKey);
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`);
+            }
         }
 
         function setActiveDiningMenuCategory(category) {
@@ -762,7 +782,7 @@
         }
 
         document.querySelectorAll('[data-dining-tab]').forEach((button) => {
-            button.addEventListener('click', () => setActiveDiningTab(button.dataset.diningTab));
+            button.addEventListener('click', () => setActiveDiningTab(button.dataset.diningTab, true));
         });
 
         document.querySelectorAll('[data-menu-category-tab]').forEach((button) => {
@@ -772,15 +792,24 @@
                 }
                 window.diningMenuPageState.currentPage = 1;
                 setActiveDiningMenuCategory(button.dataset.menuCategoryTab);
+                const params = new URLSearchParams(window.location.search);
+                params.set('menu_category', button.dataset.menuCategoryTab);
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`);
             });
         });
 
-        setActiveReservationTab('rooms');
-        setActiveDiningTab('tables');
+        const initialParams = new URLSearchParams(window.location.search);
+        setActiveReservationTab(initialParams.get('tab') || 'rooms');
+        setActiveDiningTab(initialParams.get('dining_tab') || 'tables');
         if (!window.diningMenuPageState) {
             window.diningMenuPageState = { currentPage: 1 };
         }
-        setActiveDiningMenuCategory('Breakfast');
+        const menuCategoryButtons = Array.from(document.querySelectorAll('[data-menu-category-tab]'));
+        const requestedMenuCategory = initialParams.get('menu_category');
+        const initialMenuCategory = menuCategoryButtons.some((button) => button.dataset.menuCategoryTab === requestedMenuCategory)
+            ? requestedMenuCategory
+            : menuCategoryButtons[0]?.dataset.menuCategoryTab || 'Breakfast';
+        setActiveDiningMenuCategory(initialMenuCategory);
     });
 </script>
 
