@@ -2,3 +2,7 @@
 !.gitignore
 !rooms/
 !rooms/**
+!catalog/
+!catalog/**
+!dining/
+!dining/**
