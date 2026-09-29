@@ -796,11 +796,11 @@
                                     @endforeach
                                 </ul>
                                 <div class="event-options-source" aria-hidden="true">
-                                    <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \\Carbon\\Carbon::tomorrow()->format('Y-m-d') }}" tabindex="-1">
+                                    <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}" tabindex="-1">
                                     <select id="eventStart-{{ $event->id }}" class="field-input event-start-time" tabindex="-1">
                                         <option value="">Select start time</option>
                                         @for($hour = 8; $hour <= 22; $hour++)
-                                            <option value="{{ sprintf('%02d:00', $hour) }}">{{ \\Carbon\\Carbon::createFromTime($hour)->format('g:i A') }}</option>
+                                            <option value="{{ sprintf('%02d:00', $hour) }}">{{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}</option>
                                         @endfor
                                     </select>
                                     <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="{{ $event->duration_hours ?: 4 }}" step="1" value="{{ $event->duration_hours ?: 4 }}" {{ strtolower($event->pricing_basis ?? '') === 'per person' ? 'readonly' : '' }} tabindex="-1">
