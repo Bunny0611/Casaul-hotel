@@ -2,8 +2,6 @@
 
 @section('content')
 
-@php($guest = auth('guest')->user())
-
 <style>
     /* Reservation page - visual refresh (scoped) */
     :root {
@@ -644,12 +642,14 @@
 
                 <div class="reservation-card-grid">
                     @foreach($rooms as $room)
-                        @php($extraGuestPrice = (float) ($room->adult_guest_price ?? (str_contains(strtolower($room->room_type), 'standard') ? 500 : 650)))
-                        @php($kidGuestPrice = (float) ($room->kid_guest_price ?? ($extraGuestPrice / 2)))
-                        @php($roomCapacity = max(1, (int) ($room->capacity ?? 2)))
-                        @php($roomTypeFilter = str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other'))
-                        @php($roomStoragePath = str_starts_with((string) $room->image, 'storage/') ? substr($room->image, 8) : $room->image)
-                        @php($roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath) ? secure_asset('storage/' . $roomStoragePath) : null)
+                        <?php
+                            $extraGuestPrice = (float) ($room->adult_guest_price ?? (str_contains(strtolower($room->room_type), 'standard') ? 500 : 650));
+                            $kidGuestPrice = (float) ($room->kid_guest_price ?? ($extraGuestPrice / 2));
+                            $roomCapacity = max(1, (int) ($room->capacity ?? 2));
+                            $roomTypeFilter = str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other');
+                            $roomStoragePath = str_starts_with((string) $room->image, 'storage/') ? substr($room->image, 8) : $room->image;
+                            $roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath) ? secure_asset('storage/' . $roomStoragePath) : null;
+                        ?>
                         <article class="reservation-card" data-category="room" data-room-type="{{ $roomTypeFilter }}" data-price="{{ $room->price }}" data-name="{{ $room->room_type }} • Room {{ $room->room_number }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}" data-kid-guest-price="{{ $kidGuestPrice }}">
                             @if($roomImage)
                                 <img src="{{ $roomImage }}" alt="{{ $room->room_type }}">
