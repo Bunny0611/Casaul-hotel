@@ -4264,6 +4264,7 @@ body:has(.accommodation-reference-page) nav.site-header { background: #7a2528; b
     }
     .accommodation-room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .accommodation-room-image { height: 105px; flex-basis: 105px; }
+    .accommodation-reference-page .accommodation-room-content h3 { overflow-wrap: normal; word-break: normal; hyphens: none; font-size: .76rem !important; letter-spacing: .04em; }
     .accommodation-benefits { grid-template-columns: 1fr; gap: 13px; padding: 16px; }
     .accommodation-benefits article { padding: 0; border-right: 0; }
 }
@@ -5212,6 +5213,207 @@ body:has(.profile-page) footer {
     .about-page .about-kicker { font-size: clamp(.7rem, 1.8vw, .85rem) !important; }
 
     .accommodation-reference-page .accommodation-booking-field strong { font-size: clamp(.72rem, 1.8vw, .85rem) !important; }
+}
+
+/* Dining page visual refinement. All selectors stay below the locked site header. */
+.dining-page {
+    padding: 74px 0 58px;
+    color: #3d2923;
+    background: #fbf8f1;
+    font-family: 'DM Sans', Poppins, sans-serif;
+}
+.dining-container { width: min(1200px, calc(100% - 64px)); }
+.dining-hero {
+    grid-template-columns: 42% 58%;
+    min-height: 190px;
+    aspect-ratio: 6.1 / 1;
+    border: 1px solid #d5b574;
+    border-radius: 5px;
+    background: #2a130e;
+    box-shadow: 0 12px 28px rgba(49, 28, 17, .12);
+}
+.dining-hero-copy { padding: 26px 44px; }
+.dining-eyebrow { color: #d8b568; font-size: .66rem; letter-spacing: .16em; }
+.dining-hero h1 {
+    color: #fffaf0;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 2.45rem;
+    font-weight: 400;
+    line-height: 1.2;
+}
+.dining-hero h1 strong { color: #dfba6b; font-weight: 400; }
+.dining-rule { width: 34px; height: 1px; margin: 11px 0 12px; background: #d5ae5e; }
+.dining-hero-text { color: #e6d8c6; font-size: .84rem !important; line-height: 1.6; }
+.dining-hero-image::before {
+    width: 40%;
+    background: linear-gradient(90deg, rgba(42, 19, 14, .5), rgba(42, 19, 14, .14) 56%, transparent);
+}
+.dining-hero-image img { object-position: center 56%; }
+.dining-menu { padding: 28px 0 30px; }
+.dining-menu > .dining-section-heading { display: block; margin: 0 0 15px; }
+.dining-section-heading h2 {
+    color: #4b2a20;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 1.32rem !important;
+    font-weight: 400;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+.dining-section-heading p { margin: 7px auto 0; color: #76675b; font-size: .82rem !important; }
+.dining-heading-mark { margin-bottom: 8px; color: #98702e; }
+.dining-heading-mark span { width: 48px; background: #d1b477; }
+.dining-section-heading .dining-rule { margin: 10px auto 0; }
+.dining-category-nav {
+    justify-content: center;
+    gap: 5px;
+    margin: 0 auto 20px;
+    border-bottom: 1px solid #e7dece;
+}
+.dining-category-btn {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 43px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #60483b;
+    box-shadow: none;
+    font-size: .74rem !important;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.dining-category-btn::after {
+    position: absolute;
+    right: 12px;
+    bottom: -1px;
+    left: 12px;
+    height: 2px;
+    content: '';
+    background: transparent;
+}
+.dining-category-btn i { color: #98702e; font-size: .82rem; }
+.dining-category-btn.active {
+    border: 0;
+    background: transparent;
+    color: #861d25;
+    box-shadow: none;
+}
+.dining-category-btn.active::after { background: #a33a32; }
+.dining-category-btn.active i { color: #a77b33; }
+.dining-category-btn:hover { background: #f4eee2; color: #861d25; }
+.dining-menu-panel {
+    margin: 0;
+    padding: 19px 20px 22px;
+    border: 1px solid #e8dfd0;
+    border-radius: 5px;
+    background: rgba(255, 253, 249, .78);
+    box-shadow: 0 8px 22px rgba(58, 39, 23, .045);
+}
+.dining-menu-header { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #eee7dc; }
+.dining-menu-header h4,
+.dining-menu-header h3 {
+    color: #4b2a20;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 1.2rem !important;
+    font-weight: 400;
+}
+.dining-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.dining-menu-card {
+    border: 1px solid #e9e0d2;
+    border-radius: 4px;
+    background: #fffefa;
+    box-shadow: 0 5px 13px rgba(53, 36, 22, .06);
+    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.dining-menu-card:hover { transform: translateY(-2px); border-color: #d2b477; box-shadow: 0 9px 20px rgba(53, 36, 22, .1); }
+.dining-menu-card > img { height: auto; aspect-ratio: 1.85 / 1; object-position: center; }
+.dining-menu-card-body { gap: 8px; padding: 13px 14px 14px; }
+.dining-menu-card-body h4 {
+    color: #4b2a20;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 1rem !important;
+    font-weight: 400;
+    line-height: 1.35;
+}
+.dining-menu-card-body > p { min-height: 40px; color: #76695e; font-size: .79rem !important; line-height: 1.55; }
+.dining-meta-tag {
+    align-self: flex-start;
+    margin-top: 0;
+    padding: 0 0 4px;
+    border-bottom: 1px solid #d8c291;
+    border-radius: 0;
+    background: transparent;
+    color: #866638;
+    font-size: .64rem !important;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+.dining-meta-tag::before { color: #ad843e; }
+.dining-card-footer { margin-top: auto; padding-top: 5px; border-top: 1px solid #f0ebe2; }
+.dining-price { color: #8d2028; font-family: 'Libre Baskerville', Georgia, serif; font-size: 1.05rem !important; font-weight: 700; }
+.dining-empty-state { border-radius: 4px; background: #fffefa; color: #655044; }
+.dining-experience {
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.4fr);
+    border: 1px solid #e7dcc8;
+    border-radius: 5px;
+    background: #fffdf8;
+    box-shadow: 0 8px 20px rgba(58, 39, 23, .05);
+}
+.dining-experience-image { order: -1; min-height: 270px; object-position: center; }
+.dining-experience-copy { padding: 24px 28px; }
+.dining-experience-copy .dining-section-heading { text-align: left; }
+.dining-experience-copy .dining-section-heading h2 { font-size: 1.12rem !important; letter-spacing: .025em; text-transform: none; }
+.dining-experience-copy .dining-rule { margin: 8px 0 14px; }
+.dining-benefits { gap: 12px; }
+.dining-benefits article { gap: 8px; padding-right: 10px; border-color: #e9dfce; }
+.dining-benefits article > i { color: #9b7538; font-size: 1rem; }
+.dining-benefits h3 { color: #4b2a20; font-family: 'Libre Baskerville', Georgia, serif; font-size: .75rem !important; font-weight: 400; }
+.dining-benefits p { color: #76695e; font-size: .7rem !important; line-height: 1.5; }
+.dining-booking { gap: 10px; border-color: #e7d6b2; border-radius: 4px; background: #fbf7ee; }
+.dining-booking > i { color: #9b7538; }
+.dining-booking strong,
+.dining-booking span { color: #4b2a20; font-size: .72rem !important; }
+.dining-booking a { border-radius: 4px; background: #861d25; box-shadow: none; font-size: .64rem !important; letter-spacing: .04em; }
+
+@media (max-width: 760px) {
+    .dining-page { padding: 82px 0 34px; }
+    .dining-container { width: calc(100% - 32px); }
+    .dining-hero { display: grid; grid-template-columns: 1fr; min-height: 300px; aspect-ratio: auto; }
+    .dining-hero-copy { min-height: 300px; justify-content: flex-end; padding: 26px 24px; }
+    .dining-hero h1 { font-size: 2rem !important; }
+    .dining-hero-image { position: absolute; z-index: 0; inset: 0; }
+    .dining-hero-image::before { display: block; width: 100%; background: linear-gradient(90deg, rgba(35, 15, 10, .78), rgba(35, 15, 10, .34) 75%), linear-gradient(0deg, rgba(35, 15, 10, .34), transparent 62%); }
+    .dining-hero-image img { object-position: center; }
+    .dining-menu { padding: 24px 0; }
+    .dining-menu > .dining-section-heading { margin-bottom: 12px; }
+    .dining-category-nav { justify-content: flex-start; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+    .dining-category-btn { flex: 0 0 auto; min-height: 42px; padding: 0 13px; }
+    .dining-menu-panel { padding: 14px; }
+    .dining-grid { grid-template-columns: 1fr; gap: 12px; }
+    .dining-menu-card > img { max-height: 210px; aspect-ratio: 1.8 / 1; }
+    .dining-menu-card-body > p { min-height: 0; }
+    .dining-experience { grid-template-columns: 1fr; }
+    .dining-experience-image { min-height: 190px; max-height: 230px; }
+    .dining-experience-copy { padding: 20px 18px; }
+    .dining-benefits { grid-template-columns: 1fr; gap: 10px; }
+    .dining-benefits article { padding: 0 0 10px; border-right: 0; border-bottom: 1px solid #e9dfce; }
+    .dining-benefits article:last-child { border-bottom: 0; }
+    .dining-booking { align-items: center; flex-wrap: wrap; }
+    .dining-booking a { margin-left: 30px; }
+}
+
+@media (max-width: 420px) {
+    .dining-container { width: calc(100% - 24px); }
+    .dining-hero { min-height: 270px; }
+    .dining-hero-copy { min-height: 270px; padding: 23px 19px; }
+    .dining-hero h1 { font-size: 1.8rem !important; }
+    .dining-hero-text { max-width: 290px; font-size: .79rem !important; }
+    .dining-menu-panel { padding: 12px; }
+    .dining-menu-card > img { max-height: 185px; }
+    .dining-booking a { margin-left: 0; }
 }
 
 
