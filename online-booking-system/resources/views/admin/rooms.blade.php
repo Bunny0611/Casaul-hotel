@@ -655,6 +655,7 @@
         <form id="editInventoryForm" action="" method="POST" enctype="multipart/form-data" class="space-y-4">
             @csrf @method('PUT')
             <input type="hidden" name="category" id="editInventoryCategory">
+            <input type="hidden" name="inclusions_present" value="1">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div><label id="editInventoryNameLabel" class="mb-1 block text-sm font-medium text-gray-700">Name</label><input id="editInventoryName" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div id="editInventoryTypeField"><label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label><select id="editInventoryType" name="event_type" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Birthday</option><option>Wedding</option></select></div>
@@ -662,7 +663,7 @@
                 <div><label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label><select id="editInventoryPricingBasis" name="pricing_basis" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Stay + Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option><option>Per Event</option></select></div>
                 <div id="editInventoryDurationField" class="hidden"><label id="editInventoryDurationLabel" class="mb-1 block text-sm font-medium text-gray-700">Duration (hours)</label><input id="editInventoryDuration" name="duration_hours" type="number" min="1" max="24" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div><label id="editInventoryCapacityLabel" class="mb-1 block text-sm font-medium text-gray-700">Capacity / Maximum Guests</label><input id="editInventoryCapacity" name="capacity" type="number" min="1" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
-                <div id="editInventoryLocationField"><label class="mb-1 block text-sm font-medium text-gray-700">Location</label><select id="editInventoryLocation" name="location" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option value="">Select Location</option><option value="Ground Floor">Ground Floor</option><option value="2nd Floor">2nd Floor</option><option value="Garden">Garden</option><option value="Private Room">Private Room</option><option value="Poolside">Poolside</option><option value="Rooftop">Rooftop</option></select></div>
+                <div id="editInventoryLocationField"><label id="editInventoryLocationLabel" class="mb-1 block text-sm font-medium text-gray-700">Location</label><select id="editInventoryLocation" name="location" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option id="editInventoryLocationPlaceholder" value="">Select Location</option><option value="Ground Floor">Ground Floor</option><option value="2nd Floor">2nd Floor</option><option value="Garden">Garden</option><option value="Private Room">Private Room</option><option value="Poolside">Poolside</option><option value="Rooftop">Rooftop</option></select></div>
                 <div id="editInventorySchedulingField"><label class="mb-1 block text-sm font-medium text-gray-700">Scheduling Requirement</label><select id="editInventoryScheduling" name="scheduling_requirement" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>No Additional Schedule</option><option>Date Required</option><option>Date &amp; Time Required</option></select></div>
                 <div id="editInventoryQuantityField"><label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label><input id="editInventoryQuantity" name="quantity" type="number" min="0" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div id="editInventoryFromField"><label class="mb-1 block text-sm font-medium text-gray-700">Available From</label><input id="editInventoryFrom" name="available_from" type="time" class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
@@ -676,6 +677,11 @@
                 <input id="editInventoryImage" name="image" type="file" accept="image/jpeg,image/png,image/gif,image/webp" class="w-full rounded-lg border border-gray-300 px-3 py-2">
             </div>
             <div><label class="mb-1 block text-sm font-medium text-gray-700">Description</label><textarea id="editInventoryDescription" name="description" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2"></textarea></div>
+            <div id="editInventoryInclusionsField" class="hidden">
+                <label class="mb-1 block text-sm font-medium text-gray-700">Included Features</label>
+                <div id="editInventoryInclusionsList" data-inclusion-list class="space-y-2"></div>
+                <button type="button" data-add-inclusion="editInventoryInclusionsList" class="mt-2 rounded-lg border border-orange-200 px-3 py-2 text-sm font-medium text-orange-700">+ Add Feature</button>
+            </div>
             <div class="flex justify-end gap-3"><button type="button" onclick="closeEditInventoryModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700">Cancel</button><button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white">Update Item</button></div>
         </form>
     </div>
@@ -771,7 +777,7 @@
             <p class="mt-1 text-sm text-gray-500">Create a new event or catering package for guests.</p>
         </div>
         @if($errors->any() && old('category') === 'event')
-            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first('name') }}</div>
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{{ $errors->first() }}</div>
         @endif
 
         <form id="addEventForm" method="POST" action="{{ route('admin.inventory.store') }}" enctype="multipart/form-data" class="space-y-4">
@@ -787,7 +793,7 @@
                     <input type="text" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="md:col-span-2">
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Image (Optional)</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Package Image (Optional)</label>
                     <input type="file" name="image" accept="image/*" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div class="md:col-span-2">
@@ -800,7 +806,7 @@
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Pricing Basis</label>
-                    <select id="eventPricingBasis" name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option selected>Per Person</option><option>Per Hour</option></select>
+                    <select id="eventPricingBasis" name="pricing_basis" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Per Stay</option><option>Per Person</option><option>Per Vehicle</option><option>Per Stay + Per Vehicle</option><option>Per Hour</option><option>Per Day</option><option>Fixed Price</option><option selected>Per Event</option></select>
                 </div>
                 <div>
                     <label id="eventDurationLabel" class="mb-1 block text-sm font-medium text-gray-700">Fixed Duration (hours)</label>
@@ -811,9 +817,9 @@
                     <input type="number" name="capacity" min="1" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
                 <div>
-                    <label class="mb-1 block text-sm font-medium text-gray-700">Location</label>
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Venue</label>
                     <select name="location" required class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="">Select Location</option>
+                        <option value="">Select Venue</option>
                         <option value="Ground Floor">Ground Floor</option>
                         <option value="2nd Floor">2nd Floor</option>
                         <option value="Garden">Garden</option>
@@ -841,6 +847,16 @@
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Availability</label>
                     <select name="status" required class="w-full rounded-lg border border-gray-300 px-3 py-2"><option value="available">Available</option><option value="unavailable">Unavailable</option></select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-gray-700">Included Features</label>
+                    <div id="eventInclusionsList" data-inclusion-list class="space-y-2">
+                        <div data-inclusion-row class="flex items-center gap-2">
+                            <input type="text" name="inclusions[]" maxlength="255" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Enter a package feature">
+                            <button type="button" data-remove-inclusion class="shrink-0 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600">Remove</button>
+                        </div>
+                    </div>
+                    <button type="button" data-add-inclusion="eventInclusionsList" class="mt-2 rounded-lg border border-orange-200 px-3 py-2 text-sm font-medium text-orange-700">+ Add Feature</button>
                 </div>
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
@@ -1497,10 +1513,10 @@
         toField.classList.toggle('hidden', isFacility);
         const pricingBasis = document.getElementById('editInventoryPricingBasis');
         pricingBasis.innerHTML = isEvent
-            ? '<option value="Per Person">Per Person</option><option value="Per Hour">Per Hour</option>'
+            ? '<option value="Per Stay">Per Stay</option><option value="Per Person">Per Person</option><option value="Per Vehicle">Per Vehicle</option><option value="Per Stay + Per Vehicle">Per Stay + Per Vehicle</option><option value="Per Hour">Per Hour</option><option value="Per Day">Per Day</option><option value="Fixed Price">Fixed Price</option><option value="Per Event">Per Event</option>'
             : '<option value="Per Stay">Per Stay</option><option value="Per Person">Per Person</option><option value="Per Vehicle">Per Vehicle</option><option value="Per Stay + Per Vehicle">Per Stay + Per Vehicle</option><option value="Per Hour">Per Hour</option><option value="Per Day">Per Day</option><option value="Fixed Price">Fixed Price</option>';
         const allowedPricingBasis = isEvent
-            ? ['Per Person', 'Per Hour']
+            ? ['Per Stay', 'Per Person', 'Per Vehicle', 'Per Stay + Per Vehicle', 'Per Hour', 'Per Day', 'Fixed Price', 'Per Event']
             : ['Per Stay', 'Per Person', 'Per Vehicle', 'Per Stay + Per Vehicle', 'Per Hour', 'Per Day', 'Fixed Price'];
         pricingBasis.value = allowedPricingBasis.includes(item.pricing_basis)
             ? item.pricing_basis
@@ -1511,14 +1527,18 @@
         imageField.classList.toggle('hidden', !isEvent && !isFacility);
         imagePreview.classList.toggle('hidden', (!isEvent && !isFacility) || !item.image);
         noImage.classList.toggle('hidden', (!isEvent && !isFacility) || Boolean(item.image));
-        document.getElementById('editInventoryNameLabel').textContent = isFacility ? 'Facility Name' : 'Name';
+        document.getElementById('editInventoryNameLabel').textContent = isEvent ? 'Package Name' : (isFacility ? 'Facility Name' : 'Name');
         document.getElementById('editInventoryCapacityLabel').textContent = isFacility && ['Per Vehicle', 'Per Stay + Per Vehicle'].includes(item.pricing_basis) ? 'Maximum Vehicles' : (isFacility ? 'Capacity / Quantity' : 'Capacity / Maximum Guests');
-        document.getElementById('editInventoryStatusLabel').textContent = isFacility ? 'Availability' : 'Status';
-        document.getElementById('editInventoryImageLabel').textContent = isFacility ? 'Image (Optional)' : 'Event Photo';
+        document.getElementById('editInventoryStatusLabel').textContent = isFacility || isEvent ? 'Availability' : 'Status';
+        document.getElementById('editInventoryImageLabel').textContent = isFacility ? 'Image (Optional)' : 'Package Image';
+        document.getElementById('editInventoryLocationLabel').textContent = isEvent ? 'Venue' : 'Location';
+        document.getElementById('editInventoryLocationPlaceholder').textContent = isEvent ? 'Select Venue' : 'Select Location';
         const statusInput = document.getElementById('editInventoryStatus');
         statusInput.innerHTML = isFacility
             ? '<option value="available">Available</option><option value="unavailable">Unavailable</option>'
-            : '<option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option>';
+            : isEvent
+                ? '<option value="available">Available</option><option value="unavailable">Unavailable</option>'
+                : '<option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option>';
         statusInput.value = item.status || 'available';
         imagePreview.src = item.image ? "{{ asset('storage') }}/" + item.image : '';
         document.getElementById('editInventoryCapacity').value = item.capacity || '';
@@ -1529,6 +1549,12 @@
         document.getElementById('editInventoryTo').value = item.available_to ? item.available_to.substring(0, 5) : '';
         document.getElementById('editInventoryStatus').value = item.status || 'available';
         document.getElementById('editInventoryDescription').value = item.description || '';
+        const inclusionsField = document.getElementById('editInventoryInclusionsField');
+        const inclusionsList = document.getElementById('editInventoryInclusionsList');
+        inclusionsField.classList.toggle('hidden', !isEvent);
+        renderPackageInclusions(inclusionsList, item.inclusions || []);
+        inclusionsList.querySelectorAll('input').forEach(input => input.disabled = !isEvent);
+        document.querySelector('#editInventoryForm [name="inclusions_present"]').disabled = !isEvent;
         var route = "{{ route('admin.inventory.update', ['id' => '__ID__']) }}";
         document.getElementById('editInventoryForm').action = route.replace('__ID__', id);
         document.getElementById('editInventoryModal').classList.remove('hidden');
@@ -1574,7 +1600,50 @@
         document.getElementById('addEventModal').classList.add('hidden');
         document.getElementById('addEventModal').classList.remove('flex');
         document.getElementById('addEventForm').reset();
+        renderPackageInclusions(document.getElementById('eventInclusionsList'), ['']);
     }
+
+    function appendPackageInclusion(container, value = '') {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+        row.dataset.inclusionRow = '';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'inclusions[]';
+        input.maxLength = 255;
+        input.value = value;
+        input.placeholder = 'Enter a package feature';
+        input.className = 'w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500';
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.dataset.removeInclusion = '';
+        removeButton.className = 'shrink-0 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600';
+        removeButton.textContent = 'Remove';
+
+        row.append(input, removeButton);
+        container.append(row);
+    }
+
+    function renderPackageInclusions(container, inclusions) {
+        container.replaceChildren();
+        const values = Array.isArray(inclusions) && inclusions.length ? inclusions : [''];
+        values.forEach(value => appendPackageInclusion(container, value || ''));
+    }
+
+    document.querySelectorAll('[data-add-inclusion]').forEach(button => {
+        button.addEventListener('click', () => {
+            appendPackageInclusion(document.getElementById(button.dataset.addInclusion));
+        });
+    });
+
+    document.addEventListener('click', event => {
+        const removeButton = event.target.closest('[data-remove-inclusion]');
+        if (removeButton) {
+            removeButton.closest('[data-inclusion-row]')?.remove();
+        }
+    });
 
     function configureEventDurationFields() {
         const pricingBasis = document.getElementById('eventPricingBasis');

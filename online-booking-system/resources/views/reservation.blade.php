@@ -772,18 +772,25 @@
                                             <div>
                                                 <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
                                                 <select id="eventStart-{{ $event->id }}" class="field-input event-start-time">
+                                                    @php
+                                                        $eventFeatures = collect([
+                                                            $event->capacity ? 'Up to ' . $event->capacity . ' guests' : null,
+                                                            ($event->duration_hours ?: 4) . '-hour venue',
+                                                            $event->location ? 'Venue: ' . $event->location : null,
+                                                        ])->merge($event->inclusions ?? [])
+                                                            ->map(fn ($feature) => trim((string) $feature))
+                                                            ->filter()
+                                                            ->unique(fn ($feature) => mb_strtolower($feature))
+                                                            ->values();
+                                                    @endphp
                                                     <option value="">Select start time</option>
                                                     @for($hour = 8; $hour <= 22; $hour++)
                                                         <option value="{{ sprintf('%02d:00', $hour) }}">{{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}</option>
                                                     @endfor
                                                 </select>
-                                            </div>
-                                            <div>
-                                                <label class="field-label" for="eventEnd-{{ $event->id }}">End Time</label>
-                                                <input id="eventEnd-{{ $event->id }}" class="field-input event-end-time" type="time" lang="en-US" readonly aria-readonly="true">
-                                            </div>
-                                        </div>
-                                        <label class="field-label" for="eventDuration-{{ $event->id }}">How Many Hours?</label>
+                                                        @foreach($eventFeatures as $feature)
+                                                            <li><i class="fas fa-check" aria-hidden="true"></i> {{ $feature }}</li>
+                                                        @endforeach
                                         <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="{{ $event->duration_hours ?: 4 }}" step="1" value="{{ $event->duration_hours ?: 4 }}" {{ strtolower($event->pricing_basis ?? '') === 'per person' ? 'readonly' : '' }}>
                                         <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests (max {{ $event->capacity }})</label>
                                         <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric">
