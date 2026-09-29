@@ -75,7 +75,10 @@ class ChatbotController extends Controller
         $guest = Auth::guard('guest')->user();
 
         if (! $guest) {
-            return ['reply' => 'Please sign in as a guest before contacting the front desk.'];
+            return [
+                'reply' => 'Please sign in as a guest before contacting the front desk.',
+                'auth_required' => true,
+            ];
         }
 
         if ($this->normalizeFaqText($message) === $this->normalizeFaqText('Contact Front Desk')) {

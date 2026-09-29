@@ -15,6 +15,17 @@ class ChatbotGuestActionsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_unauthenticated_front_desk_contact_requires_sign_in(): void
+    {
+        $this->postJson(route('chatbot.message'), [
+            'message' => 'Contact Front Desk',
+            'action' => 'contact_front_desk',
+        ])
+            ->assertOk()
+            ->assertJsonPath('auth_required', true)
+            ->assertJsonPath('reply', 'Please sign in as a guest before contacting the front desk.');
+    }
+
     public function test_guest_can_send_a_front_desk_message_and_view_reply_history(): void
     {
         $guest = Guest::factory()->create();
