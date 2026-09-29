@@ -1986,7 +1986,13 @@
             });
         }
 
-        function activateDiningSubTab(targetName) {
+        function activateDiningSubTab(targetName, updateUrl = false) {
+            if (!Array.from(diningSubTabs).some(function(btn) {
+                return btn.getAttribute('data-dining-subtab') === targetName;
+            })) {
+                targetName = 'tables';
+            }
+
             diningSubTabs.forEach(function(btn) {
                 const isActive = btn.getAttribute('data-dining-subtab') === targetName;
                 btn.classList.toggle('text-orange-600', isActive);
@@ -1998,6 +2004,12 @@
             diningSubPanels.forEach(function(panel) {
                 panel.classList.toggle('hidden', panel.getAttribute('data-dining-subpanel') !== targetName);
             });
+
+            if (updateUrl) {
+                const params = new URLSearchParams(window.location.search);
+                params.set('dining_tab', targetName);
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`);
+            }
         }
 
         const diningPageSize = 5;
@@ -2114,7 +2126,8 @@
                 button.classList.toggle('hidden', !shouldShow);
             });
             if (targetName === 'dining') {
-                activateDiningSubTab('tables');
+                const params = new URLSearchParams(window.location.search);
+                activateDiningSubTab(params.get('dining_tab') || 'tables');
             }
 
             if (updateUrl) {
@@ -2132,28 +2145,42 @@
 
         diningSubTabs.forEach(function(button) {
             button.addEventListener('click', function () {
-                activateDiningSubTab(this.getAttribute('data-dining-subtab'));
+                activateDiningSubTab(this.getAttribute('data-dining-subtab'), true);
             });
         });
 
-        diningMenuCategoryTabs.forEach(function (button) {
-            button.addEventListener('click', function () {
-                const category = this.getAttribute('data-menu-category-tab');
+        function activateDiningMenuCategory(category, updateUrl = false) {
+            const targetTab = Array.from(diningMenuCategoryTabs).find(function(tab) {
+                return tab.getAttribute('data-menu-category-tab') === category;
+            }) || diningMenuCategoryTabs[0];
+            if (!targetTab) return;
 
-                diningMenuCategoryTabs.forEach(function (tab) {
-                    const isActive = tab === button;
-                    tab.classList.toggle('is-active', isActive);
-                    tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-                });
+            category = targetTab.getAttribute('data-menu-category-tab');
+            diningMenuCategoryTabs.forEach(function(tab) {
+                const isActive = tab === targetTab;
+                tab.classList.toggle('is-active', isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
 
-                document.querySelectorAll('.dining-menu-checkbox').forEach(function (checkbox) {
+            filterDiningMenu(category);
+
+            if (updateUrl) {
+                document.querySelectorAll('.dining-menu-checkbox').forEach(function(checkbox) {
                     checkbox.checked = false;
                 });
                 const menuSelectAll = document.querySelector('.dining-menu-select-all');
                 if (menuSelectAll) menuSelectAll.checked = false;
                 updateDiningSelectCount('menus');
 
-                filterDiningMenu(category);
+                const params = new URLSearchParams(window.location.search);
+                params.set('menu_category', category);
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`);
+            }
+        }
+
+        diningMenuCategoryTabs.forEach(function (button) {
+            button.addEventListener('click', function () {
+                activateDiningMenuCategory(this.getAttribute('data-menu-category-tab'), true);
             });
         });
 
@@ -2161,7 +2188,8 @@
             document.querySelectorAll('[data-dining-subpanel="menu"] .dining-menu-row').forEach(function (row) {
                 row.dataset.menuCategory = normalizeDiningMenuCategory(row.dataset.menuCategory);
             });
-            filterDiningMenu(diningMenuCategoryTabs[0].getAttribute('data-menu-category-tab'));
+            const params = new URLSearchParams(window.location.search);
+            activateDiningMenuCategory(params.get('menu_category'));
         }
 
         paginateDiningRows('tables');
