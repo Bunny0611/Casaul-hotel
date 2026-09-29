@@ -26,6 +26,29 @@ class ChatbotGuestActionsTest extends TestCase
             ->assertJsonPath('reply', 'Please sign in as a guest before contacting the front desk.');
     }
 
+    public function test_faq_quick_reply_exits_front_desk_mode(): void
+    {
+        $guest = Guest::factory()->create();
+
+        $this->actingAs($guest, 'guest')
+            ->postJson(route('chatbot.message'), [
+                'message' => 'Contact Front Desk',
+                'action' => 'contact_front_desk',
+            ])
+            ->assertOk()
+            ->assertJsonPath('mode', 'contact_front_desk');
+
+        $this->postJson(route('chatbot.message'), [
+            'message' => 'Reservations',
+            'action' => 'faq',
+        ])
+            ->assertOk()
+            ->assertJsonPath('reply', 'Here are some common questions about Reservations. Select a question below or type your own question.')
+            ->assertJsonMissingPath('mode');
+
+        $this->assertDatabaseCount('messages', 0);
+    }
+
     public function test_guest_can_send_a_front_desk_message_and_view_reply_history(): void
     {
         $guest = Guest::factory()->create();
@@ -38,7 +61,7 @@ class ChatbotGuestActionsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('mode', 'contact_front_desk');
 
-        $this->actingAs($guest, 'guest')
+        $sendResponse = $this->actingAs($guest, 'guest')
             ->postJson(route('chatbot.message'), [
                 'message' => 'Please confirm my airport transfer.',
                 'action' => 'contact_front_desk',
@@ -47,6 +70,7 @@ class ChatbotGuestActionsTest extends TestCase
             ->assertSee('Please confirm my airport transfer.');
 
         $message = Message::query()->where('customer_email', $guest->email)->firstOrFail();
+        $this->assertSame($message->id, $sendResponse->json('message_id'));
         $employee = Staff::factory()->create(['role' => 'employee']);
 
         $this->actingAs($employee)
@@ -59,6 +83,7 @@ class ChatbotGuestActionsTest extends TestCase
         $this->actingAs($guest, 'guest')
             ->getJson(route('guest.messages'))
             ->assertOk()
+            ->assertJsonPath('messages.0.id', $message->id)
             ->assertJsonPath('messages.0.reply', 'The front desk will confirm that shortly.')
             ->assertJsonPath('messages.0.is_replied', true);
     }

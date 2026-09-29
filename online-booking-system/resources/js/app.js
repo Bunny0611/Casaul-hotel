@@ -545,6 +545,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let frontDeskNoticeShown = false;
     let frontDeskPollingTimer = null;
     const frontDeskServerState = new Map();
+    const frontDeskSeenMessageIds = new Set();
 
     function scrollToBottom() {
         requestAnimationFrame(() => {
@@ -569,7 +570,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'chat-msg-content';
-        contentDiv.innerHTML = text.replace(/\n/g, '<br>');
+        String(text).split('\n').forEach((line, index) => {
+            if (index > 0) contentDiv.appendChild(document.createElement('br'));
+            contentDiv.appendChild(document.createTextNode(line));
+        });
 
         const timeSpan = document.createElement('span');
         timeSpan.className = 'chat-msg-time';
@@ -691,6 +695,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             messages.forEach((message) => {
                 const key = frontDeskMessageKey(message.message, message.sent_at);
+                const messageId = message.id === undefined || message.id === null ? null : String(message.id);
+                const alreadyRendered = messageId !== null && frontDeskSeenMessageIds.has(messageId);
                 const replies = Array.isArray(message.replies)
                     ? message.replies
                     : (message.reply ? [{ reply: message.reply, replied_at: message.replied_at }] : []);
@@ -698,7 +704,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (knownReplyCount === undefined) {
                     frontDeskServerState.set(key, replies.length);
-                    addFrontDeskBubble(message.message, 'user', formatConversationTime(message.sent_at), key);
+                    if (!alreadyRendered) {
+                        addFrontDeskBubble(message.message, 'user', formatConversationTime(message.sent_at), key);
+                    }
                     replies.forEach((reply, index) => {
                         addFrontDeskBubble(reply.reply, 'bot', formatConversationTime(reply.replied_at), `${key}:reply:${index}`);
                     });
@@ -871,6 +879,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         sendChatbotMessage(message, action, requestType).then((reply) => {
+            if (reply.message_id !== undefined && reply.message_id !== null) {
+                frontDeskSeenMessageIds.add(String(reply.message_id));
+            }
             pendingAction = reply.mode || null;
             botReplyFromServer(reply);
         });
@@ -889,6 +900,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
    
     function handleQuickReply(label, action) {
+        if (pendingAction === 'contact_front_desk' && action !== 'contact-front-desk') {
+            stopFrontDeskPolling();
+            pendingAction = action === 'request-housekeeping' ? 'request_housekeeping' : 'faq';
+            lastFrontDeskAction = null;
+            lastFrontDeskPrompt = false;
+            frontDeskNoticeShown = false;
+        }
+
         if (action === 'contact-front-desk') {
             pendingAction = 'contact_front_desk';
         } else if (action === 'request-housekeeping') {
@@ -896,6 +915,8 @@ document.addEventListener('DOMContentLoaded', function () {
         } else if (pendingAction === 'request_housekeeping') {
             sendUserMessage(label);
             return;
+        } else {
+            pendingAction = 'faq';
         }
 
         sendUserMessage(label);
