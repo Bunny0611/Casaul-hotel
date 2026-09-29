@@ -201,6 +201,39 @@
     .reservation-card-body > p { min-height:40px; margin:0; color:#788398; font-size:9px; line-height:1.45; }
     .event-time-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
     .event-time-row .field-input { padding-left:4px; padding-right:2px; }
+    #events-tab .panel-header { padding-bottom:12px; }
+    #events-tab .panel-header h3 { display:flex; align-items:center; gap:9px; color:#172033; }
+    #events-tab .panel-header h3 i { color:#d20b26; }
+    #events-tab .event-category-tabs { display:flex; gap:8px; margin:0 0 14px; padding:4px; border-radius:8px; background:#f3f4f7; }
+    #events-tab .event-category-tab { flex:1; min-height:36px; border:1px solid transparent; border-radius:6px; color:#4b5563; background:transparent; font-size:11px; font-weight:700; cursor:pointer; transition:background .16s ease,color .16s ease,border-color .16s ease; }
+    #events-tab .event-category-tab.active { color:#fff; background:#94151d; box-shadow:0 3px 8px rgba(148,21,29,.18); }
+    #events-tab .event-category-tab:focus-visible,
+    #events-tab .event-options-disclosure summary:focus-visible { outline:2px solid #e3aa32; outline-offset:2px; }
+    #events-tab .reservation-card-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; align-items:stretch; }
+    #events-tab .reservation-card-grid > [hidden] { display:none !important; }
+    #events-tab .event-package-card { min-height:100%; border:1px solid #e8eaf0; border-radius:9px; box-shadow:0 3px 9px rgba(24,36,64,.045); transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease; }
+    #events-tab .event-package-card.is-selected { border:2px solid #f0b33d; box-shadow:0 4px 12px rgba(194,139,28,.16); }
+    #events-tab .event-package-card > img { width:100%; height:112px; flex:0 0 112px; object-fit:cover; }
+    #events-tab .event-package-body { flex:1; gap:7px; padding:11px; }
+    #events-tab .event-package-body h4 { color:#172033; font-size:13px; line-height:1.3; }
+    #events-tab .event-package-price { display:flex; align-items:baseline; flex-wrap:wrap; gap:5px; margin:0; }
+    #events-tab .event-package-price .price { min-height:0; margin:0; color:#a41120; font-size:15px; }
+    #events-tab .event-package-price span:last-child { color:#7c8799; font-size:9px; }
+    #events-tab .event-package-description { min-height:36px; margin:0; color:#788398; font-size:10px; line-height:1.45; }
+    #events-tab .event-package-features { display:grid; gap:5px; margin:0; padding:0; color:#667186; font-size:10px; line-height:1.35; list-style:none; }
+    #events-tab .event-package-features li { display:flex; align-items:flex-start; gap:6px; }
+    #events-tab .event-package-features i { margin-top:2px; color:#77869b; font-size:9px; }
+    #events-tab .event-options-disclosure { margin-top:2px; border-top:1px solid #edf0f4; }
+    #events-tab .event-options-disclosure summary { padding:8px 0 2px; color:#8f1620; font-size:10px; font-weight:700; cursor:pointer; }
+    #events-tab .event-options { padding-top:9px; }
+    #events-tab .event-options .field-label { margin-top:7px; font-size:10px; }
+    #events-tab .event-options .field-input { min-height:32px; font-size:10px; }
+    #events-tab .reservation-card-footer { margin-top:auto; padding-top:4px; }
+    #events-tab .select-option-btn { min-height:34px; border-color:#b51c28; border-radius:7px; color:#a41120; font-size:10px; }
+    #events-tab .event-package-card.is-selected .select-option-btn { border-color:#94151d; color:#fff; background:#94151d; }
+    #events-tab .event-empty-state { margin:0; padding:22px 12px; border:1px dashed #d9dde5; border-radius:8px; color:#788398; font-size:11px; text-align:center; }
+    @media (max-width:700px) { #events-tab .reservation-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:520px) { #events-tab .reservation-card-grid { grid-template-columns:1fr; } #events-tab .event-package-card > img { height:160px; flex-basis:160px; } }
     .reservation-card-footer { display:block; }
     .reservation-card .price { display:block; min-height:16px; margin-bottom:7px; color:#d20b26; font-size:11px; font-weight:800; }
     .select-option-btn { width:100%; padding:7px 8px; border:1px solid #ff9aa7; border-radius:7px; color:#d20b26; background:#fff; font-size:10px; }
@@ -699,43 +732,63 @@
 
             <div id="events-tab" class="reservation-panel">
                 <div class="panel-header">
-                    <h3>Events</h3>
-                    <p>Select an event package for your occasion.</p>
+                    <h3><i class="fas fa-gift" aria-hidden="true"></i> Event Packages</h3>
+                    <p>Choose from our available packages for birthdays and weddings.</p>
                 </div>
+                <div class="event-category-tabs" role="tablist" aria-label="Event package category">
+                    <button type="button" class="event-category-tab active" data-event-filter="birthday" role="tab" aria-selected="true">Birthday</button>
+                    <button type="button" class="event-category-tab" data-event-filter="wedding" role="tab" aria-selected="false">Wedding</button>
+                </div>
+                <p class="event-empty-state" hidden>No packages are currently available in this category.</p>
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
-                        <article class="reservation-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}" data-available-from="{{ $event->available_from ?: '08:00' }}" data-available-to="{{ $event->available_to ?: '22:00' }}" data-duration-hours="{{ $event->duration_hours ?: 4 }}">
-                            <img src="{{ $event->image ? asset('storage/' . $event->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $event->name }}">
-                            <div class="reservation-card-body">
+                        <article class="reservation-card event-package-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-capacity="{{ $event->capacity }}" data-available-from="{{ $event->available_from ?: '08:00' }}" data-available-to="{{ $event->available_to ?: '22:00' }}" data-duration-hours="{{ $event->duration_hours ?: 4 }}">
+                            @if($event->image)
+                                <img src="{{ asset('storage/' . ltrim($event->image, '/')) }}" alt="{{ $event->name }}">
+                            @endif
+                            <div class="reservation-card-body event-package-body">
                                 <h4>{{ $event->name }}</h4>
-                                <p>{{ $event->description ?: 'Flexible event venue for your occasion.' }}</p>
-                                <p class="text-muted">{{ $event->event_type }} · ₱{{ number_format($event->price, 0) }} / {{ strtolower(str_replace('Per ', '', $event->pricing_basis ?? 'Event')) }} · Maximum {{ $event->capacity }} guests</p>
-                                <div class="event-options">
-                                    <label class="field-label" for="eventDate-{{ $event->id }}">Event Date</label>
-                                    <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}">
-                                    <div class="event-time-row">
-                                        <div>
-                                            <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
-                                            <select id="eventStart-{{ $event->id }}" class="field-input event-start-time">
-                                                <option value="">Select start time</option>
-                                                @for($hour = 8; $hour <= 22; $hour++)
-                                                    <option value="{{ sprintf('%02d:00', $hour) }}">{{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}</option>
-                                                @endfor
-                                            </select>
+                                <p class="event-package-price"><span class="price">₱{{ number_format($event->price, 0) }}</span><span>per {{ strtolower(str_replace('Per ', '', $event->pricing_basis ?? 'Event')) }}</span></p>
+                                @if($event->description)
+                                    <p class="event-package-description">{{ $event->description }}</p>
+                                @endif
+                                <ul class="event-package-features">
+                                    @if($event->capacity)
+                                        <li><i class="fas fa-check" aria-hidden="true"></i> Maximum {{ $event->capacity }} guests</li>
+                                    @endif
+                                    <li><i class="fas fa-check" aria-hidden="true"></i> {{ $event->duration_hours ?: 4 }}-hour venue</li>
+                                    @if($event->location)
+                                        <li><i class="fas fa-check" aria-hidden="true"></i> {{ $event->location }}</li>
+                                    @endif
+                                </ul>
+                                <details class="event-options-disclosure">
+                                    <summary>Set date, time and guests</summary>
+                                    <div class="event-options">
+                                        <label class="field-label" for="eventDate-{{ $event->id }}">Event Date</label>
+                                        <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}">
+                                        <div class="event-time-row">
+                                            <div>
+                                                <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
+                                                <select id="eventStart-{{ $event->id }}" class="field-input event-start-time">
+                                                    <option value="">Select start time</option>
+                                                    @for($hour = 8; $hour <= 22; $hour++)
+                                                        <option value="{{ sprintf('%02d:00', $hour) }}">{{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}</option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="field-label" for="eventEnd-{{ $event->id }}">End Time</label>
+                                                <input id="eventEnd-{{ $event->id }}" class="field-input event-end-time" type="time" lang="en-US" readonly aria-readonly="true">
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label class="field-label" for="eventEnd-{{ $event->id }}">End Time</label>
-                                            <input id="eventEnd-{{ $event->id }}" class="field-input event-end-time" type="time" lang="en-US" readonly aria-readonly="true">
-                                        </div>
+                                        <label class="field-label" for="eventDuration-{{ $event->id }}">How Many Hours?</label>
+                                        <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="{{ $event->duration_hours ?: 4 }}" step="1" value="{{ $event->duration_hours ?: 4 }}" {{ strtolower($event->pricing_basis ?? '') === 'per person' ? 'readonly' : '' }}>
+                                        <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests (max {{ $event->capacity }})</label>
+                                        <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric">
                                     </div>
-                                    <label class="field-label" for="eventDuration-{{ $event->id }}">How Many Hours?</label>
-                                    <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="{{ $event->duration_hours ?: 4 }}" step="1" value="{{ $event->duration_hours ?: 4 }}" {{ strtolower($event->pricing_basis ?? '') === 'per person' ? 'readonly' : '' }}>
-                                    <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests (max {{ $event->capacity }})</label>
-                                    <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric">
-                                </div>
+                                </details>
                                 <div class="reservation-card-footer">
-                                    <span class="price">₱{{ number_format($event->price, 0) }}</span>
-                                    <button type="button" class="select-option-btn" data-title="{{ $event->name }}" data-price="{{ $event->price }}">Add to Reservation</button>
+                                    <button type="button" class="select-option-btn" data-title="{{ $event->name }}" data-price="{{ $event->price }}">Select Package</button>
                                 </div>
                             </div>
                         </article>
@@ -1372,6 +1425,32 @@
         roomTypeTabs.forEach(tab => {
             tab.addEventListener('click', () => filterRoomCards(tab.dataset.roomFilter || 'all'));
         });
+
+        const eventCategoryTabs = document.querySelectorAll('.event-category-tab');
+        const eventEmptyState = document.querySelector('#events-tab .event-empty-state');
+        const filterEventCards = (filter) => {
+            let visibleCount = 0;
+            document.querySelectorAll('#events-tab .event-package-card').forEach(card => {
+                const isVisible = String(card.dataset.eventType || '').trim().toLowerCase() === filter;
+                card.hidden = !isVisible;
+                visibleCount += Number(isVisible);
+            });
+            eventCategoryTabs.forEach(tab => {
+                const isActive = tab.dataset.eventFilter === filter;
+                tab.classList.toggle('active', isActive);
+                tab.setAttribute('aria-selected', String(isActive));
+            });
+            if (eventEmptyState) {
+                eventEmptyState.hidden = visibleCount > 0;
+            }
+        };
+
+        eventCategoryTabs.forEach(tab => {
+            tab.addEventListener('click', () => filterEventCards(tab.dataset.eventFilter || 'birthday'));
+        });
+        const initialEventCategory = [...eventCategoryTabs].find(tab => [...document.querySelectorAll('#events-tab .event-package-card')]
+            .some(card => String(card.dataset.eventType || '').trim().toLowerCase() === tab.dataset.eventFilter))?.dataset.eventFilter || 'birthday';
+        filterEventCards(initialEventCategory);
 
         const sumItemTotal = (itemsList) => itemsList.reduce((sum, item) => sum + (Number(item.price || 0) * (Number(item.quantity || 1))), 0);
         const getFacilityCharge = (facility) => {
@@ -2247,10 +2326,12 @@
                             endTime: eventEndTime,
                             durationHours: Number(card.querySelector('.event-duration')?.value || card.dataset.durationHours || 4),
                         });
+                        card.classList.add('is-selected');
                         this.textContent = 'Selected';
                     } else {
                         selectedEvent.splice(eventIndex, 1);
-                        this.textContent = 'Add to Reservation';
+                        card.classList.remove('is-selected');
+                        this.textContent = 'Select Package';
                     }
                 } else if (category === 'dining') {
                     const diningIndex = selectedDining.findIndex(item => item.id === card.dataset.diningId);
