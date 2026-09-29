@@ -2088,7 +2088,13 @@
             return categoryMap[value] || 'Breakfast';
         }
 
-        function activateTab(targetName) {
+        function activateTab(targetName, updateUrl = false) {
+            if (!Array.from(tabButtons).some(function(btn) {
+                return btn.getAttribute('data-tab') === targetName;
+            })) {
+                return;
+            }
+
             tabButtons.forEach(function(btn) {
                 const isActive = btn.getAttribute('data-tab') === targetName;
                 btn.classList.toggle('bg-orange-500', isActive);
@@ -2110,11 +2116,17 @@
             if (targetName === 'dining') {
                 activateDiningSubTab('tables');
             }
+
+            if (updateUrl) {
+                const params = new URLSearchParams(window.location.search);
+                params.set('tab', targetName);
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`);
+            }
         }
 
         tabButtons.forEach(function(button) {
             button.addEventListener('click', function () {
-                activateTab(this.getAttribute('data-tab'));
+                activateTab(this.getAttribute('data-tab'), true);
             });
         });
 

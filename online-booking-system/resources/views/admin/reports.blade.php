@@ -128,6 +128,7 @@
     <!-- Date Range & Actions -->
     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
         <form id="reportsFilterForm" method="GET" action="{{ route('admin.reports') }}">
+            <input id="activeReportTab" type="hidden" name="tab" value="{{ request('tab', 'financial') }}">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center space-x-4">
                     <div>
@@ -463,23 +464,37 @@
     document.addEventListener('DOMContentLoaded', function () {
         const tabButtons = document.querySelectorAll('.tab-btn');
         const panels = document.querySelectorAll('[data-panel]');
-        let activeTab = document.querySelector('.tab-btn.border-orange-500')?.getAttribute('data-tab') || 'financial';
+        const activeReportTab = document.getElementById('activeReportTab');
+        let activeTab = new URLSearchParams(window.location.search).get('tab') || 'financial';
+
+        function activateReportTab(target) {
+            if (!Array.from(tabButtons).some(button => button.getAttribute('data-tab') === target)) {
+                target = 'financial';
+            }
+            activeTab = target;
+            activeReportTab.value = target;
+
+            tabButtons.forEach(btn => {
+                const isActive = btn.getAttribute('data-tab') === target;
+                btn.classList.toggle('border-orange-500', isActive);
+                btn.classList.toggle('font-semibold', isActive);
+                btn.classList.toggle('text-orange-600', isActive);
+                btn.classList.toggle('text-gray-600', !isActive);
+            });
+            panels.forEach(panel => {
+                panel.classList.toggle('hidden', panel.getAttribute('data-panel') !== target);
+            });
+
+            const params = new URLSearchParams(window.location.search);
+            params.set('tab', target);
+            window.history.replaceState(window.history.state, '', `${window.location.pathname}?${params.toString()}`);
+        }
+
+        activateReportTab(activeTab);
 
         tabButtons.forEach(button => {
             button.addEventListener('click', function () {
-                const target = this.getAttribute('data-tab');
-                activeTab = target;
-
-                tabButtons.forEach(btn => {
-                    btn.classList.remove('border-orange-500', 'font-semibold', 'text-orange-600');
-                    btn.classList.add('text-gray-600');
-                });
-                this.classList.remove('text-gray-600');
-                this.classList.add('border-orange-500', 'font-semibold', 'text-orange-600');
-
-                panels.forEach(panel => {
-                    panel.classList.toggle('hidden', panel.getAttribute('data-panel') !== target);
-                });
+                activateReportTab(this.getAttribute('data-tab'));
             });
         });
         // Actions: Refresh, Export Excel, Download PDF, Print

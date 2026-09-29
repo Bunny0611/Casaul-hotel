@@ -31,9 +31,15 @@ class ChatbotController extends Controller
             || $this->normalizeFaqText($message) === $this->normalizeFaqText('Contact Front Desk')) {
             if ($this->normalizeFaqText($message) === $this->normalizeFaqText('Contact Front Desk')) {
                 $request->session()->put('chatbot_mode', 'contact_front_desk');
+            } else {
+                $request->session()->forget('chatbot_mode');
             }
 
             return response()->json($this->contactFrontDesk($message));
+        }
+
+        if ($action !== '') {
+            $request->session()->forget('chatbot_mode');
         }
 
         if ($action === '' && $request->session()->pull('chatbot_mode') === 'contact_front_desk') {
@@ -60,6 +66,7 @@ class ChatbotController extends Controller
 
         return response()->json([
             'messages' => $this->messagesForGuest($guest->email)->map(fn (Message $message) => [
+                'id' => $message->id,
                 'message' => $message->message,
                 'reply' => $message->admin_reply,
                 'is_replied' => (bool) $message->is_replied,
@@ -75,7 +82,10 @@ class ChatbotController extends Controller
         $guest = Auth::guard('guest')->user();
 
         if (! $guest) {
-            return ['reply' => 'Please sign in as a guest before contacting the front desk.'];
+            return [
+                'reply' => 'Please sign in as a guest before contacting the front desk.',
+                'auth_required' => true,
+            ];
         }
 
         if ($this->normalizeFaqText($message) === $this->normalizeFaqText('Contact Front Desk')) {
@@ -85,7 +95,7 @@ class ChatbotController extends Controller
             ];
         }
 
-        Message::create([
+        $frontDeskMessage = Message::create([
             'customer_name' => $guest->name,
             'customer_email' => $guest->email,
             'message' => $message,
@@ -94,6 +104,7 @@ class ChatbotController extends Controller
         return [
             'reply' => 'Your message has been sent to the front desk. We will reply as soon as possible. Your conversation history is shown below.' . $this->formatGuestConversation($guest->email),
             'mode' => 'contact_front_desk',
+            'message_id' => $frontDeskMessage->id,
         ];
     }
 

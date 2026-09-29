@@ -673,12 +673,14 @@
 
                 <div class="reservation-card-grid">
                     @foreach($rooms as $room)
-                        @php($extraGuestPrice = (float) ($room->adult_guest_price ?? (str_contains(strtolower($room->room_type), 'standard') ? 500 : 650)))
-                        @php($kidGuestPrice = (float) ($room->kid_guest_price ?? ($extraGuestPrice / 2)))
-                        @php($roomCapacity = max(1, (int) ($room->capacity ?? 2)))
-                        @php($roomTypeFilter = str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other'))
-                        @php($roomStoragePath = str_starts_with((string) $room->image, 'storage/') ? substr($room->image, 8) : $room->image)
-                        @php($roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath) ? secure_asset('storage/' . $roomStoragePath) : null)
+                        <?php
+                            $extraGuestPrice = (float) ($room->adult_guest_price ?? (str_contains(strtolower($room->room_type), 'standard') ? 500 : 650));
+                            $kidGuestPrice = (float) ($room->kid_guest_price ?? ($extraGuestPrice / 2));
+                            $roomCapacity = max(1, (int) ($room->capacity ?? 2));
+                            $roomTypeFilter = str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other');
+                            $roomStoragePath = str_starts_with((string) $room->image, 'storage/') ? substr($room->image, 8) : $room->image;
+                            $roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath) ? secure_asset('storage/' . $roomStoragePath) : null;
+                        ?>
                         <article class="reservation-card" data-category="room" data-room-type="{{ $roomTypeFilter }}" data-price="{{ $room->price }}" data-name="{{ $room->room_type }} • Room {{ $room->room_number }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}" data-kid-guest-price="{{ $kidGuestPrice }}">
                             @if($roomImage)
                                 <img src="{{ $roomImage }}" alt="{{ $room->room_type }}">
@@ -1737,12 +1739,27 @@
             return normalizedValue;
         };
 
+        const activateReservationTab = (tabId, updateUrl = false) => {
+            const targetTab = Array.from(tabs).find(tab => tab.dataset.tab === tabId);
+            const targetPanel = document.getElementById(tabId);
+            if (!targetTab || !targetPanel) {
+                return;
+            }
+
+            tabs.forEach(tab => tab.classList.toggle('active', tab === targetTab));
+            panels.forEach(panel => panel.classList.toggle('active', panel === targetPanel));
+
+            if (updateUrl) {
+                window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#${tabId}`);
+            }
+        };
+
+        const initialTabId = window.location.hash.slice(1);
+        activateReservationTab(initialTabId || 'room-tab');
+
         tabs.forEach(tab => {
             tab.addEventListener('click', function () {
-                tabs.forEach(btn => btn.classList.remove('active'));
-                panels.forEach(panel => panel.classList.remove('active'));
-                this.classList.add('active');
-                document.getElementById(this.dataset.tab).classList.add('active');
+                activateReservationTab(this.dataset.tab, true);
             });
         });
         const updateSummary = () => {
@@ -2572,14 +2589,10 @@
                     return;
                 }
 
-                tabs.forEach(tab => tab.classList.remove('active'));
-                panels.forEach(panel => panel.classList.remove('active'));
-
                 const targetTab = Array.from(tabs).find(tab => tab.dataset.tab === targetId);
                 const targetPanel = document.getElementById(targetId);
                 if (targetTab && targetPanel) {
-                    targetTab.classList.add('active');
-                    targetPanel.classList.add('active');
+                    activateReservationTab(targetId, true);
                     targetPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
