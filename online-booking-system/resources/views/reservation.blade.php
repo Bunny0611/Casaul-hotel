@@ -697,14 +697,8 @@
                 </div>
                 <div class="reservation-card-grid">
                     @foreach($facilities as $facility)
-                        @php
-                            $facilityImagePath = ltrim((string) $facility->image, '/');
-                            if (str_starts_with($facilityImagePath, 'storage/')) {
-                                $facilityImagePath = substr($facilityImagePath, strlen('storage/'));
-                            }
-                        @endphp
                         <article class="reservation-card" data-category="facilities" data-price="{{ $facility->price }}" data-pricing-basis="{{ $facility->pricing_basis ?? 'Per Stay' }}" data-title="{{ $facility->name }}" data-facility-id="{{ $facility->id }}" data-capacity="{{ $facility->capacity ?? '' }}" data-location="{{ $facility->location ?? '' }}" data-scheduling="{{ $facility->scheduling_requirement ?? 'No Additional Schedule' }}">
-                            <img src="{{ $facilityImagePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($facilityImagePath) ? secure_asset('storage/' . $facilityImagePath) : secure_asset('image/Royal-Suite-room.jpg') }}" alt="{{ $facility->name }}">
+                            <img src="{{ $facility->image && \Illuminate\Support\Facades\Storage::disk('public')->exists(\Illuminate\Support\Str::after(ltrim($facility->image, '/'), 'storage/')) ? secure_asset('storage/' . \Illuminate\Support\Str::after(ltrim($facility->image, '/'), 'storage/')) : secure_asset('image/Royal-Suite-room.jpg') }}" alt="{{ $facility->name }}">
                             <div class="reservation-card-body">
                                 <h4>{{ $facility->name }}</h4>
                                 <p>{{ $facility->description ?: 'Premium guest add-on for your stay.' }}</p>
