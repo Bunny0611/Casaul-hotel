@@ -4048,121 +4048,9 @@ body:has(.accommodation-reference-page) nav.site-header { background: #7a2528; b
 .accommodation-benefits h3 { margin: 0 0 4px; color: #4d3329; font-family: 'Libre Baskerville', Georgia, serif; font-size: .95rem; text-transform: uppercase; }
 .accommodation-benefits p { margin: 0; color: #74665d; font-size: .85rem; line-height: 1.5; }
 @media (max-width: 900px) { .accommodation-room-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .accommodation-room-image { height: 150px; flex-basis: 150px; } }
-@media (max-width: 900px) {
-    .accommodation-reference-page { padding-top: 68px; }
-    .accommodation-reference-hero {
-        display: flex;
-        flex-direction: column;
-        width: min(720px, calc(100% - 32px));
-        height: auto;
-        min-height: 0;
-        max-height: none;
-        margin-top: 12px;
-        overflow: hidden;
-    }
-    .accommodation-reference-hero-image {
-        order: 0;
-        flex: 0 0 auto;
-        width: auto;
-        height: auto;
-        aspect-ratio: 16 / 9;
-        margin: 12px 12px 0;
-        border-radius: 12px;
-    }
-    .accommodation-reference-hero-image::before { display: none; }
-    .accommodation-reference-hero-image img { height: 100%; object-position: center 58%; }
-    .accommodation-reference-hero-copy {
-        position: static;
-        order: 1;
-        width: 100%;
-        padding: 20px clamp(16px, 4vw, 28px) 18px;
-        transform: none;
-        align-items: center;
-        text-align: center;
-    }
-    .accommodation-eyebrow { justify-content: center; flex-wrap: wrap; margin-bottom: 11px; color: #9c702e; text-shadow: none; }
-    .accommodation-reference-hero h1 {
-        max-width: 620px;
-        color: #493128;
-        font-size: clamp(1.65rem, 4.5vw, 2.25rem);
-        line-height: 1.18;
-        text-shadow: none;
-        text-wrap: balance;
-    }
-    .accommodation-hero-text { max-width: 520px; margin: 12px 0 18px; color: #72655d; text-shadow: none; }
-    .accommodation-desktop-break { display: none; }
-    .accommodation-hero-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        width: min(100%, 520px);
-        gap: 10px;
-        transform: none;
-    }
-    .accommodation-check-button, .accommodation-explore-button { justify-content: center; width: 100%; min-height: 44px; }
-    .accommodation-hero-benefits {
-        justify-content: center;
-        gap: 8px 0;
-        margin-top: 16px;
-        color: #776550;
-        text-shadow: none;
-        transform: none;
-    }
-    .accommodation-hero-benefits span { padding: 0 10px; border-color: #d9c9ae; }
-    .accommodation-hero-benefits i { color: #ad7920; }
-    .accommodation-booking-bar {
-        position: relative;
-        order: 2;
-        inset: auto;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 6px;
-        width: calc(100% - 24px);
-        max-width: 600px;
-        min-height: 0;
-        margin: 0 auto 14px;
-        padding: 10px;
-        border: 1px solid #eadfce;
-        border-radius: 12px;
-        background: #fffaf2;
-        box-shadow: 0 8px 18px rgba(70, 45, 28, .12);
-    }
-    .accommodation-booking-field {
-        min-height: 58px;
-        gap: 7px;
-        padding: 6px 5px;
-        border: 0;
-        border-radius: 8px;
-        background: #fffdf8;
-    }
-    .accommodation-booking-field > i { flex: 0 0 16px; font-size: .95rem; text-align: center; }
-    .accommodation-booking-field strong { overflow: visible; font-size: clamp(.66rem, 2.3vw, .76rem); line-height: 1.25; text-overflow: clip; white-space: normal; }
-    .accommodation-booking-field > b { flex: 0 0 auto; margin-left: auto; font-size: .8rem; }
-    .accommodation-booking-search { grid-column: 1 / -1; width: 100%; min-height: 46px; margin: 2px 0 0; }
-    .accommodation-booking-error { position: static; grid-column: 1 / -1; }
-    .accommodation-room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .accommodation-room-image { height: 105px; flex-basis: 105px; }
-    .accommodation-benefits { grid-template-columns: 1fr; gap: 13px; padding: 16px; }
-    .accommodation-benefits article { padding: 0; border-right: 0; }
-}
-
-@media (max-width: 650px) {
-    .accommodation-reference-page { padding-top: 66px; }
-    .accommodation-reference-hero { width: calc(100% - 28px); }
-    .accommodation-reference-hero-image { aspect-ratio: 1.5 / 1; }
-    .accommodation-reference-hero-copy { padding: 18px 16px 16px; }
-    .accommodation-reference-hero h1 { font-size: clamp(1.55rem, 7vw, 2rem); }
-    .accommodation-hero-text { font-size: .84rem; }
-    .accommodation-hero-actions { grid-template-columns: 1fr; width: min(100%, 320px); }
-    .accommodation-hero-benefits { font-size: .62rem; }
-    .accommodation-room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-}
-
-@media (max-width: 390px) {
-    .accommodation-reference-hero-image { aspect-ratio: 1.35 / 1; }
-    .accommodation-booking-bar { grid-template-columns: 1fr; }
-    .accommodation-booking-field { min-height: 52px; padding: 7px 10px; }
-    .accommodation-room-grid { grid-template-columns: 1fr; }
-}
+@media (max-width: 650px) { .accommodation-reference-page { padding-top: 66px; } .accommodation-reference-hero { display: flex; flex-direction: column; } .accommodation-reference-hero-copy { padding: 26px 20px 22px; } .accommodation-reference-hero-image { height: 190px; } .accommodation-desktop-break { display: none; } .accommodation-room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .accommodation-room-image { height: 105px; flex-basis: 105px; } .accommodation-benefits { grid-template-columns: 1fr; gap: 13px; padding: 16px; } .accommodation-benefits article { padding: 0; border-right: 0; } }
+@media (max-width: 650px) { .accommodation-reference-hero { height: 510px; display: block; } .accommodation-reference-hero-copy { left: 16px; top: 43%; width: calc(100% - 32px); padding: 12px 10px; } .accommodation-reference-hero h1 { font-size: clamp(1.45rem, 7vw, 2rem); } .accommodation-hero-text { font-size: .8rem; } .accommodation-hero-benefits { gap: 7px 0; font-size: .58rem; } .accommodation-hero-benefits span { padding: 0 8px; } .accommodation-booking-bar { right: 12px; bottom: 12px; left: 12px; grid-template-columns: repeat(2, 1fr); gap: 0; padding: 7px; } .accommodation-booking-field { padding: 4px 7px; border-bottom: 1px solid rgba(92,65,42,.2); } .accommodation-booking-field:nth-child(2n) { border-right: 0; } .accommodation-booking-search { grid-column: 1 / -1; margin: 7px 0 0; } }
+@media (max-width: 390px) { .accommodation-reference-hero { width: calc(100% - 56px); } .accommodation-rooms-section, .accommodation-benefits { width: calc(100% - 24px); } .accommodation-room-grid { grid-template-columns: 1fr; } }
 
 footer{
     background: #0b1220;
@@ -5024,6 +4912,86 @@ body:has(.profile-page) footer {
     .home-hero-copy h1 { width: 100%; margin: 0; font-size: clamp(1.45rem, 6.5vw, 2.75rem); line-height: 1.05; white-space: normal; }
     .home-hero-copy > p:not(.home-eyebrow) { max-width: min(34ch, 100%); margin: 0; font-size: clamp(.65rem, 2.6vw, .85rem); line-height: 1.4; }
     .home-primary-btn { min-height: clamp(36px, 10vw, 44px); margin-top: 2px; padding: 8px clamp(13px, 3.5vw, 20px); font-size: clamp(.52rem, 2vw, .68rem); }
+}
+
+@media (max-width: 1024px) {
+    :is(.home-page, .accommodation-reference-page, .dining-page, .about-page) {
+        overflow-wrap: anywhere;
+    }
+
+    :is(.home-page, .accommodation-reference-page, .dining-page, .about-page) h1 {
+        max-width: 100%;
+        font-size: clamp(1.45rem, 5vw, 2.45rem) !important;
+        line-height: 1.2;
+        text-wrap: balance;
+        overflow-wrap: anywhere;
+    }
+
+    :is(.home-page, .accommodation-reference-page, .dining-page, .about-page) h2 {
+        max-width: 100%;
+        font-size: clamp(1.2rem, 4.3vw, 1.9rem) !important;
+        line-height: 1.25;
+        text-wrap: balance;
+        overflow-wrap: anywhere;
+    }
+
+    :is(.home-page, .accommodation-reference-page, .dining-page, .about-page) h3 {
+        max-width: 100%;
+        font-size: clamp(1rem, 3.4vw, 1.3rem) !important;
+        line-height: 1.3;
+        text-wrap: balance;
+        overflow-wrap: anywhere;
+    }
+
+    :is(.home-page, .accommodation-reference-page, .dining-page, .about-page) h4 {
+        max-width: 100%;
+        font-size: clamp(.95rem, 3vw, 1.1rem) !important;
+        line-height: 1.35;
+        text-wrap: balance;
+        overflow-wrap: anywhere;
+    }
+
+    :is(.home-page, .accommodation-reference-page, .dining-page, .about-page) :is(p, li) {
+        font-size: clamp(.82rem, 2vw, .96rem) !important;
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+    }
+
+    :is(.home-page, .accommodation-reference-page, .dining-page, .about-page) :is(a, button) {
+        max-width: 100%;
+        min-width: 0;
+        font-size: clamp(.72rem, 1.8vw, .9rem) !important;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
+
+    :is(.home-page, .accommodation-reference-page, .dining-page, .about-page) small {
+        font-size: clamp(.68rem, 1.5vw, .8rem) !important;
+        line-height: 1.35;
+    }
+
+    .home-page .home-hero-copy h1 { font-size: clamp(1.45rem, 6.5vw, 2.75rem) !important; }
+    .home-page .home-eyebrow { font-size: clamp(.5rem, 2.2vw, .68rem) !important; }
+    .home-page .home-hero-copy > p:not(.home-eyebrow) { font-size: clamp(.65rem, 2.6vw, .85rem) !important; }
+    .home-page .home-primary-btn { font-size: clamp(.52rem, 2vw, .68rem) !important; }
+    .home-page .home-room-card p { font-size: clamp(1rem, 2vw, 1.2rem) !important; }
+    .home-page .home-room-card p span,
+    .home-page .home-dining-card strong,
+    .dining-page .dining-price { font-size: clamp(.95rem, 2.5vw, 1.2rem) !important; }
+    .accommodation-reference-page .accommodation-room-price,
+    .accommodation-reference-page .accommodation-details-price { font-size: clamp(1rem, 2vw, 1.2rem) !important; }
+    .accommodation-reference-page .accommodation-room-price span,
+    .accommodation-reference-page .accommodation-room-badge { font-size: clamp(.68rem, 1.7vw, .82rem) !important; }
+
+    .home-page .home-room-meta,
+    .home-page .home-dining-card-body > span,
+    .accommodation-reference-page .accommodation-room-meta,
+    .accommodation-reference-page .accommodation-hero-benefits,
+    .dining-page .dining-category-btn,
+    .dining-page .dining-meta-tag,
+    .about-page .about-kicker { font-size: clamp(.7rem, 1.8vw, .85rem) !important; }
+
+    .accommodation-reference-page .accommodation-booking-field strong { font-size: clamp(.72rem, 1.8vw, .85rem) !important; }
 }
 
 
