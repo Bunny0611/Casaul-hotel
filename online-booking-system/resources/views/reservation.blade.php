@@ -208,13 +208,12 @@
     #events-tab .event-category-tab { flex:1; min-height:36px; border:1px solid transparent; border-radius:6px; color:#4b5563; background:transparent; font-size:11px; font-weight:700; cursor:pointer; transition:background .16s ease,color .16s ease,border-color .16s ease; }
     #events-tab .event-category-tab.active { color:#fff; background:#94151d; box-shadow:0 3px 8px rgba(148,21,29,.18); }
     #events-tab .event-category-tab:focus-visible,
-    #events-tab .event-options-disclosure summary:focus-visible { outline:2px solid #e3aa32; outline-offset:2px; }
-    #events-tab .reservation-card-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; align-items:stretch; }
+    #events-tab .reservation-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:stretch; }
     #events-tab .reservation-card-grid > [hidden] { display:none !important; }
     #events-tab .event-package-card { min-height:100%; border:1px solid #e8eaf0; border-radius:9px; box-shadow:0 3px 9px rgba(24,36,64,.045); transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease; }
     #events-tab .event-package-card.is-selected { border:2px solid #f0b33d; box-shadow:0 4px 12px rgba(194,139,28,.16); }
-    #events-tab .event-package-card > img { width:100%; height:112px; flex:0 0 112px; object-fit:cover; }
-    #events-tab .event-package-body { flex:1; gap:7px; padding:11px; }
+    #events-tab .event-package-card > img { width:100%; height:130px; flex:0 0 130px; object-fit:cover; }
+    #events-tab .event-package-body { flex:1; gap:7px; padding:9px; }
     #events-tab .event-package-body h4 { color:#172033; font-size:13px; line-height:1.3; }
     #events-tab .event-package-price { display:flex; align-items:baseline; flex-wrap:wrap; gap:5px; margin:0; }
     #events-tab .event-package-price .price { min-height:0; margin:0; color:#a41120; font-size:15px; }
@@ -223,18 +222,12 @@
     #events-tab .event-package-features { display:grid; gap:5px; margin:0; padding:0; color:#667186; font-size:10px; line-height:1.35; list-style:none; }
     #events-tab .event-package-features li { display:flex; align-items:flex-start; gap:6px; }
     #events-tab .event-package-features i { margin-top:2px; color:#77869b; font-size:9px; }
-    #events-tab .event-options-disclosure { margin-top:2px; border-top:1px solid #edf0f4; }
-    #events-tab .event-options-disclosure summary { padding:8px 0 2px; color:#8f1620; font-size:10px; font-weight:700; cursor:pointer; }
-    #events-tab .event-options { padding-top:9px; }
-    #events-tab .event-options .field-label { margin-top:7px; font-size:10px; }
-    #events-tab .event-options .field-input { min-height:32px; font-size:10px; }
+    #events-tab .event-options-source { position:fixed; top:50%; left:50%; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none; }
     #events-tab .reservation-card-footer { margin-top:auto; padding-top:4px; }
     #events-tab .select-option-btn { min-height:34px; border-color:#b51c28; border-radius:7px; color:#a41120; font-size:10px; }
     #events-tab .event-package-card.is-selected .select-option-btn { border-color:#94151d; color:#fff; background:#94151d; }
     #events-tab .event-empty-state { margin:0; padding:22px 12px; border:1px dashed #d9dde5; border-radius:8px; color:#788398; font-size:11px; text-align:center; }
-    @media (max-width:700px) { #events-tab .reservation-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-    @media (max-width:520px) { #events-tab .reservation-card-grid { grid-template-columns:1fr; } #events-tab .event-package-card > img { height:160px; flex-basis:160px; } }
-    .event-reservation-modal { position:fixed; inset:0; z-index:10010; display:none; align-items:center; justify-content:flex-end; padding:24px max(24px, calc((100vw - 1120px) / 2)); background:rgba(25,20,21,.42); }
+    .event-reservation-modal { position:fixed; inset:0; z-index:10010; display:none; align-items:center; justify-content:center; padding:24px max(24px, calc((100vw - 1120px) / 2)); background:rgba(25,20,21,.42); }
     .event-reservation-modal.is-open { display:flex; }
     .event-reservation-card { width:min(410px,100%); max-height:calc(100vh - 48px); overflow-y:auto; box-sizing:border-box; padding:22px; border:1px solid #f0e8e5; border-radius:16px; background:#fffdfa; color:#3b2025; box-shadow:0 24px 70px rgba(35,18,20,.24); }
     .event-reservation-header { display:flex; align-items:center; gap:11px; margin-bottom:17px; }
@@ -256,6 +249,7 @@
     .event-reservation-field-copy { display:flex; min-width:0; flex-direction:column; gap:4px; }
     .event-reservation-field-copy strong { color:#4a3034; font-size:11px; }
     .event-reservation-field-copy span { overflow:hidden; color:#887a7b; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+    .event-reservation-field-copy input { width:110px; max-width:100%; min-height:28px; padding:4px 7px; border:1px solid #e4d9d6; border-radius:5px; color:#4a3034; background:#fff; font-size:11px; }
     .event-reservation-field-chevron { color:#a99b9c; font-size:11px; }
     .event-reservation-field[aria-disabled="true"] { cursor:default; }
     .event-reservation-total { display:flex; justify-content:space-between; align-items:center; margin:5px 0 15px; padding:15px 0 0; border-top:1px solid #e9dfdc; color:#402329; font-size:13px; font-weight:700; }
@@ -785,48 +779,33 @@
                                 @if($event->description)
                                     <p class="event-package-description">{{ $event->description }}</p>
                                 @endif
+                                @php
+                                    $eventFeatures = collect([
+                                        $event->capacity ? 'Up to ' . $event->capacity . ' guests' : null,
+                                        ($event->duration_hours ?: 4) . '-hour venue',
+                                        $event->location ? 'Venue: ' . $event->location : null,
+                                    ])->merge($event->inclusions ?? [])
+                                        ->map(fn ($feature) => trim((string) $feature))
+                                        ->filter()
+                                        ->unique(fn ($feature) => mb_strtolower($feature))
+                                        ->values();
+                                @endphp
                                 <ul class="event-package-features">
-                                    @if($event->capacity)
-                                        <li><i class="fas fa-check" aria-hidden="true"></i> Maximum {{ $event->capacity }} guests</li>
-                                    @endif
-                                    <li><i class="fas fa-check" aria-hidden="true"></i> {{ $event->duration_hours ?: 4 }}-hour venue</li>
-                                    @if($event->location)
-                                        <li><i class="fas fa-check" aria-hidden="true"></i> {{ $event->location }}</li>
-                                    @endif
+                                    @foreach($eventFeatures as $feature)
+                                        <li><i class="fas fa-check" aria-hidden="true"></i> {{ $feature }}</li>
+                                    @endforeach
                                 </ul>
-                                <details class="event-options-disclosure">
-                                    <summary>Set date, time and guests</summary>
-                                    <div class="event-options">
-                                        <label class="field-label" for="eventDate-{{ $event->id }}">Event Date</label>
-                                        <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}">
-                                        <div class="event-time-row">
-                                            <div>
-                                                <label class="field-label" for="eventStart-{{ $event->id }}">Start Time</label>
-                                                <select id="eventStart-{{ $event->id }}" class="field-input event-start-time">
-                                                    @php
-                                                        $eventFeatures = collect([
-                                                            $event->capacity ? 'Up to ' . $event->capacity . ' guests' : null,
-                                                            ($event->duration_hours ?: 4) . '-hour venue',
-                                                            $event->location ? 'Venue: ' . $event->location : null,
-                                                        ])->merge($event->inclusions ?? [])
-                                                            ->map(fn ($feature) => trim((string) $feature))
-                                                            ->filter()
-                                                            ->unique(fn ($feature) => mb_strtolower($feature))
-                                                            ->values();
-                                                    @endphp
-                                                    <option value="">Select start time</option>
-                                                    @for($hour = 8; $hour <= 22; $hour++)
-                                                        <option value="{{ sprintf('%02d:00', $hour) }}">{{ \Carbon\Carbon::createFromTime($hour)->format('g:i A') }}</option>
-                                                    @endfor
-                                                </select>
-                                                        @foreach($eventFeatures as $feature)
-                                                            <li><i class="fas fa-check" aria-hidden="true"></i> {{ $feature }}</li>
-                                                        @endforeach
-                                        <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="{{ $event->duration_hours ?: 4 }}" step="1" value="{{ $event->duration_hours ?: 4 }}" {{ strtolower($event->pricing_basis ?? '') === 'per person' ? 'readonly' : '' }}>
-                                        <label class="field-label" for="eventGuests-{{ $event->id }}">Number of Guests (max {{ $event->capacity }})</label>
-                                        <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric">
-                                    </div>
-                                </details>
+                                <div class="event-options-source" aria-hidden="true">
+                                    <input id="eventDate-{{ $event->id }}" class="field-input event-date" type="date" min="{{ \\Carbon\\Carbon::tomorrow()->format('Y-m-d') }}" tabindex="-1">
+                                    <select id="eventStart-{{ $event->id }}" class="field-input event-start-time" tabindex="-1">
+                                        <option value="">Select start time</option>
+                                        @for($hour = 8; $hour <= 22; $hour++)
+                                            <option value="{{ sprintf('%02d:00', $hour) }}">{{ \\Carbon\\Carbon::createFromTime($hour)->format('g:i A') }}</option>
+                                        @endfor
+                                    </select>
+                                    <input id="eventDuration-{{ $event->id }}" class="field-input event-duration" type="number" min="1" max="{{ $event->duration_hours ?: 4 }}" step="1" value="{{ $event->duration_hours ?: 4 }}" {{ strtolower($event->pricing_basis ?? '') === 'per person' ? 'readonly' : '' }} tabindex="-1">
+                                    <input id="eventGuests-{{ $event->id }}" class="field-input event-guests" type="number" min="1" max="{{ $event->capacity }}" value="1" step="1" inputmode="numeric" tabindex="-1">
+                                </div>
                                 <div class="reservation-card-footer">
                                     <button type="button" class="select-option-btn" data-title="{{ $event->name }}" data-price="{{ $event->price }}">Select Package</button>
                                 </div>
@@ -1022,11 +1001,11 @@
                     <span class="event-reservation-field-copy"><strong>End Time</strong><span id="eventReservationEndTime">Select time</span></span>
                     <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
                 </button>
-                <button type="button" class="event-reservation-field" data-event-popup-field="guests">
+                <div class="event-reservation-field">
                     <span class="event-reservation-field-icon"><i class="fas fa-users" aria-hidden="true"></i></span>
-                    <span class="event-reservation-field-copy"><strong>Number of Guests</strong><span id="eventReservationGuests">Select number</span></span>
+                    <label class="event-reservation-field-copy" for="eventReservationGuestsInput"><strong>Number of Guests</strong><input id="eventReservationGuestsInput" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
                     <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
-                </button>
+                </div>
                 <div class="event-reservation-field" aria-disabled="true">
                     <span class="event-reservation-field-icon"><i class="fas fa-map-marker-alt" aria-hidden="true"></i></span>
                     <span class="event-reservation-field-copy"><strong>Venue</strong><span id="eventReservationVenue">Default venue</span></span>
@@ -1348,7 +1327,7 @@
         const eventReservationDate = document.getElementById('eventReservationDate');
         const eventReservationStartTime = document.getElementById('eventReservationStartTime');
         const eventReservationEndTime = document.getElementById('eventReservationEndTime');
-        const eventReservationGuests = document.getElementById('eventReservationGuests');
+        const eventReservationGuestsInput = document.getElementById('eventReservationGuestsInput');
         const eventReservationVenue = document.getElementById('eventReservationVenue');
         const eventReservationTotal = document.getElementById('eventReservationTotal');
         const reservationForm = document.getElementById('reservationForm');
@@ -2073,7 +2052,9 @@
             eventReservationDate.textContent = selectedPackage.date ? formatDisplayDate(selectedPackage.date) : 'Select date';
             eventReservationStartTime.textContent = selectedPackage.startTime ? formatDisplayTime(selectedPackage.startTime) : 'Select time';
             eventReservationEndTime.textContent = selectedPackage.endTime ? formatDisplayTime(selectedPackage.endTime) : 'Select time';
-            eventReservationGuests.textContent = selectedPackage.guests ? `${selectedPackage.guests} guest${Number(selectedPackage.guests) === 1 ? '' : 's'}` : 'Select number';
+            const guestInput = activeEventCard.querySelector('.event-guests');
+            eventReservationGuestsInput.value = guestInput?.value || '1';
+            eventReservationGuestsInput.max = guestInput?.max || activeEventCard.dataset.capacity || '';
             eventReservationVenue.textContent = activeEventCard.dataset.location || 'Default venue';
             eventReservationTotal.textContent = `₱${calculateTotal().toLocaleString()}`;
         }
@@ -2095,13 +2076,10 @@
             const field = event.target.closest('[data-event-popup-field]');
             if (!field || !activeEventCard) return;
 
-            const details = activeEventCard.querySelector('.event-options-disclosure');
-            if (details) details.open = true;
             const inputSelector = {
                 date: '.event-date',
                 startTime: '.event-start-time',
                 endTime: '.event-start-time',
-                guests: '.event-guests',
             }[field.dataset.eventPopupField];
             const input = inputSelector ? activeEventCard.querySelector(inputSelector) : null;
             if (!input) return;
@@ -2112,6 +2090,15 @@
             } else if (input.tagName === 'SELECT') {
                 input.click();
             }
+        });
+
+        eventReservationGuestsInput.addEventListener('change', function () {
+            if (!activeEventCard) return;
+            const guestInput = activeEventCard.querySelector('.event-guests');
+            if (!guestInput) return;
+            guestInput.value = this.value;
+            guestInput.dispatchEvent(new Event('change', { bubbles: true }));
+            updateEventReservationPopup();
         });
 
         document.getElementById('eventReservationClose').addEventListener('click', closeEventReservationPopup);
