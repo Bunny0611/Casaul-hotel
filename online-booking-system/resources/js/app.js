@@ -125,6 +125,39 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    const formatNameInput = (input, { capitalizeWords = false, addMiddleInitialDot = false } = {}) => {
+        const formatValue = (value) => {
+            if (addMiddleInitialDot) {
+                const cleaned = value.replace(/[^a-zA-Z]/g, '').slice(0, 1);
+                return cleaned ? `${cleaned.toUpperCase()}.` : '';
+            }
+
+            if (capitalizeWords) {
+                return value
+                    .toLowerCase()
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                    .join(' ');
+            }
+
+            return value;
+        };
+
+        input.addEventListener('input', () => {
+            const value = input.value;
+            input.value = formatValue(value);
+        });
+    };
+
+    const firstNameInput = signupForm?.querySelector('input[name="first_name"]');
+    const lastNameInput = signupForm?.querySelector('input[name="last_name"]');
+    const middleInitialInput = signupForm?.querySelector('input[name="middle_initial"]');
+
+    if (firstNameInput) formatNameInput(firstNameInput, { capitalizeWords: true });
+    if (lastNameInput) formatNameInput(lastNameInput, { capitalizeWords: true });
+    if (middleInitialInput) formatNameInput(middleInitialInput, { addMiddleInitialDot: true });
+
     if (signupEmailInput && signUpView && !signUpView.classList.contains('auth-hidden')
         && /email|registered|taken/i.test(authMessage?.textContent || '')) {
         window.setTimeout(() => signupEmailInput.focus(), 0);
@@ -162,6 +195,134 @@ document.addEventListener('DOMContentLoaded', function () {
         const setName = (select, field) => {
             field.value = select.selectedOptions[0]?.dataset.name || '';
         };
+        const createSearchableSelect = (select, placeholder, emptyText, fieldName) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'auth-search-select';
+            const input = document.createElement('input');
+            input.className = 'auth-search-input';
+            input.type = 'text';
+            input.placeholder = placeholder;
+            input.autocomplete = 'off';
+            input.required = true;
+            input.setAttribute('role', 'combobox');
+            input.setAttribute('aria-autocomplete', 'list');
+            input.setAttribute('aria-expanded', 'false');
+            const list = document.createElement('div');
+            list.className = 'auth-search-options';
+            list.setAttribute('role', 'listbox');
+            input.setAttribute('aria-controls', `${select.id}-options`);
+            list.id = `${select.id}-options`;
+            wrapper.append(input, list);
+            select.after(wrapper);
+            select.classList.add('auth-select-native');
+            select.required = false;
+
+            let activeIndex = -1;
+            let selectedValue = select.value;
+            const close = () => {
+                wrapper.classList.remove('open');
+                input.setAttribute('aria-expanded', 'false');
+                input.removeAttribute('aria-activedescendant');
+                activeIndex = -1;
+            };
+            const choose = (option) => {
+                if (!option) return;
+                select.value = option.value;
+                selectedValue = option.value;
+                input.value = option.dataset.name;
+                input.setCustomValidity('');
+                if (fieldName) {
+                    const field = nameFields[fieldName];
+                    if (field) setName(select, field);
+                }
+                close();
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+            const renderOptions = () => {
+                const query = input.value.trim().toLocaleLowerCase();
+                const filtered = Array.from(select.options).slice(1)
+                    .filter((option) => option.dataset.name.toLocaleLowerCase().includes(query));
+                list.replaceChildren();
+                if (filtered.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'auth-search-empty';
+                    empty.textContent = emptyText;
+                    empty.setAttribute('role', 'option');
+                    empty.setAttribute('aria-disabled', 'true');
+                    list.append(empty);
+                } else {
+                    filtered.forEach((option, index) => {
+                        const item = document.createElement('button');
+                        item.className = 'auth-search-option';
+                        item.type = 'button';
+                        item.id = `${select.id}-option-${index}`;
+                        item.dataset.code = option.value;
+                        item.textContent = option.dataset.name;
+                        item.setAttribute('role', 'option');
+                        item.setAttribute('aria-selected', String(option.value === select.value));
+                        item.addEventListener('click', () => choose(option));
+                        list.append(item);
+                    });
+                }
+                wrapper.classList.add('open');
+                input.setAttribute('aria-expanded', 'true');
+                activeIndex = -1;
+            };
+            const restore = () => {
+                close();
+                select.value = selectedValue;
+                input.value = select.selectedOptions[0]?.dataset.name || '';
+                if (fieldName) {
+                    const field = nameFields[fieldName];
+                    if (field) setName(select, field);
+                }
+            };
+            input.addEventListener('focus', renderOptions);
+            input.addEventListener('input', () => {
+                input.setCustomValidity('');
+                select.value = '';
+                if (fieldName) {
+                    const field = nameFields[fieldName];
+                    if (field) field.value = '';
+                }
+                renderOptions();
+            });
+            input.addEventListener('keydown', (event) => {
+                const options = list.querySelectorAll('.auth-search-option');
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    if (!wrapper.classList.contains('open')) renderOptions();
+                    if (options.length === 0) return;
+                    activeIndex = (activeIndex + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+                    options.forEach((option, index) => option.classList.toggle('active', index === activeIndex));
+                    input.setAttribute('aria-activedescendant', options[activeIndex].id);
+                    options[activeIndex].scrollIntoView({ block: 'nearest' });
+                } else if (event.key === 'Enter' && wrapper.classList.contains('open')) {
+                    event.preventDefault();
+                    if (activeIndex >= 0 && options[activeIndex]) {
+                        choose(select.querySelector(`option[value="${options[activeIndex].dataset.code}"]`));
+                    } else if (options.length === 1) {
+                        options[0].click();
+                    }
+                } else if (event.key === 'Escape') {
+                    restore();
+                }
+            });
+            document.addEventListener('click', (event) => {
+                if (!wrapper.contains(event.target)) close();
+            });
+            signupForm.addEventListener('submit', (event) => {
+                if (select.value) return;
+                event.preventDefault();
+                input.setCustomValidity(`Select a ${fieldName || 'value'} from the suggestions.`);
+                input.reportValidity();
+            });
+            select.addEventListener('change', () => {
+                selectedValue = select.value;
+                input.value = select.selectedOptions[0]?.dataset.name || '';
+            });
+            return input;
+        };
         const getPhilippineData = async (path) => {
             const response = await fetch(`https://psgc.gitlab.io/api/${path}`);
             if (!response.ok) throw new Error('Unable to load Philippine locations');
@@ -186,10 +347,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (oldValues.province) provinceSelect.value = oldValues.province;
             setName(provinceSelect, nameFields.province);
+            if (provinceSelect.selectedOptions[0]) provinceSearch.value = provinceSelect.selectedOptions[0].dataset.name || '';
             if (provinceSelect.value) {
                 await loadCities(countryCode, provinceSelect.value);
                 if (oldValues.city) citySelect.value = oldValues.city;
                 setName(citySelect, nameFields.city);
+                if (citySelect.selectedOptions[0]) citySearch.value = citySelect.selectedOptions[0].dataset.name || '';
             }
         };
         const loadRegions = async (countryCode) => {
@@ -202,15 +365,25 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             if (oldValues.region) regionSelect.value = oldValues.region;
             setName(regionSelect, nameFields.region);
+            if (regionSelect.selectedOptions[0]) regionSearch.value = regionSelect.selectedOptions[0].dataset.name || '';
             if (regionSelect.value) await loadProvinces(countryCode, regionSelect.value);
         };
 
         setOptions(countrySelect, Country.getAllCountries().map((country) => ({ code: country.isoCode, name: country.name })), 'Select country');
+        const countrySearch = createSearchableSelect(countrySelect, 'Select country', 'No countries found', 'country');
+        const regionSearch = createSearchableSelect(regionSelect, 'Select region/state', 'No regions found', 'region');
+        const provinceSearch = createSearchableSelect(provinceSelect, 'Select province/area', 'No provinces found', 'province');
+        const citySearch = createSearchableSelect(citySelect, 'Select city', 'No cities found', 'city');
+
+        if (oldValues.country) countrySelect.value = oldValues.country;
         if (oldValues.country) {
-            countrySelect.value = oldValues.country;
+            countrySearch.value = countrySelect.selectedOptions[0]?.dataset.name || '';
             setName(countrySelect, nameFields.country);
             loadRegions(countrySelect.value).catch(() => setOptions(regionSelect, [], 'Locations unavailable'));
         }
+        if (oldValues.region) regionSearch.value = regionSelect.selectedOptions[0]?.dataset.name || '';
+        if (oldValues.province) provinceSearch.value = provinceSelect.selectedOptions[0]?.dataset.name || '';
+        if (oldValues.city) citySearch.value = citySelect.selectedOptions[0]?.dataset.name || '';
         countrySelect.addEventListener('change', async () => {
             setName(countrySelect, nameFields.country);
             oldValues.region = '';
