@@ -11,6 +11,7 @@ use App\Http\Controllers\HomeController;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AdminReservationTest extends TestCase
@@ -49,6 +50,25 @@ class AdminReservationTest extends TestCase
             1975.0,
             \App\Support\ReservationPricing::room($room, '2026-09-19', '2026-09-20', 4, 1, 1)
         );
+    }
+
+    public function test_reservation_confirmation_email_uses_the_booked_room_image(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('rooms/102.jpg', 'room image');
+
+        $reservation = new Reservation(['guest_name' => 'Jane Doe']);
+        $reservation->setRelation('room', new Room([
+            'room_type' => 'Deluxe Room',
+            'image' => 'rooms/102.jpg',
+        ]));
+
+        $html = (string) app(\Illuminate\Mail\Markdown::class)
+            ->render('emails.reservation-confirmed', compact('reservation'));
+
+        $this->assertStringContainsString(asset('storage/rooms/102.jpg'), $html);
+        $this->assertStringContainsString('alt="Deluxe Room"', $html);
+        $this->assertStringNotContainsString(asset('image/Royal-Suite-room.jpg'), $html);
     }
 
     public function test_admin_can_create_a_reservation(): void

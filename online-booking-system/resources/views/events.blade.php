@@ -629,6 +629,13 @@
     .events-ornament--right { right: 10px; }
 
     @media (max-width: 900px) {
+        .events-hero h1 { font-size: clamp(1.65rem, 5vw, 2.7rem); line-height: 1.2; text-wrap: balance; overflow-wrap: anywhere; }
+        .events-section-heading h2,
+        .events-promotion-copy h2,
+        .events-final-copy h2 { font-size: clamp(1.25rem, 4.3vw, 1.9rem); line-height: 1.25; text-wrap: balance; overflow-wrap: anywhere; }
+        .events-page :is(h3, p, li) { font-size: clamp(.82rem, 1.7vw, .96rem); line-height: 1.55; overflow-wrap: anywhere; }
+        .events-page :is(a, button) { max-width: 100%; min-width: 0; font-size: clamp(.72rem, 1.6vw, .9rem); line-height: 1.35; overflow-wrap: anywhere; }
+        .events-eyebrow { font-size: clamp(.62rem, 1.5vw, .72rem); }
         .events-hero { min-height: 450px; }
         .events-hero-copy { padding-left: 38px; }
         .events-hero-image { left: 30%; }
@@ -653,9 +660,9 @@
         .events-page { padding: 0 16px 52px; }
         .events-hero { display: block; min-height: 0; }
         .events-hero-copy { padding: 215px 26px 30px; }
-        .events-hero h1 { font-size: clamp(2.35rem, 10vw, 3.4rem); }
-        .events-hero-subtitle { margin-top: 14px; font-size: 0.95rem; }
-        .events-hero-description { font-size: 0.9rem; }
+        .events-hero h1 { font-size: clamp(1.65rem, 7vw, 2.45rem); }
+        .events-hero-subtitle { margin-top: 14px; font-size: clamp(.84rem, 3vw, .96rem); }
+        .events-hero-description { font-size: clamp(.84rem, 2.8vw, .96rem); }
         .events-hero-image { inset: 0 0 auto; height: 250px; }
         .events-hero-image::after { background: linear-gradient(180deg, rgba(251, 247, 240, 0) 45%, var(--events-cream) 100%); }
         .events-hero-actions { display: grid; grid-template-columns: 1fr; margin-top: 20px; }
@@ -663,7 +670,7 @@
         .events-celebrations,
         .events-experience { padding-top: 60px; }
         .events-section-heading { margin-bottom: 26px; }
-        .events-section-heading h2 { font-size: 1.85rem; }
+        .events-section-heading h2 { font-size: clamp(1.3rem, 5.6vw, 1.8rem); }
         .events-card-grid { grid-template-columns: 1fr; gap: 18px; }
         .events-detail-image { aspect-ratio: 1.8 / 1; min-height: 170px; }
         .events-detail-copy { padding: 23px 22px 25px; }
