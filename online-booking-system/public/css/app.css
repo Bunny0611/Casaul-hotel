@@ -5084,7 +5084,25 @@ body:has(.profile-page) footer {
     nav.site-header .nav-menu li { width: 100%; }
     nav.site-header .nav-menu a { display: block; width: 100%; padding: 12px 10px; font-size: 13px; }
     nav.site-header .nav-menu a::after { right: 10px; left: 10px; }
-    nav.site-header .nav-search-form { top: calc(100% + 8px); right: 0; transform: none; }
+    nav.site-header .nav-search-form {
+        position: fixed;
+        top: calc(env(safe-area-inset-top, 0px) + 76px);
+        right: 12px;
+        left: 12px;
+        width: auto;
+        max-width: 420px;
+        margin: 0 auto;
+        box-sizing: border-box;
+        transform: translateY(-6px) scale(.98);
+    }
+    nav.site-header .nav-search-form.active { transform: translateY(0) scale(1); }
+    nav.site-header .nav-search-form input {
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+    nav.site-header .nav-search-submit { flex: 0 0 auto; white-space: nowrap; }
 
     .home-page { width: 100%; max-width: 100%; margin-top: 0; overflow: hidden; }
     .home-hero { width: 100%; height: auto; min-height: 0; }
