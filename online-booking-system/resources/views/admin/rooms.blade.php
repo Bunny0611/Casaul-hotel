@@ -36,6 +36,38 @@
         -webkit-overflow-scrolling: touch;
     }
 
+    .room-management-page .optional-addon-switch {
+        appearance: none;
+        position: relative;
+        display: inline-block;
+        width: 38px;
+        height: 22px;
+        margin: 0;
+        border-radius: 9999px;
+        background: #d1d5db;
+        cursor: pointer;
+        vertical-align: middle;
+        transition: background .16s ease;
+    }
+
+    .room-management-page .optional-addon-switch::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+        transition: transform .16s ease;
+    }
+
+    .room-management-page .optional-addon-switch:checked { background: #f97316; }
+    .room-management-page .optional-addon-switch:checked::after { transform: translateX(16px); }
+    .room-management-page .optional-addon-switch:focus-visible { outline: 2px solid #fb923c; outline-offset: 2px; }
+    .room-management-page .optional-addon-switch:disabled { cursor: not-allowed; opacity: .55; }
+
     .room-management-page .dining-table-scroll table {
         width: 100%;
         min-width: 720px;
@@ -656,6 +688,7 @@
             @csrf @method('PUT')
             <input type="hidden" name="category" id="editInventoryCategory">
             <input type="hidden" name="inclusions_present" value="1">
+            <input type="hidden" name="optional_addons_present" id="editInventoryOptionalAddonsPresent" value="1" disabled>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div><label id="editInventoryNameLabel" class="mb-1 block text-sm font-medium text-gray-700">Name</label><input id="editInventoryName" name="name" required class="w-full rounded-lg border border-gray-300 px-3 py-2"></div>
                 <div id="editInventoryTypeField"><label class="mb-1 block text-sm font-medium text-gray-700">Event Type</label><select id="editInventoryType" name="event_type" class="w-full rounded-lg border border-gray-300 px-3 py-2"><option>Birthday</option><option>Wedding</option></select></div>
@@ -682,6 +715,12 @@
                 <div id="editInventoryInclusionsList" data-inclusion-list class="space-y-2"></div>
                 <button type="button" data-add-inclusion="editInventoryInclusionsList" class="mt-2 rounded-lg border border-orange-200 px-3 py-2 text-sm font-medium text-orange-700">+ Add Feature</button>
             </div>
+            <section id="editInventoryOptionalAddonsField" class="hidden rounded-lg border border-gray-200 p-4">
+                <h4 class="text-base font-semibold text-gray-800">Optional Add-ons</h4>
+                <p class="mt-1 text-sm text-gray-500">Add optional extras that guests can select when booking this package.</p>
+                <div id="editInventoryOptionalAddonsList" data-optional-addons-list class="mt-3 space-y-3"></div>
+                <button type="button" data-add-optional-addon="editInventoryOptionalAddonsList" class="mt-3 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">+ Add Add-on</button>
+            </section>
             <div class="flex justify-end gap-3"><button type="button" onclick="closeEditInventoryModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700">Cancel</button><button type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white">Update Item</button></div>
         </form>
     </div>
@@ -858,6 +897,12 @@
                     </div>
                     <button type="button" data-add-inclusion="eventInclusionsList" class="mt-2 rounded-lg border border-orange-200 px-3 py-2 text-sm font-medium text-orange-700">+ Add Feature</button>
                 </div>
+                <section class="md:col-span-2 rounded-lg border border-gray-200 p-4">
+                    <h4 class="text-base font-semibold text-gray-800">Optional Add-ons</h4>
+                    <p class="mt-1 text-sm text-gray-500">Add optional extras that guests can select when booking this package.</p>
+                    <div id="eventOptionalAddonsList" data-optional-addons-list class="mt-3 space-y-3"></div>
+                    <button type="button" data-add-optional-addon="eventOptionalAddonsList" class="mt-3 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">+ Add Add-on</button>
+                </section>
             </div>
             <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                 <button type="button" onclick="closeEventModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100">Cancel</button>
@@ -1555,6 +1600,11 @@
         renderPackageInclusions(inclusionsList, item.inclusions || []);
         inclusionsList.querySelectorAll('input').forEach(input => input.disabled = !isEvent);
         document.querySelector('#editInventoryForm [name="inclusions_present"]').disabled = !isEvent;
+        const optionalAddonsField = document.getElementById('editInventoryOptionalAddonsField');
+        const optionalAddonsList = document.getElementById('editInventoryOptionalAddonsList');
+        optionalAddonsField.classList.toggle('hidden', !isEvent);
+        document.getElementById('editInventoryOptionalAddonsPresent').disabled = !isEvent;
+        renderOptionalAddons(optionalAddonsList, item.optional_addons || [], isEvent);
         var route = "{{ route('admin.inventory.update', ['id' => '__ID__']) }}";
         document.getElementById('editInventoryForm').action = route.replace('__ID__', id);
         document.getElementById('editInventoryModal').classList.remove('hidden');
@@ -1592,6 +1642,7 @@
 
     function openEventModal() {
         configureEventDurationFields();
+        updateOptionalAddonsEmptyState(document.getElementById('eventOptionalAddonsList'));
         document.getElementById('addEventModal').classList.remove('hidden');
         document.getElementById('addEventModal').classList.add('flex');
     }
@@ -1601,6 +1652,7 @@
         document.getElementById('addEventModal').classList.remove('flex');
         document.getElementById('addEventForm').reset();
         renderPackageInclusions(document.getElementById('eventInclusionsList'), ['']);
+        renderOptionalAddons(document.getElementById('eventOptionalAddonsList'), [], true);
     }
 
     function appendPackageInclusion(container, value = '') {
@@ -1642,6 +1694,64 @@
         const removeButton = event.target.closest('[data-remove-inclusion]');
         if (removeButton) {
             removeButton.closest('[data-inclusion-row]')?.remove();
+        }
+    });
+
+    function reindexOptionalAddons(container) {
+        container.querySelectorAll('[data-optional-addon-row]').forEach((row, index) => {
+            row.querySelector('[data-optional-addon-name]').name = `optional_addons[${index}][name]`;
+            row.querySelector('[data-optional-addon-description]').name = `optional_addons[${index}][description]`;
+            row.querySelector('[data-optional-addon-price]').name = `optional_addons[${index}][price]`;
+            row.querySelector('[data-optional-addon-available]').name = `optional_addons[${index}][available]`;
+        });
+    }
+
+    function updateOptionalAddonsEmptyState(container) {
+        let emptyState = container.querySelector('[data-optional-addons-empty]');
+        if (!emptyState) {
+            emptyState = document.createElement('p');
+            emptyState.dataset.optionalAddonsEmpty = '';
+            emptyState.className = 'text-sm text-gray-500';
+            emptyState.textContent = 'No add-ons added yet';
+            container.prepend(emptyState);
+        }
+        emptyState.hidden = container.querySelectorAll('[data-optional-addon-row]').length > 0;
+    }
+
+    function appendOptionalAddon(container, addon = {}, enabled = true) {
+        const row = document.createElement('div');
+        row.dataset.optionalAddonRow = '';
+        row.className = 'rounded-lg border border-gray-200 p-4';
+        row.innerHTML = '<div class="grid grid-cols-1 gap-3 sm:grid-cols-2"><label class="block text-sm font-medium text-gray-700">Add-on Name<input data-optional-addon-name type="text" maxlength="255" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></label><label class="block text-sm font-medium text-gray-700">Description<input data-optional-addon-description type="text" maxlength="1000" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></label><label class="block text-sm font-medium text-gray-700">Price (₱)<input data-optional-addon-price type="number" min="0" step="0.01" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></label><div class="flex items-end justify-between gap-3"><label class="inline-flex items-center gap-2 pb-2 text-sm font-medium text-gray-700">Available<input data-optional-addon-available type="checkbox" value="1" role="switch" class="optional-addon-switch"></label><button type="button" data-remove-optional-addon class="mb-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600">Remove</button></div></div>';
+        row.querySelector('[data-optional-addon-name]').value = addon.name || '';
+        row.querySelector('[data-optional-addon-description]').value = addon.description || '';
+        row.querySelector('[data-optional-addon-price]').value = addon.price ?? '';
+        row.querySelector('[data-optional-addon-available]').checked = addon.available !== false && addon.available !== 0 && addon.available !== '0';
+        row.querySelectorAll('input').forEach(input => input.disabled = !enabled);
+        container.append(row);
+        reindexOptionalAddons(container);
+        updateOptionalAddonsEmptyState(container);
+    }
+
+    function renderOptionalAddons(container, addons, enabled = true) {
+        container.replaceChildren();
+        (Array.isArray(addons) ? addons : []).forEach(addon => appendOptionalAddon(container, addon, enabled));
+        updateOptionalAddonsEmptyState(container);
+    }
+
+    document.querySelectorAll('[data-add-optional-addon]').forEach(button => {
+        button.addEventListener('click', () => appendOptionalAddon(document.getElementById(button.dataset.addOptionalAddon)));
+    });
+
+    document.addEventListener('click', event => {
+        const removeButton = event.target.closest('[data-remove-optional-addon]');
+        if (!removeButton) return;
+        const row = removeButton.closest('[data-optional-addon-row]');
+        const container = row?.parentElement;
+        row?.remove();
+        if (container) {
+            reindexOptionalAddons(container);
+            updateOptionalAddonsEmptyState(container);
         }
     });
 
