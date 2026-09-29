@@ -139,6 +139,7 @@ class AuthController extends Controller
 
         Auth::guard('guest')->login($guest, true);
         $request->session()->regenerate();
+        $request->session()->flash('profile_edit_open', true);
 
         return redirect()->route('profile.edit');
     }
