@@ -62,7 +62,7 @@
                 <div class="dining-grid" id="dining-menu-items" data-category="{{ $selectedCategory }}">
                     @foreach($selectedMeals as $meal)
                         <article class="dining-menu-card" data-category="{{ $selectedCategory }}" data-name="{{ $meal->name }}" data-price="{{ $meal->price }}" data-dining-id="{{ $meal->id }}" data-schedule="{{ $meal->diningSchedule?->period ?? '' }}">
-                            <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? asset('storage/' . $meal->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
+                            <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? secure_asset('storage/' . ltrim($meal->image, '/')) : secure_asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
                             <div class="dining-menu-card-body">
                                 <h4>{{ $meal->name }}</h4>
                                 <p>{{ $meal->description ?: 'A delicious option crafted for your stay.' }}</p>
@@ -117,7 +117,7 @@
                 article.dataset.diningId = meal.id;
                 article.dataset.schedule = meal.schedule || '';
 
-                const imageUrl = meal.image || '{{ asset('image/Royal-Suite-room.jpg') }}';
+                const imageUrl = meal.image || '{{ secure_asset('image/Royal-Suite-room.jpg') }}';
 
                 article.innerHTML = `
                     <img src="${imageUrl}" alt="${meal.name}">
@@ -149,7 +149,7 @@
                     item.setAttribute('aria-pressed', String(isActive));
                 }, this);
 
-                fetch(`{{ url('/dining/menu') }}?category=${encodeURIComponent(category)}`)
+                fetch(`{{ secure_url('/dining/menu') }}?category=${encodeURIComponent(category)}`)
                     .then((response) => response.ok ? response.json() : Promise.reject())
                     .then((payload) => renderMenuItems(payload.items || [], payload.category || category))
                     .catch(() => {
@@ -159,7 +159,7 @@
                             name: card.dataset.name,
                             description: card.querySelector('p')?.textContent || '',
                             price: Number(card.dataset.price || 0),
-                            image: card.querySelector('img')?.src || '{{ asset('image/Royal-Suite-room.jpg') }}',
+                            image: card.querySelector('img')?.src || '{{ secure_asset('image/Royal-Suite-room.jpg') }}',
                             available_from: '',
                             available_to: '',
                             schedule: card.dataset.schedule || '',

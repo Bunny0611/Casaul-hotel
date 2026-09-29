@@ -313,8 +313,8 @@ class HomeController extends Controller
                     'category' => $category,
                     'price' => (float) $meal->price,
                     'image' => $meal->image && Storage::disk('public')->exists($meal->image)
-                        ? asset('storage/' . $meal->image)
-                        : asset('image/Royal-Suite-room.jpg'),
+                        ? secure_asset('storage/' . ltrim($meal->image, '/'))
+                        : secure_asset('image/Royal-Suite-room.jpg'),
                     'available_from' => $availableFrom ? Carbon::parse($availableFrom)->format('H:i') : null,
                     'available_to' => $availableTo ? Carbon::parse($availableTo)->format('H:i') : null,
                     'schedule' => $meal->diningSchedule?->period,

@@ -42,7 +42,7 @@
         <div class="home-dining-grid">
             @foreach($bestSellingDining as $category => $meal)
                 <article class="home-dining-card">
-                    <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? asset('storage/' . $meal->image) : asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
+                    <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? secure_asset('storage/' . ltrim($meal->image, '/')) : secure_asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
                     <div class="home-dining-card-body">
                         <span>{{ $category }}</span>
                         <h3>{{ $meal->name }}</h3>
