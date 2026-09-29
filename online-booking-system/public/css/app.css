@@ -4536,6 +4536,10 @@ body:has(.profile-page) footer {
     box-shadow: 0 12px 40px rgba(193, 18, 31, 0.5);
 }
 
+.chat-toggle.active {
+    display: none;
+}
+
 .chat-toggle svg {
     width: 28px;
     height: 28px;

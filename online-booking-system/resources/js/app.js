@@ -492,6 +492,13 @@ document.addEventListener('DOMContentLoaded', function () {
         closeModalBtn?.addEventListener('click', closeModal);
 
         let isSignUp = signUpView?.classList.contains('auth-hidden') === false;
+        window.addEventListener('guest-auth-required', () => {
+            signInView?.classList.remove('auth-hidden');
+            signUpView?.classList.add('auth-hidden');
+            isSignUp = false;
+            openModal();
+        });
+
         switchBtn?.addEventListener('click', () => {
             isSignUp = !isSignUp;
             signInView?.classList.toggle('auth-hidden', isSignUp);
@@ -814,6 +821,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         setTimeout(() => {
             typingEl.remove();
+            if (replyData.auth_required) {
+                window.dispatchEvent(new Event('guest-auth-required'));
+                addMessage(replyData.reply, 'bot', true);
+                updateQuickReplies(replyData.quick_replies || defaultQuickReplies);
+                lastFrontDeskAction = null;
+                lastFrontDeskPrompt = false;
+                return;
+            }
+
             const isFrontDeskReply = lastFrontDeskAction === 'contact_front_desk' || replyData.mode === 'contact_front_desk';
             let renderedHistory = false;
 
