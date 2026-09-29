@@ -1,6 +1,155 @@
 import './bootstrap';
 import { City, Country, State } from 'country-state-city';
 
+let receiptPdfToolsPromise;
+
+function loadReceiptPdfTools() {
+    if (!receiptPdfToolsPromise) {
+        const loadScript = (src, isReady) => {
+            if (isReady()) return Promise.resolve();
+
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        };
+
+        receiptPdfToolsPromise = Promise.all([
+            loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', () => !!window.html2canvas),
+            loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', () => !!window.jspdf?.jsPDF),
+        ]);
+    }
+
+    return receiptPdfToolsPromise;
+}
+
+function addReceiptPdfStyles() {
+    if (document.getElementById('receipt-pdf-export-styles')) return;
+
+    const styles = document.createElement('style');
+    styles.id = 'receipt-pdf-export-styles';
+    styles.textContent = `
+        .receipt-pdf-export {
+            box-sizing: border-box !important;
+            width: 720px !important;
+            max-width: none !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 28px !important;
+        }
+        .receipt-pdf-export .receipt-brand,
+        .receipt-pdf-export .receipt-heading { font-size: 32px !important; }
+        .receipt-pdf-export .receipt-title-row {
+            align-items: flex-start !important;
+            flex-direction: row !important;
+        }
+        .receipt-pdf-export .receipt-booking {
+            min-width: 220px !important;
+            width: auto !important;
+        }
+        .receipt-pdf-export .reservation-detail-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+    `;
+    document.head.appendChild(styles);
+}
+
+window.downloadReceiptPdf = async function (receiptElement, fileName, button) {
+    if (!receiptElement) return;
+
+    const originalLabel = button?.innerHTML;
+    const printableReceipt = receiptElement.cloneNode(true);
+    printableReceipt.querySelector('.receipt-close')?.remove();
+    printableReceipt.querySelector('.receipt-actions')?.remove();
+    printableReceipt.classList.add('receipt-pdf-export');
+    Object.assign(printableReceipt.style, {
+        position: 'fixed',
+        left: '-10000px',
+        top: '0',
+        width: '720px',
+        maxWidth: 'none',
+        maxHeight: 'none',
+        height: 'auto',
+        overflow: 'visible',
+    });
+
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
+    }
+
+    addReceiptPdfStyles();
+    document.body.appendChild(printableReceipt);
+
+    try {
+        await loadReceiptPdfTools();
+        if (document.fonts?.ready) await document.fonts.ready;
+
+        const canvas = await window.html2canvas(printableReceipt, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            windowWidth: 1024,
+        });
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 6;
+        const contentWidth = pageWidth - (margin * 2);
+        const contentHeight = pageHeight - (margin * 2);
+        const scale = contentWidth / canvas.width;
+        const sourcePageHeight = contentHeight / scale;
+        const pageCount = Math.ceil(canvas.height / sourcePageHeight);
+
+        for (let page = 0; page < pageCount; page++) {
+            if (page > 0) pdf.addPage();
+
+            const sourceY = page * sourcePageHeight;
+            const sourceHeight = Math.min(sourcePageHeight, canvas.height - sourceY);
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = Math.ceil(sourceHeight);
+            const context = pageCanvas.getContext('2d');
+            if (!context) throw new Error('Unable to create receipt PDF page.');
+
+            context.drawImage(
+                canvas,
+                0,
+                sourceY,
+                canvas.width,
+                sourceHeight,
+                0,
+                0,
+                pageCanvas.width,
+                pageCanvas.height
+            );
+            pdf.addImage(
+                pageCanvas.toDataURL('image/jpeg', 0.95),
+                'JPEG',
+                margin,
+                margin,
+                contentWidth,
+                Math.min(contentHeight, pageCanvas.height * scale)
+            );
+        }
+
+        pdf.save(fileName || 'reservation-receipt.pdf');
+    } catch (error) {
+        console.error('Receipt PDF download failed.', error);
+        window.alert('The receipt PDF could not be downloaded. Please try again.');
+    } finally {
+        printableReceipt.remove();
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = originalLabel;
+        }
+    }
+};
+
 
 
 document.addEventListener('DOMContentLoaded', function () {

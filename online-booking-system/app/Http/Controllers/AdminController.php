@@ -1467,6 +1467,7 @@ class AdminController extends Controller
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'dining_id' => ['nullable', 'string'],
             'duration_hours' => ['nullable', 'required_if:category,facilities', 'integer', 'min:1', 'max:24'],
+            'facility_duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
             'special_requests' => ['nullable', 'string'],
             'submission_token' => ['nullable', 'string', 'max:100'],
         ]);
@@ -1518,7 +1519,8 @@ class AdminController extends Controller
                 collect([$facility]),
                 (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1),
                 $validated['check_in'],
-                $validated['check_out']
+                $validated['check_out'],
+                (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1)
             )
             : 0;
         $eventDurationHours = 1;
@@ -1563,7 +1565,7 @@ class AdminController extends Controller
             $reservation = EventReservation::create($validated);
         } elseif ($category === 'facilities') {
             $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $validated['check_in_time'])
-                ->addHours((int) $validated['duration_hours']);
+                ->addHours((int) ($validated['facility_duration_hours'] ?? $validated['duration_hours']));
             $validated['check_out'] = $endTime->toDateString();
             $validated['facility_end_time'] = $endTime->format('H:i');
             $validated['facility_start_time'] = $validated['check_in_time'] ?? null;
@@ -1963,6 +1965,8 @@ class AdminController extends Controller
             'special_requests' => ['nullable', 'string'],
             'dining_id' => ['nullable', 'string'],
             'dining_items' => ['nullable', 'json'],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
+            'facility_duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
         ]);
 
         $reservation = match ($validated['category']) {
@@ -1988,7 +1992,15 @@ class AdminController extends Controller
                 collect([Facility::findOrFail($validated['facility_id'] ?? $reservation->facility_id)]),
                 (int) ($validated['facility_quantity'] ?? $reservation->facility_quantity ?? 1),
                 $validated['check_in'],
-                $validated['check_out']
+                $validated['check_out'],
+                (int) ($validated['facility_duration_hours']
+                    ?? $validated['duration_hours']
+                    ?? ReservationPricing::facilityDurationHours(
+                        $validated['check_in'],
+                        $validated['check_in_time'] ?? $reservation->facility_start_time,
+                        $validated['check_out'],
+                        $validated['check_out_time'] ?? $reservation->facility_end_time
+                    ))
             ),
             'event' => ReservationPricing::events(
                 collect([Event::findOrFail($validated['event_id'] ?? $reservation->event_id)]),

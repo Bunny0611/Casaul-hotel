@@ -729,19 +729,23 @@
                                 <p>{{ $facility->description ?: 'Premium guest add-on for your stay.' }}</p>
                                 <p class="text-muted">{{ $facility->location ? 'Location: ' . $facility->location : 'Location: —' }}</p>
                                 <p class="text-muted">₱{{ number_format($facility->price, 0) }} / {{ strtolower(str_replace('Per ', '', $facility->pricing_basis ?? 'Stay')) }}</p>
-                                @if(($facility->capacity ?? null) || ($facility->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
+                                @if(($facility->capacity ?? null) || ($facility->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule' || strtolower($facility->pricing_basis ?? '') === 'per hour')
                                     <div class="facility-options">
                                         @if($facility->capacity)
-                                            <label class="field-label" for="facilityQuantity-{{ $facility->id }}">{{ ($facility->pricing_basis ?? '') === 'Per Vehicle' ? 'Number of Vehicles' : 'Quantity' }}</label>
+                                            <label class="field-label" for="facilityQuantity-{{ $facility->id }}">{{ strtolower($facility->pricing_basis ?? '') === 'per vehicle' ? 'Number of Vehicles' : (strtolower($facility->pricing_basis ?? '') === 'per person' ? 'Number of People' : 'Quantity') }}</label>
                                             <select id="facilityQuantity-{{ $facility->id }}" class="field-input facility-quantity" max="{{ $facility->capacity }}">
                                                 @for($quantity = 1; $quantity <= $facility->capacity; $quantity++)<option value="{{ $quantity }}">{{ $quantity }}</option>@endfor
                                             </select>
+                                        @endif
+                                        @if(strtolower($facility->pricing_basis ?? '') === 'per hour')
+                                            <label class="field-label" for="facilityDuration-{{ $facility->id }}">Duration (hours)</label>
+                                            <input id="facilityDuration-{{ $facility->id }}" class="field-input facility-duration" type="number" min="1" max="24" value="1">
                                         @endif
                                         @if(($facility->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
                                             <label class="field-label" for="facilityDate-{{ $facility->id }}">Date</label>
                                             <input id="facilityDate-{{ $facility->id }}" class="field-input facility-date" type="date">
                                         @endif
-                                        @if(($facility->scheduling_requirement ?? '') === 'Date & Time Required')
+                                        @if(($facility->scheduling_requirement ?? '') === 'Date & Time Required' || strtolower($facility->pricing_basis ?? '') === 'per hour')
                                             <label class="field-label" for="facilityTime-{{ $facility->id }}">Time</label>
                                             <input id="facilityTime-{{ $facility->id }}" class="field-input facility-time" type="time">
                                         @endif
@@ -1284,6 +1288,8 @@
     <input type="hidden" name="quantity" id="reservationDiningQuantity">
     <input type="hidden" name="facility_id" id="reservationFacilityId">
     <input type="hidden" name="facility_quantity" id="reservationFacilityQuantity">
+    <input type="hidden" name="facility_duration_hours" id="reservationFacilityDuration">
+    <input type="hidden" name="facility_start_time" id="reservationFacilityStartTime">
     <input type="hidden" name="event_id" id="reservationEventId">
     <input type="hidden" name="event_type" id="reservationEventType">
     <input type="hidden" name="number_of_guests" id="reservationEventGuests">
@@ -1351,6 +1357,8 @@
         const reservationDiningQuantity = document.getElementById('reservationDiningQuantity');
         const reservationFacilityId = document.getElementById('reservationFacilityId');
         const reservationFacilityQuantity = document.getElementById('reservationFacilityQuantity');
+        const reservationFacilityDuration = document.getElementById('reservationFacilityDuration');
+        const reservationFacilityStartTime = document.getElementById('reservationFacilityStartTime');
         const reservationEventId = document.getElementById('reservationEventId');
         const reservationEventType = document.getElementById('reservationEventType');
         const reservationEventGuests = document.getElementById('reservationEventGuests');
@@ -1544,14 +1552,23 @@
         const getFacilityCharge = (facility) => {
             const price = Number(facility.price || 0);
             const pricingBasis = String(facility.pricingBasis || '').trim().toLowerCase();
-            const vehicleCharge = price * Math.max(1, Number(facility.quantity) || 1);
+            const quantity = Math.max(1, Number(facility.quantity) || 1);
+            const vehicleCharge = price * quantity;
 
             if (pricingBasis === 'per stay + per vehicle') {
                 return (price * getStayNights()) + vehicleCharge;
             }
 
-            if (pricingBasis === 'per vehicle') {
+            if (pricingBasis === 'per vehicle' || pricingBasis === 'per person') {
                 return vehicleCharge;
+            }
+
+            if (pricingBasis === 'per hour') {
+                return price * Math.max(1, Number(facility.durationHours) || 1);
+            }
+
+            if (pricingBasis === 'per day') {
+                return price * Math.max(getStayNights(), Math.ceil(Math.max(1, Number(facility.durationHours) || 1) / 24));
             }
 
             return price;
@@ -1903,6 +1920,8 @@
             reservationDiningQuantity.value = selectedDiningQuantity || '';
             reservationFacilityId.value = selectedFacilities.map(item => item.id).filter(Boolean).join(',');
             reservationFacilityQuantity.value = selectedFacilities[0]?.quantity || '';
+            reservationFacilityDuration.value = selectedFacilities.find(item => String(item.pricingBasis || '').toLowerCase() === 'per hour')?.durationHours || '';
+            reservationFacilityStartTime.value = selectedFacilities[0]?.time || '';
             reservationEventId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
             reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
             reservationEventGuests.value = selectedEvent.length
@@ -2326,7 +2345,7 @@
 
         syncDiningTableAvailability();
 
-        document.querySelectorAll('.facility-quantity, .facility-date, .facility-time').forEach(input => {
+        document.querySelectorAll('.facility-quantity, .facility-date, .facility-time, .facility-duration').forEach(input => {
             input.addEventListener('change', function () {
                 const card = this.closest('.reservation-card');
                 const facility = selectedFacilities.find(item => item.id === card.dataset.facilityId);
@@ -2334,6 +2353,7 @@
                     facility.quantity = Number(card.querySelector('.facility-quantity')?.value || 1);
                     facility.date = card.querySelector('.facility-date')?.value || '';
                     facility.time = card.querySelector('.facility-time')?.value || '';
+                    facility.durationHours = Number(card.querySelector('.facility-duration')?.value || 1);
                     updateSummary();
                 }
             });
@@ -2503,6 +2523,7 @@
                             price,
                             pricingBasis: card.dataset.pricingBasis || 'Per Stay',
                             quantity,
+                            durationHours: Number(card.querySelector('.facility-duration')?.value || 1),
                             date: card.querySelector('.facility-date')?.value || '',
                             time: card.querySelector('.facility-time')?.value || '',
                         });
@@ -2671,9 +2692,14 @@
             }
             if (selectedFacilities.length) {
                 selectedFacilities.forEach(item => {
-                    const quantity = Number(item.quantity || 1);
+                    const pricingBasis = String(item.pricingBasis || '').toLowerCase();
+                    const quantity = pricingBasis === 'per hour'
+                        ? Math.max(1, Number(item.durationHours) || 1)
+                        : pricingBasis === 'per day'
+                            ? Math.max(stayNights, Math.ceil(Math.max(1, Number(item.durationHours) || 1) / 24))
+                            : Number(item.quantity || 1);
                     const unitPrice = Number(item.price || 0);
-                    receiptItems.push([String(quantity), `Facility - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(getFacilityCharge(item))]);
+                    receiptItems.push([String(quantity), `Facility - ${item.title} (${item.pricingBasis || 'Per Stay'})`, formatCurrencyValue(unitPrice), formatCurrencyValue(getFacilityCharge(item))]);
                 });
             }
             if (selectedEvent.length) {
@@ -2778,73 +2804,11 @@
             }
         });
 
-        const loadReceiptPdfTools = () => Promise.all([
-            new Promise((resolve, reject) => {
-                if (window.html2canvas) {
-                    resolve();
-                    return;
-                }
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            }),
-            new Promise((resolve, reject) => {
-                if (window.jspdf?.jsPDF) {
-                    resolve();
-                    return;
-                }
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            }),
-        ]);
-
-        const downloadReceiptAsPdf = async () => {
-            const downloadButtonLabel = receiptDownloadBtn.innerHTML;
-            receiptDownloadBtn.disabled = true;
-            receiptDownloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
-            try {
-                await loadReceiptPdfTools();
-                const receiptCard = receiptModal.querySelector('.receipt-card');
-                const printableReceipt = receiptCard.cloneNode(true);
-                printableReceipt.querySelector('.receipt-close')?.remove();
-                printableReceipt.querySelector('.receipt-actions')?.remove();
-                printableReceipt.style.position = 'absolute';
-                printableReceipt.style.left = '-10000px';
-                printableReceipt.style.top = '0';
-                printableReceipt.style.width = `${receiptCard.offsetWidth}px`;
-                printableReceipt.style.maxHeight = 'none';
-                printableReceipt.style.height = 'auto';
-                printableReceipt.style.overflow = 'visible';
-                document.body.appendChild(printableReceipt);
-                const canvas = await window.html2canvas(printableReceipt, { scale: 2, backgroundColor: '#ffffff' });
-                printableReceipt.remove();
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 6;
-                const maxWidth = pageWidth - (margin * 2);
-                const maxHeight = pageHeight - (margin * 2);
-                const scale = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
-                const imageWidth = canvas.width * scale;
-                const imageHeight = canvas.height * scale;
-                const imageX = (pageWidth - imageWidth) / 2;
-                const imageY = (pageHeight - imageHeight) / 2;
-                const imageData = canvas.toDataURL('image/jpeg', 0.95);
-                pdf.addImage(imageData, 'JPEG', imageX, imageY, imageWidth, imageHeight);
-                pdf.save(`${confirmReservationId.textContent || 'reservation'}-receipt.pdf`);
-            } catch (error) {
-                alert('The receipt PDF could not be downloaded. Please try again.');
-            } finally {
-                receiptDownloadBtn.disabled = false;
-                receiptDownloadBtn.innerHTML = downloadButtonLabel;
-            }
-        };
+        const downloadReceiptAsPdf = () => window.downloadReceiptPdf(
+            receiptModal.querySelector('.receipt-card'),
+            `${confirmReservationId.textContent || 'reservation'}-receipt.pdf`,
+            receiptDownloadBtn
+        );
 
         const validateBeforeSubmit = () => {
             if (!detailsTerms.checked) {

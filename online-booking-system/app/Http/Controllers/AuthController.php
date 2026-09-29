@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\InvalidStateException;
 
 class AuthController extends Controller
 {
@@ -108,7 +109,12 @@ class AuthController extends Controller
                 ->withErrors(['email' => 'Google sign-in is not configured yet. Please use email sign-in or contact the hotel.']);
         }
 
-        $googleUser = Socialite::driver('google')->user();
+            try {
+                $googleUser = Socialite::driver('google')->user();
+            } catch (InvalidStateException $e) {
+                return redirect()->route('home', ['auth' => 'signin'])
+                    ->withErrors(['email' => 'Google sign-in could not be verified. Please try again.']);
+            }
 
         if (! $googleUser->getEmail()) {
             return redirect()->route('home', ['auth' => 'signin'])

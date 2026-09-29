@@ -28,21 +28,33 @@ class ReservationPricing
         return round(((float) $room->price + $extraGuestTotal) * $nights, 2);
     }
 
-    public static function facilities($facilities, int $quantity, $checkIn, $checkOut): float
+    public static function facilities($facilities, int $quantity, $checkIn, $checkOut, ?int $durationHours = null): float
     {
         $stayDays = max(1, Carbon::parse($checkIn)->diffInDays(Carbon::parse($checkOut)));
         $quantity = max(1, $quantity);
+        $durationHours = max(1, $durationHours ?? 1);
+        $billableDays = max($stayDays, (int) ceil($durationHours / 24));
 
-        return round(collect($facilities)->sum(function (Facility $facility) use ($quantity, $stayDays) {
+        return round(collect($facilities)->sum(function (Facility $facility) use ($quantity, $stayDays, $durationHours, $billableDays) {
             $price = (float) $facility->price;
             $pricingBasis = strtolower(trim((string) $facility->pricing_basis));
 
             return match ($pricingBasis) {
                 'per stay + per vehicle' => $price * ($stayDays + $quantity),
-                'per vehicle' => $price * $quantity,
+                'per vehicle', 'per person' => $price * $quantity,
+                'per hour' => $price * $durationHours,
+                'per day' => $price * $billableDays,
                 default => $price,
             };
         }), 2);
+    }
+
+    public static function facilityDurationHours($checkIn, $startTime, $checkOut, $endTime): int
+    {
+        $start = Carbon::parse(Carbon::parse($checkIn)->toDateString() . ' ' . ($startTime ?: '00:00'));
+        $end = Carbon::parse(Carbon::parse($checkOut)->toDateString() . ' ' . ($endTime ?: '00:00'));
+
+        return max(1, (int) ceil(abs($start->diffInMinutes($end)) / 60));
     }
 
     public static function events($events, int $numberOfGuests = 1, int $durationHours = 1): float

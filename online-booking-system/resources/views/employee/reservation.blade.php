@@ -7,6 +7,12 @@
     $reservations = $reservations ?? collect([]);
     $formatDate = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('F j, Y') : 'N/A';
     $formatTime = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('g:i A') : 'Time not set';
+    $formatFacilityTime = function ($reservation) use ($formatTime) {
+        $start = $reservation->facility_start_time ?? $reservation->check_in_time;
+        $end = $reservation->facility_end_time ?? $reservation->check_out_time;
+
+        return $start ? $formatTime($start) . ($end ? ' - ' . $formatTime($end) : '') : 'Time not set';
+    };
     $refundSummary = function ($reservation) {
         return collect($reservation->related_refunds ?? $reservation->refunds)->map(function ($refund) {
             if (is_array($refund)) {
@@ -596,8 +602,8 @@
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->facility?->name ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 text-sm text-gray-900">{{ $formatDate($reservation->check_in) }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->dining_schedule ?: $formatTime($reservation->check_in_time) }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->quantity ?? $reservation->guests ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $formatFacilityTime($reservation) }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ $reservation->facility_quantity ?? $reservation->quantity ?? $reservation->guests ?? 1 }}</td>
                                 <td class="px-6 py-4 text-sm font-semibold text-gray-900">₱{{ number_format($reservation->total_amount ?? 0, 2) }}</td>
                                 <td class="px-6 py-4">
                                     <span class="inline-flex whitespace-nowrap items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-white status-{{ $reservation->status }} {{ $reservation->status === 'checked-in' ? 'bg-cyan-500' : '' }}">
@@ -619,8 +625,8 @@
                                             'facility_name' => $reservation->facility?->name ?? 'N/A',
                                             'facility_location' => $reservation->facility?->location ?? 'N/A',
                                             'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
-                                            'time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
-                                            'quantity' => $reservation->quantity ?? $reservation->guests ?? 'N/A',
+                                            'time' => $formatFacilityTime($reservation),
+                                            'quantity' => $reservation->facility_quantity ?? $reservation->quantity ?? $reservation->guests ?? 1,
                                             'selected_services' => $reservation->facility ? ['Facility: ' . $reservation->facility->name . ($reservation->facility->location ? ' (' . $reservation->facility->location . ')' : '')] : [],
                                             'amount_paid' => $reservation->amount_paid ?? 0,
                                             'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
@@ -674,8 +680,8 @@
                         <div class="mt-3 space-y-1 text-sm text-gray-600">
                             <p><span class="font-medium text-gray-700">Facility:</span> {{ $reservation->facility?->name ?? 'N/A' }}</p>
                             <p><span class="font-medium text-gray-700">Date:</span> {{ $formatDate($reservation->check_in) }}</p>
-                            <p><span class="font-medium text-gray-700">Time:</span> {{ $reservation->dining_schedule ?: $formatTime($reservation->check_in_time) }}</p>
-                            <p><span class="font-medium text-gray-700">Guests:</span> {{ $reservation->quantity ?? $reservation->guests ?? 'N/A' }}</p>
+                            <p><span class="font-medium text-gray-700">Time:</span> {{ $formatFacilityTime($reservation) }}</p>
+                            <p><span class="font-medium text-gray-700">Quantity:</span> {{ $reservation->facility_quantity ?? $reservation->quantity ?? $reservation->guests ?? 1 }}</p>
                             <p><span class="font-medium text-gray-700">Amount:</span> ₱{{ number_format($reservation->total_amount ?? 0, 2) }}</p>
                         </div>
                         <div class="mt-4 flex items-center gap-2">
@@ -692,8 +698,8 @@
                                 'facility_name' => $reservation->facility?->name ?? 'N/A',
                                 'facility_location' => $reservation->facility?->location ?? 'N/A',
                                 'date' => $reservation->check_in?->format('Y-m-d') ?? 'N/A',
-                                'time' => $reservation->check_in_time ? \Carbon\Carbon::parse($reservation->check_in_time)->format('g:i A') : 'N/A',
-                                'quantity' => $reservation->quantity ?? $reservation->guests ?? 'N/A',
+                                'time' => $formatFacilityTime($reservation),
+                                'quantity' => $reservation->facility_quantity ?? $reservation->quantity ?? $reservation->guests ?? 1,
                                 'selected_services' => $reservation->facility ? ['Facility: ' . $reservation->facility->name . ($reservation->facility->location ? ' (' . $reservation->facility->location . ')' : '')] : [],
                                 'amount_paid' => $reservation->amount_paid ?? 0,
                                 'payment_method' => $reservation->payment_method ?: ($reservation->payments->last()?->payment_method ?? 'N/A'),
@@ -1160,7 +1166,7 @@
                     <select name="facility_id" data-reservation-input="facilities" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <option value="">Select a facility</option>
                         @foreach(($facilities ?? collect()) as $item)
-                            <option value="{{ $item->id }}" data-price="{{ $item->price }}">{{ $item->name }} - ₱{{ number_format($item->price, 2) }}</option>
+                            <option value="{{ $item->id }}" data-price="{{ $item->price }}" data-pricing-basis="{{ $item->pricing_basis ?? 'Per Stay' }}">{{ $item->name }} - ₱{{ number_format($item->price, 2) }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -1308,7 +1314,7 @@
             <div class="hidden md:col-span-2" data-facility-reservation-field>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-gray-700">Quantity</label>
+                            <label id="employeeFacilityQuantityLabel" class="mb-1 block text-sm font-medium text-gray-700">Quantity</label>
                             <input type="number" id="employeeFacilityQuantity" name="facility_quantity" min="1" value="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                         <div>
@@ -1621,8 +1627,13 @@
             const duration = Number(durationInput.value || 0);
             const selectedOption = facilitySelect.options[facilitySelect.selectedIndex];
             const price = Number(selectedOption?.dataset.price || 0);
+            const pricingBasis = String(selectedOption?.dataset.pricingBasis || 'Per Stay').toLowerCase();
+            const quantity = Math.max(1, Number(document.getElementById('employeeFacilityQuantity').value || 1));
+            const quantityLabel = document.getElementById('employeeFacilityQuantityLabel');
+            quantityLabel.textContent = pricingBasis === 'per vehicle'
+                ? 'Number of Vehicles'
+                : pricingBasis === 'per person' ? 'Number of People' : 'Quantity';
 
-            totalInput.value = price && duration ? (price * duration).toFixed(2) : '';
             endTimeInput.value = '';
             endDateInput.value = document.getElementById('facilityDate').value;
 
@@ -1636,6 +1647,23 @@
                     endDateInput.value = endDate.toISOString().slice(0, 10);
                 }
             }
+
+            const startDate = document.getElementById('facilityDate').value;
+            const stayDays = startDate && endDateInput.value
+                ? Math.max(1, Math.round((new Date(`${endDateInput.value}T00:00:00`) - new Date(`${startDate}T00:00:00`)) / 86400000))
+                : 1;
+            const billableDays = Math.max(stayDays, Math.ceil(duration / 24));
+            const total = !price ? 0 : pricingBasis === 'per vehicle' || pricingBasis === 'per person'
+                ? price * quantity
+                : pricingBasis === 'per stay + per vehicle'
+                    ? (price * stayDays) + (price * quantity)
+                    : pricingBasis === 'per hour'
+                        ? price * duration
+                        : pricingBasis === 'per day'
+                            ? price * billableDays
+                            : price;
+
+            totalInput.value = price && duration ? total.toFixed(2) : '';
         }
 
         document.querySelectorAll('[data-reservation-tab]').forEach((button) => {
@@ -2344,11 +2372,21 @@
                 checkbox.dispatchEvent(new Event('change'));
             });
         } else if (category === 'facilities') {
-            setValue('#facilityDate', dateValue(reservation.check_in));
-            setValue('#facilityStartTime', timeValue(reservation.facility_start_time || reservation.check_in_time));
-            setValue('#facilityEndTime', timeValue(reservation.facility_end_time || reservation.check_out_time));
-            setValue('#facilityEndDate', dateValue(reservation.check_out || reservation.check_in));
-            setValue('#facilityDurationHours', reservation.duration_hours || '');
+            const facilityStartDate = dateValue(reservation.check_in);
+            const facilityEndDate = dateValue(reservation.check_out || reservation.check_in);
+            const facilityStartTime = timeValue(reservation.facility_start_time || reservation.check_in_time);
+            const facilityEndTime = timeValue(reservation.facility_end_time || reservation.check_out_time);
+            const start = facilityStartDate && facilityStartTime ? new Date(`${facilityStartDate}T${facilityStartTime}`) : null;
+            const end = facilityEndDate && facilityEndTime ? new Date(`${facilityEndDate}T${facilityEndTime}`) : null;
+            const inferredDuration = start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())
+                ? Math.max(1, Math.ceil(Math.abs(end - start) / 3600000))
+                : 1;
+
+            setValue('#facilityDate', facilityStartDate);
+            setValue('#facilityStartTime', facilityStartTime);
+            setValue('#facilityEndTime', facilityEndTime);
+            setValue('#facilityEndDate', facilityEndDate);
+            setValue('#facilityDurationHours', reservation.duration_hours || inferredDuration);
             setValue('#employeeFacilityQuantity', reservation.facility_quantity || reservation.quantity || '1');
         } else {
             setValue('[data-standard-reservation-field] [name="check_in"]', dateValue(reservation.check_in));
