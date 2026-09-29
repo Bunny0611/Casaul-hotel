@@ -1870,7 +1870,7 @@
             { label: 'Check-in Time', value: reservation.room_check_in_time || 'N/A' },
             { label: 'Check-out Date', value: formatDateValue(reservation.room_check_out || 'N/A') },
             { label: 'Check-out Time', value: reservation.room_check_out_time || 'N/A' },
-            { label: 'Number of Guests', value: reservation.adult_guests !== null && reservation.adult_guests !== undefined && reservation.kid_guests !== null && reservation.kid_guests !== undefined ? `${reservation.room_number_of_guests} (${reservation.adult_guests} adult, ${reservation.kid_guests} kid)` : (reservation.room_number_of_guests !== undefined && reservation.room_number_of_guests !== null && reservation.room_number_of_guests !== '' && reservation.room_number_of_guests !== 'N/A' ? reservation.room_number_of_guests : 'N/A') },
+            { label: 'Number of Guests', value: reservation.adult_guests !== null && reservation.adult_guests !== undefined && reservation.kid_guests !== null && reservation.kid_guests !== undefined ? `${reservation.room_number_of_guests} Guests (${reservation.adult_guests} adult, ${reservation.kid_guests} kid)` : (reservation.room_number_of_guests !== undefined && reservation.room_number_of_guests !== null && reservation.room_number_of_guests !== '' && reservation.room_number_of_guests !== 'N/A' ? `${reservation.room_number_of_guests} Guests` : 'N/A') },
             { label: 'Room Rate', value: reservation.room_rate && reservation.room_rate !== 'N/A' ? formatMoney(reservation.room_rate) : 'N/A' },
         ];
 
