@@ -975,11 +975,31 @@ class HomeController extends Controller
                     ->get();
             }
         } else {
-            $rooms = $roomsQuery
-                ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
-                ->orderBy('room_number')
-                ->limit(5)
-                ->get();
+            $rooms = collect(['Standard Room', 'Deluxe Room'])
+                ->flatMap(function (string $roomType) use ($roomsQuery) {
+                    return (clone $roomsQuery)
+                        ->where('room_type', $roomType)
+                        ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
+                        ->orderBy('room_number')
+                        ->limit(2)
+                        ->get();
+                });
+
+            $remainingRoomCount = max(0, 4 - $rooms->count());
+            if ($remainingRoomCount > 0) {
+                $rooms = $rooms->merge(
+                    (clone $roomsQuery)
+                        ->whereNotIn('id', $rooms->pluck('id'))
+                        ->orderByRaw('CAST(room_number AS UNSIGNED) ASC')
+                        ->orderBy('room_number')
+                        ->limit($remainingRoomCount)
+                        ->get()
+                );
+            }
+
+            $rooms = $rooms
+                ->sortBy(fn (Room $room) => (int) $room->room_number)
+                ->values();
         }
 
         $checkInDate = $searchCriteria['check_in'] ?? now()->addDays(2)->toDateString();

@@ -82,6 +82,25 @@ class AccommodationRoomSearchTest extends TestCase
         $emptyResponse->assertDontSee('Room ' . $matchingStandard->room_number);
     }
 
+    public function test_default_accommodation_shows_four_rooms_including_standard_and_deluxe(): void
+    {
+        $this->createRoom('101', 'Standard Room', 2);
+        $this->createRoom('102', 'Standard Room', 2);
+        $this->createRoom('103', 'Standard Room', 2);
+        $this->createRoom('104', 'Standard Room', 2);
+        $this->createRoom('201', 'Deluxe Room', 2);
+
+        $response = $this->get(route('accommodation'));
+
+        $response->assertOk();
+        $response->assertSee('Room 101');
+        $response->assertSee('Room 102');
+        $response->assertSee('Room 103');
+        $response->assertSee('Room 201');
+        $response->assertDontSee('Room 104');
+        $this->assertSame(4, substr_count($response->getContent(), 'class="accommodation-room-card"'));
+    }
+
     private function createRoom(string $number, string $type, int $capacity): Room
     {
         return Room::create([

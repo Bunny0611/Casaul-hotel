@@ -74,7 +74,7 @@
                 <div class="dining-card-grid" id="dining-menu-items" data-category="{{ $selectedCategory }}">
                     @forelse($selectedMeals as $meal)
                         <article class="dining-menu-card" data-category="{{ $selectedCategory }}" data-name="{{ $meal->name }}" data-price="{{ $meal->price }}" data-dining-id="{{ $meal->id }}" data-schedule="{{ $meal->diningSchedule?->period ?? '' }}">
-                            <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? secure_asset('storage/' . ltrim($meal->image, '/')) : asset('image/HM.jpg') }}" alt="{{ $meal->name }}">
+                            <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? secure_asset('storage/' . ltrim($meal->image, '/')) : secure_asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}" alt="{{ $meal->name }}" loading="lazy">
                             <div class="dining-menu-card-body">
                                 <h3>{{ $meal->name }}</h3>
                                 <p>{{ $meal->description ?: 'A delicious option crafted for your stay.' }}</p>
@@ -93,7 +93,7 @@
 
         <section class="dining-featured" aria-label="Casaul signature dining section">
             <div class="dining-featured-image">
-                <img src="{{ asset('image/HM.jpg') }}" alt="Warmly lit Casaul restaurant dining room">
+                <img src="{{ secure_asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}" alt="A signature dish from the Casaul Hotel dining menu" loading="lazy">
             </div>
 
             <div class="dining-featured-copy">
@@ -177,7 +177,7 @@
                 article.dataset.schedule = meal.schedule || '';
 
                 const image = document.createElement('img');
-                image.src = meal.image || '{{ asset('image/HM.jpg') }}';
+                image.src = meal.image || '{{ secure_asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}';
                 image.alt = meal.name;
 
                 const body = document.createElement('div');
@@ -225,7 +225,7 @@
                             name: card.dataset.name,
                             description: card.querySelector('p')?.textContent || '',
                             price: Number(card.dataset.price || 0),
-                            image: card.querySelector('img')?.src || '{{ asset('image/HM.jpg') }}',
+                            image: card.querySelector('img')?.src || '{{ secure_asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}',
                             schedule: card.dataset.schedule || ''
                         }));
                         renderMenuItems(fallbackItems, category);

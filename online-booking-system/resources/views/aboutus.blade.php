@@ -17,7 +17,7 @@
     <div class="about-shell">
         <section class="about-story" aria-label="Our story">
             <div class="about-story-image-wrap">
-                <img src="{{ asset('image/HM.jpg') }}" alt="Casaul Hotel exterior at dusk">
+                <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="Guest room at Casaul Hotel">
             </div>
 
             <div class="about-story-copy">
@@ -93,7 +93,7 @@
             <div class="about-experience-grid">
                 <article class="about-experience-item">
                     <div class="about-experience-image-wrap">
-                        <img src="{{ asset('image/HM.jpg') }}" alt="Hotel bedroom experience">
+                        <img src="{{ asset('storage/rooms/1790407370_6ab772cacfc26.png') }}" alt="Casaul Hotel guest room" loading="lazy">
                     </div>
                     <div class="about-experience-meta">
                         <span class="about-experience-number">01</span>
@@ -104,7 +104,7 @@
 
                 <article class="about-experience-item">
                     <div class="about-experience-image-wrap">
-                        <img src="{{ asset('image/HM.jpg') }}" alt="Dining experience at Casaul Hotel">
+                        <img src="{{ asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}" alt="A dish from the Casaul Hotel dining menu" loading="lazy">
                     </div>
                     <div class="about-experience-meta">
                         <span class="about-experience-number">02</span>
@@ -115,7 +115,7 @@
 
                 <article class="about-experience-item">
                     <div class="about-experience-image-wrap">
-                        <img src="{{ asset('image/HM.jpg') }}" alt="Celebration or event setup at Casaul Hotel">
+                        <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Wedding celebration at an outdoor venue" loading="lazy">
                     </div>
                     <div class="about-experience-meta">
                         <span class="about-experience-number">03</span>

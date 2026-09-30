@@ -67,9 +67,9 @@
                         $roomStoragePath = str_starts_with((string) $room->image, 'storage/') ? substr($room->image, 8) : $room->image;
                         $roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath)
                             ? asset('storage/' . $roomStoragePath)
-                            : null;
+                            : asset('image/Royal-Suite-room.jpg');
                     @endphp
-                    <div class="accommodation-room-image">@if($roomImage)<img src="{{ $roomImage }}" alt="{{ $room->room_type }}">@endif</div>
+                    <div class="accommodation-room-image"><img src="{{ $roomImage }}" alt="{{ $room->room_type }}"></div>
                     <div class="accommodation-room-content">
                         <h3>{{ $room->room_type }}</h3>
                         <p class="accommodation-room-number">Room {{ $room->room_number ?? 'N/A' }}</p>
@@ -77,7 +77,7 @@
                         <p class="accommodation-room-description">{{ $room->description ?? 'Description unavailable.' }}</p>
                         <div class="accommodation-room-meta"><span><i class="fas fa-users"></i> {{ $room->capacity }} Guests</span><span><i class="fas fa-bed"></i> {{ $room->bed_type ?? 'Bed details unavailable' }}</span></div>
                     </div>
-                    <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room->room_type }}" data-room-number="{{ $room->room_number ?? 'N/A' }}" data-room-price="₱{{ number_format($room->price, 2) }}" data-room-description="{{ $room->description ?? 'Description unavailable.' }}" data-room-image="{{ $roomImage ?? '' }}" data-room-capacity="{{ $room->capacity }}" data-room-bed-type="{{ $room->bed_type ?? 'Bed details unavailable' }}">View Details</button>
+                    <button class="accommodation-room-action accommodation-details-trigger" type="button" data-room-name="{{ $room->room_type }}" data-room-number="{{ $room->room_number ?? 'N/A' }}" data-room-price="₱{{ number_format($room->price, 2) }}" data-room-description="{{ $room->description ?? 'Description unavailable.' }}" data-room-image="{{ $roomImage }}" data-room-capacity="{{ $room->capacity }}" data-room-bed-type="{{ $room->bed_type ?? 'Bed details unavailable' }}">View Details</button>
                 </article>
                     @endforeach
         </div>

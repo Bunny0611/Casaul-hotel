@@ -5624,8 +5624,8 @@ body:has(.profile-page) footer {
     nav.site-header .nav-search-submit { flex: 0 0 auto; white-space: nowrap; }
 
     .home-page { width: 100%; max-width: 100%; margin-top: 0; overflow: hidden; }
-    .home-hero { width: 100%; height: auto; min-height: 0; }
-    .home-hero > img { display: block; width: 100%; height: auto; min-height: 0; object-fit: contain; object-position: center; }
+    .home-hero { width: 100%; height: clamp(420px, 76vh, 640px); min-height: 420px; }
+    .home-hero > img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: cover; object-position: center; }
     .home-hero-overlay { background: linear-gradient(180deg, rgba(10, 7, 5, .38), rgba(10, 7, 5, .12) 48%, rgba(10, 7, 5, .2)); }
     .home-hero-copy { top: 53%; left: 50%; width: calc(100% - 32px); max-width: 560px; }
     .home-eyebrow { margin-bottom: 9px; font-size: .62rem; }
