@@ -1107,7 +1107,12 @@
 
         <div class="mb-6">
             <h3 id="reservationModalTitle" class="text-2xl font-bold text-gray-800">Add New Reservation</h3>
-            <p class="mt-1 text-sm text-gray-500">Fill in the details below to create a new booking.</p>
+            <p id="reservationModalSubtitle" class="mt-1 text-sm text-gray-500">Fill in the details below to create a new booking.</p>
+        </div>
+
+        <div id="editReservationTabs" class="mb-4 hidden border-b border-gray-200" role="tablist" aria-label="Edit reservation sections">
+            <button type="button" id="reservationDetailsTabButton" data-edit-modal-tab="details" role="tab" aria-selected="true" class="border-b-2 border-orange-500 px-4 py-3 text-sm font-semibold text-orange-600">Reservation Details</button>
+            <button type="button" id="reservationChargesTabButton" data-edit-modal-tab="charges" role="tab" aria-selected="false" class="border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-gray-600 transition hover:text-orange-600">Add-ons &amp; Charges</button>
         </div>
 
         @if($errors->any())
@@ -1125,6 +1130,7 @@
             <input type="hidden" name="_method" id="reservationFormMethod" value="PUT" disabled>
             <input type="hidden" name="submission_token" value="{{ \Illuminate\Support\Str::uuid() }}">
             <input type="hidden" name="category" id="reservationCategory" value="{{ old('category', 'rooms') }}">
+            <div id="reservationDetailsPanel" data-edit-modal-panel="details" class="mx-auto w-full max-w-2xl">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-700">Guest Name</label>
@@ -1342,10 +1348,148 @@
                 <textarea name="special_requests" rows="3" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">{{ old('special_requests') }}</textarea>
                 @error('special_requests')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
-            <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+            </div>
+            <div id="reservationDetailsFooter" class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button type="button" onclick="closeAddReservationModal()" class="rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-50">Cancel</button>
                 <button id="saveReservationBtn" type="submit" class="rounded-lg bg-orange-500 px-4 py-2 font-medium text-white transition hover:bg-orange-600">Save Reservation</button>
             </div>
         </form>
+
+        <section id="reservationChargesPanel" data-edit-modal-panel="charges" class="hidden space-y-4" data-list-url="{{ route('employee.reservations.charges.index', ['id' => '__ID__']) }}" data-create-url="{{ route('employee.reservations.charges.store', ['id' => '__ID__']) }}" data-update-url="{{ route('employee.reservations.charges.update', ['id' => '__ID__', 'chargeId' => '__CHARGE_ID__']) }}" data-delete-url="{{ route('employee.reservations.charges.destroy', ['id' => '__ID__', 'chargeId' => '__CHARGE_ID__']) }}">
+            <div class="rounded-xl border border-gray-200 bg-white p-4">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <h4 class="text-lg font-semibold text-gray-800">Charged Services &amp; Additional Charges</h4>
+                    <button id="addReservationChargeButton" type="button" class="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">
+                        <i class="fas fa-plus"></i><span>Add Service / Charge</span>
+                    </button>
+                </div>
+                <div class="overflow-x-auto rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-xs font-semibold text-gray-600">
+                            <tr>
+                                <th class="px-4 py-3 text-left">Service / Item</th>
+                                <th class="px-4 py-3 text-left">Type</th>
+                                <th class="px-4 py-3 text-right">Qty</th>
+                                <th class="px-4 py-3 text-right">Unit Price</th>
+                                <th class="px-4 py-3 text-right">Total</th>
+                                <th class="px-4 py-3 text-left">Notes / Source</th>
+                                <th class="px-4 py-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reservationChargesRows" class="divide-y divide-gray-100 bg-white">
+                            <tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">Loading charges...</td></tr>
+                        </tbody>
+                        <tfoot class="bg-gray-50">
+                            <tr>
+                                <td colspan="4" class="px-4 py-3 text-right font-semibold text-gray-700">Additional Charges Total</td>
+                                <td id="reservationChargesTotal" class="px-4 py-3 text-right font-bold text-gray-900">₱0.00</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div id="reservationChargeComposer" class="hidden rounded-xl border border-gray-200 bg-white p-4">
+                <div class="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                        <h4 id="reservationChargeComposerTitle" class="font-semibold text-gray-800">Add Service / Charge</h4>
+                        <p class="mt-1 text-sm text-gray-500">Choose a charge type to continue.</p>
+                    </div>
+                    <button id="closeReservationChargeComposer" type="button" class="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700" aria-label="Close charge editor"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="reservationChargeTypes" class="grid gap-3 sm:grid-cols-3">
+                    <button type="button" data-charge-type-choice="guest_addon" class="rounded-lg border border-gray-200 bg-white p-4 text-left transition hover:border-orange-400 hover:bg-orange-50">
+                        <i class="fas fa-concierge-bell mb-2 text-lg text-orange-500"></i><span class="block font-semibold text-gray-800">Guest Add-on</span><span class="mt-1 block text-xs text-gray-500">Items from the hotel catalog</span>
+                    </button>
+                    <button type="button" data-charge-type-choice="dining" class="rounded-lg border border-gray-200 bg-white p-4 text-left transition hover:border-orange-400 hover:bg-orange-50">
+                        <i class="fas fa-utensils mb-2 text-lg text-orange-500"></i><span class="block font-semibold text-gray-800">Dining</span><span class="mt-1 block text-xs text-gray-500">Available menu items at catalog price</span>
+                    </button>
+                    <button type="button" data-charge-type-choice="custom" class="rounded-lg border border-gray-200 bg-white p-4 text-left transition hover:border-orange-400 hover:bg-orange-50">
+                        <i class="fas fa-clipboard-list mb-2 text-lg text-orange-500"></i><span class="block font-semibold text-gray-800">Custom Request</span><span class="mt-1 block text-xs text-gray-500">A custom service or guest request</span>
+                    </button>
+                </div>
+
+                <div id="reservationChargeEditor" class="mt-4 hidden">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div id="guestAddonChargeField" class="hidden">
+                            <label for="reservationChargeFacility" class="mb-1 block text-sm font-medium text-gray-700">Guest Add-on</label>
+                            <select id="reservationChargeFacility" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="">Select an item</option>
+                                @foreach(($facilities ?? collect())->where('status', 'available')->sortBy('name') as $item)
+                                    <option value="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ (float) $item->price }}">{{ $item->name }} - ₱{{ number_format((float) $item->price, 2) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div id="diningChargeField" class="hidden sm:col-span-2">
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Dining Menu Items</label>
+                            <div class="rounded-lg border border-gray-300 bg-white p-2">
+                                <div id="reservationDiningSelectedItems" class="flex min-h-10 flex-wrap items-center gap-2"></div>
+                                <div class="mt-2 flex items-center gap-2 rounded-md border border-gray-200 px-2">
+                                    <input id="reservationDiningSearch" type="text" placeholder="Search and select menu items" class="w-full border-0 px-1 py-2 text-sm outline-none focus:ring-0">
+                                    <button id="reservationDiningToggle" type="button" class="px-2 text-gray-600" aria-label="Show dining menu" aria-expanded="false"><i class="fas fa-chevron-down"></i></button>
+                                </div>
+                                <div id="reservationDiningOptions" class="mt-2 hidden max-h-56 space-y-2 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-2">
+                                    @foreach(($diningMenus ?? collect())->where('status', 'available')->sortBy('name') as $item)
+                                        <label class="reservation-charge-menu-option flex w-full cursor-pointer items-center justify-between gap-2 rounded border border-gray-200 bg-white p-2 transition hover:border-orange-300 hover:bg-orange-50" data-menu-search="{{ strtolower($item->name) }}">
+                                            <span class="flex items-center gap-2">
+                                                <input type="checkbox" value="{{ $item->id }}" data-name="{{ $item->name }}" data-price="{{ (float) $item->price }}" class="reservation-charge-dining-option h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
+                                                <span class="text-sm font-medium text-gray-700">{{ $item->name }}</span>
+                                            </span>
+                                            <span class="text-xs text-gray-500">₱{{ number_format((float) $item->price, 2) }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        <div id="customChargeNameField" class="hidden sm:col-span-2">
+                            <label class="mb-1 block text-sm font-medium text-gray-700">Guest Request Items</label>
+                            <div class="rounded-lg border border-gray-300 bg-white p-2">
+                                <div id="reservationCustomSelectedItems" class="flex min-h-10 flex-wrap items-center gap-2"></div>
+                                <div class="mt-2 flex items-center gap-2 rounded-md border border-gray-200 px-2">
+                                    <input id="reservationCustomSearch" type="text" placeholder="Search and select guest requests" class="w-full border-0 px-1 py-2 text-sm outline-none focus:ring-0">
+                                    <button id="reservationCustomToggle" type="button" class="px-2 text-gray-600" aria-label="Show guest request items" aria-expanded="false"><i class="fas fa-chevron-down"></i></button>
+                                </div>
+                                <div id="reservationCustomOptions" class="mt-2 hidden max-h-56 space-y-2 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-2">
+                                    @forelse(($guestRequestCatalog ?? collect()) as $item)
+                                        <label class="reservation-charge-custom-option flex w-full cursor-pointer items-center justify-between gap-2 rounded border border-gray-200 bg-white p-2 transition hover:border-orange-300 hover:bg-orange-50" data-request-search="{{ strtolower($item->request_type) }}">
+                                            <span class="flex items-center gap-2">
+                                                <input type="checkbox" value="{{ $item->id }}" data-name="{{ $item->request_type }}" data-price="{{ (float) $item->unit_price }}" class="reservation-charge-custom-option-input h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
+                                                <span class="text-sm font-medium text-gray-700">{{ $item->request_type }}</span>
+                                            </span>
+                                            <span class="text-xs text-gray-500">₱{{ number_format((float) $item->unit_price, 2) }}</span>
+                                        </label>
+                                    @empty
+                                        <p class="px-2 py-3 text-sm text-gray-500">No billable Guest Request items are available.</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                        <div id="reservationChargeQuantityField">
+                            <label for="reservationChargeQuantity" class="mb-1 block text-sm font-medium text-gray-700">Quantity</label>
+                            <input id="reservationChargeQuantity" type="number" min="1" max="999" value="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div id="reservationChargePriceField">
+                            <label for="reservationChargeUnitPrice" class="mb-1 block text-sm font-medium text-gray-700">Unit Price (₱)</label>
+                            <input id="reservationChargeUnitPrice" type="number" min="0" step="0.01" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label for="reservationChargeSource" class="mb-1 block text-sm font-medium text-gray-700">Source</label>
+                            <input id="reservationChargeSource" type="text" maxlength="100" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Front desk, phone call, etc.">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label for="reservationChargeNotes" class="mb-1 block text-sm font-medium text-gray-700">Optional Notes</label>
+                            <textarea id="reservationChargeNotes" rows="2" maxlength="2000" class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex justify-end gap-2 text-sm font-medium text-gray-700">Charge Total <span id="reservationChargeLineTotal" class="font-bold text-gray-900">₱0.00</span></div>
+                    <div class="mt-4 flex justify-end gap-2">
+                        <button id="cancelReservationChargeEdit" type="button" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button id="saveReservationCharge" type="button" class="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600">Save Charge</button>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 </div>
 
@@ -2291,6 +2435,17 @@
         if (!form) return;
 
         form.reset();
+        const reservationModalDialog = document.querySelector('#addReservationModal > div');
+        reservationModalDialog.classList.remove('max-w-6xl');
+        reservationModalDialog.classList.add('max-w-2xl');
+        reservationChargeState.reservationId = null;
+        document.getElementById('editReservationTabs').classList.add('hidden');
+        document.getElementById('reservationChargesPanel').classList.add('hidden');
+        document.getElementById('reservationDetailsPanel').classList.remove('hidden');
+        document.getElementById('reservationDetailsFooter').classList.remove('hidden');
+        document.getElementById('reservationModalSubtitle').textContent = 'Fill in the details below to create a new booking.';
+        document.getElementById('reservationChargeComposer').classList.add('hidden');
+        resetReservationChargeEditor();
         methodInput.disabled = true;
         document.getElementById('editReservationStatus').disabled = true;
         form.action = "{{ route('employee.reservations.store') }}";
@@ -2404,8 +2559,17 @@
         document.getElementById('reservationFormMethod').disabled = false;
         form.action = "{{ route('employee.reservations.update', ['id' => '__ID__']) }}".replace('__ID__', reservation.id);
         document.getElementById('reservationModalTitle').textContent = 'Edit Reservation';
+        document.getElementById('reservationModalSubtitle').textContent = 'Update the reservation details below.';
         document.getElementById('saveReservationBtn').textContent = 'Update Reservation';
+        const supportsCharges = category === 'rooms' && Boolean(reservation.id);
+        const reservationModalDialog = document.querySelector('#addReservationModal > div');
+        reservationModalDialog.classList.toggle('max-w-6xl', supportsCharges);
+        reservationModalDialog.classList.toggle('max-w-2xl', !supportsCharges);
+        document.getElementById('editReservationTabs').classList.toggle('hidden', !supportsCharges);
+        reservationChargeState.reservationId = supportsCharges ? reservation.id : null;
+        setEditReservationTab('details');
         openAddReservationModal();
+        if (supportsCharges) loadReservationCharges();
     }
 
     document.getElementById('addReservationForm').addEventListener('submit', function (event) {
@@ -2429,6 +2593,525 @@
         }
         resetAddReservationForm();
     }
+
+    const reservationChargeState = { reservationId: null, chargeId: null, charges: [], persistedTotal: 0, diningItems: new Map(), customItems: new Map() };
+    const chargePanel = document.getElementById('reservationChargesPanel');
+    const chargeRows = document.getElementById('reservationChargesRows');
+
+    function setEditReservationTab(tab) {
+        document.querySelectorAll('[data-edit-modal-tab]').forEach((button) => {
+            const active = button.dataset.editModalTab === tab;
+            button.setAttribute('aria-selected', String(active));
+            button.classList.toggle('border-orange-500', active);
+            button.classList.toggle('text-orange-600', active);
+            button.classList.toggle('border-transparent', !active);
+            button.classList.toggle('text-gray-600', !active);
+        });
+        document.querySelectorAll('[data-edit-modal-panel]').forEach((panel) => {
+            panel.classList.toggle('hidden', panel.dataset.editModalPanel !== tab);
+        });
+        document.getElementById('reservationDetailsFooter').classList.toggle('hidden', tab !== 'details');
+    }
+
+    function chargeUrl(template, chargeId = null) {
+        return template
+            .replace('__ID__', encodeURIComponent(reservationChargeState.reservationId))
+            .replace('__CHARGE_ID__', encodeURIComponent(chargeId ?? ''));
+    }
+
+    function chargeMoney(value) {
+        return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(Number(value || 0));
+    }
+
+    function renderReservationDiningSelections() {
+        const container = document.getElementById('reservationDiningSelectedItems');
+        container.replaceChildren();
+        reservationChargeState.diningItems.forEach((item, menuId) => {
+            const chip = document.createElement('div');
+            chip.className = 'inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700';
+
+            const name = document.createElement('span');
+            name.textContent = item.name;
+            chip.appendChild(name);
+
+            const quantity = document.createElement('input');
+            quantity.type = 'number';
+            quantity.min = '1';
+            quantity.max = '999';
+            quantity.value = String(item.quantity);
+            quantity.setAttribute('aria-label', `${item.name} quantity`);
+            quantity.className = 'w-12 rounded border border-gray-300 px-1 py-0.5 text-center text-sm';
+            quantity.addEventListener('input', () => {
+                item.quantity = Math.max(1, Math.min(999, Number(quantity.value || 1)));
+                updateReservationChargeTotalPreview();
+            });
+            chip.appendChild(quantity);
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'text-gray-500 hover:text-red-600';
+            remove.setAttribute('aria-label', `Remove ${item.name}`);
+            remove.textContent = '×';
+            remove.addEventListener('click', () => {
+                reservationChargeState.diningItems.delete(menuId);
+                const option = [...document.querySelectorAll('.reservation-charge-dining-option')]
+                    .find((checkbox) => checkbox.value === String(menuId));
+                if (option) option.checked = false;
+                renderReservationDiningSelections();
+                updateReservationChargeTotalPreview();
+            });
+            chip.appendChild(remove);
+            container.appendChild(chip);
+        });
+    }
+
+    function setReservationDiningSelections(items) {
+        reservationChargeState.diningItems.clear();
+        document.querySelectorAll('.reservation-charge-dining-option').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        items.forEach((item) => {
+            const menuId = String(item.id);
+            reservationChargeState.diningItems.set(menuId, {
+                id: menuId,
+                name: item.name,
+                price: Number(item.price || 0),
+                quantity: Math.max(1, Number(item.quantity || 1)),
+            });
+            const option = [...document.querySelectorAll('.reservation-charge-dining-option')]
+                .find((checkbox) => checkbox.value === menuId);
+            if (option) option.checked = true;
+        });
+        renderReservationDiningSelections();
+        updateReservationChargeTotalPreview();
+    }
+
+    function renderReservationCustomSelections() {
+        const container = document.getElementById('reservationCustomSelectedItems');
+        container.replaceChildren();
+        reservationChargeState.customItems.forEach((item, itemKey) => {
+            const chip = document.createElement('div');
+            chip.className = 'inline-flex flex-wrap items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700';
+
+            const name = document.createElement('span');
+            name.textContent = item.name;
+            chip.appendChild(name);
+
+            const quantity = document.createElement('input');
+            quantity.type = 'number';
+            quantity.min = '1';
+            quantity.max = '999';
+            quantity.value = String(item.quantity);
+            quantity.setAttribute('aria-label', `${item.name} quantity`);
+            quantity.className = 'w-12 rounded border border-gray-300 px-1 py-0.5 text-center text-sm';
+            quantity.addEventListener('input', () => {
+                item.quantity = Math.max(1, Math.min(999, Number(quantity.value || 1)));
+                updateReservationChargeTotalPreview();
+            });
+            chip.appendChild(quantity);
+
+            const price = document.createElement('input');
+            price.type = 'number';
+            price.min = '0';
+            price.step = '0.01';
+            price.value = String(item.price);
+            price.setAttribute('aria-label', `${item.name} unit price`);
+            price.className = 'w-20 rounded border border-gray-300 px-1 py-0.5 text-right text-sm';
+            price.addEventListener('input', () => {
+                item.price = Math.max(0, Number(price.value || 0));
+                updateReservationChargeTotalPreview();
+            });
+            chip.appendChild(price);
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'text-gray-500 hover:text-red-600';
+            remove.setAttribute('aria-label', `Remove ${item.name}`);
+            remove.textContent = '×';
+            remove.addEventListener('click', () => {
+                reservationChargeState.customItems.delete(itemKey);
+                const option = [...document.querySelectorAll('.reservation-charge-custom-option-input')]
+                    .find((checkbox) => checkbox.value === String(item.guestRequestId));
+                if (option) option.checked = false;
+                renderReservationCustomSelections();
+                updateReservationChargeTotalPreview();
+            });
+            chip.appendChild(remove);
+            container.appendChild(chip);
+        });
+    }
+
+    function setReservationCustomSelections(items) {
+        reservationChargeState.customItems.clear();
+        document.querySelectorAll('.reservation-charge-custom-option-input').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        items.forEach((item, index) => {
+            const guestRequestId = item.guestRequestId ?? item.id ?? null;
+            const itemKey = String(guestRequestId ?? `legacy-${reservationChargeState.chargeId}-${index}`);
+            reservationChargeState.customItems.set(itemKey, {
+                id: itemKey,
+                guestRequestId,
+                name: item.name,
+                price: Number(item.price || 0),
+                quantity: Math.max(1, Number(item.quantity || 1)),
+            });
+            const option = [...document.querySelectorAll('.reservation-charge-custom-option-input')]
+                .find((checkbox) => checkbox.value === String(guestRequestId));
+            if (option) option.checked = true;
+        });
+        renderReservationCustomSelections();
+        updateReservationChargeTotalPreview();
+    }
+
+    function updateReservationChargeTotalPreview() {
+        const editor = document.getElementById('reservationChargeEditor');
+        const composer = document.getElementById('reservationChargeComposer');
+        let displayTotal = reservationChargeState.persistedTotal;
+        if (!composer.classList.contains('hidden') && !editor.classList.contains('hidden')) {
+            const existingTotal = reservationChargeState.charges.find((charge) => Number(charge.id) === Number(reservationChargeState.chargeId))?.total || 0;
+            const lineTotal = editor.dataset.chargeType === 'dining'
+                ? [...reservationChargeState.diningItems.values()].reduce((total, item) => total + (item.quantity * item.price), 0)
+                : editor.dataset.chargeType === 'custom'
+                    ? [...reservationChargeState.customItems.values()].reduce((total, item) => total + (item.quantity * item.price), 0)
+                    : Math.max(1, Number(document.getElementById('reservationChargeQuantity').value || 1))
+                        * Math.max(0, Number(document.getElementById('reservationChargeUnitPrice').value || 0));
+            displayTotal = Math.max(0, displayTotal - existingTotal + lineTotal);
+            document.getElementById('reservationChargeLineTotal').textContent = chargeMoney(lineTotal);
+        }
+        document.getElementById('reservationChargesTotal').textContent = chargeMoney(displayTotal);
+    }
+
+    function renderReservationCharges(charges, total) {
+        reservationChargeState.charges = charges;
+        reservationChargeState.persistedTotal = Number(total || 0);
+        updateReservationChargeTotalPreview();
+        if (!charges.length) {
+            chargeRows.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No additional charges for this reservation.</td></tr>';
+            return;
+        }
+
+        const typeLabels = { guest_addon: 'Guest Add-on', dining: 'Dining', custom: 'Custom Request' };
+        chargeRows.innerHTML = charges.map((charge) => `
+            <tr>
+                <td class="px-4 py-3 font-medium text-gray-800">${escapeHtml(charge.name || 'Service')}</td>
+                <td class="px-4 py-3 text-gray-600">${escapeHtml(typeLabels[charge.charge_type] || 'Custom Request')}</td>
+                <td class="px-4 py-3 text-right text-gray-700">${Number(charge.quantity || 1)}</td>
+                <td class="px-4 py-3 text-right text-gray-700">${chargeMoney(charge.unit_price)}</td>
+                <td class="px-4 py-3 text-right font-medium text-gray-800">${chargeMoney(charge.total)}</td>
+                <td class="px-4 py-3 text-gray-600">${escapeHtml(charge.source || charge.notes || '-')}</td>
+                <td class="px-4 py-3 text-right whitespace-nowrap">
+                    <button type="button" data-charge-action="edit" data-charge-id="${Number(charge.id)}" class="rounded p-2 text-blue-600 hover:bg-blue-50" title="Edit charge"><i class="fas fa-pen"></i></button>
+                    <button type="button" data-charge-action="delete" data-charge-id="${Number(charge.id)}" class="rounded p-2 text-red-600 hover:bg-red-50" title="Delete charge"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`).join('');
+    }
+
+    async function loadReservationCharges() {
+        chargeRows.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">Loading charges...</td></tr>';
+        try {
+            const response = await fetch(chargeUrl(chargePanel.dataset.listUrl), { headers: { Accept: 'application/json' } });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Unable to load reservation charges.');
+            renderReservationCharges(result.charges || [], result.total || 0);
+        } catch (error) {
+            chargeRows.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-red-600">${escapeHtml(error.message)}</td></tr>`;
+        }
+    }
+
+    function resetReservationChargeEditor() {
+        reservationChargeState.chargeId = null;
+        document.getElementById('reservationChargeComposerTitle').textContent = 'Add Service / Charge';
+        document.getElementById('reservationChargeTypes').classList.remove('hidden');
+        document.getElementById('reservationChargeEditor').classList.add('hidden');
+        document.getElementById('guestAddonChargeField').classList.add('hidden');
+        document.getElementById('diningChargeField').classList.add('hidden');
+        document.getElementById('customChargeNameField').classList.add('hidden');
+        document.getElementById('reservationChargeFacility').value = '';
+        document.getElementById('reservationDiningSearch').value = '';
+        document.getElementById('reservationDiningOptions').classList.add('hidden');
+        document.getElementById('reservationDiningToggle').setAttribute('aria-expanded', 'false');
+        reservationChargeState.diningItems.clear();
+        document.querySelectorAll('.reservation-charge-dining-option').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        renderReservationDiningSelections();
+        document.getElementById('reservationCustomSearch').value = '';
+        document.getElementById('reservationCustomOptions').classList.add('hidden');
+        document.getElementById('reservationCustomToggle').setAttribute('aria-expanded', 'false');
+        reservationChargeState.customItems.clear();
+        document.querySelectorAll('.reservation-charge-custom-option-input').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        renderReservationCustomSelections();
+        document.getElementById('reservationChargeQuantity').value = '1';
+        document.getElementById('reservationChargeUnitPrice').value = '';
+        document.getElementById('reservationChargeSource').value = '';
+        document.getElementById('reservationChargeNotes').value = '';
+        document.getElementById('reservationChargeUnitPrice').readOnly = false;
+        document.getElementById('saveReservationCharge').textContent = 'Save Charge';
+        updateReservationChargeTotalPreview();
+    }
+
+    function openReservationChargeType(chargeType) {
+        resetReservationChargeEditor();
+        document.getElementById('reservationChargeTypes').classList.add('hidden');
+        document.getElementById('reservationChargeEditor').classList.remove('hidden');
+        document.getElementById('guestAddonChargeField').classList.toggle('hidden', chargeType !== 'guest_addon');
+        document.getElementById('diningChargeField').classList.toggle('hidden', chargeType !== 'dining');
+        document.getElementById('customChargeNameField').classList.toggle('hidden', chargeType !== 'custom');
+        const usesItemChips = ['dining', 'custom'].includes(chargeType);
+        document.getElementById('reservationChargeQuantityField').classList.toggle('hidden', usesItemChips);
+        document.getElementById('reservationChargePriceField').classList.toggle('hidden', usesItemChips);
+        document.getElementById('reservationChargeEditor').dataset.chargeType = chargeType;
+        document.getElementById('reservationChargeUnitPrice').readOnly = chargeType !== 'custom';
+        updateReservationChargeTotalPreview();
+    }
+
+    async function saveReservationCharge() {
+        const editor = document.getElementById('reservationChargeEditor');
+        const chargeType = editor.dataset.chargeType;
+        const facility = document.getElementById('reservationChargeFacility');
+        const payload = {
+            charge_type: chargeType,
+            name: chargeType === 'guest_addon' ? facility.selectedOptions[0]?.dataset.name || '' : '',
+            quantity: document.getElementById('reservationChargeQuantity').value,
+            unit_price: document.getElementById('reservationChargeUnitPrice').value,
+            source: document.getElementById('reservationChargeSource').value.trim(),
+            notes: document.getElementById('reservationChargeNotes').value.trim(),
+        };
+        if (chargeType === 'guest_addon') payload.facility_id = facility.value;
+        const button = document.getElementById('saveReservationCharge');
+        button.disabled = true;
+        button.textContent = 'Saving...';
+        let savedAny = false;
+        try {
+            const chargeId = reservationChargeState.chargeId;
+            if (['dining', 'custom'].includes(chargeType)) {
+                const selectedItems = chargeType === 'dining'
+                    ? [...reservationChargeState.diningItems.values()]
+                    : [...reservationChargeState.customItems.values()];
+                const items = selectedItems.map((item) => chargeType === 'dining'
+                    ? { id: item.id, name: item.name, quantity: item.quantity, unit_price: item.price }
+                    : { id: item.guestRequestId, name: item.name, quantity: item.quantity, unit_price: item.price });
+                if (!items.length) throw new Error(`Select at least one ${chargeType === 'dining' ? 'dining menu item' : 'Guest Request item'}.`);
+
+                if (chargeId) {
+                    const currentCharge = reservationChargeState.charges.find((charge) => Number(charge.id) === Number(chargeId));
+                    let currentIndex = chargeType === 'dining'
+                        ? items.findIndex((item) => String(item.id) === String(currentCharge?.dining_menu_id))
+                        : (currentCharge?.source_guest_request_id
+                            ? items.findIndex((item) => String(item.id) === String(currentCharge.source_guest_request_id))
+                            : items.findIndex((item) => item.name === currentCharge?.name));
+                    if (currentIndex < 0) currentIndex = 0;
+                    const [currentItem] = items.splice(currentIndex, 1);
+                    const updatePayload = {
+                        ...payload,
+                        name: currentItem.name,
+                        quantity: currentItem.quantity,
+                        unit_price: currentItem.unit_price,
+                    };
+                    if (chargeType === 'dining') updatePayload.dining_menu_id = currentItem.id;
+                    else updatePayload.guest_request_id = currentItem.id;
+                    await sendReservationChargeRequest(chargeUrl(chargePanel.dataset.updateUrl, chargeId), 'PUT', updatePayload);
+                    savedAny = true;
+                }
+
+                if (items.length || !chargeId) {
+                    const batchItems = items.map((item) => chargeType === 'dining'
+                        ? { dining_menu_id: item.id, quantity: item.quantity }
+                        : { guest_request_id: item.id, quantity: item.quantity, unit_price: item.unit_price });
+                    await sendReservationChargeRequest(chargeUrl(chargePanel.dataset.createUrl), 'POST', {
+                        charge_type: chargeType,
+                        items: batchItems,
+                        source: payload.source,
+                        notes: payload.notes,
+                    });
+                    savedAny = true;
+                }
+            } else {
+                const url = chargeId ? chargeUrl(chargePanel.dataset.updateUrl, chargeId) : chargeUrl(chargePanel.dataset.createUrl);
+                await sendReservationChargeRequest(url, chargeId ? 'PUT' : 'POST', payload);
+                savedAny = true;
+            }
+
+            document.getElementById('reservationChargeComposer').classList.add('hidden');
+            resetReservationChargeEditor();
+            await loadReservationCharges();
+        } catch (error) {
+            if (savedAny) await loadReservationCharges();
+            window.alert(error.message);
+        } finally {
+            button.disabled = false;
+            button.textContent = reservationChargeState.chargeId ? 'Update Charge' : 'Save Charge';
+        }
+    }
+
+    async function sendReservationChargeRequest(url, method, payload) {
+        const response = await fetch(url, {
+            method,
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('#addReservationForm input[name="_token"]').value,
+            },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            const firstError = Object.values(result.errors || {}).flat()[0];
+            throw new Error(firstError || result.message || 'Unable to save this charge.');
+        }
+        return result;
+    }
+
+    document.querySelectorAll('[data-edit-modal-tab]').forEach((button) => {
+        button.addEventListener('click', () => {
+            setEditReservationTab(button.dataset.editModalTab);
+            if (button.dataset.editModalTab === 'charges') loadReservationCharges();
+        });
+    });
+    document.getElementById('addReservationChargeButton').addEventListener('click', () => {
+        resetReservationChargeEditor();
+        document.getElementById('reservationChargeComposer').classList.remove('hidden');
+    });
+    document.getElementById('closeReservationChargeComposer').addEventListener('click', () => {
+        document.getElementById('reservationChargeComposer').classList.add('hidden');
+        resetReservationChargeEditor();
+    });
+    document.getElementById('cancelReservationChargeEdit').addEventListener('click', resetReservationChargeEditor);
+    document.getElementById('saveReservationCharge').addEventListener('click', saveReservationCharge);
+    document.querySelectorAll('[data-charge-type-choice]').forEach((button) => {
+        button.addEventListener('click', () => openReservationChargeType(button.dataset.chargeTypeChoice));
+    });
+    document.getElementById('reservationChargeFacility').addEventListener('change', function () {
+        document.getElementById('reservationChargeUnitPrice').value = this.selectedOptions[0]?.dataset.price || '';
+        updateReservationChargeTotalPreview();
+    });
+    document.getElementById('reservationDiningToggle').addEventListener('click', function () {
+        const options = document.getElementById('reservationDiningOptions');
+        const expanded = options.classList.toggle('hidden') === false;
+        this.setAttribute('aria-expanded', String(expanded));
+    });
+    document.getElementById('reservationDiningSearch').addEventListener('focus', () => {
+        document.getElementById('reservationDiningOptions').classList.remove('hidden');
+        document.getElementById('reservationDiningToggle').setAttribute('aria-expanded', 'true');
+    });
+    document.getElementById('reservationDiningSearch').addEventListener('input', function () {
+        const search = this.value.trim().toLowerCase();
+        document.getElementById('reservationDiningOptions').classList.remove('hidden');
+        document.getElementById('reservationDiningToggle').setAttribute('aria-expanded', 'true');
+        document.querySelectorAll('.reservation-charge-menu-option').forEach((option) => {
+            option.classList.toggle('hidden', !option.dataset.menuSearch.includes(search));
+        });
+    });
+    document.querySelectorAll('.reservation-charge-dining-option').forEach((checkbox) => {
+        checkbox.addEventListener('change', function () {
+            const menuId = this.value;
+            if (this.checked) {
+                reservationChargeState.diningItems.set(menuId, {
+                    id: menuId,
+                    name: this.dataset.name,
+                    price: Number(this.dataset.price || 0),
+                    quantity: 1,
+                });
+            } else {
+                reservationChargeState.diningItems.delete(menuId);
+            }
+            renderReservationDiningSelections();
+            updateReservationChargeTotalPreview();
+        });
+    });
+    document.getElementById('reservationCustomToggle').addEventListener('click', function () {
+        const options = document.getElementById('reservationCustomOptions');
+        const expanded = options.classList.toggle('hidden') === false;
+        this.setAttribute('aria-expanded', String(expanded));
+    });
+    document.getElementById('reservationCustomSearch').addEventListener('focus', () => {
+        document.getElementById('reservationCustomOptions').classList.remove('hidden');
+        document.getElementById('reservationCustomToggle').setAttribute('aria-expanded', 'true');
+    });
+    document.getElementById('reservationCustomSearch').addEventListener('input', function () {
+        const search = this.value.trim().toLowerCase();
+        document.getElementById('reservationCustomOptions').classList.remove('hidden');
+        document.getElementById('reservationCustomToggle').setAttribute('aria-expanded', 'true');
+        document.querySelectorAll('.reservation-charge-custom-option').forEach((option) => {
+            option.classList.toggle('hidden', !option.dataset.requestSearch.includes(search));
+        });
+    });
+    document.querySelectorAll('.reservation-charge-custom-option-input').forEach((checkbox) => {
+        checkbox.addEventListener('change', function () {
+            const guestRequestId = this.value;
+            if (this.checked) {
+                reservationChargeState.customItems.set(guestRequestId, {
+                    id: guestRequestId,
+                    guestRequestId,
+                    name: this.dataset.name,
+                    price: Number(this.dataset.price || 0),
+                    quantity: 1,
+                });
+            } else {
+                reservationChargeState.customItems.delete(guestRequestId);
+            }
+            renderReservationCustomSelections();
+            updateReservationChargeTotalPreview();
+        });
+    });
+    document.getElementById('reservationChargeQuantity').addEventListener('input', updateReservationChargeTotalPreview);
+    document.getElementById('reservationChargeUnitPrice').addEventListener('input', updateReservationChargeTotalPreview);
+    chargeRows.addEventListener('click', async (event) => {
+        const button = event.target.closest('[data-charge-action]');
+        if (!button) return;
+        const charge = reservationChargeState.charges.find((item) => Number(item.id) === Number(button.dataset.chargeId));
+        if (!charge) return;
+        if (button.dataset.chargeAction === 'delete') {
+            if (!window.confirm(`Delete ${charge.name}?`)) return;
+            const response = await fetch(chargeUrl(chargePanel.dataset.deleteUrl, charge.id), {
+                method: 'DELETE',
+                headers: { Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('#addReservationForm input[name="_token"]').value },
+            });
+            if (!response.ok) {
+                const result = await response.json();
+                window.alert(result.message || 'Unable to delete this charge.');
+                return;
+            }
+            await loadReservationCharges();
+            return;
+        }
+
+        openReservationChargeType(charge.charge_type || 'custom');
+        reservationChargeState.chargeId = charge.id;
+        document.getElementById('reservationChargeComposerTitle').textContent = 'Edit Service / Charge';
+        document.getElementById('saveReservationCharge').textContent = 'Update Charge';
+        document.getElementById('reservationChargeQuantity').value = charge.quantity || 1;
+        document.getElementById('reservationChargeUnitPrice').value = charge.unit_price ?? '';
+        document.getElementById('reservationChargeSource').value = charge.source === '-' ? '' : (charge.source || '');
+        document.getElementById('reservationChargeNotes').value = charge.notes || '';
+        if (charge.charge_type === 'guest_addon') document.getElementById('reservationChargeFacility').value = charge.facility_id || '';
+        else if (charge.charge_type === 'dining') {
+            const menuOption = [...document.querySelectorAll('.reservation-charge-dining-option')]
+                .find((checkbox) => checkbox.value === String(charge.dining_menu_id));
+            setReservationDiningSelections([{
+                id: charge.dining_menu_id,
+                name: charge.name,
+                price: Number(menuOption?.dataset.price ?? charge.unit_price),
+                quantity: charge.quantity,
+            }]);
+        } else if (charge.charge_type === 'custom') {
+            const customOption = [...document.querySelectorAll('.reservation-charge-custom-option-input')]
+                .find((checkbox) => checkbox.value === String(charge.source_guest_request_id))
+                || [...document.querySelectorAll('.reservation-charge-custom-option-input')]
+                    .find((checkbox) => checkbox.dataset.name === charge.name);
+            setReservationCustomSelections([{
+                guestRequestId: customOption?.value ?? null,
+                name: charge.name,
+                price: charge.unit_price,
+                quantity: charge.quantity,
+            }]);
+        }
+        document.getElementById('reservationChargeComposer').classList.remove('hidden');
+        updateReservationChargeTotalPreview();
+    });
 
 </script>
 @endsection

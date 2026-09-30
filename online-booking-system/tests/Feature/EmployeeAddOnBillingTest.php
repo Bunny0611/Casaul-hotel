@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\GuestRequest;
+use App\Models\DiningMenu;
+use App\Models\Facility;
 use App\Models\Room;
 use App\Models\RoomReservation;
 use App\Models\User;
@@ -208,6 +210,173 @@ class EmployeeAddOnBillingTest extends TestCase
             'amount_paid' => 2500,
             'guest_name' => 'Paid Guest Updated',
         ]);
+    }
+
+    public function test_employee_can_manage_catalog_and_custom_charges_for_only_the_selected_room_reservation(): void
+    {
+        $employee = User::factory()->create(['role' => 'employee']);
+        $room = Room::create([
+            'room_number' => '118',
+            'room_type' => 'Standard',
+            'price' => 2500,
+            'floor' => '1',
+            'status' => 'occupied',
+            'cleaning_status' => 'clean',
+            'capacity' => 2,
+        ]);
+        $reservation = RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => 'Charge Guest',
+            'guest_email' => 'charges@example.com',
+            'guest_phone' => '09123456789',
+            'check_in' => today(),
+            'check_out' => today(),
+            'number_of_guests' => 1,
+            'status' => 'checked-in',
+            'total_amount' => 2500,
+            'amount_paid' => 0,
+        ]);
+        $otherReservation = RoomReservation::create([
+            'room_id' => $room->id,
+            'guest_name' => 'Other Guest',
+            'guest_email' => 'other@example.com',
+            'guest_phone' => '09123456780',
+            'check_in' => today()->addDay(),
+            'check_out' => today()->addDay(),
+            'number_of_guests' => 1,
+            'status' => 'confirmed',
+            'total_amount' => 2500,
+            'amount_paid' => 0,
+        ]);
+        $existingCharge = $this->makeGuestRequest($reservation, [
+            'request_type' => 'Extra Pillows',
+            'quantity' => 1,
+            'unit_price' => 50,
+            'subtotal' => 50,
+            'status' => 'Completed',
+            'is_billable' => true,
+            'charge_type' => 'custom',
+            'source' => 'Phone Call',
+        ]);
+        $pendingRequest = $this->makeGuestRequest($reservation, [
+            'request_type' => 'Pending Extra Bed',
+            'quantity' => 1,
+            'unit_price' => 500,
+            'subtotal' => 500,
+            'status' => 'New',
+            'is_billable' => true,
+        ]);
+        $catalogRequest = $this->makeGuestRequest($reservation, [
+            'request_type' => 'Extra Towels',
+            'quantity' => 1,
+            'unit_price' => 80,
+            'subtotal' => 80,
+            'status' => 'New',
+            'is_billable' => true,
+        ]);
+        $parking = Facility::create([
+            'name' => 'Parking',
+            'price' => 50,
+            'pricing_basis' => 'Per Stay',
+            'status' => 'available',
+        ]);
+        $menu = DiningMenu::create([
+            'name' => 'Chicken Adobo',
+            'category' => 'Main Course',
+            'price' => 250,
+            'status' => 'available',
+        ]);
+        $secondMenu = DiningMenu::create([
+            'name' => 'Fresh Lemonade',
+            'category' => 'Beverage',
+            'price' => 100,
+            'status' => 'available',
+        ]);
+
+        $this->actingAs($employee)->get(route('employee.reservation') . '?tab=rooms')
+            ->assertOk()
+            ->assertSeeText('Reservation Details')
+            ->assertSeeText('Add-ons & Charges')
+            ->assertSeeText('Charged Services & Additional Charges')
+            ->assertSeeText('Update the reservation details below.');
+
+        $this->actingAs($employee)->getJson(route('employee.reservations.charges.index', $reservation->id))
+            ->assertOk()
+            ->assertJsonPath('total', 50)
+            ->assertJsonPath('charges.0.id', $existingCharge->id);
+
+        $this->actingAs($employee)->postJson(route('employee.reservations.charges.store', $reservation->id), [
+            'charge_type' => 'guest_addon',
+            'name' => 'Parking',
+            'facility_id' => $parking->id,
+            'quantity' => 1,
+            'unit_price' => 999,
+            'source' => 'Front Desk',
+        ])->assertCreated()->assertJsonPath('charge.unit_price', 50);
+
+        $diningResponse = $this->actingAs($employee)->postJson(route('employee.reservations.charges.store', $reservation->id), [
+            'charge_type' => 'dining',
+            'items' => [
+                ['dining_menu_id' => $menu->id, 'quantity' => 2],
+                ['dining_menu_id' => $secondMenu->id, 'quantity' => 1],
+            ],
+        ])->assertCreated()->assertJsonCount(2, 'charges')->assertJsonPath('charges.0.unit_price', 250);
+        $diningChargeId = $diningResponse->json('charges.0.id');
+        $secondDiningChargeId = $diningResponse->json('charges.1.id');
+
+        $customBatchResponse = $this->actingAs($employee)->postJson(route('employee.reservations.charges.store', $reservation->id), [
+            'charge_type' => 'custom',
+            'items' => [
+                ['guest_request_id' => $pendingRequest->id, 'quantity' => 2],
+                ['guest_request_id' => $catalogRequest->id, 'quantity' => 1, 'unit_price' => 90],
+            ],
+            'source' => 'Front Desk',
+        ])->assertCreated()->assertJsonCount(2, 'charges')->assertJsonPath('charges.0.unit_price', 500);
+        $customSourceChargeId = $customBatchResponse->json('charges.0.id');
+        $customOtherChargeId = $customBatchResponse->json('charges.1.id');
+
+        $customResponse = $this->actingAs($employee)->postJson(route('employee.reservations.charges.store', $reservation->id), [
+            'charge_type' => 'custom',
+            'name' => 'Late-night service',
+            'quantity' => 3,
+            'unit_price' => 50,
+            'source' => 'Phone Call',
+            'notes' => 'Guest requested delivery to room.',
+        ])->assertCreated()->assertJsonPath('charge.total', 150);
+        $customChargeId = $customResponse->json('charge.id');
+
+        $this->actingAs($employee)->getJson(route('employee.reservations.charges.index', $reservation->id))
+            ->assertJsonPath('total', 1940);
+
+        $this->actingAs($employee)->putJson(route('employee.reservations.charges.update', [$reservation->id, $customChargeId]), [
+            'charge_type' => 'custom',
+            'name' => 'Late-night service',
+            'quantity' => 2,
+            'unit_price' => 100,
+            'source' => 'Phone Call',
+            'notes' => 'Updated quantity and price.',
+        ])->assertOk()->assertJsonPath('charge.total', 200);
+
+        $this->actingAs($employee)->putJson(route('employee.reservations.charges.update', [$otherReservation->id, $customChargeId]), [
+            'charge_type' => 'custom',
+            'name' => 'Wrong reservation',
+            'quantity' => 1,
+            'unit_price' => 1,
+        ])->assertNotFound();
+
+        $this->actingAs($employee)->deleteJson(route('employee.reservations.charges.destroy', [$reservation->id, $customChargeId]))
+            ->assertOk()->assertJson(['deleted' => true]);
+        $this->actingAs($employee)->getJson(route('employee.reservations.charges.index', $reservation->id))
+            ->assertJsonPath('total', 1790);
+
+        $this->assertDatabaseHas('room_reservations', ['id' => $reservation->id, 'guest_name' => 'Charge Guest']);
+        $this->assertDatabaseHas('guest_requests', ['id' => $diningChargeId, 'reservation_key' => $reservation->id]);
+        $this->assertDatabaseHas('guest_requests', ['id' => $secondDiningChargeId, 'dining_menu_id' => $secondMenu->id]);
+        $this->assertDatabaseHas('guest_requests', ['id' => $customSourceChargeId, 'source_guest_request_id' => $pendingRequest->id]);
+        $this->assertDatabaseHas('guest_requests', ['id' => $customOtherChargeId, 'source_guest_request_id' => $catalogRequest->id]);
+        $this->assertDatabaseHas('guest_requests', ['id' => $pendingRequest->id, 'status' => 'New', 'reservation_key' => $reservation->id]);
+        $this->assertDatabaseHas('guest_requests', ['id' => $catalogRequest->id, 'status' => 'New', 'reservation_key' => $reservation->id]);
+        $this->assertDatabaseMissing('guest_requests', ['id' => $customChargeId]);
     }
 
     public function test_delivered_guest_request_moves_into_existing_employee_charged_add_on_section_once(): void

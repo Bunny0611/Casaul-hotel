@@ -24,6 +24,12 @@ class GuestRequest extends Model
         'reservation_type',
         'reservation_key',
         'billing_posted_at',
+        'charge_type',
+        'source',
+        'notes',
+        'source_guest_request_id',
+        'dining_menu_id',
+        'facility_id',
         'assigned_employee_id',
         'employee_notes',
         'submitted_at',
@@ -57,5 +63,20 @@ class GuestRequest extends Model
     public function assignedEmployee()
     {
         return $this->belongsTo(Staff::class, 'assigned_employee_id');
+    }
+
+    public function diningMenu()
+    {
+        return $this->belongsTo(DiningMenu::class);
+    }
+
+    public function facility()
+    {
+        return $this->belongsTo(Facility::class);
+    }
+
+    public function sourceGuestRequest()
+    {
+        return $this->belongsTo(self::class, 'source_guest_request_id');
     }
 }

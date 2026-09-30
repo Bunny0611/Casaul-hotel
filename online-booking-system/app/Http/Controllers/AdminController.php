@@ -1228,6 +1228,15 @@ class AdminController extends Controller
         $facilities = Facility::orderBy('name')->get();
         $events = Event::orderBy('name')->get();
         $diningMenus = DiningMenu::orderBy('name')->get();
+        $guestRequestCatalog = GuestRequest::query()
+            ->where('is_billable', true)
+            ->where('status', 'New')
+            ->whereNull('charge_type')
+            ->whereNull('source_guest_request_id')
+            ->orderByDesc('created_at')
+            ->get(['id', 'request_type', 'unit_price'])
+            ->unique('request_type')
+            ->values();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $diningTables = DiningTable::orderBy('table_no')->get();
 
@@ -1235,8 +1244,8 @@ class AdminController extends Controller
         $reservations = $roomReservations->getCollection();
 
         return request()->routeIs('employee.reservation')
-            ? view('employee.reservation', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningTables', 'diningMenus', 'diningSchedules'))
-            : view('admin.reservations', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningMenus', 'diningSchedules'));
+            ? view('employee.reservation', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningTables', 'diningMenus', 'diningSchedules', 'guestRequestCatalog'))
+            : view('admin.reservations', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningMenus', 'diningSchedules', 'guestRequestCatalog'));
     }
 
     private function paginateReservations($reservations, string $pageName): LengthAwarePaginator
@@ -2102,6 +2111,256 @@ class AdminController extends Controller
         return $request->routeIs('employee.reservations.update')
             ? redirect()->route('employee.reservation')->with('success', $updateMessage)
             : redirect()->route('admin.reservations')->with('success', $updateMessage);
+    }
+
+    public function roomReservationCharges($id)
+    {
+        $reservation = RoomReservation::findOrFail($id);
+        $charges = $this->roomReservationChargeQuery($reservation)
+            ->with(['diningMenu', 'facility'])
+            ->orderBy('id')
+            ->get()
+            ->map(fn (GuestRequest $charge) => $this->formatRoomReservationCharge($charge));
+
+        return response()->json([
+            'charges' => $charges,
+            'total' => round((float) $charges->sum('total'), 2),
+        ]);
+    }
+
+    public function storeRoomReservationCharge(Request $request, $id)
+    {
+        $reservation = RoomReservation::findOrFail($id);
+        if ($request->input('charge_type') === 'dining' && $request->has('items')) {
+            $validated = $request->validate([
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.dining_menu_id' => ['required', 'integer', 'distinct', 'exists:dining_menus,id'],
+                'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
+                'source' => ['nullable', 'string', 'max:100'],
+                'notes' => ['nullable', 'string', 'max:2000'],
+            ]);
+
+            $charges = DB::transaction(function () use ($validated, $reservation) {
+                return collect($validated['items'])->map(function (array $item) use ($validated, $reservation) {
+                    $menu = DiningMenu::query()->where('status', 'available')->findOrFail($item['dining_menu_id']);
+                    $quantity = (int) $item['quantity'];
+                    $unitPrice = (float) $menu->price;
+
+                    return GuestRequest::create([
+                        'guest_id' => null,
+                        'room_id' => $reservation->room_id,
+                        'request_type' => $menu->name,
+                        'description' => $validated['notes'] ?? $menu->name,
+                        'department' => 'Billing',
+                        'status' => 'Completed',
+                        'quantity' => $quantity,
+                        'unit_price' => $unitPrice,
+                        'subtotal' => round($quantity * $unitPrice, 2),
+                        'is_billable' => true,
+                        'billing_status' => 'pending',
+                        'reservation_type' => RoomReservation::class,
+                        'reservation_key' => $reservation->id,
+                        'charge_type' => 'dining',
+                        'source' => $validated['source'] ?? null,
+                        'notes' => $validated['notes'] ?? null,
+                        'dining_menu_id' => $menu->id,
+                        'submitted_at' => now(),
+                        'completed_at' => now(),
+                    ]);
+                });
+            });
+
+            $formattedCharges = $charges->map(fn (GuestRequest $charge) => $this->formatRoomReservationCharge($charge));
+
+            return response()->json([
+                'charges' => $formattedCharges,
+                'total' => round((float) $formattedCharges->sum('total'), 2),
+            ], 201);
+        }
+
+        if ($request->input('charge_type') === 'custom' && $request->has('items')) {
+            $validated = $request->validate([
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.guest_request_id' => ['required', 'integer', 'distinct', 'exists:guest_requests,id'],
+                'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
+                'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+                'source' => ['nullable', 'string', 'max:100'],
+                'notes' => ['nullable', 'string', 'max:2000'],
+            ]);
+
+            $charges = DB::transaction(function () use ($validated, $reservation) {
+                return collect($validated['items'])->map(function (array $item) use ($validated, $reservation) {
+                    $sourceRequest = GuestRequest::query()
+                        ->whereKey($item['guest_request_id'])
+                        ->where('is_billable', true)
+                        ->whereNull('charge_type')
+                        ->whereNull('source_guest_request_id')
+                        ->firstOrFail();
+                    $quantity = (int) $item['quantity'];
+                    $unitPrice = round((float) ($item['unit_price'] ?? $sourceRequest->unit_price), 2);
+
+                    return GuestRequest::create([
+                        'guest_id' => null,
+                        'room_id' => $reservation->room_id,
+                        'request_type' => $sourceRequest->request_type,
+                        'description' => $validated['notes'] ?? $sourceRequest->description ?? $sourceRequest->request_type,
+                        'department' => 'Billing',
+                        'status' => 'Completed',
+                        'quantity' => $quantity,
+                        'unit_price' => $unitPrice,
+                        'subtotal' => round($quantity * $unitPrice, 2),
+                        'is_billable' => true,
+                        'billing_status' => 'pending',
+                        'reservation_type' => RoomReservation::class,
+                        'reservation_key' => $reservation->id,
+                        'charge_type' => 'custom',
+                        'source' => $validated['source'] ?? null,
+                        'notes' => $validated['notes'] ?? null,
+                        'source_guest_request_id' => $sourceRequest->id,
+                        'submitted_at' => now(),
+                        'completed_at' => now(),
+                    ]);
+                });
+            });
+
+            $formattedCharges = $charges->map(fn (GuestRequest $charge) => $this->formatRoomReservationCharge($charge));
+
+            return response()->json([
+                'charges' => $formattedCharges,
+                'total' => round((float) $formattedCharges->sum('total'), 2),
+            ], 201);
+        }
+
+        $charge = $this->persistRoomReservationCharge($request, $reservation);
+
+        return response()->json(['charge' => $this->formatRoomReservationCharge($charge)], 201);
+    }
+
+    public function updateRoomReservationCharge(Request $request, $id, $chargeId)
+    {
+        $reservation = RoomReservation::findOrFail($id);
+        $charge = $this->roomReservationChargeQuery($reservation)->whereKey($chargeId)->firstOrFail();
+        $charge = $this->persistRoomReservationCharge($request, $reservation, $charge);
+
+        return response()->json(['charge' => $this->formatRoomReservationCharge($charge)]);
+    }
+
+    public function destroyRoomReservationCharge($id, $chargeId)
+    {
+        $reservation = RoomReservation::findOrFail($id);
+        $this->roomReservationChargeQuery($reservation)->whereKey($chargeId)->firstOrFail()->delete();
+
+        return response()->json(['deleted' => true]);
+    }
+
+    private function roomReservationChargeQuery(RoomReservation $reservation)
+    {
+        $legacyReservationIds = Reservation::query()
+            ->where('guest_email', $reservation->guest_email)
+            ->whereDate('check_in', optional($reservation->check_in)->toDateString())
+            ->select('id');
+
+        return GuestRequest::query()
+            ->where('is_billable', true)
+            ->whereIn('status', ['Delivered', 'Completed'])
+            ->where(function ($query) use ($reservation, $legacyReservationIds) {
+                $query->where(function ($query) use ($reservation) {
+                    $query->where('reservation_type', RoomReservation::class)
+                        ->where('reservation_key', $reservation->id);
+                })->orWhereIn('reservation_id', $legacyReservationIds);
+            });
+    }
+
+    private function persistRoomReservationCharge(Request $request, RoomReservation $reservation, ?GuestRequest $charge = null): GuestRequest
+    {
+        $validated = $request->validate([
+            'charge_type' => ['required', Rule::in(['guest_addon', 'dining', 'custom'])],
+            'name' => ['required', 'string', 'max:255'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:999'],
+            'unit_price' => ['nullable', 'numeric', 'min:0'],
+            'guest_request_id' => ['nullable', 'exists:guest_requests,id'],
+            'source' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'dining_menu_id' => ['nullable', 'required_if:charge_type,dining', 'exists:dining_menus,id'],
+            'facility_id' => ['nullable', 'required_if:charge_type,guest_addon', 'exists:facilities,id'],
+        ]);
+
+        $menu = null;
+        $facility = null;
+        $sourceGuestRequest = null;
+        if ($validated['charge_type'] === 'dining') {
+            $menu = DiningMenu::query()->where('status', 'available')->findOrFail($validated['dining_menu_id']);
+            $validated['name'] = $menu->name;
+            $validated['unit_price'] = $menu->price;
+        } elseif ($validated['charge_type'] === 'guest_addon') {
+            $facility = Facility::query()->where('status', 'available')->findOrFail($validated['facility_id']);
+            $validated['name'] = $facility->name;
+            $validated['unit_price'] = $facility->price;
+        } else {
+            if (!empty($validated['guest_request_id'])) {
+                $sourceGuestRequest = GuestRequest::query()
+                    ->whereKey($validated['guest_request_id'])
+                    ->where('is_billable', true)
+                    ->whereNull('charge_type')
+                    ->whereNull('source_guest_request_id')
+                    ->firstOrFail();
+                $validated['name'] = $sourceGuestRequest->request_type;
+            }
+            if (!array_key_exists('unit_price', $validated) || $validated['unit_price'] === null) {
+                throw ValidationException::withMessages(['unit_price' => 'Enter a unit price for the custom charge.']);
+            }
+        }
+
+        $unitPrice = round((float) $validated['unit_price'], 2);
+        $attributes = [
+            'guest_id' => null,
+            'room_id' => $reservation->room_id,
+            'request_type' => $validated['name'],
+            'description' => $validated['notes'] ?? $validated['name'],
+            'department' => 'Billing',
+            'status' => 'Completed',
+            'quantity' => (int) $validated['quantity'],
+            'unit_price' => $unitPrice,
+            'subtotal' => round((int) $validated['quantity'] * $unitPrice, 2),
+            'is_billable' => true,
+            'billing_status' => $charge?->billing_status ?? 'pending',
+            'reservation_type' => RoomReservation::class,
+            'reservation_key' => $reservation->id,
+            'charge_type' => $validated['charge_type'],
+            'source' => $validated['source'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'source_guest_request_id' => $validated['charge_type'] === 'custom'
+                ? ($sourceGuestRequest?->id ?? $charge?->source_guest_request_id)
+                : null,
+            'dining_menu_id' => $menu?->id,
+            'facility_id' => $facility?->id,
+            'submitted_at' => $charge?->submitted_at ?? now(),
+            'completed_at' => $charge?->completed_at ?? now(),
+        ];
+
+        if ($charge) {
+            $charge->update($attributes);
+            return $charge->fresh(['diningMenu', 'facility', 'sourceGuestRequest']);
+        }
+
+        return GuestRequest::create($attributes)->load(['diningMenu', 'facility', 'sourceGuestRequest']);
+    }
+
+    private function formatRoomReservationCharge(GuestRequest $charge): array
+    {
+        return [
+            'id' => $charge->id,
+            'charge_type' => $charge->charge_type ?: 'custom',
+            'name' => $charge->request_type,
+            'quantity' => (int) ($charge->quantity ?? 1),
+            'unit_price' => (float) $charge->unit_price,
+            'total' => round((float) $charge->unit_price * max((int) ($charge->quantity ?? 1), 1), 2),
+            'source' => $charge->source ?: ($charge->preferred_time ?: '-'),
+            'notes' => $charge->notes ?: $charge->description,
+            'source_guest_request_id' => $charge->source_guest_request_id,
+            'dining_menu_id' => $charge->dining_menu_id,
+            'facility_id' => $charge->facility_id,
+        ];
     }
 
     public function roomExtensionOptions(Request $request, $id)
