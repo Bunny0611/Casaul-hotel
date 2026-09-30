@@ -12,6 +12,7 @@ class EventReservation extends Model
         'check_in' => 'date',
         'check_out' => 'date',
         'duration_hours' => 'integer',
+        'selected_addons' => 'array',
     ];
 
     protected $fillable = [
@@ -32,6 +33,7 @@ class EventReservation extends Model
         'payment_details',
         'amount_paid',
         'special_requests',
+        'selected_addons',
     ];
 
     public function event()

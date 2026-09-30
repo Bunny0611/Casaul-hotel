@@ -84,6 +84,10 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::patch('/refunds/{refund}/mark-refunded', [AdminController::class, 'markRefunded'])->name('refunds.mark-refunded');
     Route::post('/reservations', [AdminController::class, 'storeReservation'])->name('reservations.store');
     Route::put('/reservations/{id}', [AdminController::class, 'updateReservation'])->name('reservations.update');
+    Route::get('/reservations/{id}/charges', [AdminController::class, 'roomReservationCharges'])->name('reservations.charges.index');
+    Route::post('/reservations/{id}/charges', [AdminController::class, 'storeRoomReservationCharge'])->name('reservations.charges.store');
+    Route::put('/reservations/{id}/charges/{chargeId}', [AdminController::class, 'updateRoomReservationCharge'])->name('reservations.charges.update');
+    Route::delete('/reservations/{id}/charges/{chargeId}', [AdminController::class, 'destroyRoomReservationCharge'])->name('reservations.charges.destroy');
     Route::patch('/reservations/{id}/status', [AdminController::class, 'updateReservationStatus'])->name('reservations.status');
     Route::get('/reservations/{id}/status', function () {
         return redirect()->route('employee.reservation')->with('error', 'Please use the reservation action menu to update the status.');

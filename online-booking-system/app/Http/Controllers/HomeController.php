@@ -480,10 +480,11 @@ class HomeController extends Controller
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'check_in' => 'required|date|after_or_equal:today',
             'check_in_time' => 'nullable|date_format:H:i',
+            'facility_start_time' => 'nullable|date_format:H:i',
             'event_start_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => 'nullable|date_format:H:i',
-            'event_end_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
+            'event_end_time' => ['exclude_unless:category,event', 'nullable', 'date_format:H:i'],
             'guest_name' => 'required|string|max:255',
             'guest_email' => 'required|email|max:255',
             'guest_phone' => 'required|string|max:20',
@@ -500,9 +501,11 @@ class HomeController extends Controller
             'dining_schedule' => 'nullable|string|max:255',
             'quantity' => 'nullable|integer|min:1',
             'duration_hours' => 'nullable|integer|min:1|max:24',
+            'facility_duration_hours' => 'nullable|integer|min:1|max:24',
             'facility_id' => 'nullable|string',
             'facility_quantity' => 'nullable|integer|min:1',
             'event_id' => 'nullable|string',
+            'event_addons' => ['nullable', 'json', 'max:10000'],
             'event_type' => 'nullable|string|max:100',
             'number_of_guests' => 'nullable|integer|min:1',
             'room_number_of_guests' => 'nullable|integer|min:1',
@@ -609,30 +612,52 @@ class HomeController extends Controller
             abort_if(!empty($invalidEventIds), 422, 'One or more selected event packages are invalid.');
 
             $validated['event_id'] = implode(',', $eventIds);
+            $requestedAddonGroups = json_decode($validated['event_addons'] ?? '[]', true);
+            abort_if(!is_array($requestedAddonGroups), 422, 'The selected event add-ons are invalid.');
+            $addonIndexesByEvent = [];
+            foreach ($requestedAddonGroups as $addonGroup) {
+                abort_if(!is_array($addonGroup) || !isset($addonGroup['event_id']) || !is_array($addonGroup['addon_indexes'] ?? null), 422, 'The selected event add-ons are invalid.');
+                $addonEventId = (string) $addonGroup['event_id'];
+                abort_if(!in_array($addonEventId, $eventIds, true) || array_key_exists($addonEventId, $addonIndexesByEvent), 422, 'The selected event add-ons do not match the selected package.');
+                abort_if(count(array_unique($addonGroup['addon_indexes'], SORT_REGULAR)) !== count($addonGroup['addon_indexes']), 422, 'An event add-on cannot be selected more than once.');
+                $addonIndexesByEvent[$addonEventId] = $addonGroup['addon_indexes'];
+            }
+            $selectedEventAddons = [];
+            $eventAddonTotal = 0;
             foreach ($eventIds as $eventId) {
                 $event = Event::find($eventId);
                 abort_if($event?->capacity && !empty($validated['number_of_guests']) && $validated['number_of_guests'] > $event->capacity, 422, 'The selected guest count exceeds the package capacity.');
 
                 if ($event) {
-                    $start = Carbon::createFromFormat('H:i', $validated['event_start_time']);
-                    $end = Carbon::createFromFormat('H:i', $validated['event_end_time']);
                     $configuredDuration = max(1, (int) ($event->duration_hours ?: 4));
-                    $pricingBasis = strtolower(trim((string) $event->pricing_basis));
-
-                    if ($pricingBasis === 'per person') {
-                        $end = $start->copy()->addHours($configuredDuration);
-                        $validated['event_end_time'] = $end->format('H:i');
-                    }
-
-                    abort_if($end->lessThanOrEqualTo($start), 422, 'The event end time must be after the start time.');
+                    $start = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $validated['event_start_time']);
+                    $end = $start->copy()->addHours($configuredDuration);
+                    $validated['event_end_time'] = $end->format('H:i');
+                    $validated['check_out'] = $end->toDateString();
                     abort_if($event->available_from && $start->format('H:i') < Carbon::parse($event->available_from)->format('H:i'), 422, 'The event starts before its available time.');
-                    abort_if($event->available_to && $end->format('H:i') > Carbon::parse($event->available_to)->format('H:i'), 422, 'The event ends after its available time.');
+                    abort_if($event->available_to && $end->toDateString() === $start->toDateString() && $end->format('H:i') > Carbon::parse($event->available_to)->format('H:i'), 422, 'The event ends after its available time.');
 
-                    $submittedDuration = max(1, $start->diffInHours($end));
-                    abort_if($pricingBasis === 'per hour' && $submittedDuration > $configuredDuration, 422, 'This event allows a maximum duration of '.$configuredDuration.' hours.');
-                    $validated['duration_hours'] = $submittedDuration;
+                    $validated['duration_hours'] = $configuredDuration;
+
+                    foreach ($addonIndexesByEvent[$eventId] ?? [] as $requestedAddonIndex) {
+                        $addonIndex = filter_var($requestedAddonIndex, FILTER_VALIDATE_INT);
+                        abort_if($addonIndex === false || $addonIndex < 0, 422, 'One or more selected event add-ons are invalid.');
+                        $addon = $event->optional_addons[$addonIndex] ?? null;
+                        abort_if(!$addon || !filter_var($addon['available'] ?? false, FILTER_VALIDATE_BOOLEAN), 422, 'One or more selected event add-ons are no longer available.');
+                        $addonPrice = round((float) ($addon['price'] ?? 0), 2);
+                        $selectedEventAddons[] = [
+                            'event_id' => $event->id,
+                            'name' => $addon['name'],
+                            'description' => $addon['description'] ?? null,
+                            'price' => $addonPrice,
+                        ];
+                        $eventAddonTotal += $addonPrice;
+                    }
                 }
             }
+            $validated['selected_addons'] = $selectedEventAddons;
+        } else {
+            $eventAddonTotal = 0;
         }
 
         if (!empty($validated['dining_id'])) {
@@ -697,13 +722,14 @@ class HomeController extends Controller
             $facilities,
             (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1),
             $validated['check_in'],
-            $validated['check_out']
+            $validated['check_out'],
+            (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1)
         );
         $eventDurationHours = 1;
-        if (!empty($validated['event_start_time']) && !empty($validated['event_end_time'])) {
-            $eventDurationHours = max(1, Carbon::parse($validated['event_start_time'])->diffInHours(Carbon::parse($validated['event_end_time'])));
+        if (!empty($validated['duration_hours'])) {
+            $eventDurationHours = max(1, (int) $validated['duration_hours']);
         }
-        $eventTotal = ReservationPricing::events($events, $validated['number_of_guests'], $eventDurationHours);
+        $eventTotal = ReservationPricing::events($events, $validated['number_of_guests'], $eventDurationHours) + $eventAddonTotal;
         $diningTotal = ReservationPricing::dining($diningSelections);
         $categoryTotal = match ($category) {
             'rooms' => $roomTotal,
@@ -762,7 +788,7 @@ class HomeController extends Controller
                 'event_id', 'guest_name', 'guest_email', 'guest_phone',
                 'event_type', 'check_in', 'event_start_time', 'check_out',
                 'event_end_time', 'duration_hours', 'number_of_guests', 'status', 'total_amount',
-                'payment_method', 'payment_details', 'amount_paid', 'special_requests',
+                'payment_method', 'payment_details', 'amount_paid', 'special_requests', 'selected_addons',
             ])->all());
         } elseif ($category === 'facilities') {
             $facility = $facilities->firstOrFail();
@@ -773,8 +799,8 @@ class HomeController extends Controller
                     'facility_quantity' => 'The selected number of vehicles exceeds this facility\'s available capacity.',
                 ]);
             }
-            $durationHours = max(1, (int) ($validated['duration_hours'] ?? 1));
-            $facilityStartTime = $validated['check_in_time'] ?? '00:00';
+            $durationHours = max(1, (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1));
+            $facilityStartTime = $validated['facility_start_time'] ?? $validated['check_in_time'] ?? '00:00';
             $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $facilityStartTime)
                 ->addHours($durationHours);
             $facilityCheckOut = $endTime->toDateString();
@@ -884,9 +910,9 @@ class HomeController extends Controller
             $facility = Facility::find($facilityId);
             if ($facility) {
                 $facilityQuantity = max(1, (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1));
-                $facilityStartTime = $validated['check_in_time'] ?? '00:00';
+                $facilityStartTime = $validated['facility_start_time'] ?? $validated['check_in_time'] ?? '00:00';
                 $facilityEndTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $facilityStartTime)
-                    ->addHours(max(1, (int) ($validated['duration_hours'] ?? 1)));
+                    ->addHours(max(1, (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1)));
                 FacilityReservation::create([
                     'facility_id' => $facility->id,
                     'facility_quantity' => $facilityQuantity,

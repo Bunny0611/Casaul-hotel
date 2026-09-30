@@ -742,6 +742,16 @@ class AdminController extends Controller
         return $file->storeAs('rooms', $filename, 'public');
     }
 
+    protected function normalizeEventAddons(array $addons): array
+    {
+        return collect($addons)->map(fn ($addon) => [
+            'name' => trim((string) $addon['name']),
+            'description' => filled($addon['description'] ?? null) ? trim((string) $addon['description']) : null,
+            'price' => round((float) $addon['price'], 2),
+            'available' => filter_var($addon['available'] ?? false, FILTER_VALIDATE_BOOLEAN),
+        ])->values()->all();
+    }
+
     public function storeInventoryItem(Request $request)
     {
         $eventTimeOptions = collect(range(8, 22))->map(fn ($hour) => sprintf('%02d:00', $hour))->all();
@@ -764,6 +774,11 @@ class AdminController extends Controller
             'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24', Rule::when($request->input('category') === 'event', ['required'])],
             'inclusions' => ['nullable', 'array'],
             'inclusions.*' => ['nullable', 'string', 'max:255'],
+            'optional_addons' => ['nullable', 'array'],
+            'optional_addons.*.name' => ['required', 'string', 'max:255'],
+            'optional_addons.*.description' => ['nullable', 'string', 'max:1000'],
+            'optional_addons.*.price' => ['required', 'numeric', 'min:0'],
+            'optional_addons.*.available' => ['nullable', 'boolean'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
@@ -773,6 +788,7 @@ class AdminController extends Controller
             ->unique(fn ($inclusion) => mb_strtolower($inclusion))
             ->values()
             ->all();
+        $validated['optional_addons'] = $this->normalizeEventAddons($validated['optional_addons'] ?? []);
         if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
             $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
             $availableHours = Carbon::parse($validated['available_from'])->diffInHours(Carbon::parse($validated['available_to']));
@@ -809,6 +825,7 @@ class AdminController extends Controller
                 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null,
                 'duration_hours' => $validated['duration_hours'] ?? 4,
                 'inclusions' => $validated['inclusions'],
+                'optional_addons' => $validated['optional_addons'],
                 'status' => $validated['status'], 'image' => $validated['image'] ?? null,
             ]),
             default => DiningMenu::create([
@@ -899,6 +916,12 @@ class AdminController extends Controller
             'inclusions' => ['nullable', 'array'],
             'inclusions.*' => ['nullable', 'string', 'max:255'],
             'inclusions_present' => ['nullable', 'boolean'],
+            'optional_addons' => ['nullable', 'array'],
+            'optional_addons.*.name' => ['required', 'string', 'max:255'],
+            'optional_addons.*.description' => ['nullable', 'string', 'max:1000'],
+            'optional_addons.*.price' => ['required', 'numeric', 'min:0'],
+            'optional_addons.*.available' => ['nullable', 'boolean'],
+            'optional_addons_present' => ['nullable', 'boolean'],
             'quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
@@ -908,6 +931,7 @@ class AdminController extends Controller
             ->unique(fn ($inclusion) => mb_strtolower($inclusion))
             ->values()
             ->all();
+        $validated['optional_addons'] = $this->normalizeEventAddons($validated['optional_addons'] ?? []);
         if ($validated['category'] === 'event' && in_array($validated['pricing_basis'], ['Per Person', 'Per Hour'], true)) {
             $request->validate(['duration_hours' => ['required', 'integer', 'min:1', 'max:24']]);
             $availableHours = Carbon::parse($validated['available_from'])->diffInHours(Carbon::parse($validated['available_to']));
@@ -929,7 +953,7 @@ class AdminController extends Controller
         $item->update($category === 'facilities'
             ? ['name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Stay', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'scheduling_requirement' => $validated['scheduling_requirement'] ?? $item->scheduling_requirement ?? 'No Additional Schedule', 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
             : ($category === 'event'
-                ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'duration_hours' => $validated['duration_hours'] ?? $item->duration_hours ?? 4, 'inclusions' => $request->boolean('inclusions_present') ? ($validated['inclusions'] ?? []) : ($item->inclusions ?? []), 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
+                ? ['event_type' => $validated['event_type'] ?? $item->event_type ?? 'Birthday', 'name' => $validated['name'], 'description' => $validated['description'] ?? null, 'price' => $validated['price'], 'pricing_basis' => $validated['pricing_basis'] ?? 'Per Event', 'capacity' => $validated['capacity'] ?? null, 'location' => $validated['location'] ?? null, 'available_from' => $validated['available_from'] ?? null, 'available_to' => $validated['available_to'] ?? null, 'duration_hours' => $validated['duration_hours'] ?? $item->duration_hours ?? 4, 'inclusions' => $request->boolean('inclusions_present') ? ($validated['inclusions'] ?? []) : ($item->inclusions ?? []), 'optional_addons' => $request->boolean('optional_addons_present') ? ($validated['optional_addons'] ?? []) : ($item->optional_addons ?? []), 'status' => $validated['status'], 'image' => $validated['image'] ?? $item->image]
                 : [
                     'name' => $validated['name'],
                     'category' => $validated['menu_category'] ?? $item->category,
@@ -1204,6 +1228,15 @@ class AdminController extends Controller
         $facilities = Facility::orderBy('name')->get();
         $events = Event::orderBy('name')->get();
         $diningMenus = DiningMenu::orderBy('name')->get();
+        $guestRequestCatalog = GuestRequest::query()
+            ->where('is_billable', true)
+            ->where('status', 'New')
+            ->whereNull('charge_type')
+            ->whereNull('source_guest_request_id')
+            ->orderByDesc('created_at')
+            ->get(['id', 'request_type', 'unit_price'])
+            ->unique('request_type')
+            ->values();
         $diningSchedules = DiningSchedule::orderBy('available_from')->get();
         $diningTables = DiningTable::orderBy('table_no')->get();
 
@@ -1211,8 +1244,8 @@ class AdminController extends Controller
         $reservations = $roomReservations->getCollection();
 
         return request()->routeIs('employee.reservation')
-            ? view('employee.reservation', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningTables', 'diningMenus', 'diningSchedules'))
-            : view('admin.reservations', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningMenus', 'diningSchedules'));
+            ? view('employee.reservation', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningTables', 'diningMenus', 'diningSchedules', 'guestRequestCatalog'))
+            : view('admin.reservations', compact('reservations', 'roomReservations', 'facilitiesReservations', 'eventsReservations', 'diningReservations', 'rooms', 'inventoryItems', 'facilities', 'events', 'diningMenus', 'diningSchedules', 'guestRequestCatalog'));
     }
 
     private function paginateReservations($reservations, string $pageName): LengthAwarePaginator
@@ -1467,6 +1500,7 @@ class AdminController extends Controller
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
             'dining_id' => ['nullable', 'string'],
             'duration_hours' => ['nullable', 'required_if:category,facilities', 'integer', 'min:1', 'max:24'],
+            'facility_duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
             'special_requests' => ['nullable', 'string'],
             'submission_token' => ['nullable', 'string', 'max:100'],
         ]);
@@ -1518,7 +1552,8 @@ class AdminController extends Controller
                 collect([$facility]),
                 (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1),
                 $validated['check_in'],
-                $validated['check_out']
+                $validated['check_out'],
+                (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1)
             )
             : 0;
         $eventDurationHours = 1;
@@ -1563,7 +1598,7 @@ class AdminController extends Controller
             $reservation = EventReservation::create($validated);
         } elseif ($category === 'facilities') {
             $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $validated['check_in_time'])
-                ->addHours((int) $validated['duration_hours']);
+                ->addHours((int) ($validated['facility_duration_hours'] ?? $validated['duration_hours']));
             $validated['check_out'] = $endTime->toDateString();
             $validated['facility_end_time'] = $endTime->format('H:i');
             $validated['facility_start_time'] = $validated['check_in_time'] ?? null;
@@ -1963,6 +1998,8 @@ class AdminController extends Controller
             'special_requests' => ['nullable', 'string'],
             'dining_id' => ['nullable', 'string'],
             'dining_items' => ['nullable', 'json'],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
+            'facility_duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
         ]);
 
         $reservation = match ($validated['category']) {
@@ -1988,7 +2025,15 @@ class AdminController extends Controller
                 collect([Facility::findOrFail($validated['facility_id'] ?? $reservation->facility_id)]),
                 (int) ($validated['facility_quantity'] ?? $reservation->facility_quantity ?? 1),
                 $validated['check_in'],
-                $validated['check_out']
+                $validated['check_out'],
+                (int) ($validated['facility_duration_hours']
+                    ?? $validated['duration_hours']
+                    ?? ReservationPricing::facilityDurationHours(
+                        $validated['check_in'],
+                        $validated['check_in_time'] ?? $reservation->facility_start_time,
+                        $validated['check_out'],
+                        $validated['check_out_time'] ?? $reservation->facility_end_time
+                    ))
             ),
             'event' => ReservationPricing::events(
                 collect([Event::findOrFail($validated['event_id'] ?? $reservation->event_id)]),
@@ -2066,6 +2111,256 @@ class AdminController extends Controller
         return $request->routeIs('employee.reservations.update')
             ? redirect()->route('employee.reservation')->with('success', $updateMessage)
             : redirect()->route('admin.reservations')->with('success', $updateMessage);
+    }
+
+    public function roomReservationCharges($id)
+    {
+        $reservation = RoomReservation::findOrFail($id);
+        $charges = $this->roomReservationChargeQuery($reservation)
+            ->with(['diningMenu', 'facility'])
+            ->orderBy('id')
+            ->get()
+            ->map(fn (GuestRequest $charge) => $this->formatRoomReservationCharge($charge));
+
+        return response()->json([
+            'charges' => $charges,
+            'total' => round((float) $charges->sum('total'), 2),
+        ]);
+    }
+
+    public function storeRoomReservationCharge(Request $request, $id)
+    {
+        $reservation = RoomReservation::findOrFail($id);
+        if ($request->input('charge_type') === 'dining' && $request->has('items')) {
+            $validated = $request->validate([
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.dining_menu_id' => ['required', 'integer', 'distinct', 'exists:dining_menus,id'],
+                'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
+                'source' => ['nullable', 'string', 'max:100'],
+                'notes' => ['nullable', 'string', 'max:2000'],
+            ]);
+
+            $charges = DB::transaction(function () use ($validated, $reservation) {
+                return collect($validated['items'])->map(function (array $item) use ($validated, $reservation) {
+                    $menu = DiningMenu::query()->where('status', 'available')->findOrFail($item['dining_menu_id']);
+                    $quantity = (int) $item['quantity'];
+                    $unitPrice = (float) $menu->price;
+
+                    return GuestRequest::create([
+                        'guest_id' => null,
+                        'room_id' => $reservation->room_id,
+                        'request_type' => $menu->name,
+                        'description' => $validated['notes'] ?? $menu->name,
+                        'department' => 'Billing',
+                        'status' => 'Completed',
+                        'quantity' => $quantity,
+                        'unit_price' => $unitPrice,
+                        'subtotal' => round($quantity * $unitPrice, 2),
+                        'is_billable' => true,
+                        'billing_status' => 'pending',
+                        'reservation_type' => RoomReservation::class,
+                        'reservation_key' => $reservation->id,
+                        'charge_type' => 'dining',
+                        'source' => $validated['source'] ?? null,
+                        'notes' => $validated['notes'] ?? null,
+                        'dining_menu_id' => $menu->id,
+                        'submitted_at' => now(),
+                        'completed_at' => now(),
+                    ]);
+                });
+            });
+
+            $formattedCharges = $charges->map(fn (GuestRequest $charge) => $this->formatRoomReservationCharge($charge));
+
+            return response()->json([
+                'charges' => $formattedCharges,
+                'total' => round((float) $formattedCharges->sum('total'), 2),
+            ], 201);
+        }
+
+        if ($request->input('charge_type') === 'custom' && $request->has('items')) {
+            $validated = $request->validate([
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.guest_request_id' => ['required', 'integer', 'distinct', 'exists:guest_requests,id'],
+                'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
+                'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+                'source' => ['nullable', 'string', 'max:100'],
+                'notes' => ['nullable', 'string', 'max:2000'],
+            ]);
+
+            $charges = DB::transaction(function () use ($validated, $reservation) {
+                return collect($validated['items'])->map(function (array $item) use ($validated, $reservation) {
+                    $sourceRequest = GuestRequest::query()
+                        ->whereKey($item['guest_request_id'])
+                        ->where('is_billable', true)
+                        ->whereNull('charge_type')
+                        ->whereNull('source_guest_request_id')
+                        ->firstOrFail();
+                    $quantity = (int) $item['quantity'];
+                    $unitPrice = round((float) ($item['unit_price'] ?? $sourceRequest->unit_price), 2);
+
+                    return GuestRequest::create([
+                        'guest_id' => null,
+                        'room_id' => $reservation->room_id,
+                        'request_type' => $sourceRequest->request_type,
+                        'description' => $validated['notes'] ?? $sourceRequest->description ?? $sourceRequest->request_type,
+                        'department' => 'Billing',
+                        'status' => 'Completed',
+                        'quantity' => $quantity,
+                        'unit_price' => $unitPrice,
+                        'subtotal' => round($quantity * $unitPrice, 2),
+                        'is_billable' => true,
+                        'billing_status' => 'pending',
+                        'reservation_type' => RoomReservation::class,
+                        'reservation_key' => $reservation->id,
+                        'charge_type' => 'custom',
+                        'source' => $validated['source'] ?? null,
+                        'notes' => $validated['notes'] ?? null,
+                        'source_guest_request_id' => $sourceRequest->id,
+                        'submitted_at' => now(),
+                        'completed_at' => now(),
+                    ]);
+                });
+            });
+
+            $formattedCharges = $charges->map(fn (GuestRequest $charge) => $this->formatRoomReservationCharge($charge));
+
+            return response()->json([
+                'charges' => $formattedCharges,
+                'total' => round((float) $formattedCharges->sum('total'), 2),
+            ], 201);
+        }
+
+        $charge = $this->persistRoomReservationCharge($request, $reservation);
+
+        return response()->json(['charge' => $this->formatRoomReservationCharge($charge)], 201);
+    }
+
+    public function updateRoomReservationCharge(Request $request, $id, $chargeId)
+    {
+        $reservation = RoomReservation::findOrFail($id);
+        $charge = $this->roomReservationChargeQuery($reservation)->whereKey($chargeId)->firstOrFail();
+        $charge = $this->persistRoomReservationCharge($request, $reservation, $charge);
+
+        return response()->json(['charge' => $this->formatRoomReservationCharge($charge)]);
+    }
+
+    public function destroyRoomReservationCharge($id, $chargeId)
+    {
+        $reservation = RoomReservation::findOrFail($id);
+        $this->roomReservationChargeQuery($reservation)->whereKey($chargeId)->firstOrFail()->delete();
+
+        return response()->json(['deleted' => true]);
+    }
+
+    private function roomReservationChargeQuery(RoomReservation $reservation)
+    {
+        $legacyReservationIds = Reservation::query()
+            ->where('guest_email', $reservation->guest_email)
+            ->whereDate('check_in', optional($reservation->check_in)->toDateString())
+            ->select('id');
+
+        return GuestRequest::query()
+            ->where('is_billable', true)
+            ->whereIn('status', ['Delivered', 'Completed'])
+            ->where(function ($query) use ($reservation, $legacyReservationIds) {
+                $query->where(function ($query) use ($reservation) {
+                    $query->where('reservation_type', RoomReservation::class)
+                        ->where('reservation_key', $reservation->id);
+                })->orWhereIn('reservation_id', $legacyReservationIds);
+            });
+    }
+
+    private function persistRoomReservationCharge(Request $request, RoomReservation $reservation, ?GuestRequest $charge = null): GuestRequest
+    {
+        $validated = $request->validate([
+            'charge_type' => ['required', Rule::in(['guest_addon', 'dining', 'custom'])],
+            'name' => ['required', 'string', 'max:255'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:999'],
+            'unit_price' => ['nullable', 'numeric', 'min:0'],
+            'guest_request_id' => ['nullable', 'exists:guest_requests,id'],
+            'source' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'dining_menu_id' => ['nullable', 'required_if:charge_type,dining', 'exists:dining_menus,id'],
+            'facility_id' => ['nullable', 'required_if:charge_type,guest_addon', 'exists:facilities,id'],
+        ]);
+
+        $menu = null;
+        $facility = null;
+        $sourceGuestRequest = null;
+        if ($validated['charge_type'] === 'dining') {
+            $menu = DiningMenu::query()->where('status', 'available')->findOrFail($validated['dining_menu_id']);
+            $validated['name'] = $menu->name;
+            $validated['unit_price'] = $menu->price;
+        } elseif ($validated['charge_type'] === 'guest_addon') {
+            $facility = Facility::query()->where('status', 'available')->findOrFail($validated['facility_id']);
+            $validated['name'] = $facility->name;
+            $validated['unit_price'] = $facility->price;
+        } else {
+            if (!empty($validated['guest_request_id'])) {
+                $sourceGuestRequest = GuestRequest::query()
+                    ->whereKey($validated['guest_request_id'])
+                    ->where('is_billable', true)
+                    ->whereNull('charge_type')
+                    ->whereNull('source_guest_request_id')
+                    ->firstOrFail();
+                $validated['name'] = $sourceGuestRequest->request_type;
+            }
+            if (!array_key_exists('unit_price', $validated) || $validated['unit_price'] === null) {
+                throw ValidationException::withMessages(['unit_price' => 'Enter a unit price for the custom charge.']);
+            }
+        }
+
+        $unitPrice = round((float) $validated['unit_price'], 2);
+        $attributes = [
+            'guest_id' => null,
+            'room_id' => $reservation->room_id,
+            'request_type' => $validated['name'],
+            'description' => $validated['notes'] ?? $validated['name'],
+            'department' => 'Billing',
+            'status' => 'Completed',
+            'quantity' => (int) $validated['quantity'],
+            'unit_price' => $unitPrice,
+            'subtotal' => round((int) $validated['quantity'] * $unitPrice, 2),
+            'is_billable' => true,
+            'billing_status' => $charge?->billing_status ?? 'pending',
+            'reservation_type' => RoomReservation::class,
+            'reservation_key' => $reservation->id,
+            'charge_type' => $validated['charge_type'],
+            'source' => $validated['source'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+            'source_guest_request_id' => $validated['charge_type'] === 'custom'
+                ? ($sourceGuestRequest?->id ?? $charge?->source_guest_request_id)
+                : null,
+            'dining_menu_id' => $menu?->id,
+            'facility_id' => $facility?->id,
+            'submitted_at' => $charge?->submitted_at ?? now(),
+            'completed_at' => $charge?->completed_at ?? now(),
+        ];
+
+        if ($charge) {
+            $charge->update($attributes);
+            return $charge->fresh(['diningMenu', 'facility', 'sourceGuestRequest']);
+        }
+
+        return GuestRequest::create($attributes)->load(['diningMenu', 'facility', 'sourceGuestRequest']);
+    }
+
+    private function formatRoomReservationCharge(GuestRequest $charge): array
+    {
+        return [
+            'id' => $charge->id,
+            'charge_type' => $charge->charge_type ?: 'custom',
+            'name' => $charge->request_type,
+            'quantity' => (int) ($charge->quantity ?? 1),
+            'unit_price' => (float) $charge->unit_price,
+            'total' => round((float) $charge->unit_price * max((int) ($charge->quantity ?? 1), 1), 2),
+            'source' => $charge->source ?: ($charge->preferred_time ?: '-'),
+            'notes' => $charge->notes ?: $charge->description,
+            'source_guest_request_id' => $charge->source_guest_request_id,
+            'dining_menu_id' => $charge->dining_menu_id,
+            'facility_id' => $charge->facility_id,
+        ];
     }
 
     public function roomExtensionOptions(Request $request, $id)

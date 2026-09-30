@@ -252,6 +252,15 @@
     .event-reservation-field-copy input { width:110px; max-width:100%; min-height:28px; padding:4px 7px; border:1px solid #e4d9d6; border-radius:5px; color:#4a3034; background:#fff; font-size:11px; }
     .event-reservation-field-chevron { color:#a99b9c; font-size:11px; }
     .event-reservation-field[aria-disabled="true"] { cursor:default; }
+    .event-reservation-field-readonly { cursor:default; }
+    .event-reservation-field:disabled { cursor:not-allowed; opacity:.68; }
+    .event-reservation-addon-options { display:grid; gap:7px; padding:9px 0 10px 42px; border-bottom:1px solid #eee8e5; }
+    .event-reservation-addon-option { display:flex; align-items:center; gap:9px; padding:8px 9px; border:1px solid #eee8e5; border-radius:7px; background:#fff; cursor:pointer; }
+    .event-reservation-addon-option input { accent-color:#a91427; }
+    .event-reservation-addon-copy { display:grid; flex:1; gap:2px; }
+    .event-reservation-addon-copy span { color:#594649; font-size:10px; font-weight:700; }
+    .event-reservation-addon-copy small { color:#887a7b; font-size:9px; line-height:1.35; }
+    .event-reservation-addon-option > strong { color:#96232e; font-size:10px; }
     .event-reservation-total { display:flex; justify-content:space-between; align-items:center; margin:5px 0 15px; padding:15px 0 0; border-top:1px solid #e9dfdc; color:#402329; font-size:13px; font-weight:700; }
     .event-reservation-total strong { color:#96232e; font-size:17px; }
     .event-reservation-actions { display:grid; gap:8px; }
@@ -729,19 +738,23 @@
                                 <p>{{ $facility->description ?: 'Premium guest add-on for your stay.' }}</p>
                                 <p class="text-muted">{{ $facility->location ? 'Location: ' . $facility->location : 'Location: —' }}</p>
                                 <p class="text-muted">₱{{ number_format($facility->price, 0) }} / {{ strtolower(str_replace('Per ', '', $facility->pricing_basis ?? 'Stay')) }}</p>
-                                @if(($facility->capacity ?? null) || ($facility->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
+                                @if(($facility->capacity ?? null) || ($facility->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule' || strtolower($facility->pricing_basis ?? '') === 'per hour')
                                     <div class="facility-options">
                                         @if($facility->capacity)
-                                            <label class="field-label" for="facilityQuantity-{{ $facility->id }}">{{ ($facility->pricing_basis ?? '') === 'Per Vehicle' ? 'Number of Vehicles' : 'Quantity' }}</label>
+                                            <label class="field-label" for="facilityQuantity-{{ $facility->id }}">{{ strtolower($facility->pricing_basis ?? '') === 'per vehicle' ? 'Number of Vehicles' : (strtolower($facility->pricing_basis ?? '') === 'per person' ? 'Number of People' : 'Quantity') }}</label>
                                             <select id="facilityQuantity-{{ $facility->id }}" class="field-input facility-quantity" max="{{ $facility->capacity }}">
                                                 @for($quantity = 1; $quantity <= $facility->capacity; $quantity++)<option value="{{ $quantity }}">{{ $quantity }}</option>@endfor
                                             </select>
+                                        @endif
+                                        @if(strtolower($facility->pricing_basis ?? '') === 'per hour')
+                                            <label class="field-label" for="facilityDuration-{{ $facility->id }}">Duration (hours)</label>
+                                            <input id="facilityDuration-{{ $facility->id }}" class="field-input facility-duration" type="number" min="1" max="24" value="1">
                                         @endif
                                         @if(($facility->scheduling_requirement ?? 'No Additional Schedule') !== 'No Additional Schedule')
                                             <label class="field-label" for="facilityDate-{{ $facility->id }}">Date</label>
                                             <input id="facilityDate-{{ $facility->id }}" class="field-input facility-date" type="date">
                                         @endif
-                                        @if(($facility->scheduling_requirement ?? '') === 'Date & Time Required')
+                                        @if(($facility->scheduling_requirement ?? '') === 'Date & Time Required' || strtolower($facility->pricing_basis ?? '') === 'per hour')
                                             <label class="field-label" for="facilityTime-{{ $facility->id }}">Time</label>
                                             <input id="facilityTime-{{ $facility->id }}" class="field-input facility-time" type="time">
                                         @endif
@@ -769,7 +782,7 @@
                 <p class="event-empty-state" hidden>No packages are currently available in this category.</p>
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
-                        <article class="reservation-card event-package-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-location="{{ $event->location ?? '' }}" data-capacity="{{ $event->capacity }}" data-available-from="{{ $event->available_from ?: '08:00' }}" data-available-to="{{ $event->available_to ?: '22:00' }}" data-duration-hours="{{ $event->duration_hours ?: 4 }}">
+                        <article class="reservation-card event-package-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-location="{{ $event->location ?? '' }}" data-optional-addons="{{ json_encode($event->optional_addons ?? []) }}" data-capacity="{{ $event->capacity }}" data-available-from="{{ $event->available_from ?: '08:00' }}" data-available-to="{{ $event->available_to ?: '22:00' }}" data-duration-hours="{{ $event->duration_hours ?: 4 }}">
                             @if($event->image)
                                 <img src="{{ asset('storage/' . ltrim($event->image, '/')) }}" alt="{{ $event->name }}">
                             @endif
@@ -996,11 +1009,10 @@
                     <span class="event-reservation-field-copy"><strong>Start Time</strong><span id="eventReservationStartTime">Select time</span></span>
                     <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
                 </button>
-                <button type="button" class="event-reservation-field" data-event-popup-field="endTime">
+                <div class="event-reservation-field event-reservation-field-readonly" aria-readonly="true">
                     <span class="event-reservation-field-icon"><i class="far fa-clock" aria-hidden="true"></i></span>
-                    <span class="event-reservation-field-copy"><strong>End Time</strong><span id="eventReservationEndTime">Select time</span></span>
-                    <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
-                </button>
+                    <span class="event-reservation-field-copy"><strong>End Time</strong><span id="eventReservationEndTime">Select start time first</span></span>
+                </div>
                 <div class="event-reservation-field">
                     <span class="event-reservation-field-icon"><i class="fas fa-users" aria-hidden="true"></i></span>
                     <label class="event-reservation-field-copy" for="eventReservationGuestsInput"><strong>Number of Guests</strong><input id="eventReservationGuestsInput" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
@@ -1011,11 +1023,12 @@
                     <span class="event-reservation-field-copy"><strong>Venue</strong><span id="eventReservationVenue">Default venue</span></span>
                     <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
                 </div>
-                <div class="event-reservation-field" aria-disabled="true">
+                <button type="button" class="event-reservation-field" id="eventReservationAddonsToggle" aria-disabled="false" aria-expanded="false" aria-controls="eventReservationAddonOptions">
                     <span class="event-reservation-field-icon"><i class="fas fa-plus" aria-hidden="true"></i></span>
-                    <span class="event-reservation-field-copy"><strong>Add-ons</strong><span>None</span></span>
+                    <span class="event-reservation-field-copy"><strong>Add-ons</strong><span id="eventReservationAddonsValue">Select add-ons</span></span>
                     <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
-                </div>
+                </button>
+                <div class="event-reservation-addon-options" id="eventReservationAddonOptions" hidden></div>
             </div>
             <div class="event-reservation-total"><span>Total</span><strong id="eventReservationTotal">₱0</strong></div>
             <div class="event-reservation-actions">
@@ -1284,7 +1297,10 @@
     <input type="hidden" name="quantity" id="reservationDiningQuantity">
     <input type="hidden" name="facility_id" id="reservationFacilityId">
     <input type="hidden" name="facility_quantity" id="reservationFacilityQuantity">
+    <input type="hidden" name="facility_duration_hours" id="reservationFacilityDuration">
+    <input type="hidden" name="facility_start_time" id="reservationFacilityStartTime">
     <input type="hidden" name="event_id" id="reservationEventId">
+    <input type="hidden" name="event_addons" id="reservationEventAddons" value="[]">
     <input type="hidden" name="event_type" id="reservationEventType">
     <input type="hidden" name="number_of_guests" id="reservationEventGuests">
     <input type="hidden" name="room_number_of_guests" id="reservationRoomGuests">
@@ -1326,10 +1342,14 @@
         const eventReservationPackagePrice = document.getElementById('eventReservationPackagePrice');
         const eventReservationDate = document.getElementById('eventReservationDate');
         const eventReservationStartTime = document.getElementById('eventReservationStartTime');
+        const eventReservationStartTimeField = document.querySelector('[data-event-popup-field="startTime"]');
         const eventReservationEndTime = document.getElementById('eventReservationEndTime');
         const eventReservationGuestsInput = document.getElementById('eventReservationGuestsInput');
         const eventReservationVenue = document.getElementById('eventReservationVenue');
         const eventReservationTotal = document.getElementById('eventReservationTotal');
+        const eventReservationAddonsToggle = document.getElementById('eventReservationAddonsToggle');
+        const eventReservationAddonsValue = document.getElementById('eventReservationAddonsValue');
+        const eventReservationAddonOptions = document.getElementById('eventReservationAddonOptions');
         const reservationForm = document.getElementById('reservationForm');
         const reservationRoomId = document.getElementById('reservationRoomId');
         const reservationCheckIn = document.getElementById('reservationCheckIn');
@@ -1351,7 +1371,10 @@
         const reservationDiningQuantity = document.getElementById('reservationDiningQuantity');
         const reservationFacilityId = document.getElementById('reservationFacilityId');
         const reservationFacilityQuantity = document.getElementById('reservationFacilityQuantity');
+        const reservationFacilityDuration = document.getElementById('reservationFacilityDuration');
+        const reservationFacilityStartTime = document.getElementById('reservationFacilityStartTime');
         const reservationEventId = document.getElementById('reservationEventId');
+        const reservationEventAddons = document.getElementById('reservationEventAddons');
         const reservationEventType = document.getElementById('reservationEventType');
         const reservationEventGuests = document.getElementById('reservationEventGuests');
         const reservationAdultGuests = document.getElementById('reservationAdultGuests');
@@ -1544,14 +1567,23 @@
         const getFacilityCharge = (facility) => {
             const price = Number(facility.price || 0);
             const pricingBasis = String(facility.pricingBasis || '').trim().toLowerCase();
-            const vehicleCharge = price * Math.max(1, Number(facility.quantity) || 1);
+            const quantity = Math.max(1, Number(facility.quantity) || 1);
+            const vehicleCharge = price * quantity;
 
             if (pricingBasis === 'per stay + per vehicle') {
                 return (price * getStayNights()) + vehicleCharge;
             }
 
-            if (pricingBasis === 'per vehicle') {
+            if (pricingBasis === 'per vehicle' || pricingBasis === 'per person') {
                 return vehicleCharge;
+            }
+
+            if (pricingBasis === 'per hour') {
+                return price * Math.max(1, Number(facility.durationHours) || 1);
+            }
+
+            if (pricingBasis === 'per day') {
+                return price * Math.max(getStayNights(), Math.ceil(Math.max(1, Number(facility.durationHours) || 1) / 24));
             }
 
             return price;
@@ -1559,16 +1591,25 @@
         const getEventCharge = (event) => {
             const price = Number(event.price || 0);
             const pricingBasis = String(event.pricingBasis || '').toLowerCase();
+            let packageCharge = price;
 
             if (pricingBasis === 'per person') {
-                return price * Math.max(1, Number(event.guests) || 1);
+                packageCharge = price * Math.max(1, Number(event.guests) || 1);
+            } else if (pricingBasis === 'per hour') {
+                packageCharge = price * Math.max(1, Number(event.durationHours) || 1);
             }
 
-            if (pricingBasis === 'per hour') {
-                return price * Math.max(1, Number(event.durationHours) || 1);
+            const addonsCharge = (event.addons || []).reduce((sum, addon) => sum + Number(addon.price || 0), 0);
+            return packageCharge + addonsCharge;
+        };
+        const getAvailableEventAddons = (card) => {
+            try {
+                return JSON.parse(card.dataset.optionalAddons || '[]')
+                    .map((addon, index) => ({ ...addon, index }))
+                    .filter(addon => addon.available === true || addon.available === 1 || addon.available === '1');
+            } catch (error) {
+                return [];
             }
-
-            return price;
         };
         const getSelectedEventCount = () => selectedEvent.length;
         const getSelectedDiningCount = () => selectedDining.length;
@@ -1745,7 +1786,7 @@
             const stayNights = getStayNights();
             const roomTotal = roomPrice * stayNights;
             const extraGuestsTotal = ((selectedAdults * selectedAdultPrice) + (selectedKids * selectedKidPrice)) * stayNights;
-            const selectedEventTitles = selectedEvent.map(item => item.title).join(', ');
+            const selectedEventTitles = selectedEvent.map(item => `${item.title}${item.addons?.length ? ` (Add-ons: ${item.addons.map(addon => addon.name).join(', ')})` : ''}`).join(', ');
             const selectedDiningTitles = getDiningSelectionPreview(selectedDining);
             const selectedDiningSchedule = [...new Set(selectedDining.map(item => item.schedule).filter(Boolean))].join(', ');
             const selectedDiningTable = [...new Set(selectedDining.map(item => item.table).filter(Boolean))].join(', ');
@@ -1756,8 +1797,9 @@
             const selectedEventDate = selectedEvent[0]?.date || '';
             const selectedEventStartTime = selectedEvent[0]?.startTime || '';
             const selectedEventEndTime = selectedEvent[0]?.endTime || '';
+            const selectedEventEndDate = selectedEvent[0]?.endDate || selectedEventDate;
             const bookingDate = selectedRoom ? checkIn.value : (selectedEventDate || selectedDiningDateValue);
-            const bookingEndDate = selectedRoom ? checkOut.value : (selectedEventDate || selectedDiningDateValue);
+            const bookingEndDate = selectedRoom ? checkOut.value : (selectedEventEndDate || selectedDiningDateValue);
             const bookingStartTime = selectedRoom ? (arrivalTime.value || '') : selectedEventStartTime;
             const bookingEndTime = selectedRoom ? '' : selectedEventEndTime;
 
@@ -1856,7 +1898,7 @@
                 : 'No facilities selected';
             confirmEventTitle.textContent = selectedEvent.length ? selectedEvent.map(item => item.title).join(', ') : 'None';
             confirmEventDining.textContent = selectedEvent.length
-                ? selectedEvent.map(item => `${item.type || 'Event'} • ${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}`).join(', ')
+                ? selectedEvent.map(item => `${item.type || 'Event'} • ${item.guests} guests${item.date ? ` • ${formatDisplayDate(item.date)}` : ''}${item.startTime ? ` • ${formatDisplayTime(item.startTime)} - ${formatDisplayTime(item.endTime)}` : ''}${item.addons?.length ? ` • Add-ons: ${item.addons.map(addon => `${addon.name} (${formatCurrencyValue(addon.price)})`).join(', ')}` : ''}`).join(', ')
                 : 'No event selected';
             confirmDiningTitle.textContent = selectedDining.length
                 ? getDiningSelectionPreview(selectedDining)
@@ -1903,7 +1945,13 @@
             reservationDiningQuantity.value = selectedDiningQuantity || '';
             reservationFacilityId.value = selectedFacilities.map(item => item.id).filter(Boolean).join(',');
             reservationFacilityQuantity.value = selectedFacilities[0]?.quantity || '';
+            reservationFacilityDuration.value = selectedFacilities.find(item => String(item.pricingBasis || '').toLowerCase() === 'per hour')?.durationHours || '';
+            reservationFacilityStartTime.value = selectedFacilities[0]?.time || '';
             reservationEventId.value = selectedEvent.map(item => item.id).filter(Boolean).join(',');
+            reservationEventAddons.value = JSON.stringify(selectedEvent.map(item => ({
+                event_id: item.id,
+                addon_indexes: (item.addons || []).map(addon => addon.index),
+            })));
             reservationEventType.value = selectedEvent.map(item => item.type).filter(Boolean).join(',');
             reservationEventGuests.value = selectedEvent.length
                 ? (selectedEventGuests || '')
@@ -2024,6 +2072,63 @@
             eventReservationModal.setAttribute('aria-hidden', 'true');
         }
 
+        function renderEventReservationAddons(selectedPackage) {
+            const availableAddons = selectedPackage.availableAddons || [];
+            const panelIsOpen = eventReservationAddonsToggle.getAttribute('aria-expanded') === 'true';
+            eventReservationAddonOptions.replaceChildren();
+            eventReservationAddonOptions.hidden = !panelIsOpen;
+            eventReservationAddonsToggle.disabled = false;
+            eventReservationAddonsToggle.setAttribute('aria-disabled', 'false');
+            eventReservationAddonsToggle.setAttribute('aria-expanded', String(panelIsOpen));
+            if (availableAddons.length === 0) {
+                eventReservationAddonsValue.textContent = 'No add-ons available';
+                const emptyState = document.createElement('p');
+                emptyState.className = 'm-0 px-2 py-1 text-xs text-gray-500';
+                emptyState.textContent = 'No add-ons available';
+                eventReservationAddonOptions.append(emptyState);
+                return;
+            }
+
+            const selectedAddons = selectedPackage.addons || [];
+            eventReservationAddonsValue.textContent = selectedAddons.length
+                ? selectedAddons.map(addon => `${addon.name} ${formatCurrencyValue(addon.price)}`).join(', ')
+                : 'Select add-ons';
+            availableAddons.forEach(addon => {
+                const option = document.createElement('label');
+                option.className = 'event-reservation-addon-option';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = selectedAddons.some(selected => Number(selected.index) === addon.index);
+                const copy = document.createElement('span');
+                copy.className = 'event-reservation-addon-copy';
+                const name = document.createElement('span');
+                name.textContent = addon.name;
+                copy.append(name);
+                if (addon.description) {
+                    const description = document.createElement('small');
+                    description.textContent = addon.description;
+                    copy.append(description);
+                }
+                const price = document.createElement('strong');
+                price.textContent = formatCurrencyValue(addon.price);
+                checkbox.addEventListener('change', () => {
+                    selectedPackage.addons = selectedPackage.addons || [];
+                    if (checkbox.checked) {
+                        selectedPackage.addons.push({
+                            index: addon.index,
+                            name: addon.name,
+                            price: Number(addon.price || 0),
+                        });
+                    } else {
+                        selectedPackage.addons = selectedPackage.addons.filter(selected => Number(selected.index) !== addon.index);
+                    }
+                    updateSummary();
+                });
+                option.append(checkbox, copy, price);
+                eventReservationAddonOptions.append(option);
+            });
+        }
+
         function updateEventReservationPopup() {
             const selectedPackage = activeEventCard
                 ? selectedEvent.find(item => item.id === activeEventCard.dataset.eventId)
@@ -2050,17 +2155,24 @@
             const pricingUnit = pricingBasis.replace(/^Per\s+/i, '').toLowerCase();
             eventReservationPackagePrice.textContent = `₱${Number(selectedPackage.price || 0).toLocaleString()} / ${pricingUnit}`;
             eventReservationDate.textContent = selectedPackage.date ? formatDisplayDate(selectedPackage.date) : 'Select date';
-            eventReservationStartTime.textContent = selectedPackage.startTime ? formatDisplayTime(selectedPackage.startTime) : 'Select time';
-            eventReservationEndTime.textContent = selectedPackage.endTime ? formatDisplayTime(selectedPackage.endTime) : 'Select time';
+            eventReservationStartTime.textContent = selectedPackage.startTime ? formatDisplayTime(selectedPackage.startTime) : (selectedPackage.date ? 'Select time' : 'Select date first');
+            eventReservationStartTimeField.disabled = !selectedPackage.date;
+            eventReservationStartTimeField.setAttribute('aria-disabled', String(!selectedPackage.date));
+            eventReservationEndTime.textContent = selectedPackage.startTime && selectedPackage.endTime
+                ? formatDisplayTime(selectedPackage.endTime)
+                : 'Select start time first';
             const guestInput = activeEventCard.querySelector('.event-guests');
             eventReservationGuestsInput.value = guestInput?.value || '1';
             eventReservationGuestsInput.max = guestInput?.max || activeEventCard.dataset.capacity || '';
             eventReservationVenue.textContent = activeEventCard.dataset.location || 'Default venue';
+            renderEventReservationAddons(selectedPackage);
             eventReservationTotal.textContent = `₱${calculateTotal().toLocaleString()}`;
         }
 
         function openEventReservationPopup(card) {
             activeEventCard = card;
+            eventReservationAddonOptions.hidden = true;
+            eventReservationAddonsToggle.setAttribute('aria-expanded', 'false');
             updateEventReservationPopup();
             eventReservationModal.classList.add('is-open');
             eventReservationModal.setAttribute('aria-hidden', 'false');
@@ -2073,13 +2185,19 @@
                 return;
             }
 
+            const addonsToggle = event.target.closest('#eventReservationAddonsToggle');
+            if (addonsToggle) {
+                eventReservationAddonOptions.hidden = !eventReservationAddonOptions.hidden;
+                addonsToggle.setAttribute('aria-expanded', String(!eventReservationAddonOptions.hidden));
+                return;
+            }
+
             const field = event.target.closest('[data-event-popup-field]');
             if (!field || !activeEventCard) return;
 
             const inputSelector = {
                 date: '.event-date',
                 startTime: '.event-start-time',
-                endTime: '.event-start-time',
             }[field.dataset.eventPopupField];
             const input = inputSelector ? activeEventCard.querySelector(inputSelector) : null;
             if (!input) return;
@@ -2326,7 +2444,7 @@
 
         syncDiningTableAvailability();
 
-        document.querySelectorAll('.facility-quantity, .facility-date, .facility-time').forEach(input => {
+        document.querySelectorAll('.facility-quantity, .facility-date, .facility-time, .facility-duration').forEach(input => {
             input.addEventListener('change', function () {
                 const card = this.closest('.reservation-card');
                 const facility = selectedFacilities.find(item => item.id === card.dataset.facilityId);
@@ -2334,6 +2452,7 @@
                     facility.quantity = Number(card.querySelector('.facility-quantity')?.value || 1);
                     facility.date = card.querySelector('.facility-date')?.value || '';
                     facility.time = card.querySelector('.facility-time')?.value || '';
+                    facility.durationHours = Number(card.querySelector('.facility-duration')?.value || 1);
                     updateSummary();
                 }
             });
@@ -2341,32 +2460,27 @@
 
         const updateEventEndTime = (card) => {
             const startTime = card.querySelector('.event-start-time')?.value || '';
+            const eventDate = card.querySelector('.event-date')?.value || '';
             const durationInput = card.querySelector('.event-duration');
-            const pricingBasis = String(card.dataset.pricingBasis || '').toLowerCase();
             const configuredDuration = Math.max(1, Number(card.dataset.durationHours || 4));
-            const durationHours = pricingBasis === 'per person'
-                ? configuredDuration
-                : Math.max(1, Math.min(configuredDuration, Number(durationInput?.value || 1)));
-            const endTimeInput = card.querySelector('.event-end-time');
-            if (!endTimeInput) {
-                return '';
-            }
-
             if (durationInput) {
-                durationInput.value = durationHours;
+                durationInput.value = configuredDuration;
+                durationInput.readOnly = true;
             }
 
-            if (!startTime) {
-                endTimeInput.value = '';
-                return '';
+            if (!startTime || !eventDate) {
+                return { time: '', date: '' };
             }
 
             const [hours, minutes] = startTime.split(':').map(Number);
-            const endMinutes = (hours * 60) + minutes + (durationHours * 60);
-            const normalizedMinutes = endMinutes % (24 * 60);
-            const endTime = `${String(Math.floor(normalizedMinutes / 60)).padStart(2, '0')}:${String(normalizedMinutes % 60).padStart(2, '0')}`;
-            endTimeInput.value = endTime;
-            return endTime;
+            const totalMinutes = (hours * 60) + minutes + (configuredDuration * 60);
+            const dayOffset = Math.floor(totalMinutes / (24 * 60));
+            const endMinutes = totalMinutes % (24 * 60);
+            const endDate = new Date(`${eventDate}T00:00:00Z`);
+            endDate.setUTCDate(endDate.getUTCDate() + dayOffset);
+            const endDateValue = endDate.toISOString().slice(0, 10);
+            const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+            return { time: endTime, date: endDateValue };
         };
 
         const configureEventTimeOptions = (card) => {
@@ -2376,18 +2490,15 @@
 
             const fromMinutes = Number(card.dataset.availableFrom.slice(0, 2)) * 60 + Number(card.dataset.availableFrom.slice(3, 5));
             const toMinutes = Number(card.dataset.availableTo.slice(0, 2)) * 60 + Number(card.dataset.availableTo.slice(3, 5));
-            const pricingBasis = String(card.dataset.pricingBasis || '').toLowerCase();
             const configuredDuration = Math.max(1, Number(card.dataset.durationHours || 4));
-            const durationHours = pricingBasis === 'per person'
-                ? configuredDuration
-                : Math.max(1, Math.min(configuredDuration, Number(durationInput.value || 1)));
-
+            const durationHours = configuredDuration;
             durationInput.max = String(configuredDuration);
             durationInput.value = durationHours;
+            durationInput.readOnly = true;
             startInput.querySelectorAll('option[value]').forEach(option => {
                 const [hours, minutes] = option.value.split(':').map(Number);
                 const startMinutes = hours * 60 + minutes;
-                option.disabled = startMinutes < fromMinutes || startMinutes + (durationHours * 60) > toMinutes;
+                option.disabled = startMinutes < fromMinutes || startMinutes > toMinutes;
             });
             if (startInput.selectedOptions[0]?.disabled) {
                 startInput.value = '';
@@ -2398,14 +2509,18 @@
             input.addEventListener('change', function () {
                 const card = this.closest('.reservation-card');
                 const eventItem = selectedEvent.find(item => item.id === card.dataset.eventId);
+                if (this.matches('.event-date') && !this.value) {
+                    card.querySelector('.event-start-time').value = '';
+                }
                 configureEventTimeOptions(card);
                 const endTime = updateEventEndTime(card);
                 if (eventItem) {
                     eventItem.guests = normalizeEventGuestCount(card.querySelector('.event-guests'), card);
                     eventItem.date = card.querySelector('.event-date')?.value || '';
                     eventItem.startTime = card.querySelector('.event-start-time')?.value || '';
-                    eventItem.endTime = endTime;
-                    eventItem.durationHours = Number(card.querySelector('.event-duration')?.value || 1);
+                    eventItem.endTime = endTime.time;
+                    eventItem.endDate = endTime.date;
+                    eventItem.durationHours = Math.max(1, Number(card.dataset.durationHours || 4));
                     updateSummary();
                 }
             });
@@ -2503,6 +2618,7 @@
                             price,
                             pricingBasis: card.dataset.pricingBasis || 'Per Stay',
                             quantity,
+                            durationHours: Number(card.querySelector('.facility-duration')?.value || 1),
                             date: card.querySelector('.facility-date')?.value || '',
                             time: card.querySelector('.facility-time')?.value || '',
                         });
@@ -2525,8 +2641,11 @@
                             guests: normalizeEventGuestCount(card.querySelector('.event-guests'), card),
                             date: card.querySelector('.event-date')?.value || '',
                             startTime: card.querySelector('.event-start-time')?.value || '',
-                            endTime: eventEndTime,
-                            durationHours: Number(card.querySelector('.event-duration')?.value || card.dataset.durationHours || 4),
+                            endTime: eventEndTime.time,
+                            endDate: eventEndTime.date,
+                            durationHours: Math.max(1, Number(card.dataset.durationHours || 4)),
+                            availableAddons: getAvailableEventAddons(card),
+                            addons: [],
                         });
                         activeEventCard = card;
                         shouldOpenEventPopup = true;
@@ -2671,9 +2790,14 @@
             }
             if (selectedFacilities.length) {
                 selectedFacilities.forEach(item => {
-                    const quantity = Number(item.quantity || 1);
+                    const pricingBasis = String(item.pricingBasis || '').toLowerCase();
+                    const quantity = pricingBasis === 'per hour'
+                        ? Math.max(1, Number(item.durationHours) || 1)
+                        : pricingBasis === 'per day'
+                            ? Math.max(stayNights, Math.ceil(Math.max(1, Number(item.durationHours) || 1) / 24))
+                            : Number(item.quantity || 1);
                     const unitPrice = Number(item.price || 0);
-                    receiptItems.push([String(quantity), `Facility - ${item.title}`, formatCurrencyValue(unitPrice), formatCurrencyValue(getFacilityCharge(item))]);
+                    receiptItems.push([String(quantity), `Facility - ${item.title} (${item.pricingBasis || 'Per Stay'})`, formatCurrencyValue(unitPrice), formatCurrencyValue(getFacilityCharge(item))]);
                 });
             }
             if (selectedEvent.length) {
@@ -2778,73 +2902,11 @@
             }
         });
 
-        const loadReceiptPdfTools = () => Promise.all([
-            new Promise((resolve, reject) => {
-                if (window.html2canvas) {
-                    resolve();
-                    return;
-                }
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            }),
-            new Promise((resolve, reject) => {
-                if (window.jspdf?.jsPDF) {
-                    resolve();
-                    return;
-                }
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            }),
-        ]);
-
-        const downloadReceiptAsPdf = async () => {
-            const downloadButtonLabel = receiptDownloadBtn.innerHTML;
-            receiptDownloadBtn.disabled = true;
-            receiptDownloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
-            try {
-                await loadReceiptPdfTools();
-                const receiptCard = receiptModal.querySelector('.receipt-card');
-                const printableReceipt = receiptCard.cloneNode(true);
-                printableReceipt.querySelector('.receipt-close')?.remove();
-                printableReceipt.querySelector('.receipt-actions')?.remove();
-                printableReceipt.style.position = 'absolute';
-                printableReceipt.style.left = '-10000px';
-                printableReceipt.style.top = '0';
-                printableReceipt.style.width = `${receiptCard.offsetWidth}px`;
-                printableReceipt.style.maxHeight = 'none';
-                printableReceipt.style.height = 'auto';
-                printableReceipt.style.overflow = 'visible';
-                document.body.appendChild(printableReceipt);
-                const canvas = await window.html2canvas(printableReceipt, { scale: 2, backgroundColor: '#ffffff' });
-                printableReceipt.remove();
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                const margin = 6;
-                const maxWidth = pageWidth - (margin * 2);
-                const maxHeight = pageHeight - (margin * 2);
-                const scale = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
-                const imageWidth = canvas.width * scale;
-                const imageHeight = canvas.height * scale;
-                const imageX = (pageWidth - imageWidth) / 2;
-                const imageY = (pageHeight - imageHeight) / 2;
-                const imageData = canvas.toDataURL('image/jpeg', 0.95);
-                pdf.addImage(imageData, 'JPEG', imageX, imageY, imageWidth, imageHeight);
-                pdf.save(`${confirmReservationId.textContent || 'reservation'}-receipt.pdf`);
-            } catch (error) {
-                alert('The receipt PDF could not be downloaded. Please try again.');
-            } finally {
-                receiptDownloadBtn.disabled = false;
-                receiptDownloadBtn.innerHTML = downloadButtonLabel;
-            }
-        };
+        const downloadReceiptAsPdf = () => window.downloadReceiptPdf(
+            receiptModal.querySelector('.receipt-card'),
+            `${confirmReservationId.textContent || 'reservation'}-receipt.pdf`,
+            receiptDownloadBtn
+        );
 
         const validateBeforeSubmit = () => {
             if (!detailsTerms.checked) {
@@ -2897,28 +2959,31 @@
                 minimumEventDate.setHours(0, 0, 0, 0);
                 minimumEventDate.setDate(minimumEventDate.getDate() + 1);
                 const selectedEventDateValue = new Date(`${eventSelection.date}T00:00:00`);
-                const eventDuration = timeToMinutes(eventSelection.endTime) - timeToMinutes(eventSelection.startTime);
                 const configuredDuration = Math.max(1, Number(eventCard?.dataset.durationHours || eventSelection.durationHours || 4));
                 const pricingBasis = String(eventCard?.dataset.pricingBasis || eventSelection.pricingBasis || '').toLowerCase();
                 const availableFrom = eventCard?.dataset.availableFrom || '';
                 const availableTo = eventCard?.dataset.availableTo || '';
+                const toUtcTimestamp = (date, time) => {
+                    const [year, month, day] = date.split('-').map(Number);
+                    const [hours, minutes] = time.split(':').map(Number);
+                    return Date.UTC(year, month - 1, day, hours, minutes);
+                };
+                const eventEndDate = eventSelection.endDate || eventSelection.date;
+                const eventDuration = (toUtcTimestamp(eventEndDate, eventSelection.endTime) - toUtcTimestamp(eventSelection.date, eventSelection.startTime)) / 60000;
 
                 if (selectedEventDateValue < minimumEventDate) {
                     return 'Event reservations must be booked at least 1 day in advance. Same-day bookings are not allowed.';
                 }
-                if (eventDuration <= 0) {
+                if (eventDuration <= 0 || !Number.isFinite(eventDuration)) {
                     return 'The event end time must be after the start time.';
                 }
-                if (pricingBasis === 'per person' && eventDuration !== configuredDuration * 60) {
+                if (eventDuration !== configuredDuration * 60) {
                     return `This event uses a fixed duration of ${configuredDuration} hours. Please choose a different start time.`;
-                }
-                if (pricingBasis === 'per hour' && eventDuration > configuredDuration * 60) {
-                    return `This event allows a maximum duration of ${configuredDuration} hours.`;
                 }
                 if (availableFrom && timeToMinutes(eventSelection.startTime) < timeToMinutes(availableFrom)) {
                     return `The event cannot start before ${formatDisplayTime(availableFrom)}.`;
                 }
-                if (availableTo && timeToMinutes(eventSelection.endTime) > timeToMinutes(availableTo)) {
+                if (availableTo && eventEndDate === eventSelection.date && timeToMinutes(eventSelection.endTime) > timeToMinutes(availableTo)) {
                     return `The event must end by ${formatDisplayTime(availableTo)}.`;
                 }
             }

@@ -494,7 +494,7 @@ class HousekeepingController extends Controller
     public function markGuestRequestDelivered(Request $request, $id)
     {
         $guestRequest = GuestRequest::findOrFail($id);
-        $groupQuery = GuestRequest::where('department', 'Housekeeping')
+        $groupQuery = GuestRequest::where('department', $guestRequest->department)
             ->where('room_id', $guestRequest->room_id);
 
         if ($guestRequest->submitted_at) {

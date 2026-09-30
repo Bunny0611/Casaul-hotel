@@ -374,7 +374,13 @@
                                         collect([$facility]),
                                         (int) ($reservation->facility_quantity ?? $reservation->quantity ?? 1),
                                         $reservation->check_in,
-                                        $reservation->check_out
+                                        $reservation->check_out,
+                                        \App\Support\ReservationPricing::facilityDurationHours(
+                                            $reservation->check_in,
+                                            $reservation->facility_start_time ?? $reservation->check_in_time,
+                                            $reservation->check_out,
+                                            $reservation->facility_end_time ?? $reservation->check_out_time
+                                        )
                                     );
                                     $reservationReceiptLines[] = [
                                         'quantity' => 1,
@@ -651,7 +657,13 @@
         };
     }
 
-    document.getElementById('guest-receipt-download-btn')?.addEventListener('click', printGuestReceipt);
+    function downloadGuestReceiptAsPdf() {
+        const receipt = document.querySelector('#guest-receipt-modal .receipt-card');
+        const receiptNumber = document.getElementById('guest-receipt-number').textContent || 'reservation';
+        window.downloadReceiptPdf(receipt, `${receiptNumber}-receipt.pdf`, document.getElementById('guest-receipt-download-btn'));
+    }
+
+    document.getElementById('guest-receipt-download-btn')?.addEventListener('click', downloadGuestReceiptAsPdf);
     document.getElementById('guest-receipt-print-btn')?.addEventListener('click', printGuestReceipt);
 </script>
 
