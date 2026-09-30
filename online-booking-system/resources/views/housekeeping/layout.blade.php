@@ -187,6 +187,7 @@
         .housekeeping-header-title { grid-column: 1; min-width: 0; }
         .housekeeping-header-search { grid-column: 2; width: 16rem; }
         .housekeeping-profile-wrapper { grid-column: 3; }
+        .header .housekeeping-profile-wrapper .profile-dropdown-arrow { font-size: 0.7rem; }
 
         .housekeeping-profile-menu {
             position: absolute;
@@ -411,7 +412,7 @@
                         <button id="housekeepingProfileToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="housekeepingProfileMenu" class="housekeeping-profile-trigger flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30">
                             <i class="fas fa-user-circle text-2xl"></i>
                             <span class="font-medium">Housekeeping</span>
-                            <i class="fas fa-chevron-down text-xs" aria-hidden="true"></i>
+                            <i class="fas fa-chevron-down profile-dropdown-arrow" aria-hidden="true"></i>
                         </button>
                         <div id="housekeepingProfileMenu" class="housekeeping-profile-menu" role="menu" hidden>
                             <form method="POST" action="{{ route('logout') }}">

@@ -94,6 +94,19 @@
             white-space: nowrap;
         }
 
+        .employee-header-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 0.75rem 1rem;
+            width: 100%;
+        }
+
+        .employee-header-title { grid-column: 1; min-width: 0; }
+        .employee-header-search { grid-column: 2; width: 16rem; max-width: 16rem; }
+        .employee-header-profile { grid-column: 3; }
+        .employee-profile-wrapper .profile-dropdown-arrow { font-size: 0.7rem; }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: min(18rem, 100%);
@@ -166,8 +179,35 @@
             .header .profile-box > i { font-size: 1.25rem; }
 
             .header .profile-box span {
-                display: none;
+                display: inline;
+                max-width: 5rem;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-size: 0.75rem;
             }
+
+            .employee-header-layout { grid-template-columns: minmax(0, 1fr) auto; }
+            .employee-header-title { grid-column: 1; }
+            .employee-header-search {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                width: 100%;
+                max-width: none;
+                flex: none;
+            }
+            .header .employee-header-search input {
+                display: block;
+                opacity: 1;
+                visibility: visible;
+                width: 100%;
+                padding: 0.55rem 0.9rem;
+                border: 1px solid rgba(255,255,255,0.2);
+                border-radius: 0.5rem;
+                box-sizing: border-box;
+            }
+            .employee-header-profile { grid-column: 2; grid-row: 1; }
+            .header-left h2 { font-size: 0.95rem; }
 
             .nav-item span {
                 white-space: normal;
@@ -223,6 +263,42 @@
         .status-completed { background: #3b82f6; color: #fff; }
         .status-cleaning { background: #8b5cf6; color: #fff; }
         .status-dirty { background: #64748b; color: #fff; }
+
+        .employee-profile-wrapper { position: relative; }
+        .employee-profile-menu {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            z-index: 60;
+            width: 100%;
+            min-width: 0;
+            padding: 0;
+            box-sizing: border-box;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: #fff;
+            color: #111827;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+        }
+
+        .employee-profile-menu button {
+            display: flex;
+            width: 100%;
+            min-height: 38px;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.4375rem 0.75rem;
+            border: 0;
+            border-radius: 0.35rem;
+            background: transparent;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .employee-profile-menu button:hover,
+        .employee-profile-menu button:focus-visible { background: #f3f4f6; }
+        .employee-profile-menu[hidden] { display: none; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -268,39 +344,39 @@
                 </a>
             </nav>
 
-            <div class="mt-auto px-6 pb-6 pt-8">
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="flex w-full items-center px-5 py-3 text-gray-300 transition-colors hover:text-white">
-                        <i class="fas fa-sign-out-alt w-6"></i>
-                        <span>Logout</span>
-                    </button>
-                </form>
-            </div>
         </aside>
 
         <div id="sidebarBackdrop" class="fixed inset-0 z-40 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
 
         <div class="flex-1 flex flex-col overflow-hidden md:ml-0">
             <header class="header text-white px-6 py-4 flex items-center justify-between shadow-lg">
-                <div class="header-left">
-                    <button id="sidebarToggle" class="md:hidden rounded-lg bg-white/20 p-2 transition-colors hover:bg-white/30">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="min-w-0">
-                        <h2 class="text-xl font-semibold text-white truncate">@yield('pageTitle', 'Welcome to CASAUL Hotel Management')</h2>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <div class="search-wrapper relative">
-                        <button type="button" class="mobile-search-button" id="mobileSearchToggle">
-                            <i class="fas fa-search"></i>
+                <div class="employee-header-layout">
+                    <div class="header-left employee-header-title">
+                        <button id="sidebarToggle" class="md:hidden rounded-lg bg-white/20 p-2 transition-colors hover:bg-white/30">
+                            <i class="fas fa-bars"></i>
                         </button>
+                        <div class="min-w-0">
+                            <h2 class="text-xl font-semibold text-white truncate">@yield('pageTitle', 'Welcome, Employee!')</h2>
+                        </div>
+                    </div>
+                    <div class="search-wrapper employee-header-search relative">
                         <input id="headerSearchInput" type="text" placeholder="Search..." class="w-full rounded-lg bg-white/20 px-4 py-2 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white/50">
                     </div>
-                    <div class="profile-box flex items-center rounded-lg bg-white/20 px-4 py-2 text-white">
-                        <i class="fas fa-user-circle text-2xl"></i>
-                        <span class="font-medium">Employee</span>
+                    <div class="employee-profile-wrapper employee-header-profile">
+                        <button id="employeeProfileToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="employeeProfileMenu" class="profile-box flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30">
+                            <i class="fas fa-user-circle text-2xl"></i>
+                            <span class="font-medium">Employee</span>
+                            <i class="fas fa-chevron-down profile-dropdown-arrow" aria-hidden="true"></i>
+                        </button>
+                        <div id="employeeProfileMenu" class="employee-profile-menu" role="menu" hidden>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" role="menuitem">
+                                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -344,25 +420,32 @@
                 backdrop.addEventListener('click', closeSidebar);
             }
 
-            const mobileSearchToggle = document.getElementById('mobileSearchToggle');
-            const searchWrapper = document.querySelector('.search-wrapper');
-            const searchInput = document.getElementById('headerSearchInput');
+            const profileToggle = document.getElementById('employeeProfileToggle');
+            const profileMenu = document.getElementById('employeeProfileMenu');
 
-            if (mobileSearchToggle && searchWrapper && searchInput) {
-                mobileSearchToggle.addEventListener('click', function () {
-                    searchWrapper.classList.toggle('active');
-                    if (searchWrapper.classList.contains('active')) {
-                        searchInput.style.display = 'block';
-                        searchInput.style.visibility = 'visible';
-                        searchInput.style.width = '100%';
-                        searchInput.focus();
-                    } else {
-                        searchInput.style.display = '';
-                        searchInput.style.visibility = '';
-                        searchInput.style.width = '';
+            if (profileToggle && profileMenu) {
+                function closeProfileMenu() {
+                    profileMenu.hidden = true;
+                    profileToggle.setAttribute('aria-expanded', 'false');
+                }
+
+                profileToggle.addEventListener('click', function () {
+                    profileMenu.hidden = !profileMenu.hidden;
+                    profileToggle.setAttribute('aria-expanded', String(!profileMenu.hidden));
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!profileToggle.parentElement.contains(event.target)) closeProfileMenu();
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape') {
+                        closeProfileMenu();
+                        profileToggle.focus();
                     }
                 });
             }
+
         });
     </script>
 </body>
