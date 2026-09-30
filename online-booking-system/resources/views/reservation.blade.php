@@ -224,7 +224,7 @@
     #events-tab .event-package-features i { margin-top:2px; color:#77869b; font-size:9px; }
     #events-tab .event-options-source { position:fixed; top:50%; left:50%; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none; }
     #events-tab .reservation-card-footer { margin-top:auto; padding-top:4px; }
-    #events-tab .select-option-btn { min-height:34px; border-color:#b51c28; border-radius:7px; color:#a41120; font-size:10px; }
+    #events-tab .select-option-btn { min-height:34px; border-color:#b51c28; border-radius:7px; color:#fff; font-size:10px; }
     #events-tab .event-package-card.is-selected .select-option-btn { border-color:#94151d; color:#fff; background:#94151d; }
     #events-tab .event-empty-state { margin:0; padding:22px 12px; border:1px dashed #d9dde5; border-radius:8px; color:#788398; font-size:11px; text-align:center; }
     .event-reservation-modal { position:fixed; inset:0; z-index:10010; display:none; align-items:center; justify-content:center; padding:24px max(24px, calc((100vw - 1120px) / 2)); background:rgba(25,20,21,.42); }
@@ -1032,7 +1032,7 @@
             </div>
             <div class="event-reservation-total"><span>Total</span><strong id="eventReservationTotal">₱0</strong></div>
             <div class="event-reservation-actions">
-                <button type="button" class="event-reservation-continue" id="eventReservationContinue">Continue to Details <span aria-hidden="true">→</span></button>
+                <button type="button" class="event-reservation-continue" id="eventReservationContinue">Add to Reservation <span aria-hidden="true">→</span></button>
                 <button type="button" class="event-reservation-clear" id="eventReservationClear">Clear All</button>
             </div>
         </section>
@@ -2082,10 +2082,6 @@
             eventReservationAddonsToggle.setAttribute('aria-expanded', String(panelIsOpen));
             if (availableAddons.length === 0) {
                 eventReservationAddonsValue.textContent = 'No add-ons available';
-                const emptyState = document.createElement('p');
-                emptyState.className = 'm-0 px-2 py-1 text-xs text-gray-500';
-                emptyState.textContent = 'No add-ons available';
-                eventReservationAddonOptions.append(emptyState);
                 return;
             }
 
@@ -2180,11 +2176,6 @@
         }
 
         eventReservationModal.addEventListener('click', function (event) {
-            if (event.target === eventReservationModal) {
-                closeEventReservationPopup();
-                return;
-            }
-
             const addonsToggle = event.target.closest('#eventReservationAddonsToggle');
             if (addonsToggle) {
                 eventReservationAddonOptions.hidden = !eventReservationAddonOptions.hidden;
@@ -2201,6 +2192,13 @@
             }[field.dataset.eventPopupField];
             const input = inputSelector ? activeEventCard.querySelector(inputSelector) : null;
             if (!input) return;
+
+            const pickerAnchor = input.closest('.event-options-source');
+            if (pickerAnchor) {
+                const fieldBounds = field.getBoundingClientRect();
+                pickerAnchor.style.left = `${Math.max(8, fieldBounds.right - 220)}px`;
+                pickerAnchor.style.top = `${fieldBounds.top}px`;
+            }
 
             input.focus();
             if (typeof input.showPicker === 'function') {
@@ -2222,16 +2220,10 @@
         document.getElementById('eventReservationClose').addEventListener('click', closeEventReservationPopup);
         document.getElementById('eventReservationContinue').addEventListener('click', function () {
             closeEventReservationPopup();
-            confirmBtn.click();
         });
         document.getElementById('eventReservationClear').addEventListener('click', function () {
             clearBtn.click();
             closeEventReservationPopup();
-        });
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && eventReservationModal.classList.contains('is-open')) {
-                closeEventReservationPopup();
-            }
         });
 
         const syncDiningQuantity = (card, nextValue) => {

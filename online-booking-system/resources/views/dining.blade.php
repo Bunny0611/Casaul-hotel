@@ -15,28 +15,28 @@
 
     $requestedCategory = request()->query('category', 'Breakfast');
     $selectedCategory = collect($categoryMeta)->first(fn ($item) => strtolower($item['key']) === strtolower((string) $requestedCategory), $categoryMeta[0])['key'];
-    $selectedMeals = $menuByCategory[$selectedCategory] ?? collect();
+    $selectedMeals = ($menuByCategory[$selectedCategory] ?? collect())->take(3);
     $selectedMeta = collect($categoryMeta)->first(fn ($item) => $item['key'] === $selectedCategory, $categoryMeta[0]);
 @endphp
 
 <main class="dining-page">
+    <section class="dining-hero" aria-label="CASAUL dining hero section">
+        <div class="dining-hero-copy">
+            <div class="dining-hero-kicker">
+                <span class="dining-hero-kicker-line" aria-hidden="true"></span>
+                <span>CULINARY EXPERIENCES</span>
+            </div>
+            <h1>Dining at Casaul</h1>
+            <p class="dining-hero-subtitle">A taste of comfort, crafted with care.</p>
+            <div class="dining-hero-rule" aria-hidden="true"></div>
+        </div>
+
+        <div class="dining-hero-image">
+            <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&amp;fit=crop&amp;crop=entropy&amp;w=2200&amp;h=500&amp;q=85" alt="Elegant dining table with warm lighting at Casaul Hotel">
+        </div>
+    </section>
+
     <div class="dining-shell">
-        <section class="dining-hero" aria-label="CASAUL dining hero section">
-            <div class="dining-hero-copy">
-                <div class="dining-hero-kicker">
-                    <span class="dining-hero-kicker-line" aria-hidden="true"></span>
-                    <span>CULINARY EXPERIENCES</span>
-                </div>
-                <h1>Dining at Casaul</h1>
-                <p class="dining-hero-subtitle">A taste of comfort, crafted with care.</p>
-                <div class="dining-hero-rule" aria-hidden="true"></div>
-            </div>
-
-            <div class="dining-hero-image">
-                <img src="{{ asset('image/HM.jpg') }}" alt="Elegant dining table with warm lighting at Casaul Hotel">
-            </div>
-        </section>
-
         <section class="dining-intro" aria-label="Dining introduction section">
             <div class="dining-botanical dining-botanical-left" aria-hidden="true"></div>
             <div class="dining-botanical dining-botanical-right" aria-hidden="true"></div>
@@ -167,7 +167,7 @@
                 return;
             }
 
-            items.forEach((meal) => {
+            items.slice(0, 3).forEach((meal) => {
                 const article = document.createElement('article');
                 article.className = 'dining-menu-card';
                 article.dataset.category = categoryName;
@@ -216,7 +216,7 @@
             button.addEventListener('click', function () {
                 const category = this.dataset.diningCategory;
 
-                fetch("{{ secure_url('/dining/menu') }}?category=" + encodeURIComponent(category))
+                fetch("{{ url('/dining/menu') }}?category=" + encodeURIComponent(category))
                     .then((response) => response.ok ? response.json() : Promise.reject())
                     .then((payload) => renderMenuItems(payload.items || [], payload.category || category))
                     .catch(() => {

@@ -3,18 +3,18 @@
 @section('content')
 
 <section class="about-page" id="about-us">
-    <div class="about-shell">
-        <section class="about-hero" aria-label="About Casaul Hotel hero section">
-            <div class="about-hero-copy">
-                <p class="about-kicker">ABOUT CASAUL HOTEL</p>
-                <h1>More Than a Stay,<br><em>It’s a Feeling</em></h1>
-                <p>At Casaul Hotel, we believe true hospitality isn’t just about a place to stay — it’s about feeling at home, wherever you are.</p>
-            </div>
-            <div class="about-hero-image">
-                <img src="{{ asset('image/HM.jpg') }}" alt="Luxury hotel bedroom at Casaul Hotel">
-            </div>
-        </section>
+    <section class="about-hero" aria-label="About Casaul Hotel hero section">
+        <div class="about-hero-copy">
+            <p class="about-kicker">ABOUT CASAUL HOTEL</p>
+            <h1>More Than a Stay,<br><em>It’s a Feeling</em></h1>
+            <p>At Casaul Hotel, we believe true hospitality isn’t just about a place to stay — it’s about feeling at home, wherever you are.</p>
+        </div>
+        <div class="about-hero-image">
+            <img src="{{ asset('image/HM.jpg') }}" alt="Luxury hotel bedroom at Casaul Hotel">
+        </div>
+    </section>
 
+    <div class="about-shell">
         <section class="about-story" aria-label="Our story">
             <div class="about-story-image-wrap">
                 <img src="{{ asset('image/HM.jpg') }}" alt="Casaul Hotel exterior at dusk">
@@ -84,6 +84,7 @@
                 </article>
             </div>
         </section>
+    </div>
 
         <section class="about-experience" aria-label="Casaul Experience">
             <p class="about-experience-kicker">THE CASAUL EXPERIENCE</p>
@@ -127,15 +128,14 @@
             <a class="about-explore-btn" href="{{ route('reservation') }}">EXPLORE CASAUL <span aria-hidden="true">→</span></a>
         </section>
 
-        <section class="about-cta" aria-label="Booking call to action">
-            <div class="about-cta-overlay">
-                <p class="about-cta-kicker">YOUR HOME AWAY FROM HOME</p>
-                <h3>Experience the True Meaning of Hospitality</h3>
-                <p>At Casaul Hotel, every stay is a story — and we can’t wait to be part of yours.</p>
-                <a href="{{ route('reservation') }}" class="about-cta-button">BOOK YOUR STAY <span aria-hidden="true">→</span></a>
-            </div>
-        </section>
-    </div>
+    <section class="about-cta" aria-label="Booking call to action">
+        <div class="about-cta-overlay">
+            <p class="about-cta-kicker">YOUR HOME AWAY FROM HOME</p>
+            <h3>Experience the True Meaning of Hospitality</h3>
+            <p>At Casaul Hotel, every stay is a story — and we can’t wait to be part of yours.</p>
+            <a href="{{ route('reservation') }}" class="about-cta-button">BOOK YOUR STAY <span aria-hidden="true">→</span></a>
+        </div>
+    </section>
 </section>
 
 @endsection
