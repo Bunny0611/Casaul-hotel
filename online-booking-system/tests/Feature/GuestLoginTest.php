@@ -11,6 +11,18 @@ class GuestLoginTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_guest_profile_redirects_to_guest_signin_when_unauthenticated(): void
+    {
+        $this->get(route('guest.profile'))
+            ->assertRedirect(route('home', ['auth' => 'signin']));
+    }
+
+    public function test_employee_pages_still_redirect_to_staff_login(): void
+    {
+        $this->get(route('employee.dashboard'))
+            ->assertRedirect(route('login'));
+    }
+
     public function test_guest_login_page_is_accessible_and_logs_in_a_user(): void
     {
         $user = User::factory()->create([

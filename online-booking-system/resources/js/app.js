@@ -709,6 +709,24 @@ document.addEventListener('DOMContentLoaded', function () {
         return `${h}:${m}`;
     }
 
+    function appendBotText(contentDiv, text) {
+        const linkPattern = /\[([^\]]+)\]\((https:\/\/[^)\s]+|\/(?!\/)[^)\s]*)\)/g;
+        let previousIndex = 0;
+        let match;
+
+        while ((match = linkPattern.exec(text)) !== null) {
+            contentDiv.appendChild(document.createTextNode(text.slice(previousIndex, match.index)));
+
+            const link = document.createElement('a');
+            link.href = match[2];
+            link.textContent = match[1];
+            contentDiv.appendChild(link);
+            previousIndex = linkPattern.lastIndex;
+        }
+
+        contentDiv.appendChild(document.createTextNode(text.slice(previousIndex)));
+    }
+
     function addMessage(text, type, keepQuick = false) {
     
         const typing = messagesEl.querySelector('.typing-indicator');
@@ -721,7 +739,11 @@ document.addEventListener('DOMContentLoaded', function () {
         contentDiv.className = 'chat-msg-content';
         String(text).split('\n').forEach((line, index) => {
             if (index > 0) contentDiv.appendChild(document.createElement('br'));
-            contentDiv.appendChild(document.createTextNode(line));
+            if (type === 'bot') {
+                appendBotText(contentDiv, line);
+            } else {
+                contentDiv.appendChild(document.createTextNode(line));
+            }
         });
 
         const timeSpan = document.createElement('span');
@@ -734,9 +756,8 @@ document.addEventListener('DOMContentLoaded', function () {
         scrollToBottom();
 
       
-        const quickRepliesEl = document.getElementById('chat-quick-replies');
         if (type === 'user') {
-            quickRepliesEl.style.display = 'none';
+            setQuickRepliesExpanded(false);
         }
     }
 
@@ -902,17 +923,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return typing;
     }
 
-    function updateQuickReplies(buttons) {
+    function updateQuickReplies(buttons, expanded = false) {
         const container = document.getElementById('chat-quick-replies');
         container.innerHTML = '';
-        container.style.display = 'flex';
-        faqToggle.style.display = 'flex';
-        faqToggle.setAttribute('aria-expanded', 'false');
-        faqToggle.textContent = 'Show Quick Questions';
 
         if (!buttons || buttons.length === 0) {
-            container.style.display = 'none';
-            faqToggle.style.display = 'none';
+            setQuickRepliesExpanded(false);
             return;
         }
 
@@ -933,9 +949,64 @@ document.addEventListener('DOMContentLoaded', function () {
             endButton.addEventListener('click', endFrontDeskConversation);
             container.appendChild(endButton);
         }
+
+        if (activeFaqQuestions) {
+            const backButton = document.createElement('button');
+            backButton.className = 'quick-reply chat-back-to-quick-questions';
+            backButton.type = 'button';
+            backButton.textContent = 'Back to Quick Questions';
+            backButton.addEventListener('click', () => {
+                activeFaqQuestions = null;
+                faqCategorySelectionPending = false;
+                updateQuickReplies(defaultQuickReplies, true);
+            });
+            container.appendChild(backButton);
+        }
+
+        setQuickRepliesExpanded(expanded);
     }
 
-    const defaultQuickReplies = ['Reservations', 'Rooms', 'Check-in / Check-out', 'Payment Information', 'Dining & Menu', 'Hotel Services', 'Hotel Policies', 'Contact Front Desk', 'Request Housekeeping', 'Book a Room', 'Inquiries', 'Show Available Rooms', 'Special Offers', 'Contact Us'];
+    const faqCategoryQuickReplies = ['Reservations', 'Rooms', 'Check-in / Check-out', 'Payment Information', 'Dining & Menu', 'Hotel Services', 'Hotel Policies'];
+    const defaultQuickReplies = [...faqCategoryQuickReplies, 'Contact Front Desk', 'Request Housekeeping', 'Book a Room', 'Inquiries', 'Show Available Rooms', 'Special Offers', 'Contact Us'];
+    let activeFaqQuestions = null;
+    let faqCategorySelectionPending = false;
+
+    function quickRepliesForResponse(replyData) {
+        const replies = replyData.quick_replies;
+        if (!Array.isArray(replies)) {
+            if (faqCategorySelectionPending) {
+                activeFaqQuestions = null;
+                faqCategorySelectionPending = false;
+            }
+            return activeFaqQuestions || defaultQuickReplies;
+        }
+
+        const returnedToFaqCategories = replies.length === faqCategoryQuickReplies.length
+            && replies.every((reply, index) => reply === faqCategoryQuickReplies[index]);
+
+        if (returnedToFaqCategories) {
+            faqCategorySelectionPending = false;
+            return activeFaqQuestions || defaultQuickReplies;
+        }
+
+        if (faqCategorySelectionPending) {
+            activeFaqQuestions = replies;
+            faqCategorySelectionPending = false;
+        }
+
+        return replies;
+    }
+
+    function setQuickRepliesExpanded(expanded) {
+        const container = document.getElementById('chat-quick-replies');
+        const hasQuickReplies = container.children.length > 0;
+        const isExpanded = expanded && hasQuickReplies;
+
+        container.style.display = isExpanded ? 'flex' : 'none';
+        faqToggle.style.display = hasQuickReplies ? 'flex' : 'none';
+        faqToggle.setAttribute('aria-expanded', String(isExpanded));
+        faqToggle.textContent = isExpanded ? 'Hide Quick Questions' : 'Show Quick Questions';
+    }
 
     async function sendChatbotMessage(message, action = null, requestType = null) {
         if (!chatbotUrl) {
@@ -982,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (replyData.auth_required) {
                 window.dispatchEvent(new Event('guest-auth-required'));
                 addMessage(replyData.reply, 'bot', true);
-                updateQuickReplies(replyData.quick_replies || defaultQuickReplies);
+                updateQuickReplies(quickRepliesForResponse(replyData));
                 lastFrontDeskAction = null;
                 lastFrontDeskPrompt = false;
                 return;
@@ -1003,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (!isFrontDeskReply) {
                 addMessage(replyData.reply, 'bot', true);
             }
-            updateQuickReplies(replyData.quick_replies || defaultQuickReplies);
+            updateQuickReplies(quickRepliesForResponse(replyData));
             if (pendingAction === 'contact_front_desk') startFrontDeskPolling();
         }, delay);
     }
@@ -1050,6 +1121,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
    
     function handleQuickReply(label, action) {
+        if (faqCategoryQuickReplies.includes(label)) {
+            activeFaqQuestions = null;
+            faqCategorySelectionPending = true;
+        }
+
         if (pendingAction === 'contact_front_desk' && action !== 'contact-front-desk') {
             stopFrontDeskPolling();
             pendingAction = action === 'request-housekeeping' ? 'request_housekeeping' : 'faq';
@@ -1094,9 +1170,7 @@ document.addEventListener('DOMContentLoaded', function () {
     closeBtn?.addEventListener('click', () => toggleChat(false));
     faqToggle.addEventListener('click', () => {
         const isExpanded = faqToggle.getAttribute('aria-expanded') === 'true';
-        faqToggle.setAttribute('aria-expanded', String(!isExpanded));
-        faqToggle.textContent = isExpanded ? 'Show Quick Questions' : 'Hide Quick Questions';
-        document.getElementById('chat-quick-replies').style.display = isExpanded ? 'none' : 'flex';
+        setQuickRepliesExpanded(!isExpanded);
     });
 
   

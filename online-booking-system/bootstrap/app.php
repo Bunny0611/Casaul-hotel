@@ -18,6 +18,14 @@ return Application::configure(basePath: dirname(__DIR__))
             headers: Request::HEADER_X_FORWARDED_PROTO
         );
 
+        $middleware->redirectGuestsTo(function (Request $request): string {
+            if ($request->is('guest/*') || $request->is('reservation*')) {
+                return route('home', ['auth' => 'signin']);
+            }
+
+            return route('login');
+        });
+
         $middleware->alias([
             'role' => CheckRole::class,
         ]);

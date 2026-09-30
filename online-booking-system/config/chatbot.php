@@ -6,10 +6,10 @@ return [
             'label' => 'Reservations',
             'aliases' => ['reservation information', 'booking information'],
             'questions' => [
-                'How can I make a reservation?' => 'You can make a reservation through the hotel reservation page. Select your preferred room, dates, and any extras before confirming.',
-                'How can I check room availability?' => 'You can ask me to show available rooms, or visit the reservation page and enter your preferred dates and number of guests.',
+                'How can I make a reservation?' => 'You can make a reservation through [https://casaulhotel.com/reservation](/reservation). Select your preferred room, dates, and any extras before confirming.',
+                'How can I check room availability?' => 'You can ask me to show available rooms, or visit [https://casaulhotel.com/reservation](/reservation) and enter your preferred dates and number of guests.',
                 'Can I modify my reservation?' => 'Yes. Please contact the hotel or front desk with your reservation details so our staff can help update your dates, room, or guest information.',
-                'How can I cancel my reservation?' => 'You can cancel an eligible reservation from your guest profile, or contact the hotel with your reservation details for assistance.',
+                'How can I cancel my reservation?' => "To cancel an eligible reservation, follow these steps:\n1. Sign in as a guest.\n2. Click the account icon at the top right and open [My Profile](/guest/profile).\n3. Select View Records, find your reservation, and choose Cancel if available. Otherwise, contact the front desk.",
             ],
         ],
         [
@@ -39,8 +39,8 @@ return [
                 'What payment methods are accepted?' => 'Please contact the hotel for the latest accepted payment methods and any applicable payment requirements.',
                 'Do I need to pay in advance?' => 'Advance payment requirements depend on the reservation and selected rate. The required payment details will be shown during booking or confirmed by our staff.',
                 'Can I pay at the hotel?' => 'Some reservations may be paid at the hotel. Please check your reservation terms or contact the front desk before arrival.',
-                'Where can I check my payment status?' => 'You can review payment details in your guest profile or ask the front desk to confirm the status of your reservation.',
-                'Can I get a receipt?' => 'Yes. Please request a receipt from the front desk, or check your guest profile if a digital receipt is available for your reservation.',
+                'Where can I check my payment status?' => "To check a payment, follow these steps:\n1. Sign in as a guest.\n2. Click the account icon and open [My Profile](/guest/profile).\n3. Select View Records and open the relevant reservation. You can also check My Receipts in the account menu or contact the front desk.",
+                'Can I get a receipt?' => "To check for a digital receipt, follow these steps:\n1. Sign in as a guest.\n2. Click the account icon and choose My Receipts if it is available.\n3. If you do not see My Receipts, open [My Profile](/guest/profile) and select View Records. Contact the front desk if you need help.",
             ],
         ],
         [
