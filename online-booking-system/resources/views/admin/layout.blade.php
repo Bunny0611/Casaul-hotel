@@ -64,6 +64,17 @@
         .header {
             background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);
         }
+
+        .admin-header-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 0.75rem 1rem;
+        }
+
+        .admin-header-title { grid-column: 1; }
+        .admin-header-search { grid-column: 2; }
+        .admin-header-profile { grid-column: 3; }
         
         .card-hover:hover {
             transform: translateY(-5px);
@@ -116,6 +127,20 @@
         @media (max-width: 767px) {
             .sidebar {
                 width: min(80vw, 18rem);
+            }
+
+            .admin-header-layout {
+                grid-template-columns: minmax(0, 1fr) auto;
+            }
+
+            .admin-header-search {
+                grid-column: 1 / -1;
+                grid-row: 2;
+            }
+
+            .admin-header-profile {
+                grid-column: 2;
+                grid-row: 1;
             }
 
             .header-search {
@@ -236,24 +261,22 @@
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden md:ml-64">
             <!-- Header -->
             <header class="header text-white px-4 py-4 sm:px-6 shadow-lg">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-center gap-3">
+                <div class="admin-header-layout">
+                    <div class="admin-header-title flex min-w-0 items-center gap-3">
                         <button id="sidebarToggle" class="md:hidden p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
                             <i class="fas fa-bars"></i>
                         </button>
-                        <div>
+                        <div class="min-w-0">
                             <h2 class="text-lg sm:text-xl font-semibold">Welcome, {{ auth()->user()->name }}!</h2>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4">
-                        <div class="relative header-search w-full sm:w-64">
-                            <input id="adminHeaderSearch" type="search" placeholder="Search..." aria-label="Search this page" autocomplete="off" class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-full">
-                            <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
-                        </div>
-                        <div class="flex items-center justify-center space-x-2 bg-white/20 px-3 py-2 rounded-lg text-sm sm:text-base">
-                            <i class="fas fa-user-circle text-xl sm:text-2xl"></i>
-                            <span class="font-medium truncate max-w-[8rem] sm:max-w-none">{{ auth()->user()->name }}</span>
-                        </div>
+                    <div class="relative header-search admin-header-search w-full sm:w-64">
+                        <input id="adminHeaderSearch" type="search" placeholder="Search..." aria-label="Search this page" autocomplete="off" class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-full">
+                        <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
+                    </div>
+                    <div class="admin-header-profile flex items-center justify-center space-x-2 bg-white/20 px-3 py-2 rounded-lg text-sm sm:text-base">
+                        <i class="fas fa-user-circle text-xl sm:text-2xl"></i>
+                        <span class="font-medium truncate max-w-[8rem] sm:max-w-none">{{ auth()->user()->name }}</span>
                     </div>
                 </div>
             </header>
