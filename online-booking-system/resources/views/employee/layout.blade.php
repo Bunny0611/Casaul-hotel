@@ -160,8 +160,10 @@
 
             .header .profile-box {
                 width: auto;
-                padding: 0.6rem 0.8rem;
+                padding: 0.35rem 0.55rem;
             }
+
+            .header .profile-box > i { font-size: 1.25rem; }
 
             .header .profile-box span {
                 display: none;

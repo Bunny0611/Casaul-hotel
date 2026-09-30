@@ -175,6 +175,84 @@
             }
             
         }
+
+        .housekeeping-header-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 0.75rem 1rem;
+            width: 100%;
+        }
+
+        .housekeeping-header-title { grid-column: 1; min-width: 0; }
+        .housekeeping-header-search { grid-column: 2; width: 16rem; }
+        .housekeeping-profile-wrapper { grid-column: 3; }
+
+        .housekeeping-profile-menu {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            z-index: 60;
+            width: 100%;
+            min-width: 0;
+            padding: 0;
+            box-sizing: border-box;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: #fff;
+            color: #111827;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+        }
+
+        .housekeeping-profile-menu button {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            gap: 0.6rem;
+            min-height: 38px;
+            padding: 0.4375rem 0.75rem;
+            border: 0;
+            border-radius: 0.35rem;
+            background: transparent;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .housekeeping-profile-menu button:hover,
+        .housekeeping-profile-menu button:focus-visible { background: #f3f4f6; }
+        .housekeeping-profile-menu[hidden] { display: none; }
+
+        @media (max-width: 767px) {
+            .housekeeping-header-layout { grid-template-columns: minmax(0, 1fr) auto; }
+            .housekeeping-header-title { grid-column: 1; }
+            .housekeeping-header-search {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                width: 100%;
+            }
+            .header .housekeeping-header-search input {
+                display: block;
+                width: 100%;
+                visibility: visible;
+                padding: 0.55rem 2.5rem 0.55rem 0.9rem;
+                border: 1px solid rgba(255,255,255,0.2);
+                border-radius: 0.5rem;
+                box-sizing: border-box;
+            }
+            .header .housekeeping-header-search .fa-search {
+                position: absolute;
+                top: 50%;
+                right: 0.85rem;
+                transform: translateY(-50%);
+            }
+            .housekeeping-profile-wrapper { grid-column: 2; grid-row: 1; }
+            .housekeeping-profile-trigger { padding: 0.4rem 0.5rem; }
+            .header .housekeeping-profile-trigger > .fa-user-circle { font-size: 1.5rem; }
+            .housekeeping-profile-trigger span { white-space: nowrap; font-size: 0.75rem; }
+            .housekeeping-header-title h2 { overflow: visible; white-space: normal; font-size: 0.875rem; line-height: 1.2; }
+            .housekeeping-greeting-role { display: block; }
+        }
     </style>
 
     </head>
@@ -270,26 +348,6 @@
                 </a>
             </nav>
 
-            <div class="mt-auto pt-8 px-6 pb-6">
-
-                <form method="POST" action="{{ route('logout') }}">
-
-                    @csrf
-
-                    <button
-                        type="submit"
-                        class="flex items-center w-full px-6 py-3 text-gray-300
-                               hover:text-white transition-colors
-                               bg-transparent border-none cursor-pointer"
-                    >
-                        <i class="fas fa-sign-out-alt w-6"></i>
-                        <span>Logout</span>
-                    </button>
-
-                </form>
-
-            </div>
-
         </aside>
 
         <div
@@ -305,7 +363,9 @@
                px-4 sm:px-6 py-3 flex items-center
                justify-between shadow-lg"
     >
-                <div class="flex items-center gap-4">
+                <div class="housekeeping-header-layout">
+
+                <div class="housekeeping-header-title flex min-w-0 items-center gap-4">
 
                     <button
                         id="sidebarToggle"
@@ -317,29 +377,27 @@
                         <i class="fas fa-bars"></i>
                     </button>
 
-                    <div>
+                    <div class="min-w-0">
                         <h2 class="text-xl font-semibold mt-0">
-                            Welcome,
-                            {{ Auth::user()?->name ?? 'Housekeeper' }}!
+                            <span>Welcome,</span>
+                            <span class="housekeeping-greeting-role">Housekeeping!</span>
                         </h2>
                     </div>
 
                 </div>
 
-                <div class="flex items-center gap-3 sm:gap-4">
-
-                    <div class="relative">
+                    <div class="housekeeping-header-search relative">
 
                         <input
                             type="text"
                             placeholder="Search..."
-                            class="bg-white/20 text-white
+                            aria-label="Search this page"
+                            class="w-full bg-white/20 text-white
                                    placeholder-gray-200
                                    px-4 py-2 rounded-lg
                                    focus:outline-none
                                    focus:ring-2
-                                   focus:ring-white/50
-                                   w-64"
+                                   focus:ring-white/50"
                         >
 
                         <i
@@ -349,17 +407,21 @@
 
                     </div>
 
-                    <div
-                        class="flex items-center gap-2
-                               bg-white/20 px-4 py-2 rounded-lg"
-                    >
-
-                        <i class="fas fa-user-circle text-2xl"></i>
-
-                        <span class="font-medium">
-                            {{ Auth::user()?->name ?? 'Housekeeper' }}
-                        </span>
-
+                    <div class="housekeeping-profile-wrapper relative">
+                        <button id="housekeepingProfileToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="housekeepingProfileMenu" class="housekeeping-profile-trigger flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30">
+                            <i class="fas fa-user-circle text-2xl"></i>
+                            <span class="font-medium">Housekeeping</span>
+                            <i class="fas fa-chevron-down text-xs" aria-hidden="true"></i>
+                        </button>
+                        <div id="housekeepingProfileMenu" class="housekeeping-profile-menu" role="menu" hidden>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" role="menuitem">
+                                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
 
                 </div>
@@ -425,6 +487,32 @@
                 }
 
             });
+
+            const profileToggle = document.getElementById('housekeepingProfileToggle');
+            const profileMenu = document.getElementById('housekeepingProfileMenu');
+
+            if (profileToggle && profileMenu) {
+                function closeProfileMenu() {
+                    profileMenu.hidden = true;
+                    profileToggle.setAttribute('aria-expanded', 'false');
+                }
+
+                profileToggle.addEventListener('click', function () {
+                    profileMenu.hidden = !profileMenu.hidden;
+                    profileToggle.setAttribute('aria-expanded', String(!profileMenu.hidden));
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!profileToggle.parentElement.contains(event.target)) closeProfileMenu();
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape') {
+                        closeProfileMenu();
+                        profileToggle.focus();
+                    }
+                });
+            }
 
             const sidebar = document.getElementById('sidebar');
             const backdrop = document.getElementById('sidebarBackdrop');
