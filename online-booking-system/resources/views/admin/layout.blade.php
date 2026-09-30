@@ -64,6 +64,53 @@
         .header {
             background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);
         }
+
+        .admin-header-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
+            gap: 0.75rem 1rem;
+        }
+
+        .admin-header-title { grid-column: 1; }
+        .admin-header-search { grid-column: 2; }
+        .admin-header-profile { grid-column: 3; }
+        .admin-header-profile .profile-dropdown-arrow { font-size: 0.7rem; }
+
+        .admin-profile-menu {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            z-index: 60;
+            width: 100%;
+            min-width: 0;
+            padding: 0;
+            box-sizing: border-box;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: #fff;
+            color: #111827;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+        }
+
+        .admin-profile-menu button {
+            display: flex;
+            width: 100%;
+            min-height: 38px;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.4375rem 0.75rem;
+            border: 0;
+            border-radius: 0.35rem;
+            background: transparent;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .admin-profile-menu button:hover,
+        .admin-profile-menu button:focus-visible { background: #f3f4f6; }
+        .admin-profile-menu[hidden] { display: none; }
         
         .card-hover:hover {
             transform: translateY(-5px);
@@ -116,6 +163,20 @@
         @media (max-width: 767px) {
             .sidebar {
                 width: min(80vw, 18rem);
+            }
+
+            .admin-header-layout {
+                grid-template-columns: minmax(0, 1fr) auto;
+            }
+
+            .admin-header-search {
+                grid-column: 1 / -1;
+                grid-row: 2;
+            }
+
+            .admin-header-profile {
+                grid-column: 2;
+                grid-row: 1;
             }
 
             .header-search {
@@ -218,15 +279,6 @@
                 </a>
             </nav>
             
-            <div class="mt-auto pt-8 px-6 pb-6">
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="flex items-center w-full px-6 py-3 text-gray-300 hover:text-white transition-colors bg-transparent border-none cursor-pointer">
-                        <i class="fas fa-sign-out-alt w-6"></i>
-                        <span>Logout</span>
-                    </button>
-                </form>
-            </div>
         </aside>
         
         <!-- Sidebar backdrop -->
@@ -236,23 +288,33 @@
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden md:ml-64">
             <!-- Header -->
             <header class="header text-white px-4 py-4 sm:px-6 shadow-lg">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-center gap-3">
+                <div class="admin-header-layout">
+                    <div class="admin-header-title flex min-w-0 items-center gap-3">
                         <button id="sidebarToggle" class="md:hidden p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
                             <i class="fas fa-bars"></i>
                         </button>
-                        <div>
+                        <div class="min-w-0">
                             <h2 class="text-lg sm:text-xl font-semibold">Welcome, {{ auth()->user()->name }}!</h2>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:space-x-4">
-                        <div class="relative header-search w-full sm:w-64">
-                            <input id="adminHeaderSearch" type="search" placeholder="Search..." aria-label="Search this page" autocomplete="off" class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-full">
-                            <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
-                        </div>
-                        <div class="flex items-center justify-center space-x-2 bg-white/20 px-3 py-2 rounded-lg text-sm sm:text-base">
+                    <div class="relative header-search admin-header-search w-full sm:w-64">
+                        <input id="adminHeaderSearch" type="search" placeholder="Search..." aria-label="Search this page" autocomplete="off" class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-full">
+                        <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
+                    </div>
+                    <div class="admin-header-profile relative">
+                        <button id="adminProfileToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="adminProfileMenu" class="flex items-center justify-center gap-2 rounded-lg bg-white/20 px-3 py-2 text-sm text-white transition-colors hover:bg-white/30 sm:text-base">
                             <i class="fas fa-user-circle text-xl sm:text-2xl"></i>
                             <span class="font-medium truncate max-w-[8rem] sm:max-w-none">{{ auth()->user()->name }}</span>
+                            <i class="fas fa-chevron-down profile-dropdown-arrow" aria-hidden="true"></i>
+                        </button>
+                        <div id="adminProfileMenu" class="admin-profile-menu" role="menu" hidden>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" role="menuitem">
+                                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -299,6 +361,32 @@
 
             toggle.addEventListener('click', openSidebar);
             backdrop.addEventListener('click', closeSidebar);
+
+            const profileToggle = document.getElementById('adminProfileToggle');
+            const profileMenu = document.getElementById('adminProfileMenu');
+
+            if (profileToggle && profileMenu) {
+                function closeProfileMenu() {
+                    profileMenu.hidden = true;
+                    profileToggle.setAttribute('aria-expanded', 'false');
+                }
+
+                profileToggle.addEventListener('click', function () {
+                    profileMenu.hidden = !profileMenu.hidden;
+                    profileToggle.setAttribute('aria-expanded', String(!profileMenu.hidden));
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!profileToggle.parentElement.contains(event.target)) closeProfileMenu();
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape') {
+                        closeProfileMenu();
+                        profileToggle.focus();
+                    }
+                });
+            }
 
             const searchInput = document.getElementById('adminHeaderSearch');
             const contentPanel = document.querySelector('.main-content-panel');

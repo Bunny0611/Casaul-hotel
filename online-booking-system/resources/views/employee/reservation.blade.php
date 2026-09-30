@@ -1364,7 +1364,7 @@
                     </button>
                 </div>
                 <div class="overflow-x-auto rounded-lg border border-gray-200">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <table class="min-w-[900px] divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50 text-xs font-semibold text-gray-600">
                             <tr>
                                 <th class="px-4 py-3 text-left">Service / Item</th>
@@ -2436,7 +2436,7 @@
 
         form.reset();
         const reservationModalDialog = document.querySelector('#addReservationModal > div');
-        reservationModalDialog.classList.remove('max-w-6xl');
+        reservationModalDialog.classList.remove('max-w-4xl');
         reservationModalDialog.classList.add('max-w-2xl');
         reservationChargeState.reservationId = null;
         document.getElementById('editReservationTabs').classList.add('hidden');
@@ -2563,7 +2563,7 @@
         document.getElementById('saveReservationBtn').textContent = 'Update Reservation';
         const supportsCharges = category === 'rooms' && Boolean(reservation.id);
         const reservationModalDialog = document.querySelector('#addReservationModal > div');
-        reservationModalDialog.classList.toggle('max-w-6xl', supportsCharges);
+        reservationModalDialog.classList.toggle('max-w-4xl', supportsCharges);
         reservationModalDialog.classList.toggle('max-w-2xl', !supportsCharges);
         document.getElementById('editReservationTabs').classList.toggle('hidden', !supportsCharges);
         reservationChargeState.reservationId = supportsCharges ? reservation.id : null;

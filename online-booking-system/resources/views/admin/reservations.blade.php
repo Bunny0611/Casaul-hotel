@@ -310,9 +310,9 @@
     <!-- Tab Buttons -->
     <div class="mb-6 flex flex-wrap gap-2 sm:gap-4">
         <button type="button" data-tab="rooms" class="tab-button rounded-lg bg-orange-500 px-6 py-3 font-medium text-white transition hover:bg-orange-600">ROOMS</button>
-        <button type="button" data-tab="facilities" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">FACILITIES</button>
-        <button type="button" data-tab="event" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">EVENTS</button>
-        <button type="button" data-tab="dining" class="tab-button rounded-lg bg-white px-6 py-3 font-medium text-gray-600 transition hover:bg-gray-100">DINING</button>
+        <button type="button" data-tab="facilities" class="tab-button rounded-lg bg-orange-500 px-6 py-3 font-medium text-white-600 transition hover:bg-orange-600">FACILITIES</button>
+        <button type="button" data-tab="event" class="tab-button rounded-lg bg-orange-500 px-6 py-3 font-medium text-white-600 transition hover:bg-orange-600">EVENTS</button>
+        <button type="button" data-tab="dining" class="tab-button rounded-lg bg-orange-500 px-6 py-3 font-medium text-white-600 transition hover:bg-orange-00">DINING</button>
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr]">

@@ -481,11 +481,11 @@ class ChatbotController extends Controller
         $totalReservations = Reservation::count();
 
         if (Str::contains($normalized, ['status', 'pending', 'confirmed'])) {
-            return 'You can check your reservation status from the guest profile or by contacting the front desk. We also support room, facility, event, and dining reservations.';
+            return "To check your reservation status, follow these steps:\n1. Sign in as a guest.\n2. Click the account icon at the top right and open [My Profile](/guest/profile).\n3. Select View Records and find your reservation. Contact the front desk if you need help. We also support room, facility, event, and dining reservations.";
         }
 
         if (Str::contains($normalized, ['how do i book', 'book room', 'book a room', 'make reservation'])) {
-            return 'You can make a reservation through the hotel reservation page. Select your preferred room, dates, and any extras such as facilities or dining before confirming.';
+            return 'You can make a reservation through [https://casaulhotel.com/reservation](/reservation). Select your preferred room, dates, and any extras such as facilities or dining before confirming.';
         }
 
         return 'We support room, facility, dining, and event reservations. Our system currently shows ' . $totalReservations . ' reservation record' . ($totalReservations === 1 ? '' : 's') . ' and ' . $roomReservationCount . ' room reservation' . ($roomReservationCount === 1 ? '' : 's') . ' in the database.';

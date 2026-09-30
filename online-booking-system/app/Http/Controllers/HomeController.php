@@ -117,8 +117,13 @@ class HomeController extends Controller
     {
         $rooms = $this->featuredRooms();
         $bestSellingDining = $this->bestSellingDining();
+        $facilities = Facility::whereIn('status', ['available', 'limited'])
+            ->orderByRaw("CASE WHEN scheduling_requirement = 'No Additional Schedule' THEN 0 ELSE 1 END")
+            ->orderBy('name')
+            ->limit(3)
+            ->get();
 
-        return view('index', compact('rooms', 'bestSellingDining'));
+        return view('index', compact('rooms', 'bestSellingDining', 'facilities'));
     }
 
     private function bestSellingDining()

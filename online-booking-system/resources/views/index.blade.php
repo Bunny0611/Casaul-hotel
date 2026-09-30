@@ -27,10 +27,10 @@
     <section class="home-experience-section">
         <header class="home-centered-heading"><h2>Experience CASAUL</h2><div class="home-heading-ornament"><span></span><i class="fas fa-star"></i><span></span></div></header>
         <div class="home-experience-grid">
-            <a href="{{ route('accommodation') }}" class="home-experience-card"><img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="CASAUL accommodation"><span class="home-experience-icon"><i class="fas fa-bed"></i></span><h3>Accommodation</h3><p>Relax in our thoughtfully designed rooms and enjoy a restful stay.</p><b>Explore Rooms</b></a>
-            <a href="{{ route('dining') }}" class="home-experience-card"><img src="{{ asset('image/HM.jpg') }}" alt="CASAUL dining experience"><span class="home-experience-icon"><i class="fas fa-utensils"></i></span><h3>Dining</h3><p>Savor delicious cuisine crafted from the finest ingredients.</p><b>View Dining Options</b></a>
-            <a href="{{ route('events') }}" class="home-experience-card"><img src="{{ asset('image/HM.jpg') }}" alt="CASAUL event space"><span class="home-experience-icon"><i class="fas fa-calendar-alt"></i></span><h3>Events</h3><p>Host unforgettable events with our elegant venues and services.</p><b>Plan Your Event</b></a>
-            <a href="{{ route('aboutus') }}" class="home-experience-card"><img src="{{ asset('image/HM.jpg') }}" alt="CASAUL Hotel facilities"><span class="home-experience-icon"><i class="fas fa-spa"></i></span><h3>Facilities</h3><p>Enjoy premium facilities designed for your comfort and relaxation.</p><b>Learn More</b></a>
+            <a href="{{ route('accommodation') }}" class="home-experience-card"><img src="{{ asset('storage/rooms/1790407370_6ab772cacfc26.png') }}" alt="CASAUL accommodation"><span class="home-experience-icon"><i class="fas fa-bed"></i></span><h3>Accommodation</h3><p>Relax in our thoughtfully designed rooms and enjoy a restful stay.</p><b>Explore Rooms</b></a>
+            <a href="{{ route('dining') }}" class="home-experience-card"><img src="{{ asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}" alt="CASAUL dining experience"><span class="home-experience-icon"><i class="fas fa-utensils"></i></span><h3>Dining</h3><p>Savor delicious cuisine crafted from the finest ingredients.</p><b>View Dining Options</b></a>
+            <a href="{{ route('events') }}" class="home-experience-card"><img src="{{ asset('') }}" alt="CASAUL event space"><span class="home-experience-icon"><i class="fas fa-calendar-alt"></i></span><h3>Events</h3><p>Host unforgettable events with our elegant venues and services.</p><b>Plan Your Event</b></a>
+            <a href="#home-facilities" class="home-experience-card"><img src="{{ asset('image/HM.jpg') }}" alt="CASAUL Hotel facilities"><span class="home-experience-icon"><i class="fas fa-spa"></i></span><h3>Facilities</h3><p>Enjoy premium facilities designed for your comfort and relaxation.</p><b>Our Facilities</b></a>
         </div>
     </section>
 
@@ -73,6 +73,29 @@
                     <b>View Room</b>
                 </a>
             @endforeach
+        </div>
+    </section>
+
+    <section class="home-facilities-section" id="home-facilities">
+        <header class="home-featured-heading">
+            <h2>Hotel Facilities</h2>
+            <a href="{{ route('reservation') }}">Explore All Facilities</a>
+        </header>
+        <div class="home-facilities-grid">
+            @forelse($facilities as $facility)
+                <article class="home-facility-card">
+                    <img src="{{ $facility->image && \Illuminate\Support\Facades\Storage::disk('public')->exists(\Illuminate\Support\Str::after(ltrim($facility->image, '/'), 'storage/')) ? secure_asset('storage/' . \Illuminate\Support\Str::after(ltrim($facility->image, '/'), 'storage/')) : secure_asset('image/Royal-Suite-room.jpg') }}" alt="{{ $facility->name }}">
+                    <div class="home-facility-card-body">
+                        <h3>{{ $facility->name }}</h3>
+                        <p>{{ $facility->description ?: 'Enjoy this facility during your stay at CASAUL Hotel.' }}</p>
+                        @if($facility->location)
+                            <span><i class="fas fa-map-marker-alt"></i> {{ $facility->location }}</span>
+                        @endif
+                    </div>
+                </article>
+            @empty
+                <p class="home-facilities-empty">Facility details will be available soon.</p>
+            @endforelse
         </div>
     </section>
 
