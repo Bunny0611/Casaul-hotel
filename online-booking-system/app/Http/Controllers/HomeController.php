@@ -484,7 +484,7 @@ class HomeController extends Controller
             'event_start_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
             'check_out' => ['required', 'date', 'after_or_equal:check_in'],
             'check_out_time' => 'nullable|date_format:H:i',
-            'event_end_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
+            'event_end_time' => ['exclude_unless:category,event', 'nullable', 'date_format:H:i'],
             'guest_name' => 'required|string|max:255',
             'guest_email' => 'required|email|max:255',
             'guest_phone' => 'required|string|max:20',
@@ -629,23 +629,15 @@ class HomeController extends Controller
                 abort_if($event?->capacity && !empty($validated['number_of_guests']) && $validated['number_of_guests'] > $event->capacity, 422, 'The selected guest count exceeds the package capacity.');
 
                 if ($event) {
-                    $start = Carbon::createFromFormat('H:i', $validated['event_start_time']);
-                    $end = Carbon::createFromFormat('H:i', $validated['event_end_time']);
                     $configuredDuration = max(1, (int) ($event->duration_hours ?: 4));
-                    $pricingBasis = strtolower(trim((string) $event->pricing_basis));
-
-                    if ($pricingBasis === 'per person') {
-                        $end = $start->copy()->addHours($configuredDuration);
-                        $validated['event_end_time'] = $end->format('H:i');
-                    }
-
-                    abort_if($end->lessThanOrEqualTo($start), 422, 'The event end time must be after the start time.');
+                    $start = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $validated['event_start_time']);
+                    $end = $start->copy()->addHours($configuredDuration);
+                    $validated['event_end_time'] = $end->format('H:i');
+                    $validated['check_out'] = $end->toDateString();
                     abort_if($event->available_from && $start->format('H:i') < Carbon::parse($event->available_from)->format('H:i'), 422, 'The event starts before its available time.');
-                    abort_if($event->available_to && $end->format('H:i') > Carbon::parse($event->available_to)->format('H:i'), 422, 'The event ends after its available time.');
+                    abort_if($event->available_to && $end->toDateString() === $start->toDateString() && $end->format('H:i') > Carbon::parse($event->available_to)->format('H:i'), 422, 'The event ends after its available time.');
 
-                    $submittedDuration = max(1, $start->diffInHours($end));
-                    abort_if($pricingBasis === 'per hour' && $submittedDuration > $configuredDuration, 422, 'This event allows a maximum duration of '.$configuredDuration.' hours.');
-                    $validated['duration_hours'] = $submittedDuration;
+                    $validated['duration_hours'] = $configuredDuration;
 
                     foreach ($addonIndexesByEvent[$eventId] ?? [] as $requestedAddonIndex) {
                         $addonIndex = filter_var($requestedAddonIndex, FILTER_VALIDATE_INT);
@@ -734,8 +726,8 @@ class HomeController extends Controller
             (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1)
         );
         $eventDurationHours = 1;
-        if (!empty($validated['event_start_time']) && !empty($validated['event_end_time'])) {
-            $eventDurationHours = max(1, Carbon::parse($validated['event_start_time'])->diffInHours(Carbon::parse($validated['event_end_time'])));
+        if (!empty($validated['duration_hours'])) {
+            $eventDurationHours = max(1, (int) $validated['duration_hours']);
         }
         $eventTotal = ReservationPricing::events($events, $validated['number_of_guests'], $eventDurationHours) + $eventAddonTotal;
         $diningTotal = ReservationPricing::dining($diningSelections);

@@ -702,6 +702,54 @@ class AdminReservationTest extends TestCase
         ]);
     }
 
+    public function test_event_end_time_rolls_over_midnight_using_package_duration(): void
+    {
+        $guest = Guest::factory()->create([
+            'email' => 'overnight-event@example.com',
+            'name' => 'Overnight Event Guest',
+            'contact_no' => '09191234567',
+        ]);
+        $event = \App\Models\Event::create([
+            'name' => 'Overnight Test Package',
+            'event_type' => 'Wedding',
+            'description' => 'Overnight test package',
+            'price' => 1000,
+            'pricing_basis' => 'Per Hour',
+            'duration_hours' => 4,
+            'capacity' => 40,
+            'location' => 'Garden',
+            'available_from' => '08:00',
+            'available_to' => '22:00',
+            'status' => 'available',
+        ]);
+        $eventDate = now()->addDay()->toDateString();
+        $nextDate = now()->addDays(2)->toDateString();
+
+        $this->actingAs($guest, 'guest')->post(route('reservation.store'), [
+            'category' => 'event',
+            'event_id' => $event->id,
+            'event_addons' => '[]',
+            'event_type' => 'Wedding',
+            'guest_name' => 'Overnight Event Guest',
+            'guest_email' => 'overnight-event@example.com',
+            'guest_phone' => '09191234567',
+            'check_in' => $eventDate,
+            'check_out' => $nextDate,
+            'event_start_time' => '22:00',
+            'event_end_time' => '02:00',
+            'duration_hours' => 1,
+            'number_of_guests' => 20,
+            'total_amount' => 1000,
+            'payment_method' => 'Cash / Pay at Hotel',
+        ])->assertRedirect(route('reservation'));
+
+        $reservation = \App\Models\EventReservation::where('guest_email', 'overnight-event@example.com')->firstOrFail();
+        $this->assertSame($nextDate, $reservation->check_out->toDateString());
+        $this->assertSame('02:00', substr((string) $reservation->event_end_time, 0, 5));
+        $this->assertSame(4, $reservation->duration_hours);
+        $this->assertSame(4000.0, (float) $reservation->total_amount);
+    }
+
     public function test_public_event_booking_saves_and_charges_selected_active_addons(): void
     {
         $guest = Guest::factory()->create([
