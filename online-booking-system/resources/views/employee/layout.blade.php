@@ -348,7 +348,7 @@
 
         <div id="sidebarBackdrop" class="fixed inset-0 z-40 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
 
-        <div class="flex-1 flex flex-col overflow-hidden md:ml-0">
+        <div class="flex-1 flex min-w-0 flex-col overflow-hidden md:ml-0">
             <header class="header text-white px-6 py-4 flex items-center justify-between shadow-lg">
                 <div class="employee-header-layout">
                     <div class="header-left employee-header-title">
@@ -381,7 +381,7 @@
                 </div>
             </header>
 
-            <main class="flex-1 overflow-y-auto px-4 py-6 md:px-6">
+            <main class="min-w-0 flex-1 overflow-y-auto px-4 py-6 md:px-6">
                 @if(session('success'))
                     <div class="mb-6 rounded-lg bg-green-500 px-6 py-3 text-white animate-fade-in">
                         <i class="fas fa-check-circle mr-2"></i>

@@ -165,7 +165,7 @@
     .reservation-hero .eyebrow { margin:0; color:#68738a; font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
     .reservation-hero h1 { max-width:560px; margin:8px 0 10px; color:#172033; font-size:31px; line-height:1.12; letter-spacing:-.02em; }
     .reservation-hero p { max-width:520px; margin:0; color:#69748b; font-size:13px; line-height:1.5; }
-    .reservation-hero-image { display:block; grid-column:2; grid-row:1 / span 3; align-self:stretch; width:100%; min-height:156px; object-fit:cover; object-position:center; border-radius:0 0 0 60px; }
+    .reservation-hero-image { display:block; grid-column:2; grid-row:1 / span 3; align-self:stretch; width:100%; height:156px; min-height:0; max-height:156px; object-fit:cover; object-position:center; border-radius:0 0 0 60px; }
 
     .reservation-shell { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:18px; max-width:970px; margin:0 auto; padding:0; }
     .reservation-left { min-width:0; }

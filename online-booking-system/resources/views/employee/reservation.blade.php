@@ -315,6 +315,23 @@
     ];
 @endphp
 
+<style>
+    .employee-reservation-table {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .employee-reservation-table table {
+        min-width: 980px;
+    }
+
+    .employee-reservation-mobile-cards {
+        display: none !important;
+    }
+</style>
+
 <div class="animate-fade-in space-y-6">
     <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
@@ -380,7 +397,7 @@
         </div>
 
         <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div class="hidden overflow-x-auto md:block">
+            <div class="employee-reservation-table overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -483,7 +500,7 @@
                 </table>
             </div>
 
-            <div class="space-y-4 p-4 md:hidden">
+            <div class="employee-reservation-mobile-cards space-y-4 p-4 md:hidden">
                 @forelse($roomReservations as $reservation)
                     <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                         <div class="flex items-start justify-between gap-3">
@@ -579,7 +596,7 @@
         </div>
 
         <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div class="hidden overflow-x-auto md:block">
+            <div class="employee-reservation-table overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -665,7 +682,7 @@
                 </table>
             </div>
 
-            <div class="space-y-4 p-4 md:hidden">
+            <div class="employee-reservation-mobile-cards space-y-4 p-4 md:hidden">
                 @forelse($facilitiesReservations as $reservation)
                     <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                         <div class="flex items-start justify-between gap-3">
@@ -753,7 +770,7 @@
         </div>
 
         <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div class="hidden overflow-x-auto md:block">
+            <div class="employee-reservation-table overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -843,7 +860,7 @@
                 </table>
             </div>
 
-            <div class="space-y-4 p-4 md:hidden">
+            <div class="employee-reservation-mobile-cards space-y-4 p-4 md:hidden">
                 @forelse($eventsReservations as $reservation)
                     <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                         <div class="flex items-start justify-between gap-3">
@@ -934,7 +951,7 @@
         </div>
 
         <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div class="hidden overflow-x-auto md:block">
+            <div class="employee-reservation-table overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -1027,7 +1044,7 @@
                 </table>
             </div>
 
-            <div class="space-y-4 p-4 md:hidden">
+            <div class="employee-reservation-mobile-cards space-y-4 p-4 md:hidden">
                 @forelse($diningReservations as $reservation)
                     <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                         <div class="flex items-start justify-between gap-3">
