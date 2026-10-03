@@ -674,6 +674,7 @@ document.addEventListener('DOMContentLoaded', function () {
    
     const toggleBtn   = document.getElementById('chat-toggle');
     const closeBtn    = document.getElementById('chat-close-btn');
+    const clearBtn    = document.getElementById('chat-clear-btn');
     const widget      = document.getElementById('chat-widget');
     const messagesEl  = document.getElementById('chat-messages');
     const inputEl     = document.getElementById('chat-input');
@@ -685,8 +686,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const formEl      = document.getElementById('message-form');
     const chatbotUrl  = formEl ? formEl.dataset.chatbotEndpoint : null;
     const guestMessagesUrl = formEl ? formEl.dataset.guestMessagesEndpoint : null;
+    const chatStorageKey = 'casaul-hotel-chat-history';
+    const welcomeMarkup = messagesEl.innerHTML;
 
     let isOpen = false;
+    let restoringChatHistory = false;
     let pendingAction = null;
     let frontDeskHistoryLoaded = false;
     let lastFrontDeskAction = null;
@@ -727,13 +731,55 @@ document.addEventListener('DOMContentLoaded', function () {
         contentDiv.appendChild(document.createTextNode(text.slice(previousIndex)));
     }
 
-    function addMessage(text, type, keepQuick = false) {
+    function persistChatHistory() {
+        if (restoringChatHistory) return;
+
+        const history = Array.from(messagesEl.querySelectorAll('.chat-msg')).map((message) => ({
+            text: message.dataset.chatText ?? message.querySelector('.chat-msg-content')?.innerText ?? '',
+            type: message.classList.contains('user') ? 'user' : 'bot',
+            time: message.querySelector('.chat-msg-time')?.textContent ?? '',
+            frontDesk: message.classList.contains('front-desk-msg'),
+        }));
+
+        try {
+            window.localStorage.setItem(chatStorageKey, JSON.stringify(history));
+        } catch (error) {
+            console.error('Chat history persistence error:', error);
+        }
+    }
+
+    function restoreChatHistory() {
+        let history;
+        try {
+            history = JSON.parse(window.localStorage.getItem(chatStorageKey) || 'null');
+        } catch (error) {
+            return;
+        }
+
+        if (!Array.isArray(history) || history.length === 0) return;
+
+        restoringChatHistory = true;
+        messagesEl.innerHTML = '';
+        history.forEach((item) => {
+            if (!item || typeof item.text !== 'string' || !['bot', 'user'].includes(item.type)) return;
+            if (item.frontDesk) {
+                addFrontDeskBubble(item.text, item.type, String(item.time || ''));
+            } else {
+                addMessage(item.text, item.type, false, String(item.time || ''));
+            }
+        });
+        restoringChatHistory = false;
+        scrollToBottom();
+    }
+
+    function addMessage(text, type, keepQuick = false, timestamp = null) {
     
         const typing = messagesEl.querySelector('.typing-indicator');
         if (typing) typing.remove();
 
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-msg ${type}`;
+        msgDiv.dataset.chatText = String(text);
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'chat-msg-content';
@@ -748,7 +794,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const timeSpan = document.createElement('span');
         timeSpan.className = 'chat-msg-time';
-        timeSpan.textContent = formatTime();
+        timeSpan.textContent = timestamp || formatTime();
 
         msgDiv.appendChild(contentDiv);
         msgDiv.appendChild(timeSpan);
@@ -759,6 +805,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (type === 'user') {
             setQuickRepliesExpanded(false);
         }
+
+        persistChatHistory();
     }
 
     function addFrontDeskBubble(text, type, timestamp, key = '') {
@@ -767,6 +815,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const msgDiv = document.createElement('div');
         msgDiv.className = `chat-msg ${type} front-desk-msg`;
+        msgDiv.dataset.chatText = String(text);
         if (key) msgDiv.dataset.frontDeskMessageKey = key;
 
         const contentDiv = document.createElement('div');
@@ -780,6 +829,7 @@ document.addEventListener('DOMContentLoaded', function () {
         msgDiv.appendChild(contentDiv);
         msgDiv.appendChild(timeSpan);
         messagesEl.appendChild(msgDiv);
+        persistChatHistory();
     }
 
     function parseFrontDeskHistory(replyText) {
@@ -950,6 +1000,20 @@ document.addEventListener('DOMContentLoaded', function () {
             container.appendChild(endButton);
         }
 
+        if (pendingAction === 'request_housekeeping') {
+            const backButton = document.createElement('button');
+            backButton.className = 'quick-reply chat-back-to-quick-questions';
+            backButton.type = 'button';
+            backButton.textContent = '← Back';
+            backButton.addEventListener('click', () => {
+                pendingAction = null;
+                activeFaqQuestions = null;
+                faqCategorySelectionPending = false;
+                updateQuickReplies(defaultQuickReplies, true);
+            });
+            container.appendChild(backButton);
+        }
+
         if (activeFaqQuestions) {
             const backButton = document.createElement('button');
             backButton.className = 'quick-reply chat-back-to-quick-questions';
@@ -966,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', function () {
         setQuickRepliesExpanded(expanded);
     }
 
-    const faqCategoryQuickReplies = ['Reservations', 'Rooms', 'Check-in / Check-out', 'Payment Information', 'Dining & Menu', 'Hotel Services', 'Hotel Policies'];
+    const faqCategoryQuickReplies = ['Reservations', 'Rooms', 'Facilities', 'Check-in / Check-out', 'Payment Information', 'Dining & Menu', 'Hotel Services', 'Hotel Policies'];
     const defaultQuickReplies = [...faqCategoryQuickReplies, 'Contact Front Desk', 'Request Housekeeping', 'Book a Room', 'Inquiries', 'Show Available Rooms', 'Special Offers', 'Contact Us'];
     let activeFaqQuestions = null;
     let faqCategorySelectionPending = false;
@@ -1074,7 +1138,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else if (!isFrontDeskReply) {
                 addMessage(replyData.reply, 'bot', true);
             }
-            updateQuickReplies(quickRepliesForResponse(replyData));
+            updateQuickReplies(quickRepliesForResponse(replyData), replyData.mode === 'request_housekeeping');
             if (pendingAction === 'contact_front_desk') startFrontDeskPolling();
         }, delay);
     }
@@ -1117,6 +1181,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
         addMessage('Your Front Desk conversation has ended. How else can I help you?', 'bot');
         updateQuickReplies(defaultQuickReplies);
+    }
+
+    function clearChat() {
+        if (!window.confirm('Clear the current chat conversation?')) return;
+
+        stopFrontDeskPolling();
+        try {
+            window.localStorage.removeItem(chatStorageKey);
+        } catch (error) {
+            console.error('Chat history clear error:', error);
+        }
+
+        pendingAction = null;
+        activeFaqQuestions = null;
+        faqCategorySelectionPending = false;
+        lastFrontDeskAction = null;
+        lastFrontDeskPrompt = false;
+        frontDeskNoticeShown = false;
+        frontDeskHistoryLoaded = false;
+        frontDeskServerState.clear();
+        frontDeskSeenMessageIds.clear();
+        inputEl.value = '';
+        messagesEl.innerHTML = welcomeMarkup;
+        updateQuickReplies(defaultQuickReplies, true);
+        scrollToBottom();
     }
 
    
@@ -1168,6 +1257,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     toggleBtn.addEventListener('click', () => toggleChat(!isOpen));
     closeBtn?.addEventListener('click', () => toggleChat(false));
+    clearBtn?.addEventListener('click', clearChat);
     faqToggle.addEventListener('click', () => {
         const isExpanded = faqToggle.getAttribute('aria-expanded') === 'true';
         setQuickRepliesExpanded(!isExpanded);
@@ -1200,6 +1290,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
+
+    restoreChatHistory();
 
     console.log('🤖 Casaul Hotel Virtual Assistant loaded!');
 });

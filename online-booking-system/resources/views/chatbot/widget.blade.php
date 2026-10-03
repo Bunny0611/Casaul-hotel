@@ -22,6 +22,9 @@
             <span class="chat-header-title">Virtual Assistant</span>
             <span class="chat-header-status">Online</span>
         </div>
+        <button type="button" id="chat-clear-btn" class="chat-clear-btn">
+            <i class="fas fa-trash-alt" aria-hidden="true"></i><span>Clear Chat</span>
+        </button>
         <button type="button" id="chat-close-btn" class="chat-close-btn" aria-label="Close chat">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <line x1="18" y1="6" x2="6" y2="18"/>
@@ -49,6 +52,7 @@
     <div id="chat-quick-replies" class="chat-quick-replies" style="display:none;">
         <button class="quick-reply" data-action="reservations">Reservations</button>
         <button class="quick-reply" data-action="rooms">Rooms</button>
+        <button class="quick-reply" data-action="facilities">Facilities</button>
         <button class="quick-reply" data-action="check-in-check-out">Check-in / Check-out</button>
         <button class="quick-reply" data-action="payment-information">Payment Information</button>
         <button class="quick-reply" data-action="dining-menu">Dining &amp; Menu</button>

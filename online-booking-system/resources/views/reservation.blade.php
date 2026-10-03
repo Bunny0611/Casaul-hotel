@@ -1096,7 +1096,7 @@
                 </section>
                 <section class="review-section review-policy">
                     <h4><i class="fas fa-shield-alt"></i> Cancellation Policy / Terms &amp; Conditions</h4>
-                    Free cancellation until 24 hours before check-in.
+                    {{ config('reservation.cancellation_policy') }}
                     <strong>By confirming, I agree to the Terms &amp; Conditions.</strong>
                 </section>
             </div>
@@ -1142,7 +1142,7 @@
             <div class="details-form-grid details-request-grid">
                 <section class="details-form-section">
                     <h4><i class="fas fa-shield-alt"></i> Cancellation Policy</h4>
-                    <p style="margin:0;color:#788398;font-size:9px;line-height:1.4;">Free cancellation until 24 hours before check-in.</p>
+                    <p style="margin:0;color:#788398;font-size:9px;line-height:1.4;">{{ config('reservation.cancellation_policy') }}</p>
                     <label><input id="detailsTerms" type="checkbox"> I agree to the Terms & Conditions</label>
                 </section>
             </div>
@@ -1158,11 +1158,9 @@
                 <h4>Payment Method</h4>
                 <p>Please select your preferred payment method.</p>
                 <div class="payment-method-options">
-                    <button type="button" class="payment-method-option selected" data-payment-method="Cash / Pay at Hotel">Cash / Pay at Hotel</button>
-                    <button type="button" class="payment-method-option" data-payment-method="GCash">GCash</button>
-                    <button type="button" class="payment-method-option" data-payment-method="Maya">Maya</button>
-                    <button type="button" class="payment-method-option" data-payment-method="Credit / Debit Card">Credit / Debit Card</button>
-                    <button type="button" class="payment-method-option" data-payment-method="Bank Transfer">Bank Transfer</button>
+                    @foreach(config('reservation.payment_methods') as $paymentMethod)
+                        <button type="button" class="payment-method-option {{ $loop->first ? 'selected' : '' }}" data-payment-method="{{ $paymentMethod }}">{{ $paymentMethod }}</button>
+                    @endforeach
                 </div>
                 <div class="payment-method-panel" data-payment-panel="GCash" hidden>
                     <h5>GCash Payment</h5>

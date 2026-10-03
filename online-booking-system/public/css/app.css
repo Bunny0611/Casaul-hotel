@@ -5185,6 +5185,37 @@ body:has(.profile-page) footer {
     height: 20px;
 }
 
+.chat-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 30px;
+    flex: 0 0 auto;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 6px 9px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.chat-clear-btn:hover {
+    color: var(--brand);
+    background: #fff;
+    border-color: #fff;
+}
+
+.chat-clear-btn i {
+    font-size: 11px;
+}
+
 
 .chat-messages {
     flex: 1;

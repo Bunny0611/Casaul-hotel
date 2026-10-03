@@ -114,7 +114,10 @@ class ChatbotController extends Controller
         $requestTypes = ['Room Cleaning', 'Towels', 'Bed Linens', 'Toiletries', 'Other Request'];
 
         if (! $guest) {
-            return ['reply' => 'Please sign in as a guest before requesting housekeeping.'];
+            return [
+                'reply' => 'Please sign in as a guest before requesting housekeeping.',
+                'mode' => 'request_housekeeping',
+            ];
         }
 
         if ($this->normalizeFaqText($message) === $this->normalizeFaqText('Request Housekeeping')) {
@@ -136,7 +139,10 @@ class ChatbotController extends Controller
 
         $reservation = $this->activeRoomReservationFor($guest);
         if (! $reservation) {
-            return ['reply' => 'A current confirmed or checked-in room reservation is required before submitting a housekeeping request. Please contact the front desk if you need help.'];
+            return [
+                'reply' => 'A current confirmed or checked-in room reservation is required before submitting a housekeeping request. Please contact the front desk if you need help.',
+                'mode' => 'request_housekeeping',
+            ];
         }
 
         GuestRequest::create([
@@ -155,6 +161,7 @@ class ChatbotController extends Controller
         return [
             'reply' => 'Your ' . strtolower($selectedType) . ' request has been submitted to housekeeping. You can follow its status from your guest records.',
             'quick_replies' => ['Contact Front Desk', 'Request Housekeeping'],
+            'mode' => 'request_housekeeping',
         ];
     }
 
@@ -206,12 +213,34 @@ class ChatbotController extends Controller
     {
         $normalizedMessage = $this->normalizeFaqText($message);
         $categories = config('chatbot.categories', []);
+        $categoryLabels = array_column($categories, 'label');
+
+        if ($normalizedMessage === $this->normalizeFaqText('Contact Us')) {
+            return [
+                'reply' => "CASAUL Hotel Tabaco\nMobile: (+63) 935 017 7564\nEmail: taba-roomsreservation@casahotels.com\nAddress: Tomas Cabiles St., Tabaco City\n\nCorporate Office\nTel. No.: (052) 203-0244 / (052) 203-0243\nEmail: inquiry@casaulhotels.com",
+                'quick_replies' => $categoryLabels,
+            ];
+        }
 
         foreach ($categories as $category) {
             $categoryNames = array_merge([$category['label']], $category['aliases'] ?? []);
             $normalizedCategoryNames = array_map(fn ($name) => $this->normalizeFaqText($name), $categoryNames);
 
             if (in_array($normalizedMessage, $normalizedCategoryNames, true)) {
+                if ($category['label'] === 'Facilities') {
+                    return [
+                        'reply' => $this->facilityReply(),
+                        'quick_replies' => $categoryLabels,
+                    ];
+                }
+
+                if ($category['label'] === 'Hotel Services') {
+                    return [
+                        'reply' => $this->hotelServicesReply(),
+                        'quick_replies' => array_keys($category['questions']),
+                    ];
+                }
+
                 return [
                     'reply' => 'Here are some common questions about ' . $category['label'] . '. Select a question below or type your own question.',
                     'quick_replies' => array_keys($category['questions']),
@@ -220,9 +249,19 @@ class ChatbotController extends Controller
 
             foreach ($category['questions'] as $question => $answer) {
                 if ($normalizedMessage === $this->normalizeFaqText($question)) {
+                    if ($question === 'What types of rooms are available?') {
+                        $answer = $this->roomTypesReply();
+                    } elseif ($question === 'What payment methods are accepted?') {
+                        $answer = $this->acceptedPaymentMethodsReply();
+                    } elseif ($question === 'What is the cancellation policy?') {
+                        $answer = 'Cancellation Policy: ' . config('reservation.cancellation_policy');
+                    } elseif ($category['label'] === 'Hotel Services') {
+                        $answer = $this->hotelServiceQuestionReply($question);
+                    }
+
                     return [
                         'reply' => $answer,
-                        'quick_replies' => array_column($categories, 'label'),
+                        'quick_replies' => $categoryLabels,
                     ];
                 }
             }
@@ -241,14 +280,18 @@ class ChatbotController extends Controller
         $normalized = strtolower($message);
 
         if (Str::contains($normalized, ['check-in', 'check in', 'arrival', 'arrive'])) {
-            return 'Check-in usually starts at 2:00 PM. Check-out is at 12:00 PM. If you need an early arrival or late departure, please let our front desk know and we will do our best to assist.';
+            return 'Check-in time is 3:00 PM.';
         }
 
         if (Str::contains($normalized, ['check-out', 'check out', 'departure', 'checkout'])) {
-            return 'Check-out is at 12:00 PM. You may request a late check-out, subject to room availability and front desk approval.';
+            return 'Check-out time is 12:00 PM.';
         }
 
-        if (Str::contains($normalized, ['deluxe', 'executive', 'presidential', 'suite', 'standard'])) {
+        if (Str::contains($normalized, ['room type', 'room types', 'type of room', 'types of room'])) {
+            return $this->roomTypesReply();
+        }
+
+        if (Str::contains($normalized, ['deluxe', 'standard'])) {
             return $this->roomTypeReply($normalized, $message);
         }
 
@@ -257,7 +300,7 @@ class ChatbotController extends Controller
         }
 
         if (Str::contains($normalized, ['facility', 'facilities', 'amenity', 'amenities'])) {
-            return $this->facilityReply($normalized);
+            return $this->facilityReply();
         }
 
         if (Str::contains($normalized, ['dining', 'restaurant', 'meal', 'breakfast', 'food'])) {
@@ -286,10 +329,8 @@ class ChatbotController extends Controller
     protected function roomReply(string $normalized): string
     {
         $roomCount = Room::count();
-        $roomTypes = Room::query()->select('room_type')->distinct()->orderBy('room_type')->pluck('room_type')->take(5)->all();
         $lowestPrice = Room::query()->whereNotNull('price')->min('price');
 
-        $roomList = $roomTypes ? implode(', ', $roomTypes) : 'standard room options';
         $priceText = $lowestPrice ? ' from ₱' . number_format((float) $lowestPrice, 2) : 'from our current available rates';
 
         if (Str::contains($normalized, ['available', 'availability'])) {
@@ -297,10 +338,15 @@ class ChatbotController extends Controller
         }
 
         if (Str::contains($normalized, ['price', 'rate', 'cost'])) {
-            return 'Our rooms start at ' . $priceText . '. Popular room types include ' . $roomList . '.';
+            return 'Our rooms start at ' . $priceText . '. We offer Deluxe and Standard rooms.';
         }
 
-        return 'Casaul Hotel currently has ' . $roomCount . ' room' . ($roomCount === 1 ? '' : 's') . ' in our inventory. We offer room types such as ' . $roomList . '. If you want, I can help you check available dates or guide you to the best room for your stay.';
+        return 'Casaul Hotel offers two room types: Deluxe and Standard. There are currently ' . $roomCount . ' rooms in our inventory.';
+    }
+
+    protected function roomTypesReply(): string
+    {
+        return "Casaul Hotel offers two room types:\n• Deluxe\n• Standard\n\nWould you like to view the available rooms?";
     }
 
     protected function roomTypeReply(string $normalized, string $message): string
@@ -309,11 +355,7 @@ class ChatbotController extends Controller
 
         $typeMap = [
             'deluxe' => 'Deluxe',
-            'executive' => 'Executive',
-            'presidential' => 'Presidential Suite',
-            'suite' => 'Suite',
             'standard' => 'Standard',
-            'standard room' => 'Standard',
         ];
 
         $requestedType = null;
@@ -325,7 +367,7 @@ class ChatbotController extends Controller
         }
 
         if ($requestedType === null) {
-            return $this->availableRoomsReply();
+            return $this->roomTypesReply();
         }
 
         $typesToCheck = [$requestedType];
@@ -432,19 +474,77 @@ class ChatbotController extends Controller
         return '• Room ' . $roomNumber . $typeSuffix . "\n  Price: " . $price;
     }
 
-    protected function facilityReply(string $normalized): string
+    protected function facilityReply(): string
     {
-        $facilityCount = Facility::count();
-        $facilityNames = Facility::query()->select('name')->orderBy('name')->pluck('name')->take(5)->all();
+        $facilityNames = $this->availableFacilityNames();
 
-        if (Str::contains($normalized, ['available', 'availability'])) {
-            $availableFacilities = Facility::whereIn('status', ['available', 'limited'])->count();
-            return 'We currently have ' . $availableFacilities . ' available facility option' . ($availableFacilities === 1 ? '' : 's') . ' for guests.';
+        if ($facilityNames === []) {
+            return 'No facilities are currently available.';
         }
 
-        $listText = $facilityNames ? implode(', ', $facilityNames) : 'our hotel amenities';
+        return "Available facilities:\n• " . implode("\n• ", $facilityNames);
+    }
 
-        return 'We offer ' . $facilityCount . ' facility option' . ($facilityCount === 1 ? '' : 's') . ' for guests, including ' . $listText . '. These may include amenities designed for comfort, leisure, and convenience.';
+    protected function hotelServicesReply(): string
+    {
+        $services = ['housekeeping requests'];
+
+        if (DiningMenu::query()->whereRaw('LOWER(status) = ?', ['available'])->exists()) {
+            $services[] = 'dining';
+        }
+
+        $services = array_merge($services, $this->availableFacilityNames());
+
+        return 'Available hotel services: ' . implode(', ', $services) . '.';
+    }
+
+    protected function hotelServiceQuestionReply(string $question): string
+    {
+        if (Str::contains(strtolower($question), 'housekeeping')) {
+            return 'Yes. Submit a housekeeping request here in chat.';
+        }
+
+        if (Str::contains(strtolower($question), ['wi-fi', 'wifi'])) {
+            return 'Yes. Wi-Fi is available in all rooms.';
+        }
+
+        $searchTerm = Str::contains(strtolower($question), 'parking') ? 'parking' : 'wi-fi';
+        $normalizedSearchTerm = preg_replace('/[^a-z0-9]+/i', '', $searchTerm);
+        $facility = collect($this->availableFacilityNames())->first(function ($name) use ($normalizedSearchTerm) {
+            $normalizedName = preg_replace('/[^a-z0-9]+/i', '', strtolower($name));
+            return str_contains($normalizedName, $normalizedSearchTerm);
+        });
+
+        if ($facility) {
+            return $facility . ' is currently available.';
+        }
+
+        if (Str::contains(strtolower($question), 'room service')) {
+            return 'Please contact the front desk to confirm room service availability.';
+        }
+
+        return 'Please contact the front desk to confirm ' . $searchTerm . ' availability.';
+    }
+
+    protected function availableFacilityNames(): array
+    {
+        return Facility::query()
+            ->whereRaw('LOWER(status) = ?', ['available'])
+            ->orderBy('name')
+            ->pluck('name')
+            ->all();
+    }
+
+    protected function acceptedPaymentMethodsReply(): string
+    {
+        $paymentMethods = array_values(array_filter(
+            config('reservation.payment_methods', []),
+            static fn ($method) => is_string($method) && trim($method) !== ''
+        ));
+
+        return $paymentMethods
+            ? "Accepted payment methods:\n• " . implode("\n• ", $paymentMethods)
+            : 'Please contact the front desk to confirm accepted payment methods.';
     }
 
     protected function diningReply(string $normalized): string
