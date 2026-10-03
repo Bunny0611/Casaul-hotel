@@ -1698,11 +1698,30 @@
     });
 
     function reindexOptionalAddons(container) {
+        let savedIndex = 0;
         container.querySelectorAll('[data-optional-addon-row]').forEach((row, index) => {
-            row.querySelector('[data-optional-addon-name]').name = `optional_addons[${index}][name]`;
-            row.querySelector('[data-optional-addon-description]').name = `optional_addons[${index}][description]`;
-            row.querySelector('[data-optional-addon-price]').name = `optional_addons[${index}][price]`;
-            row.querySelector('[data-optional-addon-available]').name = `optional_addons[${index}][available]`;
+            const saved = row.dataset.optionalAddonSaved === 'true';
+            const fieldNames = [
+                ['[data-optional-addon-name]', 'name'],
+                ['[data-optional-addon-description]', 'description'],
+                ['[data-optional-addon-price]', 'price'],
+            ];
+
+            fieldNames.forEach(([selector, field]) => {
+                const input = row.querySelector(selector);
+                if (saved) input.name = `optional_addons[${savedIndex}][${field}]`;
+                else input.removeAttribute('name');
+            });
+
+            const available = row.querySelector('[data-optional-addon-available]');
+            const availableValue = row.querySelector('[data-optional-addon-available-value]');
+            availableValue.value = available.checked ? '1' : '0';
+            if (saved) {
+                availableValue.name = `optional_addons[${savedIndex}][available]`;
+                savedIndex++;
+            } else {
+                availableValue.removeAttribute('name');
+            }
         });
     }
 
@@ -1718,16 +1737,71 @@
         emptyState.hidden = container.querySelectorAll('[data-optional-addon-row]').length > 0;
     }
 
+    function setOptionalAddonRowState(row, saved, enabled = true) {
+        row.dataset.optionalAddonSaved = saved ? 'true' : 'false';
+        row.querySelector('[data-optional-addon-editor]').hidden = saved;
+        const summary = row.querySelector('[data-optional-addon-summary]');
+        summary.hidden = !saved;
+        summary.classList.toggle('hidden', !saved);
+        row.querySelectorAll('[data-optional-addon-name], [data-optional-addon-description], [data-optional-addon-price]').forEach(input => {
+            input.disabled = !enabled;
+            input.readOnly = saved;
+        });
+
+        const available = row.querySelector('[data-optional-addon-available]');
+        const availableValue = row.querySelector('[data-optional-addon-available-value]');
+        available.disabled = !enabled || saved;
+        availableValue.disabled = !enabled || !saved;
+        availableValue.value = available.checked ? '1' : '0';
+
+        row.querySelector('[data-optional-addon-summary-name]').textContent = row.querySelector('[data-optional-addon-name]').value.trim();
+        row.querySelector('[data-optional-addon-summary-description]').textContent = row.querySelector('[data-optional-addon-description]').value.trim();
+        row.querySelector('[data-optional-addon-summary-price]').textContent = `₱${Number(row.querySelector('[data-optional-addon-price]').value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const availabilityBadge = row.querySelector('[data-optional-addon-summary-availability]');
+        availabilityBadge.textContent = available.checked ? 'Available' : 'Unavailable';
+        availabilityBadge.className = available.checked
+            ? 'inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700'
+            : 'inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600';
+        row.querySelectorAll('[data-edit-optional-addon], [data-remove-optional-addon]').forEach(button => {
+            button.disabled = !enabled;
+        });
+    }
+
     function appendOptionalAddon(container, addon = {}, enabled = true) {
         const row = document.createElement('div');
         row.dataset.optionalAddonRow = '';
-        row.className = 'rounded-lg border border-gray-200 p-4';
-        row.innerHTML = '<div class="grid grid-cols-1 gap-3 sm:grid-cols-2"><label class="block text-sm font-medium text-gray-700">Add-on Name<input data-optional-addon-name type="text" maxlength="255" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></label><label class="block text-sm font-medium text-gray-700">Description<input data-optional-addon-description type="text" maxlength="1000" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></label><label class="block text-sm font-medium text-gray-700">Price (₱)<input data-optional-addon-price type="number" min="0" step="0.01" required class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></label><div class="flex items-end justify-between gap-3"><label class="inline-flex items-center gap-2 pb-2 text-sm font-medium text-gray-700">Available<input data-optional-addon-available type="checkbox" value="1" role="switch" class="optional-addon-switch"></label><button type="button" data-remove-optional-addon class="mb-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600">Remove</button></div></div>';
+        row.className = 'rounded-lg border border-gray-200 p-3';
+        row.innerHTML = `
+            <div data-optional-addon-editor>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label class="block text-sm font-medium text-gray-700">Add-on Name<input data-optional-addon-name type="text" maxlength="255" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></label>
+                    <label class="block text-sm font-medium text-gray-700">Description<input data-optional-addon-description type="text" maxlength="1000" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></label>
+                    <label class="block text-sm font-medium text-gray-700">Price (₱)<input data-optional-addon-price type="number" min="0" step="0.01" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"></label>
+                    <label class="inline-flex items-center gap-2 pb-2 text-sm font-medium text-gray-700">Available<input data-optional-addon-available type="checkbox" value="1" role="switch" class="optional-addon-switch"><input data-optional-addon-available-value type="hidden"></label>
+                </div>
+                <div class="mt-3 flex flex-wrap justify-end gap-2">
+                    <button type="button" data-save-optional-addon class="rounded-lg bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">Save Add-on</button>
+                    <button type="button" data-remove-optional-addon class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600">Remove</button>
+                </div>
+            </div>
+            <div data-optional-addon-summary hidden class="hidden grid grid-cols-1 items-center gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+                <div class="min-w-0">
+                    <p data-optional-addon-summary-name class="font-semibold text-gray-800"></p>
+                    <p data-optional-addon-summary-description class="mt-1 text-sm text-gray-500"></p>
+                </div>
+                <strong data-optional-addon-summary-price class="whitespace-nowrap text-sm font-semibold text-green-700"></strong>
+                <span data-optional-addon-summary-availability></span>
+                <div class="flex justify-end gap-2">
+                    <button type="button" data-edit-optional-addon class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600">Edit</button>
+                    <button type="button" data-remove-optional-addon class="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-600">Remove</button>
+                </div>
+            </div>`;
         row.querySelector('[data-optional-addon-name]').value = addon.name || '';
         row.querySelector('[data-optional-addon-description]').value = addon.description || '';
         row.querySelector('[data-optional-addon-price]').value = addon.price ?? '';
         row.querySelector('[data-optional-addon-available]').checked = addon.available !== false && addon.available !== 0 && addon.available !== '0';
-        row.querySelectorAll('input').forEach(input => input.disabled = !enabled);
+        const saved = Boolean(addon.name && addon.price !== undefined && addon.price !== null && addon.price !== '');
+        setOptionalAddonRowState(row, saved, enabled);
         container.append(row);
         reindexOptionalAddons(container);
         updateOptionalAddonsEmptyState(container);
@@ -1744,6 +1818,44 @@
     });
 
     document.addEventListener('click', event => {
+        const saveButton = event.target.closest('[data-save-optional-addon]');
+        if (saveButton) {
+            const row = saveButton.closest('[data-optional-addon-row]');
+            const nameInput = row.querySelector('[data-optional-addon-name]');
+            const priceInput = row.querySelector('[data-optional-addon-price]');
+            const name = nameInput.value.trim();
+            const price = priceInput.value.trim();
+
+            if (!name) {
+                nameInput.setCustomValidity('Enter an add-on name.');
+                nameInput.reportValidity();
+                nameInput.addEventListener('input', () => nameInput.setCustomValidity(''), { once: true });
+                return;
+            }
+            if (price === '' || !Number.isFinite(Number(price)) || Number(price) < 0) {
+                priceInput.setCustomValidity('Enter a valid add-on price.');
+                priceInput.reportValidity();
+                priceInput.addEventListener('input', () => priceInput.setCustomValidity(''), { once: true });
+                return;
+            }
+
+            nameInput.value = name;
+            row.dataset.optionalAddonNeedsSave = 'false';
+            setOptionalAddonRowState(row, true, true);
+            reindexOptionalAddons(row.parentElement);
+            return;
+        }
+
+        const editButton = event.target.closest('[data-edit-optional-addon]');
+        if (editButton) {
+            const row = editButton.closest('[data-optional-addon-row]');
+            row.dataset.optionalAddonNeedsSave = 'true';
+            setOptionalAddonRowState(row, false, true);
+            reindexOptionalAddons(row.parentElement);
+            row.querySelector('[data-optional-addon-name]').focus();
+            return;
+        }
+
         const removeButton = event.target.closest('[data-remove-optional-addon]');
         if (!removeButton) return;
         const row = removeButton.closest('[data-optional-addon-row]');
@@ -1753,6 +1865,36 @@
             reindexOptionalAddons(container);
             updateOptionalAddonsEmptyState(container);
         }
+    });
+
+    [
+        ['addEventForm', 'eventOptionalAddonsList'],
+        ['editInventoryForm', 'editInventoryOptionalAddonsList'],
+    ].forEach(([formId, listId]) => {
+        const form = document.getElementById(formId);
+        const list = document.getElementById(listId);
+        if (!form || !list) return;
+
+        form.addEventListener('submit', event => {
+            const unfinishedRow = [...list.querySelectorAll('[data-optional-addon-row]')].find(row => {
+                if (row.dataset.optionalAddonSaved === 'true') return false;
+                if (row.dataset.optionalAddonNeedsSave === 'true') return true;
+                return [
+                    row.querySelector('[data-optional-addon-name]').value.trim(),
+                    row.querySelector('[data-optional-addon-description]').value.trim(),
+                    row.querySelector('[data-optional-addon-price]').value.trim(),
+                ].some(Boolean);
+            });
+
+            if (unfinishedRow) {
+                event.preventDefault();
+                window.alert('Save each completed add-on before submitting the package.');
+                unfinishedRow.querySelector('[data-save-optional-addon]')?.focus();
+                return;
+            }
+
+            reindexOptionalAddons(list);
+        });
     });
 
     function configureEventDurationFields() {

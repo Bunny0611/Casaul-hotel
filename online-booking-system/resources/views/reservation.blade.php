@@ -1016,17 +1016,14 @@
                 <div class="event-reservation-field">
                     <span class="event-reservation-field-icon"><i class="fas fa-users" aria-hidden="true"></i></span>
                     <label class="event-reservation-field-copy" for="eventReservationGuestsInput"><strong>Number of Guests</strong><input id="eventReservationGuestsInput" type="number" min="1" value="1" step="1" inputmode="numeric"></label>
-                    <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
                 </div>
                 <div class="event-reservation-field" aria-disabled="true">
                     <span class="event-reservation-field-icon"><i class="fas fa-map-marker-alt" aria-hidden="true"></i></span>
                     <span class="event-reservation-field-copy"><strong>Venue</strong><span id="eventReservationVenue">Default venue</span></span>
-                    <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
                 </div>
                 <button type="button" class="event-reservation-field" id="eventReservationAddonsToggle" aria-disabled="false" aria-expanded="false" aria-controls="eventReservationAddonOptions">
                     <span class="event-reservation-field-icon"><i class="fas fa-plus" aria-hidden="true"></i></span>
                     <span class="event-reservation-field-copy"><strong>Add-ons</strong><span id="eventReservationAddonsValue">Select add-ons</span></span>
-                    <i class="fas fa-chevron-right event-reservation-field-chevron" aria-hidden="true"></i>
                 </button>
                 <div class="event-reservation-addon-options" id="eventReservationAddonOptions" hidden></div>
             </div>
