@@ -217,6 +217,29 @@
         display: none !important;
     }
 
+    .employee-message-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .employee-message-filters button {
+        flex: 1 1 8rem;
+        justify-content: center;
+    }
+
+    .employee-message-content-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+    }
+
+    @media (min-width: 1280px) {
+        .employee-message-content-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
     @media (max-width: 480px) {
         .employee-channel-switcher {
             width: 100%;
@@ -242,7 +265,7 @@
     <section id="employee-guest-channel" class="employee-channel-panel space-y-6" role="tabpanel" aria-labelledby="employee-guest-tab">
         <p class="text-sm text-gray-500">Private conversations between guests and employees.</p>
     <!-- Stats Cards -->
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <!-- Unread Messages -->
         <div class="rounded-2xl bg-white p-6 shadow-md">
             <div class="flex items-start justify-between">
@@ -287,7 +310,7 @@
     </div>
 
     <!-- Filter Buttons -->
-    <div class="flex gap-2">
+    <div class="employee-message-filters">
         <button type="button" onclick="window.location.href='{{ route('employee.messages', ['filter' => 'today']) }}'" class="flex items-center gap-2 rounded-lg {{ $filter === 'today' ? 'border-2 border-orange-500 bg-orange-50 text-orange-600' : 'border border-gray-300 bg-white text-gray-700' }} px-4 py-2 text-sm font-medium transition hover:bg-gray-50">
             <i class="fas fa-calendar-day"></i> Today
         </button>
@@ -303,7 +326,7 @@
     </div>
 
     <!-- Main Content Grid -->
-    <div class="grid grid-cols-2 gap-6">
+    <div class="employee-message-content-grid">
         <!-- Guest Message Box -->
         <div class="rounded-2xl bg-white p-6 shadow-md">
             <div class="mb-6 flex items-center gap-3">

@@ -359,6 +359,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/reports/export-csv', [AdminController::class, 'exportReportsCsv'])->name('reports.export.csv');
     Route::get('/reports/print', [AdminController::class, 'printReports'])->name('reports.print');
     Route::get('/notifications', [AdminController::class, 'notifications'])->name('notifications');
+    Route::post('/notifications/read-all', [AdminController::class, 'markAllNotificationsRead'])->name('notifications.read-all');
+    Route::delete('/notifications', [AdminController::class, 'clearNotifications'])->name('notifications.clear-all');
     Route::get('/manage-account', [AdminController::class, 'manageAccount'])->name('manage-account');
     Route::post('/manage-account', [AdminController::class, 'storeAccount'])->name('manage-account.store');
     Route::put('/manage-account/{id}', [AdminController::class, 'updateAccountUser'])->name('manage-account.update');

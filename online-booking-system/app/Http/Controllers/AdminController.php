@@ -752,6 +752,16 @@ class AdminController extends Controller
         ])->values()->all();
     }
 
+    protected function adminResourceTab(?string $category): string
+    {
+        return match ($category) {
+            'facilities' => 'facilities',
+            'event', 'events' => 'events',
+            'dining' => 'dining',
+            default => 'rooms',
+        };
+    }
+
     public function storeInventoryItem(Request $request)
     {
         $eventTimeOptions = collect(range(8, 22))->map(fn ($hour) => sprintf('%02d:00', $hour))->all();
@@ -836,7 +846,8 @@ class AdminController extends Controller
             ]),
         };
 
-        return redirect()->route('admin.rooms')->with('success', 'Item added successfully.');
+        return redirect()->route('admin.rooms', ['tab' => $this->adminResourceTab($validated['category'])])
+            ->with('success', 'Item added successfully.');
     }
 
     public function storeDiningItem(Request $request)
@@ -973,7 +984,8 @@ class AdminController extends Controller
             ]);
         }
 
-        return redirect()->route('admin.rooms')->with('success', 'Inventory item updated successfully.');
+        return redirect()->route('admin.rooms', ['tab' => $this->adminResourceTab($category)])
+            ->with('success', 'Inventory item updated successfully.');
     }
 
     public function updateInventoryStatus(Request $request, $id)
@@ -983,7 +995,8 @@ class AdminController extends Controller
         $validated = $request->validate(['status' => ['required', 'string', 'max:50']]);
         $item->update(['status' => strtolower($validated['status'])]);
 
-        return redirect()->route('admin.rooms')->with('success', 'Inventory status updated successfully.');
+        return redirect()->route('admin.rooms', ['tab' => $this->adminResourceTab($category)])
+            ->with('success', 'Inventory status updated successfully.');
     }
 
     public function updateDiningStatus(Request $request, $type, $id)
@@ -1010,7 +1023,8 @@ class AdminController extends Controller
         $item = $category === 'facilities' ? Facility::findOrFail($id) : ($category === 'event' ? Event::findOrFail($id) : DiningMenu::findOrFail($id));
         $item->delete();
 
-        return redirect()->route('admin.rooms')->with('success', 'Item deleted successfully.');
+        return redirect()->route('admin.rooms', ['tab' => $this->adminResourceTab($category)])
+            ->with('success', 'Item deleted successfully.');
     }
 
     public function bulkDestroyInventoryItems(Request $request)
@@ -1030,13 +1044,15 @@ class AdminController extends Controller
             ->all();
 
         if (!count($inventoryIds) || !in_array($category, ['facilities', 'event', 'dining'], true)) {
-            return redirect()->route('admin.rooms')->with('success', 'No inventory items selected for deletion.');
+            return redirect()->route('admin.rooms', ['tab' => $this->adminResourceTab($category)])
+                ->with('success', 'No inventory items selected for deletion.');
         }
 
         $model = $category === 'facilities' ? Facility::class : ($category === 'event' ? Event::class : DiningMenu::class);
         $deleted = $model::whereIn('id', $inventoryIds)->delete();
 
-        return redirect()->route('admin.rooms')->with('success', $deleted . ' inventory item(s) deleted successfully.');
+        return redirect()->route('admin.rooms', ['tab' => $this->adminResourceTab($category)])
+            ->with('success', $deleted . ' inventory item(s) deleted successfully.');
     }
 
     public function storeRoom(Request $request)
@@ -1060,7 +1076,7 @@ class AdminController extends Controller
         }
 
         Room::create($validated);
-        return redirect()->route('admin.rooms')->with('success', 'Room created successfully!');
+        return redirect()->route('admin.rooms', ['tab' => 'rooms'])->with('success', 'Room created successfully!');
     }
 
     public function updateRoom(Request $request, $id)
@@ -1085,21 +1101,21 @@ class AdminController extends Controller
         }
 
         $room->update($validated);
-        return redirect()->route('admin.rooms')->with('success', 'Room updated successfully!');
+        return redirect()->route('admin.rooms', ['tab' => 'rooms'])->with('success', 'Room updated successfully!');
     }
 
     public function updateRoomStatus(Request $request, $id)
     {
         $room = Room::findOrFail($id);
         $room->update(['status' => $request->status]);
-        return redirect()->route('admin.rooms')->with('success', 'Room status updated successfully!');
+        return redirect()->route('admin.rooms', ['tab' => 'rooms'])->with('success', 'Room status updated successfully!');
     }
 
     public function destroyRoom($id)
     {
         $room = Room::findOrFail($id);
         $room->delete();
-        return redirect()->route('admin.rooms')->with('success', 'Room deleted successfully!');
+        return redirect()->route('admin.rooms', ['tab' => 'rooms'])->with('success', 'Room deleted successfully!');
     }
 
     public function bulkDestroyRooms(Request $request)
@@ -1118,12 +1134,12 @@ class AdminController extends Controller
             ->all();
 
         if (!count($roomIds)) {
-            return redirect()->route('admin.rooms')->with('success', 'No rooms selected for deletion.');
+            return redirect()->route('admin.rooms', ['tab' => 'rooms'])->with('success', 'No rooms selected for deletion.');
         }
 
         $deleted = Room::whereIn('id', $roomIds)->delete();
 
-        return redirect()->route('admin.rooms')->with('success', $deleted . ' room(s) deleted successfully!');
+        return redirect()->route('admin.rooms', ['tab' => 'rooms'])->with('success', $deleted . ' room(s) deleted successfully!');
     }
 
     public function bulkDestroyDining(Request $request)
@@ -1141,7 +1157,7 @@ class AdminController extends Controller
             ->values();
 
         if ($ids->isEmpty()) {
-            return redirect()->route('admin.rooms')->with('success', 'No dining items selected for deletion.');
+            return redirect()->route('admin.rooms', ['tab' => 'dining'])->with('success', 'No dining items selected for deletion.');
         }
 
         $model = match ($validated['type']) {
@@ -1151,7 +1167,7 @@ class AdminController extends Controller
         };
         $deleted = $model->whereIn('id', $ids)->delete();
 
-        return redirect()->route('admin.rooms')->with('success', $deleted . ' dining item(s) deleted successfully.');
+        return redirect()->route('admin.rooms', ['tab' => 'dining'])->with('success', $deleted . ' dining item(s) deleted successfully.');
     }
 
     public function reservations()
@@ -2801,6 +2817,7 @@ class AdminController extends Controller
         $message->update([
             'admin_reply' => $validated['admin_reply'],
             'is_replied' => true,
+            'is_read' => true,
             'replied_at' => now(),
         ]);
         MessageReply::create([
@@ -2825,6 +2842,7 @@ class AdminController extends Controller
         $guestMessage->update([
             'admin_reply' => $validated['message'],
             'is_replied' => true,
+            'is_read' => true,
             'replied_at' => now(),
         ]);
         MessageReply::create([
@@ -3228,6 +3246,20 @@ class AdminController extends Controller
     {
         $messages = Message::latest()->get();
         return view('admin.notifications', compact('messages'));
+    }
+
+    public function markAllNotificationsRead()
+    {
+        Message::query()->where('is_read', false)->update(['is_read' => true]);
+
+        return redirect()->route('admin.notifications')->with('success', 'All notifications marked as read.');
+    }
+
+    public function clearNotifications()
+    {
+        $deletedCount = Message::query()->delete();
+
+        return redirect()->route('admin.notifications')->with('success', $deletedCount . ' notification(s) deleted.');
     }
 
     public function manageAccount()

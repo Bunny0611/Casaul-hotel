@@ -6,6 +6,7 @@
 <style>
     
     .soft-card {
+        min-width: 0;
         border: 1px solid #e2e8f0;
         border-radius: 1rem;
         background: #fff;
@@ -36,6 +37,18 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .checkin-table-scroll {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .checkin-table-scroll table {
+        min-width: 460px;
     }
 
     .modal-panel {
@@ -155,6 +168,7 @@
     }
 
     .modal-body {
+        flex: 1;
         min-height: 0;
         overflow-y: auto;
         padding-right: 0.25rem;
@@ -280,6 +294,8 @@
     }
 
     .modal-detail-value {
+        max-width: 100%;
+        overflow-wrap: anywhere;
         font-size: 0.95rem;
         color: #334155;
         font-weight: 600;
@@ -326,6 +342,12 @@
 
         .modal-actions {
             flex-direction: column-reverse;
+        }
+
+        .modal-actions > button,
+        .modal-actions > form,
+        .modal-actions > form button {
+            width: 100%;
         }
 
         .modal-btn {
@@ -376,7 +398,7 @@
         </div>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <div class="soft-card p-4">
             <div class="flex items-start justify-between">
                 <div>
@@ -415,10 +437,10 @@
         </div>
     </div>
 
-    <div class="grid gap-6 xl:grid-cols-2">
-        <div class="soft-card p-6">
+    <div class="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-2">
+        <div class="soft-card p-4 sm:p-6">
             <h4 class="mb-4 font-semibold text-slate-800">TODAY'S CHECK-INS</h4>
-            <div class="overflow-hidden">
+            <div class="checkin-table-scroll">
                 <table class="w-full table-fixed text-sm">
                     <colgroup>
                         <col class="w-1/5" />
@@ -456,9 +478,9 @@
             </div>
         </div>
 
-        <div class="soft-card p-6">
+        <div class="soft-card p-4 sm:p-6">
             <h4 class="mb-4 font-semibold text-slate-800">TODAY'S CHECK-OUTS</h4>
-            <div class="overflow-hidden">
+            <div class="checkin-table-scroll">
                 <table class="w-full table-fixed text-sm">
                     <colgroup>
                         <col class="w-1/5" />

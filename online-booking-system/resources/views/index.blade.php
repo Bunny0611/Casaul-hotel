@@ -23,7 +23,7 @@
             <p>Where comfort meets elegance. Whether you're here for business, leisure, or a special celebration, we provide the perfect setting for a truly memorable stay.</p>
             <a class="home-outline-button" href="{{ route('aboutus') }}">Discover More</a>
         </div>
-        <img src="{{ asset('image/HM.jpg') }}" alt="CASAUL Hotel exterior at night">
+        <img src="{{ asset('image/Hotel.png') }}" alt="CASAUL Hotel exterior at night">
     </section>
 
     <section class="home-experience-section">

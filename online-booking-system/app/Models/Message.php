@@ -12,11 +12,13 @@ class Message extends Model
         'message',
         'admin_reply',
         'is_replied',
+        'is_read',
         'replied_at',
     ];
 
     protected $casts = [
         'is_replied' => 'boolean',
+        'is_read' => 'boolean',
         'replied_at' => 'datetime',
     ];
 

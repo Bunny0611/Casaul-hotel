@@ -1,6 +1,10 @@
 @extends('app')
 
 @section('content')
+@php
+    $heroRoomImageUrl = '/storage/rooms/1790407340_6ab772ac29efa.png';
+    $fallbackRoomImageUrl = '/image/Royal-Suite-room.jpg';
+@endphp
 
 <style>
     /* Reservation page - visual refresh (scoped) */
@@ -92,7 +96,7 @@
         .reservation-hero,
         .reservation-shell { max-width: calc(100% - 24px); }
         .reservation-hero { grid-template-columns:1fr; gap:0; }
-        .reservation-hero::after { grid-column:auto; grid-row:auto; width:100%; min-height:220px; margin-top:18px; border-radius:18px; }
+        .reservation-hero-image { grid-column:auto; grid-row:auto; width:100%; height:220px; min-height:220px; margin-top:18px; border-radius:18px; }
         .reservation-hero h1,
         .reservation-hero p { max-width:none; }
         .reservation-shell { grid-template-columns:1fr; }
@@ -105,7 +109,7 @@
         .reservation-hero, .reservation-shell { max-width: calc(100% - 18px); }
         .reservation-hero { padding: 18px 16px 0; }
         .reservation-hero h1 { font-size: clamp(1.8rem, 4.5vw, 2.5rem); }
-        .reservation-hero::after { min-height: 170px; border-radius: 12px; }
+        .reservation-hero-image { height:170px; min-height:170px; border-radius:12px; }
         .reservation-shell { gap: 14px; }
         .reservation-tabs { overflow-x:auto; -webkit-overflow-scrolling:touch; gap:10px; padding:6px; }
         .tab-btn { min-width: 130px; }
@@ -131,7 +135,7 @@
         .reservation-hero,
         .reservation-shell { max-width: calc(100% - 14px); }
         .reservation-hero h1 { font-size: 2rem; }
-        .reservation-hero::after { min-height: 120px; }
+        .reservation-hero-image { height:120px; min-height:120px; }
         .reservation-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .tab-btn { min-width:0; padding:10px 8px; }
         .reservation-panel { padding: 0 12px 14px; }
@@ -161,7 +165,7 @@
     .reservation-hero .eyebrow { margin:0; color:#68738a; font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
     .reservation-hero h1 { max-width:560px; margin:8px 0 10px; color:#172033; font-size:31px; line-height:1.12; letter-spacing:-.02em; }
     .reservation-hero p { max-width:520px; margin:0; color:#69748b; font-size:13px; line-height:1.5; }
-    .reservation-hero::after { content:''; display:block; grid-column:2; grid-row:1 / span 3; align-self:stretch; min-height:156px; border-radius:0 0 0 60px; background:linear-gradient(90deg,rgba(244,246,251,0) 0%,rgba(244,246,251,.04) 15%,rgba(244,246,251,0) 35%), url('{{ $rooms->first()?->image ? secure_asset(str_starts_with($rooms->first()->image, 'rooms/') ? 'storage/' . $rooms->first()->image : $rooms->first()->image) : secure_asset('image/Royal-Suite-room.jpg') }}') center/cover; }
+    .reservation-hero-image { display:block; grid-column:2; grid-row:1 / span 3; align-self:stretch; width:100%; height:156px; min-height:0; max-height:156px; object-fit:cover; object-position:center; border-radius:0 0 0 60px; }
 
     .reservation-shell { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:18px; max-width:970px; margin:0 auto; padding:0; }
     .reservation-left { min-width:0; }
@@ -363,7 +367,7 @@
     .dining-card-footer .price { display:inline-block; margin:0; color:#111827; }
 
     @media (max-width: 980px){ .reservation-hero,.reservation-shell{ max-width:calc(100% - 30px); } .reservation-hero{ grid-template-columns:1fr 300px; } }
-    @media (max-width: 700px){ .reservation-hero{ display:block; } .reservation-hero::after{ display:block; height:120px; min-height:0; margin-top:18px; border-radius:0 0 0 35px; } .reservation-shell{ display:block; } .reservation-summary{ margin-top:14px; } .reservation-tabs{ overflow-x:auto; } .tab-btn{ min-width:120px; } .reservation-progress{ padding:12px; gap:7px; } .progress-copy span{ display:none; } .panel-row,.reservation-card-grid{ grid-template-columns:1fr; } .summary-card{ position:static; } }
+    @media (max-width: 700px){ .reservation-hero{ display:block; } .reservation-hero-image{ display:block; height:120px; min-height:0; margin-top:18px; border-radius:0 0 0 35px; } .reservation-shell{ display:block; } .reservation-summary{ margin-top:14px; } .reservation-tabs{ overflow-x:auto; } .tab-btn{ min-width:120px; } .reservation-progress{ padding:12px; gap:7px; } .progress-copy span{ display:none; } .panel-row,.reservation-card-grid{ grid-template-columns:1fr; } .summary-card{ position:static; } }
 
     .details-mode .reservation-panel { display:none; }
     .details-mode .reservation-progress .progress-step.active .progress-number { background:#e3e7f0; color:#71809a; }
@@ -617,6 +621,7 @@
         <br>
         <h1>Choose the type of reservation you want to make.</h1>
         <p>Book rooms, add facilities, include an event package, or reserve dining—all in one seamless checkout experience.</p>
+        <img class="reservation-hero-image" src="{{ $heroRoomImageUrl }}" data-fallback-src="{{ $fallbackRoomImageUrl }}" alt="Room 206" onerror="this.onerror=null;this.src=this.dataset.fallbackSrc">
     </section>
 
     @if(session('success'))

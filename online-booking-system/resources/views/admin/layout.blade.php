@@ -189,7 +189,7 @@
         }
 
         html, body { max-width: 100%; overflow-x: hidden; }
-        .main-content-panel { min-width: 0; overflow-x: hidden; }
+        .main-content-panel { min-width: 0; overflow-x: auto; }
         .main-content-panel > * { min-width: 0; max-width: 100%; }
         .main-content-panel .overflow-x-auto { max-width: 100%; -webkit-overflow-scrolling: touch; }
         .main-content-panel table { min-width: 42rem; }

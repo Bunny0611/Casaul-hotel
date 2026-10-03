@@ -9,7 +9,10 @@
     }
 
     .reservation-management-page .reservation-table-shell {
-        min-width: 980px;
+        width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .reservation-management-page .reservation-table-shell table {
@@ -35,6 +38,19 @@
 
     .reservation-management-page .reservation-actions-cell {
         z-index: 2;
+    }
+
+    body.dark .reservation-management-page .reservation-actions-column {
+        background: #111827;
+    }
+
+    body.dark .reservation-management-page .reservation-actions-cell {
+        background: #0f1724;
+    }
+
+    body.dark .reservation-management-page .reservation-item:hover,
+    body.dark .reservation-management-page .reservation-item:hover .reservation-actions-cell {
+        background: #1f2937;
     }
 </style>
 @php
@@ -333,7 +349,7 @@
     </div>
 
     <!-- Stats Section -->
-    <div data-panel-stats="rooms" class="grid grid-cols-5 gap-3 pb-2">
+    <div data-panel-stats="rooms" class="grid grid-cols-2 gap-3 pb-2 sm:grid-cols-3 lg:grid-cols-5">
         <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
             <p class="text-xs uppercase tracking-wide text-gray-500">Total</p>
             <p class="mt-2 text-xl font-semibold text-gray-800">{{ $roomStats['total'] }}</p>
@@ -356,7 +372,7 @@
         </div>
     </div>
 
-    <div data-panel-stats="facilities" class="hidden grid grid-cols-5 gap-3 pb-2">
+    <div data-panel-stats="facilities" class="hidden grid grid-cols-2 gap-3 pb-2 sm:grid-cols-3 lg:grid-cols-5">
         <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
             <p class="text-xs uppercase tracking-wide text-gray-500">Total</p>
             <p class="mt-2 text-xl font-semibold text-gray-800">{{ $facilityStats['total'] }}</p>
@@ -379,7 +395,7 @@
         </div>
     </div>
 
-    <div data-panel-stats="event" class="hidden grid grid-cols-5 gap-3 pb-2">
+    <div data-panel-stats="event" class="hidden grid grid-cols-2 gap-3 pb-2 sm:grid-cols-3 lg:grid-cols-5">
         <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
             <p class="text-xs uppercase tracking-wide text-gray-500">Total</p>
             <p class="mt-2 text-xl font-semibold text-gray-800">{{ $eventStats['total'] }}</p>
@@ -402,7 +418,7 @@
         </div>
     </div>
 
-    <div data-panel-stats="dining" class="hidden grid grid-cols-5 gap-3 pb-2">
+    <div data-panel-stats="dining" class="hidden grid grid-cols-2 gap-3 pb-2 sm:grid-cols-3 lg:grid-cols-5">
         <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
             <p class="text-xs uppercase tracking-wide text-gray-500">Total</p>
             <p class="mt-2 text-xl font-semibold text-gray-800">{{ $diningStats['total'] }}</p>
@@ -429,7 +445,7 @@
 
     <!-- ROOMS PANEL -->
     <div data-panel="rooms" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="reservation-table-shell hidden overflow-x-auto md:block">
+        <div class="reservation-table-shell overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -445,7 +461,7 @@
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($roomReservations as $reservation)
                         <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->room?->room_number ?? '')) }}">
-                            <td class="reservation-actions-cell px-4 py-4">
+                            <td class="px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                             </td>
@@ -460,7 +476,7 @@
                                     {{ ucfirst($reservation->status) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="reservation-actions-cell px-4 py-4">
                                 <div class="relative flex items-center gap-2 text-sm">
                                     <button type="button" onclick="showAdminReservationDetails(this)" data-reservation="{{ e(json_encode($employeeReservationDetails($reservation, 'rooms'))) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details" aria-label="View details"><i class="fas fa-eye"></i></button>
                                     <button type="button" onclick="toggleReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-v"></i></button>
@@ -496,7 +512,7 @@
 
     <!-- FACILITIES PANEL -->
     <div data-panel="facilities" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="reservation-table-shell hidden overflow-x-auto md:block">
+        <div class="reservation-table-shell overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -513,7 +529,7 @@
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($facilitiesReservations as $reservation)
                             <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->facility?->name ?? '')) }}">
-                            <td class="reservation-actions-cell px-4 py-4">
+                            <td class="px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                             </td>
@@ -529,7 +545,7 @@
                                     {{ ucfirst($reservation->status) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="reservation-actions-cell px-4 py-4">
                                 <div class="relative flex items-center gap-2 text-sm">
                                     <button type="button" onclick="showAdminReservationDetails(this)" data-reservation="{{ e(json_encode($employeeReservationDetails($reservation, 'facilities'))) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details" aria-label="View details"><i class="fas fa-eye"></i></button>
                                     <button type="button" onclick="toggleReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-v"></i></button>
@@ -563,7 +579,7 @@
 
     <!-- EVENT PLACE PANEL -->
     <div data-panel="event" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="reservation-table-shell hidden overflow-x-auto md:block">
+        <div class="reservation-table-shell overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -581,7 +597,7 @@
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($eventsReservations as $reservation)
                             <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->event?->name ?? '')) }}">
-                            <td class="reservation-actions-cell px-4 py-4">
+                            <td class="px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                             </td>
@@ -598,7 +614,7 @@
                                     {{ ucfirst($reservation->status) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="reservation-actions-cell px-4 py-4">
                                 <div class="relative flex items-center gap-2 text-sm">
                                     <button type="button" onclick="showAdminReservationDetails(this)" data-reservation="{{ e(json_encode($employeeReservationDetails($reservation, 'event'))) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details" aria-label="View details"><i class="fas fa-eye"></i></button>
                                     <button type="button" onclick="toggleReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-v"></i></button>
@@ -632,7 +648,7 @@
 
     <!-- DINING PANEL -->
     <div data-panel="dining" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div class="reservation-table-shell hidden overflow-x-auto md:block">
+        <div class="reservation-table-shell overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
@@ -649,7 +665,7 @@
                 <tbody class="divide-y divide-gray-200 bg-white">
                     @forelse($diningReservations as $reservation)
                             <tr class="reservation-item transition-colors hover:bg-gray-50" data-source="{{ $reservation->getTable() }}" data-reservation-id="{{ $reservation->getKey() }}" data-status="{{ $reservation->status }}" data-search="{{ strtolower($reservation->guest_name . ' ' . $reservation->guest_email . ' ' . ($reservation->dining_area ?? '')) }}">
-                            <td class="reservation-actions-cell px-4 py-4">
+                            <td class="px-4 py-4">
                                 <div class="text-sm font-semibold text-gray-900">{{ $reservation->guest_name }}</div>
                                 <div class="text-sm text-gray-500">{{ $reservation->guest_email }}</div>
                             </td>
@@ -663,7 +679,7 @@
                                     {{ ucfirst($reservation->status) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="reservation-actions-cell px-4 py-4">
                                 <div class="relative flex items-center gap-2 text-sm">
                                     <button type="button" onclick="showAdminReservationDetails(this)" data-reservation="{{ e(json_encode($employeeReservationDetails($reservation, 'dining'))) }}" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="View details" aria-label="View details"><i class="fas fa-eye"></i></button>
                                     <button type="button" onclick="toggleReservationMenu(this)" class="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100" title="More actions" aria-label="More actions"><i class="fas fa-ellipsis-v"></i></button>
