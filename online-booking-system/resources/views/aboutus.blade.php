@@ -10,7 +10,7 @@
             <p>At Casaul Hotel, we believe true hospitality isn’t just about a place to stay — it’s about feeling at home, wherever you are.</p>
         </div>
         <div class="about-hero-image">
-            <img src="{{ asset('image/Front desk.png') }}" alt="Luxury hotel bedroom at Casaul Hotel">
+            <img src="{{ asset('image/Front-desk.png') }}" alt="Luxury hotel bedroom at Casaul Hotel">
         </div>
     </section>
 
@@ -142,7 +142,7 @@
 
                 <article class="about-experience-item">
                     <div class="about-experience-image-wrap">
-                        <img src="{{ asset(image/birthday-event.jpg}}" alt="Wedding celebration at an outdoor venue" loading="lazy">
+                        <img src="{{ asset('image/birthday-event.jpg') }}" alt="Wedding celebration at an outdoor venue" loading="lazy">
                     </div>
                     <div class="about-experience-meta">
                         <span class="about-experience-number">03</span>

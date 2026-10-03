@@ -44,7 +44,7 @@
             </article>
             <article class="events-detail-card" id="birthday-details">
                 <div class="events-detail-image">
-                    <img src="https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&amp;fit=crop&amp;w=1100&amp;q=85" alt="Colorful birthday celebration with balloons and festive decorations" loading="lazy">
+                    <img src="{{ asset('image/birthday-event.png') }" alt="Colorful birthday celebration with balloons and festive decorations" loading="lazy">
                     <span class="events-detail-icon" aria-hidden="true"><i class="fas fa-cake-candles"></i></span>
                 </div>
                 <div class="events-detail-copy">

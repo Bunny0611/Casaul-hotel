@@ -165,7 +165,7 @@
                 <p>Thoughtful stays, warm hospitality,<br>and seamless hotel operations.</p>
                 <span class="brand-caption">HOTEL MANAGEMENT SYSTEM</span>
             </div>
-            <img class="brand-photo" src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="CASAUL Hotel room">
+            <img class="brand-photo" src="{{ asset('image/Front-desk.png') }}" alt="CASAUL Hotel room">
         </div>
 
         <div class="form-panel">
