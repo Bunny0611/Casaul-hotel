@@ -319,7 +319,9 @@
     }
 
     .request-table-wrap {
+        min-width: 0;
         overflow-x: auto;
+        overscroll-behavior-x: contain;
     }
 
     .request-table {
@@ -408,17 +410,17 @@
     .details-heading h2 { margin: 0; color: #273449; font-size: 22px; }
     .details-heading p { margin: 4px 0 0; color: #718096; font-size: 12px; }
     .details-status { padding: 8px 13px; color: #c2410c; background: #fff7ed; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
-    .details-grid { display: grid; grid-template-columns: minmax(0, 1fr) 245px; gap: 20px; }
+    .details-grid { display: grid; grid-template-columns: minmax(0, 1fr) 245px; gap: 20px; min-width: 0; }
     .details-grid.all-requests-mode { grid-template-columns: 1fr; }
     .details-grid.all-requests-mode .summary-card { display: none; }
-    .details-main { display: grid; gap: 12px; min-width: 0; }
+    .details-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
     .specific-request-content { display: none; }
     .specific-request-content.is-visible { display: block; }
     .details-lower.specific-request-content.is-visible { display: grid; }
     .details-actions.specific-request-content.is-visible { display: flex; }
-    .details-card { padding: 16px 18px; background: #fff; border: 1px solid #e7e9ed; border-radius: 8px; box-shadow: 0 4px 14px rgba(15,23,42,.04); }
+    .details-card { min-width: 0; padding: 16px 18px; background: #fff; border: 1px solid #e7e9ed; border-radius: 8px; box-shadow: 0 4px 14px rgba(15,23,42,.04); }
     .details-card h3 { margin: 0 0 14px; color: #991b1b; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-    .all-requests-table { width: 100%; min-width: 0; border-collapse: collapse; table-layout: fixed; }
+    .all-requests-table { width: 100%; min-width: 980px; border-collapse: collapse; table-layout: fixed; }
     .all-requests-table th { padding: 0 8px 10px; color: #718096; font-size: 10px; text-align: left; text-transform: uppercase; }
     .all-requests-table td { padding: 11px 8px; border-top: 1px solid #edf0f2; color: #475569; font-size: 13px; vertical-align: middle; }
     .all-requests-table th:nth-child(1), .all-requests-table td:nth-child(1) { width: 8%; }
@@ -798,7 +800,115 @@
     @media (max-width: 650px) {
         .guest-request-page {
             padding: 18px 14px;
+            width: 100%;
+            min-width: 0;
         }
+
+        .guest-request-container,
+        .details-grid,
+        .details-main,
+        .details-card {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .request-table-wrap {
+            overflow-x: visible;
+        }
+
+        .request-table-wrap[data-scrollbar-control="all-requests"] {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
+        }
+
+        .request-table-wrap[data-scrollbar-control="guest-requests"] {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
+        }
+
+        .addon-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
+        }
+
+        .addon-table {
+            width: 100%;
+            min-width: 420px;
+            table-layout: fixed;
+        }
+
+        .addon-table th,
+        .addon-table td {
+            padding: 8px 6px;
+            font-size: 11px;
+            overflow-wrap: anywhere;
+        }
+
+        .request-table th {
+            position: sticky;
+            top: 0;
+            padding: 9px 10px;
+            border-bottom: 1px solid #dfe3e8;
+            background: #f8fafc;
+            z-index: 1;
+        }
+
+        .request-table th:first-child {
+            left: 0;
+            z-index: 3;
+        }
+
+        .request-table td {
+            padding: 10px;
+            border-right: 1px solid #edf0f2;
+            font-size: 11px;
+        }
+
+        .request-table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .request-table td:first-child {
+            position: sticky;
+            left: 0;
+            background: #fff;
+            z-index: 1;
+        }
+
+        .request-table tbody tr:nth-child(even) td:first-child {
+            background: #f8fafc;
+        }
+
+        .request-table td[colspan] {
+            position: static;
+            background: transparent;
+        }
+
+        .all-requests-table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .all-requests-table td:first-child {
+            position: sticky;
+            left: 0;
+            background: #fff;
+            z-index: 1;
+        }
+
+        .all-requests-table tbody tr:nth-child(even) td:first-child {
+            background: #f8fafc;
+        }
+
+        .details-grid { grid-template-columns: minmax(0, 1fr); }
+        .reservation-grid { grid-template-columns: minmax(0, 1fr); }
+        .details-heading { gap: 10px; }
+        .details-heading h2 { font-size: 20px; overflow-wrap: anywhere; }
+        .details-status { white-space: normal; }
+        .details-actions { flex-direction: column; }
+        .details-actions .details-action { width: 100%; min-height: 40px; }
 
         .request-hero {
             padding: 23px 20px;
@@ -835,8 +945,6 @@
 
         .details-heading { align-items: flex-start; flex-direction: column; }
         .reservation-grid, .details-lower { grid-template-columns: 1fr; }
-        .addon-table { min-width: 620px; }
-
         .form-grid {
             grid-template-columns: 1fr;
             gap: 0;
@@ -976,7 +1084,7 @@
                     </button>
                 </div>
 
-                <div class="request-table-wrap">
+                <div class="request-table-wrap" data-scrollbar-control="guest-requests">
                     <table class="request-table">
                         <thead>
                             <tr>
@@ -1056,7 +1164,7 @@
             <div class="details-main">
                 <div id="allRequestsCard" class="details-card">
                     <h3><i class="fas fa-list"></i> All Requests <small style="color:#718096;font-size:10px;font-weight:400;text-transform:none;">{{ $requests->count() }} total requests</small></h3>
-                    <div class="request-table-wrap">
+                    <div class="request-table-wrap" data-scrollbar-control="all-requests">
                         <table class="all-requests-table">
                             <thead><tr><th>Request ID</th><th>Guest Name</th><th>Room Number</th><th>Request Type</th><th>Description / Preview</th><th>Preferred Time</th><th>Priority</th><th>Submitted Date / Time</th><th>Status</th><th>Action</th></tr></thead>
                             <tbody>
@@ -1111,7 +1219,7 @@
 
                 <div class="details-card specific-request-content">
                     <h3><i class="fas fa-concierge-bell"></i> Requested Add-Ons</h3>
-                    <div class="request-table-wrap">
+                    <div class="request-table-wrap addon-table-wrap" data-scrollbar-control="addon-items">
                         <table class="addon-table">
                             <thead><tr><th>Add-On Item</th><th>Quantity</th><th>Amount</th><th>Status</th></tr></thead>
                             <tbody id="requestedAddOnsTableBody">

@@ -601,7 +601,11 @@
 		.dashboard-header { padding: 16px; }
 		.dashboard-header h1 { font-size: 1.7rem; }
 		.stats-grid { grid-template-columns: 1fr; }
-		.progress-main { flex-direction: column; align-items: flex-start; }
+		.mini-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+		.mini-header h3 { grid-column: 1 / -1; }
+		.update-time { white-space: nowrap; text-align: right; }
+		.progress-main { flex-direction: column; align-items: center; }
+		.progress-copy { width: 100%; min-width: 0; }
 		.progress-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 		.task-item { flex-wrap: wrap; }
 		.task-meta { width: 100%; align-items: flex-start; }

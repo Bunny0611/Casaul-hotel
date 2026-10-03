@@ -48,6 +48,85 @@
             inset: 0;
         }
 
+        .housekeeping-shell main .overflow-x-auto,
+        .housekeeping-shell main .table-wrapper,
+        .housekeeping-shell main .request-table-wrap,
+        .housekeeping-shell main .room-table-wrap {
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scrollbar-color: #9ca3af #f1f5f9;
+            scrollbar-width: auto;
+        }
+
+        .housekeeping-shell main .overflow-x-auto::-webkit-scrollbar,
+        .housekeeping-shell main .table-wrapper::-webkit-scrollbar,
+        .housekeeping-shell main .request-table-wrap::-webkit-scrollbar,
+        .housekeeping-shell main .room-table-wrap::-webkit-scrollbar {
+            height: 10px;
+        }
+
+        .housekeeping-shell main .overflow-x-auto::-webkit-scrollbar-track,
+        .housekeeping-shell main .table-wrapper::-webkit-scrollbar-track,
+        .housekeeping-shell main .request-table-wrap::-webkit-scrollbar-track,
+        .housekeeping-shell main .room-table-wrap::-webkit-scrollbar-track {
+            border-radius: 999px;
+            background: #f1f5f9;
+        }
+
+        .housekeeping-shell main .overflow-x-auto::-webkit-scrollbar-thumb,
+        .housekeeping-shell main .table-wrapper::-webkit-scrollbar-thumb,
+        .housekeeping-shell main .request-table-wrap::-webkit-scrollbar-thumb,
+        .housekeeping-shell main .room-table-wrap::-webkit-scrollbar-thumb {
+            border: 2px solid #f1f5f9;
+            border-radius: 999px;
+            background: #9ca3af;
+        }
+
+        .housekeeping-shell main .overflow-x-auto::-webkit-scrollbar-thumb:hover,
+        .housekeeping-shell main .table-wrapper::-webkit-scrollbar-thumb:hover,
+        .housekeeping-shell main .request-table-wrap::-webkit-scrollbar-thumb:hover,
+        .housekeeping-shell main .room-table-wrap::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        .hk-table-scrollbar {
+            position: relative;
+            width: 100%;
+            height: 24px;
+            margin: 0 0 12px;
+            cursor: pointer;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .hk-table-scrollbar[hidden] { display: none; }
+
+        .hk-table-scrollbar::before {
+            position: absolute;
+            inset: 8px 0;
+            border-radius: 999px;
+            background: #e5e7eb;
+            content: '';
+        }
+
+        .hk-table-scrollbar-thumb {
+            position: absolute;
+            top: 6px;
+            left: 0;
+            height: 12px;
+            min-width: 36px;
+            border: 2px solid #f1f5f9;
+            border-radius: 999px;
+            background: #9ca3af;
+            box-sizing: border-box;
+            cursor: grab;
+        }
+
+        .hk-table-scrollbar-thumb:active { cursor: grabbing; }
+        .hk-table-scrollbar:focus-visible { outline: 2px solid #ff6b35; outline-offset: 1px; }
+
         header {
             margin: 0 !important;
             padding-top: 0;
@@ -456,6 +535,115 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+
+            const tableScrollerSelector = '.housekeeping-shell main .overflow-x-auto, .housekeeping-shell main .table-wrapper, .housekeeping-shell main .request-table-wrap:not([data-scrollbar-control]), .housekeeping-shell main .room-table-wrap';
+            document.querySelectorAll(tableScrollerSelector).forEach(function (scroller, index) {
+                if (scroller.dataset.scrollbarReady === 'true') return;
+                scroller.dataset.scrollbarReady = 'true';
+                if (!scroller.id) scroller.id = 'housekeeping-table-scroll-' + index;
+
+                const scrollbar = document.createElement('div');
+                scrollbar.className = 'hk-table-scrollbar';
+                scrollbar.setAttribute('role', 'scrollbar');
+                scrollbar.setAttribute('aria-label', 'Table horizontal scroll');
+                scrollbar.setAttribute('aria-controls', scroller.id);
+                scrollbar.setAttribute('aria-orientation', 'horizontal');
+                scrollbar.setAttribute('aria-valuemin', '0');
+                scrollbar.setAttribute('aria-valuemax', '100');
+                scrollbar.setAttribute('aria-valuenow', '0');
+                scrollbar.tabIndex = 0;
+
+                const thumb = document.createElement('div');
+                thumb.className = 'hk-table-scrollbar-thumb';
+                scrollbar.appendChild(thumb);
+                scroller.insertAdjacentElement('afterend', scrollbar);
+
+                let animationFrame = 0;
+                let dragging = false;
+                let dragStartX = 0;
+                let dragStartScroll = 0;
+
+                function updateScrollbar() {
+                    animationFrame = 0;
+                    const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+                    if (maxScroll <= 1) {
+                        scrollbar.hidden = true;
+                        return;
+                    }
+
+                    scrollbar.hidden = false;
+                    const trackWidth = scrollbar.clientWidth;
+                    const thumbWidth = Math.min(trackWidth, Math.max(36, trackWidth * scroller.clientWidth / scroller.scrollWidth));
+                    const maxThumbOffset = Math.max(0, trackWidth - thumbWidth);
+                    const thumbOffset = maxScroll > 0 ? scroller.scrollLeft / maxScroll * maxThumbOffset : 0;
+                    thumb.style.width = thumbWidth + 'px';
+                    thumb.style.transform = 'translateX(' + thumbOffset + 'px)';
+                    scrollbar.setAttribute('aria-valuemax', String(Math.round(maxScroll)));
+                    scrollbar.setAttribute('aria-valuenow', String(Math.round(scroller.scrollLeft)));
+                    scrollbar.setAttribute('aria-valuetext', Math.round(scroller.scrollLeft) + ' of ' + Math.round(maxScroll) + ' pixels');
+                }
+
+                function scheduleScrollbarUpdate() {
+                    if (!animationFrame) animationFrame = window.requestAnimationFrame(updateScrollbar);
+                }
+
+                function scrollToPointer(clientX) {
+                    const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+                    const maxThumbOffset = scrollbar.clientWidth - thumb.offsetWidth;
+                    if (maxScroll <= 0 || maxThumbOffset <= 0) return;
+                    const trackRect = scrollbar.getBoundingClientRect();
+                    const thumbOffset = Math.max(0, Math.min(maxThumbOffset, clientX - trackRect.left - thumb.offsetWidth / 2));
+                    scroller.scrollLeft = thumbOffset / maxThumbOffset * maxScroll;
+                }
+
+                scrollbar.addEventListener('pointerdown', function (event) {
+                    if (event.button !== 0) return;
+                    event.preventDefault();
+                    scrollbar.setPointerCapture(event.pointerId);
+                    dragging = true;
+                    dragStartX = event.clientX;
+                    dragStartScroll = scroller.scrollLeft;
+                    if (event.target !== thumb) {
+                        scrollToPointer(event.clientX);
+                        dragStartScroll = scroller.scrollLeft;
+                    }
+                });
+
+                scrollbar.addEventListener('pointermove', function (event) {
+                    if (!dragging || !scrollbar.hasPointerCapture(event.pointerId)) return;
+                    const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+                    const maxThumbOffset = scrollbar.clientWidth - thumb.offsetWidth;
+                    if (maxScroll <= 0 || maxThumbOffset <= 0) return;
+                    scroller.scrollLeft = dragStartScroll + (event.clientX - dragStartX) / maxThumbOffset * maxScroll;
+                });
+
+                function stopDragging() { dragging = false; }
+                scrollbar.addEventListener('pointerup', stopDragging);
+                scrollbar.addEventListener('pointercancel', stopDragging);
+                scrollbar.addEventListener('scroll', scheduleScrollbarUpdate);
+                scroller.addEventListener('scroll', scheduleScrollbarUpdate, { passive: true });
+                scrollbar.addEventListener('keydown', function (event) {
+                    if (event.key === 'ArrowRight') scroller.scrollBy({ left: scroller.clientWidth * 0.8, behavior: 'smooth' });
+                    else if (event.key === 'ArrowLeft') scroller.scrollBy({ left: -scroller.clientWidth * 0.8, behavior: 'smooth' });
+                    else if (event.key === 'Home') scroller.scrollTo({ left: 0, behavior: 'smooth' });
+                    else if (event.key === 'End') scroller.scrollTo({ left: scroller.scrollWidth, behavior: 'smooth' });
+                    else return;
+                    event.preventDefault();
+                });
+
+                window.addEventListener('resize', scheduleScrollbarUpdate, { passive: true });
+                if ('ResizeObserver' in window) {
+                    const resizeObserver = new ResizeObserver(scheduleScrollbarUpdate);
+                    resizeObserver.observe(scroller);
+                    if (scroller.firstElementChild) resizeObserver.observe(scroller.firstElementChild);
+                }
+                if ('MutationObserver' in window) {
+                    const mutationObserver = new MutationObserver(scheduleScrollbarUpdate);
+                    mutationObserver.observe(scroller, { childList: true, characterData: true, subtree: true });
+                }
+
+                updateScrollbar();
+            });
 
             document.addEventListener('submit', function (event) {
 
