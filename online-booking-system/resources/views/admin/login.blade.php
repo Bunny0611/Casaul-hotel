@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Poppins:wght@300;400;500;600;700;800&display=swap');
         :root {
             --burgundy: #6e1f2b;
             --burgundy-dark: #4d1420;
@@ -47,17 +47,23 @@
             display: flex;
             align-items: flex-start;
             justify-content: center;
-            padding: 50px 36px 260px;
+            padding: 42px 36px 250px;
             text-align: center;
             overflow: hidden;
         }
         .brand-panel::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(77, 20, 32, 0.58) 100%); z-index: -1; }
-        .brand-content { position: relative; z-index: 2; max-width: 290px; }
-        .brand-mark { width: 94px; height: 94px; object-fit: contain; margin: 0 auto 20px; }
-        .brand-panel h1 { margin: 0; font-size: 31px; font-weight: 700; letter-spacing: 2.5px; }
-        .brand-panel p { color: #f0dfe0; font-size: 13px; font-style: italic; line-height: 1.7; margin: 18px 0 0; }
+        .brand-content { position: relative; z-index: 3; width: 100%; max-width: 290px; }
+        .brand-logo { display: block; width: 96px; height: 96px; object-fit: contain; margin: 0 auto 10px; }
+        .brand-panel h1 { margin: 0; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 54px; font-weight: 500; letter-spacing: 4px; line-height: 1; }
+        .brand-hotel { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 6px; color: #f0dfe0; font-size: 12px; letter-spacing: 7px; }
+        .brand-hotel::before, .brand-hotel::after { width: 30px; height: 1px; background: rgba(240, 223, 224, 0.8); content: ''; }
+        .brand-panel p { color: #f0dfe0; font-size: 15px; font-style: italic; line-height: 1.7; margin: 26px 0 0; }
         .brand-caption { display: block; color: #e5c5c8; font-size: 9px; font-style: normal; letter-spacing: 3px; margin-top: 18px; }
-        .brand-photo { position: absolute; z-index: 1; right: 0; bottom: 0; left: 0; width: 100%; height: 38%; object-fit: cover; opacity: 0.78; mix-blend-mode: screen; }
+        .brand-flourish { position: absolute; z-index: 2; right: 8px; bottom: 25%; display: flex; flex-direction: column; gap: 13px; color: #f4d8d5; opacity: 0.16; transform: rotate(-28deg); pointer-events: none; }
+        .brand-flourish i:nth-child(1) { font-size: 76px; transform: rotate(20deg); }
+        .brand-flourish i:nth-child(2) { margin-left: 20px; font-size: 58px; transform: scaleX(-1) rotate(15deg); }
+        .brand-flourish i:nth-child(3) { font-size: 66px; transform: rotate(10deg); }
+        .brand-photo { position: absolute; z-index: 1; right: 0; bottom: 0; left: 0; width: 100%; height: 50%; object-fit: cover; opacity: 0.78; mix-blend-mode: screen; clip-path: polygon(0 0, 10% 0, 20% 1%, 30% 3%, 40% 7%, 50% 12%, 60% 19%, 70% 25%, 80% 30%, 90% 33%, 100% 34%, 100% 100%, 0 100%); }
         .form-panel { display: flex; align-items: center; padding: 64px clamp(38px, 7vw, 72px); background: #fffdfc; }
         .form-content { width: 100%; max-width: 434px; margin: 0 auto; }
         .form-heading { margin-bottom: 38px; }
@@ -126,18 +132,25 @@
         @media (max-width: 700px) {
             body { padding: 16px; align-items: flex-start; }
             .login-card { display: block; max-width: 480px; min-height: 0; margin: auto; }
-            .brand-panel { min-height: 315px; padding: 34px 24px 128px; }
-            .brand-mark { width: 62px; height: 62px; margin-bottom: 12px; }
-            .brand-panel h1 { font-size: 23px; }
-            .brand-panel p { margin-top: 8px; }
-            .brand-caption { margin-top: 8px; }
-            .brand-photo { height: 34%; }
+            .brand-panel { min-height: 354px; padding: 29px 18px 132px; }
+            .brand-logo { width: 64px; height: 64px; margin-bottom: 8px; }
+            .brand-panel h1 { font-size: 30px; }
+            .brand-hotel { gap: 7px; margin-top: 4px; font-size: 8px; letter-spacing: 4px; }
+            .brand-hotel::before, .brand-hotel::after { width: 16px; }
+            .brand-panel p { margin-top: 12px; font-size: 11px; }
+            .brand-caption { margin-top: 9px; font-size: 7px; letter-spacing: 2px; }
+            .brand-flourish { right: 5px; bottom: 27%; }
+            .brand-flourish i:nth-child(1) { font-size: 34px; }
+            .brand-flourish i:nth-child(2) { font-size: 27px; }
+            .brand-flourish i:nth-child(3) { font-size: 31px; }
+            .brand-photo { height: 36%; }
             .form-panel { padding: 38px 25px 32px; }
             .form-heading h2 { font-size: 31px; }
             .form-heading p { font-size: 14px; }
         }
         @media (max-width: 380px) {
             body { padding: 10px; }
+            .brand-panel { padding-right: 14px; padding-left: 14px; }
             .form-panel { padding-left: 18px; padding-right: 18px; }
         }
     </style>
@@ -146,12 +159,18 @@
     <div class="login-card">
         <div class="brand-panel">
             <div class="brand-content">
-                <img class="brand-mark" src="{{ asset('image/LOGO.png') }}" alt="CASAUL Hotel">
-                <h1>CASAUL HOTEL</h1>
+                <img class="brand-logo" src="{{ asset('image/LOGO.png') }}" alt="CASAUL official logo">
+                <h1>CASAUL</h1>
+                <span class="brand-hotel">HOTEL</span>
                 <p>Thoughtful stays, warm hospitality,<br>and seamless hotel operations.</p>
                 <span class="brand-caption">HOTEL MANAGEMENT SYSTEM</span>
             </div>
-            <img class="brand-photo" src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="CASAUL Hotel room">
+            <div class="brand-flourish" aria-hidden="true">
+                <i class="fas fa-leaf"></i>
+                <i class="fas fa-leaf"></i>
+                <i class="fas fa-leaf"></i>
+            </div>
+            <img class="brand-photo" src="{{ asset('image/Front desk.png') }}" alt="CASAUL Hotel room">
         </div>
 
         <div class="form-panel">

@@ -1,6 +1,33 @@
 @extends('admin.layout')
 
 @section('content')
+<style>
+    body.dark .account-list-table .text-slate-800,
+    body.dark .account-list-table .text-slate-700 {
+        color: #e6eef8 !important;
+    }
+
+    body.dark .account-list-table .text-slate-600 {
+        color: #cbd5e1 !important;
+    }
+
+    body.dark .account-list-table .bg-slate-100 {
+        background-color: #334155 !important;
+    }
+
+    body.dark .account-list-table .user-row:hover {
+        background-color: #1f2937 !important;
+    }
+
+    body.dark .account-list-table .user-row:hover .bg-slate-100 {
+        background-color: #475569 !important;
+    }
+
+    body.dark .account-list-table .user-row button[class*="hover:bg-slate-200"]:hover {
+        background-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+</style>
 <div class="animate-fade-in">
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -125,7 +152,7 @@
             </div>
         </div>
         <div class="overflow-x-auto">
-            <table class="min-w-full border-separate border-spacing-y-3 text-left">
+            <table class="account-list-table min-w-full border-separate border-spacing-y-3 text-left">
                 <thead>
                     <tr class="text-sm font-semibold text-slate-600">
                             <th class="px-4 py-3"><input id="selectAllAccounts" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500" onclick="toggleAllAccounts(this)" aria-label="Select all accounts"></th>

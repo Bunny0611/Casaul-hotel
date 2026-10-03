@@ -130,17 +130,17 @@
         <form id="reportsFilterForm" method="GET" action="{{ route('admin.reports') }}">
             <input id="activeReportTab" type="hidden" name="tab" value="{{ request('tab', 'financial') }}">
             <div class="flex flex-wrap items-center justify-between gap-4">
-                <div class="flex items-center space-x-4">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">From</label>
-                        <input id="reportFrom" name="from" type="date" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" value="{{ request('from') }}">
+                        <input id="reportFrom" name="from" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" value="{{ request('from') }}">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
-                        <input id="reportTo" name="to" type="date" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" value="{{ request('to') }}">
+                        <input id="reportTo" name="to" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" value="{{ request('to') }}">
                     </div>
                 </div>
-                <div class="flex space-x-3">
+                <div class="flex flex-wrap gap-2">
                     <button id="reportsRefresh" type="button" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                         <i class="fas fa-sync-alt mr-2"></i>Refresh
                     </button>
@@ -160,7 +160,7 @@
     
     <!-- Report Tabs -->
     <div class="bg-white rounded-xl shadow-lg mb-6">
-        <div class="grid grid-cols-2 md:grid-cols-5 text-center">
+        <div class="grid grid-cols-2 gap-2 p-2 text-center lg:grid-cols-5">
             <button type="button" data-tab="financial" class="tab-btn py-4 border-b-2 border-orange-500 font-semibold text-orange-600 transition-all duration-200">
                 <i class="fas fa-coins mr-2"></i>
                 Financial
@@ -189,7 +189,7 @@
     </div>
 
     <div data-panel="financial" class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <div class="flex items-center justify-between">
                     <div>
@@ -273,7 +273,7 @@
     </div>
 
     <div data-panel="reservations" class="hidden space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <p class="text-gray-500 text-sm">Total Reservations</p>
                 <h2 class="text-3xl font-bold">{{ $reservations->count() }}</h2>
@@ -325,7 +325,7 @@
     </div>
 
     <div data-panel="occupancy" class="hidden space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <p class="text-gray-500 text-sm">Occupancy Rate</p>
                 <h2 class="text-3xl font-bold text-green-600">{{ $occupancyRate }}%</h2>
@@ -361,7 +361,7 @@
     </div>
 
     <div data-panel="guests" class="hidden space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <p class="text-gray-500 text-sm">Total Guests</p>
                 <h2 class="text-3xl font-bold">{{ $totalGuests }}</h2>
@@ -412,7 +412,7 @@
     </div>
 
     <div data-panel="maintenance" class="hidden space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <p class="text-gray-500 text-sm">Total Reports</p>
                 <h2 class="text-3xl font-bold text-gray-800">{{ $maintenanceReports->count() }}</h2>
@@ -431,7 +431,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h3 class="text-lg font-semibold text-gray-800 mb-4">Report Status</h3><div class="relative h-[280px]"><canvas id="maintenanceStatusChart" class="w-full h-full"></canvas></div></div>
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h3 class="text-lg font-semibold text-gray-800 mb-4">Priority Breakdown</h3><div class="relative h-[280px]"><canvas id="maintenancePriorityChart" class="w-full h-full"></canvas></div></div>
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6"><h3 class="text-lg font-semibold text-gray-800 mb-4">Issues by Category</h3><div class="relative h-[280px]"><canvas id="maintenanceCategoryChart" class="w-full h-full"></canvas></div></div>
@@ -517,6 +517,34 @@
             return `From: ${from}  |  To: ${to}`;
         }
 
+        function captureChartForExport(sourceCanvas) {
+            const chart = window.Chart?.getChart(sourceCanvas);
+            if (!chart) {
+                return {
+                    src: sourceCanvas.toDataURL('image/png', 1),
+                    width: sourceCanvas.width,
+                    height: sourceCanvas.height
+                };
+            }
+
+            const isCircularChart = chart.config.type === 'doughnut' || chart.config.type === 'pie';
+            const exportWidth = isCircularChart ? 480 : 960;
+            const exportHeight = 480;
+
+            try {
+                chart.resize(exportWidth, exportHeight);
+                chart.update('none');
+                return {
+                    src: sourceCanvas.toDataURL('image/png', 1),
+                    width: chart.width,
+                    height: chart.height
+                };
+            } finally {
+                chart.resize();
+                chart.update('none');
+            }
+        }
+
         function prepareExportDocument() {
             const sourcePanel = document.querySelector(`[data-panel="${activeTab}"]`);
             if (!sourcePanel) return null;
@@ -538,7 +566,7 @@
             panelClone.querySelectorAll(':scope > .grid').forEach((grid, index) => {
                 if (index === 0) {
                     grid.classList.add('report-export-kpi-grid');
-                } else if (grid.classList.contains('lg:grid-cols-3')) {
+                } else if (grid.classList.contains('lg:grid-cols-3') || grid.classList.contains('xl:grid-cols-3')) {
                     grid.classList.add('report-export-three-column-grid');
                 } else {
                     grid.classList.add('report-export-two-column-grid');
@@ -548,18 +576,16 @@
             });
 
             sourcePanel.querySelectorAll('canvas').forEach(sourceCanvas => {
-                const chart = window.Chart?.getChart(sourceCanvas);
-                if (chart) chart.resize();
-
                 const clonedCanvas = panelClone.querySelector(`#${sourceCanvas.id}`);
                 if (!clonedCanvas) return;
 
+                const exportChart = captureChartForExport(sourceCanvas);
                 const chartImage = document.createElement('img');
                 chartImage.className = `${sourceCanvas.className} report-export-chart`;
                 chartImage.alt = '';
-                chartImage.width = sourceCanvas.width;
-                chartImage.height = sourceCanvas.height;
-                chartImage.src = sourceCanvas.toDataURL('image/png', 1);
+                chartImage.width = exportChart.width;
+                chartImage.height = exportChart.height;
+                chartImage.src = exportChart.src;
                 clonedCanvas.replaceWith(chartImage);
 
                 const chartCard = chartImage.closest('.bg-white');

@@ -111,7 +111,7 @@
 </div>
 
 <div id="accountSettingsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 px-4 py-8">
-    <div class="w-full max-w-3xl rounded-[32px] bg-white p-8 shadow-2xl border border-slate-200">
+    <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[32px] bg-white p-4 shadow-2xl border border-slate-200 sm:p-8">
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h3 class="text-2xl font-semibold text-slate-900">Account Settings</h3>

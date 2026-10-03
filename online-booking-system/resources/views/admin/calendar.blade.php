@@ -80,7 +80,7 @@
 
     .calendar-grid {
         display: grid;
-        grid-template-columns: 220px minmax(720px, 1fr);
+        grid-template-columns: 220px minmax(0, 1fr);
         background: #f8fafc;
         min-height: 480px;
     }
@@ -125,6 +125,7 @@
     }
 
     .calendar-body {
+        min-width: 0;
         overflow-x: auto;
     }
 
@@ -161,6 +162,7 @@
         position: relative;
         display: grid;
         grid-template-columns: repeat({{ count($days) }}, minmax(72px, 1fr));
+        min-width: 720px;
         min-height: 60px;
         border-bottom: 1px solid #e5e7eb;
         background: rgba(255,255,255,0.1);
@@ -236,7 +238,7 @@
 
     @media (max-width: 1024px) {
         .calendar-grid {
-            grid-template-columns: 180px minmax(620px, 1fr);
+            grid-template-columns: 180px minmax(0, 1fr);
         }
     }
 </style>

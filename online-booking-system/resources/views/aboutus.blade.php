@@ -10,14 +10,14 @@
             <p>At Casaul Hotel, we believe true hospitality isn’t just about a place to stay — it’s about feeling at home, wherever you are.</p>
         </div>
         <div class="about-hero-image">
-            <img src="{{ asset('image/HM.jpg') }}" alt="Luxury hotel bedroom at Casaul Hotel">
+            <img src="{{ asset('image/Front desk.png') }}" alt="Luxury hotel bedroom at Casaul Hotel">
         </div>
     </section>
 
     <div class="about-shell">
         <section class="about-story" aria-label="Our story">
             <div class="about-story-image-wrap">
-                <img src="{{ asset('image/Royal-Suite-room.jpg') }}" alt="Guest room at Casaul Hotel">
+                <img src="{{ asset('image/Hotel.png') }}" alt="Guest room at Casaul Hotel">
             </div>
 
             <div class="about-story-copy">
