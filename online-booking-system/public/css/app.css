@@ -5736,8 +5736,11 @@ body:has(.profile-page) footer {
     .home-page .home-eyebrow { font-size: clamp(.5rem, 2.2vw, .68rem) !important; }
     .home-page .home-hero-copy > p:not(.home-eyebrow) { font-size: clamp(.65rem, 2.6vw, .85rem) !important; }
     .home-page .home-primary-btn { font-size: clamp(.52rem, 2vw, .68rem) !important; }
+    .home-page .home-experience-card h3 { font-size: .75rem !important; letter-spacing: .04em; white-space: nowrap; overflow-wrap: normal; word-break: normal; hyphens: none; }
+    .home-page .home-experience-card b { font-size: .72rem !important; }
+    .home-page .home-room-card h3 { font-size: clamp(.76rem, 1.8vw, .9rem) !important; line-height: 1.3; letter-spacing: .04em; text-wrap: balance; overflow-wrap: normal; word-break: normal; hyphens: none; }
     .home-page .home-room-card p { font-size: clamp(1rem, 2vw, 1.2rem) !important; }
-    .home-page .home-room-card p span,
+    .home-page .home-room-card p span { font-size: clamp(.68rem, 1.7vw, .82rem) !important; }
     .home-page .home-dining-card strong,
     .dining-page .dining-price { font-size: clamp(.95rem, 2.5vw, 1.2rem) !important; }
     .accommodation-reference-page .accommodation-room-price,
