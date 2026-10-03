@@ -120,7 +120,6 @@ class HomeController extends Controller
         $facilities = Facility::whereIn('status', ['available', 'limited'])
             ->orderByRaw("CASE WHEN scheduling_requirement = 'No Additional Schedule' THEN 0 ELSE 1 END")
             ->orderBy('name')
-            ->limit(3)
             ->get();
 
         return view('index', compact('rooms', 'bestSellingDining', 'facilities'));
