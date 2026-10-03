@@ -86,6 +86,33 @@
         </section>
     </div>
 
+    <section class="about-people" aria-labelledby="about-people-title">
+        <div class="about-people-inner">
+            <div class="about-people-copy">
+                <p class="about-people-kicker">OUR PEOPLE &amp; PASSION</p>
+                <h2 id="about-people-title"><span>The People Behind</span><span>Your Experience</span></h2>
+                <p class="about-people-description">From our kitchen to your room, our team is the heart of Casaul Hotel — bringing genuine care, skill, and warmth to every moment of your stay.</p>
+            </div>
+
+            <div class="about-people-gallery" aria-label="Casaul Hotel culinary selections">
+                <figure class="about-people-main">
+                    <img src="{{ asset('storage/catalog/1790303737_6ab5ddf9d4c10.png') }}" alt="Freshly prepared dumplings served at Casaul Hotel" loading="lazy">
+                    <figcaption>Our Culinary Team</figcaption>
+                </figure>
+                <div class="about-people-side">
+                    <figure>
+                        <img src="{{ asset('storage/catalog/1790304959_6ab5e2bf86d82.png') }}" alt="Carefully plated chicken entree from the Casaul Hotel menu" loading="lazy">
+                        <figcaption>Crafted with Care</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="{{ asset('storage/catalog/1790305135_6ab5e36f0b75c.png') }}" alt="Freshly prepared sushi platter from the Casaul Hotel menu" loading="lazy">
+                        <figcaption>A Passion for Every Plate</figcaption>
+                    </figure>
+                </div>
+            </div>
+        </div>
+    </section>
+
         <section class="about-experience" aria-label="Casaul Experience">
             <p class="about-experience-kicker">THE CASAUL EXPERIENCE</p>
             <h2>A Place Made for Every Moment</h2>

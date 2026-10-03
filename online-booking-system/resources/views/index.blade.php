@@ -40,7 +40,7 @@
             <a href="{{ route('dining') }}">View Full Menu</a>
         </header>
         <div class="home-dining-grid">
-            @foreach($bestSellingDining as $category => $meal)
+            @foreach($bestSellingDining->take(6) as $category => $meal)
                 <article class="home-dining-card">
                     <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? secure_asset('storage/' . ltrim($meal->image, '/')) : secure_asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
                     <div class="home-dining-card-body">
