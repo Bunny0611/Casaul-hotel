@@ -326,6 +326,7 @@ class AdminReservationTest extends TestCase
 
     public function test_public_booking_keeps_each_selected_service_on_its_own_date(): void
     {
+        $admin = Staff::factory()->create(['role' => 'admin', 'is_active' => true]);
         $guest = Guest::factory()->create([
             'email' => 'multi-service@example.com',
             'name' => 'Multi Service Guest',
@@ -415,6 +416,13 @@ class AdminReservationTest extends TestCase
         $this->assertSame($diningDate, $diningReservation->check_in->toDateString());
         $this->assertSame($diningDate, $diningReservation->check_out->toDateString());
         $this->assertSame($diningDate, $diningReservation->diningItems()->firstOrFail()->dining_date->toDateString());
+
+        $this->assertEqualsCanonicalizing([
+            \App\Models\RoomReservation::class,
+            \App\Models\EventReservation::class,
+            \App\Models\FacilityReservation::class,
+            \App\Models\DiningReservation::class,
+        ], $admin->notifications()->get()->map(fn ($notification) => $notification->data['related_type'] ?? null)->all());
     }
 
     public function test_public_booking_rejects_overlapping_room_reservation(): void

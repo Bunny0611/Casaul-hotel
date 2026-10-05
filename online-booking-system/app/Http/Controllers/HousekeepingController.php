@@ -699,7 +699,7 @@ class HousekeepingController extends Controller
             'Room ' . $room->room_number . ' was updated to ' . $updatedStatus . '.',
             [
                 'reference' => 'admin-room-status:' . $room->id . ':' . now()->timestamp,
-                'url' => route('admin.rooms'),
+                'url' => route('admin.rooms', ['room_id' => $room->id]),
                 'type' => 'housekeeping',
                 'module' => 'rooms',
                 'related_id' => $room->id,

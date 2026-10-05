@@ -761,6 +761,8 @@ class HomeController extends Controller
             $validated['event_id'] = $eventIds->first();
         }
 
+        $additionalReservations = collect();
+
         if ($category === 'rooms') {
             $validated['room_check_in_time'] = $validated['check_in_time'] ?? null;
             $validated['room_check_out_time'] = $validated['check_out_time'] ?? null;
@@ -837,7 +839,7 @@ class HomeController extends Controller
             ])->all());
 
             if (!empty($validated['room_id'])) {
-                RoomReservation::create([
+                $additionalReservations->push(RoomReservation::create([
                     'room_id' => $validated['room_id'],
                     'guest_name' => $validated['guest_name'],
                     'guest_email' => $validated['guest_email'],
@@ -855,7 +857,7 @@ class HomeController extends Controller
                     'payment_details' => $validated['payment_details'],
                     'amount_paid' => 0,
                     'special_requests' => $validated['special_requests'] ?? null,
-                ]);
+                ]));
             }
         } else {
             $tableNumber = (string) ($validated['dining_area'] ?? '');
@@ -879,6 +881,8 @@ class HomeController extends Controller
                 'check_out' => $diningDate,
             ])->all());
         }
+
+        $createdReservations = collect([$reservation])->merge($additionalReservations);
 
         if (!empty($diningSelections) && method_exists($reservation, 'diningItems')) {
             $reservation->diningItems()->createMany($diningSelections);
@@ -905,10 +909,11 @@ class HomeController extends Controller
                 'special_requests' => $validated['special_requests'] ?? null,
             ]);
             $diningReservation->diningItems()->createMany($diningSelections);
+            $createdReservations->push($diningReservation);
         }
 
         if ($category !== 'rooms' && $category !== 'facilities' && !empty($validated['room_id'])) {
-            RoomReservation::create([
+            $createdReservations->push(RoomReservation::create([
                 'room_id' => $validated['room_id'],
                 'guest_name' => $validated['guest_name'],
                 'guest_email' => $validated['guest_email'],
@@ -926,7 +931,7 @@ class HomeController extends Controller
                 'payment_details' => $validated['payment_details'],
                 'amount_paid' => 0,
                 'special_requests' => $validated['special_requests'] ?? null,
-            ]);
+            ]));
         }
 
         if ($category !== 'facilities' && !empty($validated['facility_id'])) {
@@ -937,7 +942,7 @@ class HomeController extends Controller
                 $facilityStartTime = $validated['facility_start_time'] ?? $validated['check_in_time'] ?? '00:00';
                 $facilityEndTime = Carbon::createFromFormat('Y-m-d H:i', $facilityDate . ' ' . $facilityStartTime)
                     ->addHours(max(1, (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1)));
-                FacilityReservation::create([
+                $createdReservations->push(FacilityReservation::create([
                     'facility_id' => $facility->id,
                     'facility_quantity' => $facilityQuantity,
                     'guest_name' => $validated['guest_name'],
@@ -954,7 +959,7 @@ class HomeController extends Controller
                     'payment_details' => $validated['payment_details'],
                     'amount_paid' => 0,
                     'special_requests' => $validated['special_requests'] ?? null,
-                ]);
+                ]));
             }
         }
 
@@ -962,47 +967,52 @@ class HomeController extends Controller
             $request->session()->put('reservation_submission_' . $submissionToken, true);
         }
 
-        $reservationLabel = match ($category) {
-            'rooms' => 'room reservation',
-            'event' => 'event reservation',
-            'facilities' => 'facility reservation',
-            'dining' => 'dining reservation',
-            default => 'reservation',
-        };
+        foreach ($createdReservations as $createdReservation) {
+            [$reservationLabel, $reservationTab] = match ($createdReservation->getTable()) {
+                'room_reservations', 'reservations' => ['room reservation', 'rooms'],
+                'facility_reservations' => ['facility reservation', 'facilities'],
+                'event_reservations' => ['event reservation', 'event'],
+                'dining_reservations' => ['dining reservation', 'dining'],
+                default => ['reservation', $category],
+            };
+            $reservationId = $createdReservation->getKey();
+            $reservationType = $createdReservation->getTable();
+            $relatedType = get_class($createdReservation);
 
-        StaffNotificationService::notifyEmployees(
-            'New ' . $reservationLabel,
-            $validated['guest_name'] . ' submitted a new ' . $reservationLabel . ' for ' . ($reservation->room?->room_number ?? $validated['guest_name']) . '.',
-            [
-                    'reference' => 'reservation:' . $reservation->getTable() . ':' . $reservation->getKey(),
+            StaffNotificationService::notifyEmployees(
+                'New ' . $reservationLabel,
+                $validated['guest_name'] . ' submitted a new ' . $reservationLabel . '.',
+                [
+                    'reference' => 'reservation:' . $reservationType . ':' . $reservationId,
                     'url' => route('employee.reservation', [
-                        'tab' => $category,
-                        'reservation_id' => $reservation->getKey(),
-                        'reservation_type' => $reservation->getTable(),
+                        'tab' => $reservationTab,
+                        'reservation_id' => $reservationId,
+                        'reservation_type' => $reservationType,
                     ]),
-                'type' => 'reservation',
-                'module' => 'reservations',
-                    'related_id' => $reservation->getKey(),
-                    'related_type' => get_class($reservation),
-            ]
-        );
+                    'type' => 'reservation',
+                    'module' => 'reservations',
+                    'related_id' => $reservationId,
+                    'related_type' => $relatedType,
+                ]
+            );
 
-        StaffNotificationService::notifyAdmins(
-            'New ' . $reservationLabel,
-            $validated['guest_name'] . ' submitted a new ' . $reservationLabel . '.',
-            [
-                'reference' => 'admin-reservation:' . $reservation->getTable() . ':' . $reservation->getKey(),
-                'url' => route('admin.reservations', [
-                    'tab' => $category,
-                    'reservation_id' => $reservation->getKey(),
-                    'reservation_type' => $reservation->getTable(),
-                ]),
-                'type' => 'reservation',
-                'module' => 'reservations',
-                'related_id' => $reservation->getKey(),
-                'related_type' => get_class($reservation),
-            ]
-        );
+            StaffNotificationService::notifyAdmins(
+                'New ' . $reservationLabel,
+                $validated['guest_name'] . ' submitted a new ' . $reservationLabel . '.',
+                [
+                    'reference' => 'admin-reservation:' . $reservationType . ':' . $reservationId,
+                    'url' => route('admin.reservations', [
+                        'tab' => $reservationTab,
+                        'reservation_id' => $reservationId,
+                        'reservation_type' => $reservationType,
+                    ]),
+                    'type' => 'reservation',
+                    'module' => 'reservations',
+                    'related_id' => $reservationId,
+                    'related_type' => $relatedType,
+                ]
+            );
+        }
 
         return redirect()->route('reservation')->with('success', 'Your reservation request has been submitted. We will contact you soon.');
     }
@@ -1604,7 +1614,7 @@ class HomeController extends Controller
             $guest->name . ' submitted a guest request requiring staff attention.',
             [
                 'reference' => 'admin-guest-request:' . ($firstRequestId ?? 'new'),
-                'url' => route('admin.notifications'),
+                'url' => route('admin.dashboard'),
                 'type' => 'request',
                 'module' => 'requests',
                 'related_id' => $firstRequestId,

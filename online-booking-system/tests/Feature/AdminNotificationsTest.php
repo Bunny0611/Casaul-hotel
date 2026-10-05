@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Message;
 use App\Models\MessageReply;
+use App\Models\Room;
 use App\Models\Staff;
+use App\Notifications\StaffNotification;
 use App\Support\StaffNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -93,5 +95,65 @@ class AdminNotificationsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('unread_count', 1)
             ->assertJsonPath('data.0.title', 'New reservation');
+    }
+
+    public function test_admin_reservation_creation_sends_notification_to_admin_users(): void
+    {
+        $admin = Staff::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $room = Room::create([
+            'room_number' => '101',
+            'status' => 'available',
+            'price' => 2500,
+            'capacity' => 2,
+            'room_type' => 'Deluxe Room',
+            'bed_type' => 'Queen',
+            'floor' => 1,
+            'cleaning_status' => 'clean',
+            'description' => 'Test room',
+            'image' => 'rooms/test.jpg',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.reservations.store'), [
+                'category' => 'rooms',
+                'room_id' => $room->id,
+                'guest_name' => 'Guest User',
+                'guest_email' => 'guest@example.com',
+                'guest_phone' => '09171234567',
+                'number_of_guests' => 2,
+                'check_in' => now()->addDay()->toDateString(),
+                'check_out' => now()->addDays(2)->toDateString(),
+                'total_amount' => 5000,
+                'payment_method' => 'Cash / Pay at Hotel',
+                'special_requests' => 'Late check-in',
+                'amount_paid' => 0,
+            ]);
+
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_type' => Staff::class,
+            'notifiable_id' => $admin->id,
+        ]);
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_type' => Staff::class,
+            'notifiable_id' => $admin->id,
+            'type' => 'App\\Notifications\\StaffNotification',
+        ]);
+    }
+
+    public function test_older_housekeeping_notification_links_to_admin_rooms(): void
+    {
+        $admin = Staff::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $admin->notify(new StaffNotification('Room status updated', 'Room 52 was updated.', [
+            'url' => '/housekeeping/room-status-update?room_id=52',
+            'type' => 'housekeeping',
+            'module' => 'rooms',
+            'related_id' => 52,
+            'related_type' => Room::class,
+        ]));
+
+        $this->actingAs($admin)
+            ->getJson(route('admin.notification-feed.index'))
+            ->assertOk()
+            ->assertJsonPath('data.0.url', route('admin.rooms', ['room_id' => 52]));
     }
 }

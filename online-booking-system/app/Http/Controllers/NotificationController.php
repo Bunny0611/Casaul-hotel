@@ -24,7 +24,7 @@ class NotificationController extends Controller
             ->latest('created_at')
             ->limit(20)
             ->get()
-            ->map(function (DatabaseNotification $notification) {
+            ->map(function (DatabaseNotification $notification) use ($user) {
                 $data = is_array($notification->data) ? $notification->data : [];
                 $url = $data['url'] ?? null;
                 $relatedId = (int) ($data['related_id'] ?? 0);
@@ -138,6 +138,23 @@ class NotificationController extends Controller
                 } elseif ($path && !in_array($path, $reservationTargetPaths, true)
                     && (str_starts_with($path, '/employee/') || str_starts_with($path, '/housekeeping/'))) {
                     $url = $path . ($query ? '?' . $query : '');
+                }
+
+                if ($user->role === 'admin' && in_array($path, $roomStatusPaths, true)) {
+                    $existingQuery = [];
+                    if ($query) {
+                        parse_str($query, $existingQuery);
+                    }
+
+                    $roomId = $relatedId ?: (int) ($existingQuery['room_id'] ?? 0);
+                    $url = route('admin.rooms', $roomId > 0 ? ['room_id' => $roomId] : []);
+                } elseif ($user->role === 'admin' && $path === '/employee/reservation') {
+                    $existingQuery = [];
+                    if ($query) {
+                        parse_str($query, $existingQuery);
+                    }
+
+                    $url = route('admin.reservations', $existingQuery);
                 }
 
                 return [

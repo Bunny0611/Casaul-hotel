@@ -206,7 +206,7 @@ class ChatbotController extends Controller
             $guest->name . ' requested ' . strtolower($selectedType) . ' for room ' . ($reservation->room?->room_number ?? 'N/A') . '.',
             [
                 'reference' => 'admin-housekeeping-request:' . $guestRequest->id,
-                'url' => route('admin.notifications'),
+                'url' => route('admin.dashboard'),
                 'type' => 'request',
                 'module' => 'requests',
                 'related_id' => $guestRequest->id,

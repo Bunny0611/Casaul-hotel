@@ -83,6 +83,12 @@
         min-width: 112px;
     }
 
+    .room-management-page .room-row.notification-room-highlight {
+        background: #fff7ed !important;
+        box-shadow: inset 0 0 0 2px #fb923c;
+        transition: background-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
     .room-management-page .room-filter-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -426,7 +432,7 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
                         @forelse($rooms as $room)
-                        <tr class="room-row transition-colors hover:bg-gray-50" data-room-search="{{ strtolower($room->room_number . ' ' . $room->room_type) }}" data-room-type="{{ str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other') }}">
+                        <tr class="room-row transition-colors hover:bg-gray-50" data-room-id="{{ $room->id }}" data-room-search="{{ strtolower($room->room_number . ' ' . $room->room_type) }}" data-room-type="{{ str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other') }}">
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <input type="checkbox" class="room-checkbox h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" value="{{ $room->id }}" onclick="updateSelectAllCheckbox()">
                             </td>
@@ -2220,6 +2226,20 @@
             }
         });
         roomTypeFilter?.addEventListener('change', applyRoomFilters);
+
+        const highlightedRoomId = sessionStorage.getItem('admin-notification-highlight-room-id');
+        if (highlightedRoomId) {
+            const targetRow = document.querySelector('[data-room-id="' + highlightedRoomId + '"]');
+            if (targetRow) {
+                targetRow.classList.add('notification-room-highlight');
+                window.setTimeout(function () {
+                    targetRow.classList.remove('notification-room-highlight');
+                    sessionStorage.removeItem('admin-notification-highlight-room-id');
+                }, 3000);
+            } else {
+                sessionStorage.removeItem('admin-notification-highlight-room-id');
+            }
+        }
 
         if (diningPanel) {
             diningPanel.querySelectorAll('[data-dining-subpanel] td:nth-last-child(2) span').forEach(function (statusElement) {
