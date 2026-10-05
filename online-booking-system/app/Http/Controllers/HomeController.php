@@ -484,6 +484,9 @@ class HomeController extends Controller
             'category' => ['required', 'in:rooms,facilities,event,dining'],
             'room_id' => ['nullable', 'required_if:category,rooms', 'exists:rooms,id'],
             'check_in' => 'required|date|after_or_equal:today',
+            'event_date' => ['nullable', 'date'],
+            'facility_date' => ['nullable', 'date'],
+            'dining_date' => ['nullable', 'date'],
             'check_in_time' => 'nullable|date_format:H:i',
             'facility_start_time' => 'nullable|date_format:H:i',
             'event_start_time' => ['exclude_unless:category,event', 'required', 'date_format:H:i'],
@@ -566,13 +569,17 @@ class HomeController extends Controller
             $validated['amount_paid'] = 0;
         }
 
-        if (($validated['category'] ?? null) === 'event') {
-            $eventDate = Carbon::parse($validated['check_in'])->startOfDay();
+        $eventDate = $validated['event_date'] ?? $validated['check_in'];
+        $eventEndDate = $validated['check_out'];
+
+        if (!empty($validated['event_id'])) {
+            $requestedEventDate = Carbon::parse($eventDate)->startOfDay();
             $minimumEventDate = Carbon::today()->addDay()->startOfDay();
 
-            if ($eventDate->lt($minimumEventDate)) {
+            if ($requestedEventDate->lt($minimumEventDate)) {
+                $eventDateField = $request->filled('event_date') ? 'event_date' : 'check_in';
                 throw ValidationException::withMessages([
-                    'check_in' => 'Event reservations must be booked at least 1 day in advance. Same-day bookings are not allowed.',
+                    $eventDateField => 'Event reservations must be booked at least 1 day in advance. Same-day bookings are not allowed.',
                 ]);
             }
         }
@@ -635,10 +642,10 @@ class HomeController extends Controller
 
                 if ($event) {
                     $configuredDuration = max(1, (int) ($event->duration_hours ?: 4));
-                    $start = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $validated['event_start_time']);
+                    $start = Carbon::createFromFormat('Y-m-d H:i', $eventDate . ' ' . $validated['event_start_time']);
                     $end = $start->copy()->addHours($configuredDuration);
                     $validated['event_end_time'] = $end->format('H:i');
-                    $validated['check_out'] = $end->toDateString();
+                    $eventEndDate = $end->toDateString();
                     abort_if($event->available_from && $start->format('H:i') < Carbon::parse($event->available_from)->format('H:i'), 422, 'The event starts before its available time.');
                     abort_if($event->available_to && $end->toDateString() === $start->toDateString() && $end->format('H:i') > Carbon::parse($event->available_to)->format('H:i'), 422, 'The event ends after its available time.');
 
@@ -709,6 +716,9 @@ class HomeController extends Controller
             ->filter()
             ->map(fn ($id) => (int) $id)
             ->values();
+        $facilityDate = $validated['facility_date'] ?? $validated['check_in'];
+        $diningDate = $validated['dining_date']
+            ?? ($diningSelections[0]['dining_date'] ?? $validated['check_in']);
         $facilities = Facility::whereIn('id', $facilityIds)->get();
         $events = Event::whereIn('id', $eventIds)->get();
         $room = !empty($validated['room_id']) ? Room::findOrFail($validated['room_id']) : null;
@@ -791,9 +801,12 @@ class HomeController extends Controller
             $validated['event_end_time'] = $validated['event_end_time'] ?? $validated['check_out_time'] ?? null;
             $reservation = EventReservation::create(collect($validated)->only([
                 'event_id', 'guest_name', 'guest_email', 'guest_phone',
-                'event_type', 'check_in', 'event_start_time', 'check_out',
+                'event_type', 'event_start_time',
                 'event_end_time', 'duration_hours', 'number_of_guests', 'status', 'total_amount',
                 'payment_method', 'payment_details', 'amount_paid', 'special_requests', 'selected_addons',
+            ])->merge([
+                'check_in' => $eventDate,
+                'check_out' => $eventEndDate,
             ])->all());
         } elseif ($category === 'facilities') {
             $facility = $facilities->firstOrFail();
@@ -806,7 +819,7 @@ class HomeController extends Controller
             }
             $durationHours = max(1, (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1));
             $facilityStartTime = $validated['facility_start_time'] ?? $validated['check_in_time'] ?? '00:00';
-            $endTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $facilityStartTime)
+            $endTime = Carbon::createFromFormat('Y-m-d H:i', $facilityDate . ' ' . $facilityStartTime)
                 ->addHours($durationHours);
             $facilityCheckOut = $endTime->toDateString();
             $validated['facility_start_time'] = $facilityStartTime;
@@ -814,11 +827,14 @@ class HomeController extends Controller
             $validated['facility_quantity'] = $facilityQuantity;
             $validated['total_amount'] = $facilityTotal;
             $reservation = FacilityReservation::create(collect($validated)->only([
-                'facility_id', 'facility_quantity', 'guest_name', 'guest_email', 'guest_phone', 'check_in',
+                'facility_id', 'facility_quantity', 'guest_name', 'guest_email', 'guest_phone',
                 'facility_start_time', 'facility_end_time',
                 'number_of_guests', 'status', 'total_amount', 'payment_method',
                 'payment_details', 'amount_paid', 'special_requests',
-            ])->merge(['check_out' => $facilityCheckOut])->all());
+            ])->merge([
+                'check_in' => $facilityDate,
+                'check_out' => $facilityCheckOut,
+            ])->all());
 
             if (!empty($validated['room_id'])) {
                 RoomReservation::create([
@@ -844,7 +860,7 @@ class HomeController extends Controller
         } else {
             $tableNumber = (string) ($validated['dining_area'] ?? '');
             $hasDiningConflict = DiningReservation::query()
-                ->activeForTableAndSchedule($tableNumber, $validated['check_in'], $validated['dining_schedule'])
+                ->activeForTableAndSchedule($tableNumber, $diningDate, $validated['dining_schedule'])
                 ->exists();
 
             if ($hasDiningConflict) {
@@ -855,9 +871,12 @@ class HomeController extends Controller
 
             $reservation = DiningReservation::create(collect($validated)->only([
                 'guest_name', 'guest_email', 'guest_phone', 'dining_area',
-                'dining_schedule', 'check_in', 'check_out', 'quantity',
+                'dining_schedule', 'quantity',
                 'dining_id', 'status', 'total_amount', 'payment_method',
                 'payment_details', 'amount_paid', 'special_requests',
+            ])->merge([
+                'check_in' => $diningDate,
+                'check_out' => $diningDate,
             ])->all());
         }
 
@@ -874,8 +893,8 @@ class HomeController extends Controller
                 'guest_phone' => $validated['guest_phone'],
                 'dining_area' => $validated['dining_area'] ?? ($diningSelections[0]['dining_area'] ?? 'N/A'),
                 'dining_schedule' => $validated['dining_schedule'] ?? ($diningSelections[0]['dining_schedule'] ?? 'N/A'),
-                'check_in' => $validated['check_in'],
-                'check_out' => $validated['check_out'],
+                'check_in' => $diningDate,
+                'check_out' => $diningDate,
                 'quantity' => $validated['quantity'] ?? 1,
                 'dining_id' => $validated['dining_id'] ?? null,
                 'status' => 'pending',
@@ -916,7 +935,7 @@ class HomeController extends Controller
             if ($facility) {
                 $facilityQuantity = max(1, (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1));
                 $facilityStartTime = $validated['facility_start_time'] ?? $validated['check_in_time'] ?? '00:00';
-                $facilityEndTime = Carbon::createFromFormat('Y-m-d H:i', $validated['check_in'] . ' ' . $facilityStartTime)
+                $facilityEndTime = Carbon::createFromFormat('Y-m-d H:i', $facilityDate . ' ' . $facilityStartTime)
                     ->addHours(max(1, (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1)));
                 FacilityReservation::create([
                     'facility_id' => $facility->id,
@@ -924,7 +943,7 @@ class HomeController extends Controller
                     'guest_name' => $validated['guest_name'],
                     'guest_email' => $validated['guest_email'],
                     'guest_phone' => $validated['guest_phone'],
-                    'check_in' => $validated['check_in'],
+                    'check_in' => $facilityDate,
                     'facility_start_time' => $facilityStartTime,
                     'check_out' => $facilityEndTime->toDateString(),
                     'facility_end_time' => $facilityEndTime->format('H:i'),

@@ -284,10 +284,12 @@ class AdminReservationTest extends TestCase
         ]);
         $checkIn = today()->addDay()->toDateString();
         $roomCheckOut = today()->addDays(3)->toDateString();
+        $facilityDate = today()->addDays(2)->toDateString();
 
         $this->actingAs($guest, 'guest')->post(route('reservation.store'), [
             'room_id' => $room->id,
             'facility_id' => (string) $facility->id,
+            'facility_date' => $facilityDate,
             'facility_quantity' => 1,
             'duration_hours' => 2,
             'guest_name' => 'Room and Facility Guest',
@@ -308,16 +310,111 @@ class AdminReservationTest extends TestCase
         ])->assertRedirect(route('reservation'));
 
         $roomReservation = RoomReservation::where('guest_email', 'room-facility@example.com')->firstOrFail();
+        $this->assertSame($checkIn, $roomReservation->check_in->toDateString());
         $this->assertSame($roomCheckOut, $roomReservation->check_out->toDateString());
         $this->assertSame(6, $roomReservation->number_of_guests);
         $this->assertSame(1, $roomReservation->adult_guests);
         $this->assertSame(1, $roomReservation->kid_guests);
 
         $facilityReservation = \App\Models\FacilityReservation::where('guest_email', 'room-facility@example.com')->firstOrFail();
-        $this->assertSame($checkIn, $facilityReservation->check_out->toDateString());
+        $this->assertSame($facilityDate, $facilityReservation->check_in->toDateString());
+        $this->assertSame($facilityDate, $facilityReservation->check_out->toDateString());
         $this->assertSame('15:00', $facilityReservation->facility_start_time);
         $this->assertSame(1000.0, (float) $facilityReservation->total_amount);
         $this->assertSame('17:00', $facilityReservation->facility_end_time);
+    }
+
+    public function test_public_booking_keeps_each_selected_service_on_its_own_date(): void
+    {
+        $guest = Guest::factory()->create([
+            'email' => 'multi-service@example.com',
+            'name' => 'Multi Service Guest',
+        ]);
+        $room = Room::create([
+            'room_number' => '208',
+            'room_type' => 'Deluxe',
+            'price' => 2500,
+            'floor' => '2nd',
+            'capacity' => 2,
+            'status' => 'available',
+        ]);
+        $facility = \App\Models\Facility::create([
+            'name' => 'Meeting Room',
+            'price' => 1000,
+            'pricing_basis' => 'Per Hour',
+            'status' => 'available',
+        ]);
+        $event = \App\Models\Event::create([
+            'name' => 'Birthday Package',
+            'event_type' => 'Birthday',
+            'price' => 5000,
+            'pricing_basis' => 'Per Event',
+            'duration_hours' => 4,
+            'capacity' => 40,
+            'available_from' => '08:00',
+            'available_to' => '22:00',
+            'status' => 'available',
+        ]);
+        $diningItem = \App\Models\DiningMenu::create([
+            'name' => 'Dinner Set',
+            'category' => 'Main Course',
+            'price' => 500,
+            'status' => 'available',
+        ]);
+
+        $roomCheckIn = now()->addDays(2)->toDateString();
+        $roomCheckOut = now()->addDays(4)->toDateString();
+        $eventDate = now()->addDays(5)->toDateString();
+        $facilityDate = now()->addDays(6)->toDateString();
+        $diningDate = now()->addDays(7)->toDateString();
+
+        $this->actingAs($guest, 'guest')->post(route('reservation.store'), [
+            'room_id' => $room->id,
+            'facility_id' => (string) $facility->id,
+            'facility_date' => $facilityDate,
+            'facility_start_time' => '10:00',
+            'facility_duration_hours' => 2,
+            'event_id' => (string) $event->id,
+            'event_date' => $eventDate,
+            'event_start_time' => '09:00',
+            'event_addons' => '[]',
+            'event_type' => 'Birthday',
+            'dining_date' => $diningDate,
+            'dining_items' => json_encode([[
+                'dining_id' => $diningItem->id,
+                'quantity' => 1,
+                'dining_area' => 'T01',
+                'dining_schedule' => 'Dinner',
+                'dining_date' => $diningDate,
+            ]]),
+            'guest_name' => 'Multi Service Guest',
+            'guest_email' => 'multi-service@example.com',
+            'guest_phone' => '09191234569',
+            'check_in' => $roomCheckIn,
+            'check_out' => $roomCheckOut,
+            'check_in_time' => '14:00',
+            'number_of_guests' => 2,
+            'room_number_of_guests' => 2,
+            'total_amount' => 10000,
+            'payment_method' => 'Cash / Pay at Hotel',
+        ])->assertRedirect(route('reservation'));
+
+        $roomReservation = RoomReservation::where('guest_email', 'multi-service@example.com')->firstOrFail();
+        $this->assertSame($roomCheckIn, $roomReservation->check_in->toDateString());
+        $this->assertSame($roomCheckOut, $roomReservation->check_out->toDateString());
+
+        $eventReservation = \App\Models\EventReservation::where('guest_email', 'multi-service@example.com')->firstOrFail();
+        $this->assertSame($eventDate, $eventReservation->check_in->toDateString());
+        $this->assertSame($eventDate, $eventReservation->check_out->toDateString());
+
+        $facilityReservation = \App\Models\FacilityReservation::where('guest_email', 'multi-service@example.com')->firstOrFail();
+        $this->assertSame($facilityDate, $facilityReservation->check_in->toDateString());
+        $this->assertSame($facilityDate, $facilityReservation->check_out->toDateString());
+
+        $diningReservation = \App\Models\DiningReservation::where('guest_email', 'multi-service@example.com')->firstOrFail();
+        $this->assertSame($diningDate, $diningReservation->check_in->toDateString());
+        $this->assertSame($diningDate, $diningReservation->check_out->toDateString());
+        $this->assertSame($diningDate, $diningReservation->diningItems()->firstOrFail()->dining_date->toDateString());
     }
 
     public function test_public_booking_rejects_overlapping_room_reservation(): void

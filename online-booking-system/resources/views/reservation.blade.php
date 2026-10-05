@@ -1281,6 +1281,9 @@
     <input type="hidden" name="check_in_time" id="reservationCheckInTime">
     <input type="hidden" name="check_out" id="reservationCheckOut">
     <input type="hidden" name="check_out_time" id="reservationCheckOutTime">
+    <input type="hidden" name="event_date" id="reservationEventDate">
+    <input type="hidden" name="facility_date" id="reservationFacilityDate">
+    <input type="hidden" name="dining_date" id="reservationDiningDate">
     <input type="hidden" name="event_start_time" id="reservationEventStartTime">
     <input type="hidden" name="event_end_time" id="reservationEventEndTime">
     <input type="hidden" name="duration_hours" id="reservationEventDuration">
@@ -1356,6 +1359,9 @@
         const reservationCheckInTime = document.getElementById('reservationCheckInTime');
         const reservationCheckOut = document.getElementById('reservationCheckOut');
         const reservationCheckOutTime = document.getElementById('reservationCheckOutTime');
+        const reservationEventDate = document.getElementById('reservationEventDate');
+        const reservationFacilityDate = document.getElementById('reservationFacilityDate');
+        const reservationDiningDate = document.getElementById('reservationDiningDate');
         const reservationEventStartTime = document.getElementById('reservationEventStartTime');
         const reservationEventEndTime = document.getElementById('reservationEventEndTime');
         const reservationEventDuration = document.getElementById('reservationEventDuration');
@@ -1933,6 +1939,9 @@
             reservationTotalAmount.value = total;
             reservationCheckIn.value = bookingDate;
             reservationCheckOut.value = bookingEndDate;
+            reservationEventDate.value = selectedEvent[0]?.date || '';
+            reservationFacilityDate.value = selectedFacilities[0]?.date || (selectedRoom ? checkIn.value : bookingDate);
+            reservationDiningDate.value = selectedDining[0]?.date || diningDate?.value || '';
             reservationCheckInTime.value = bookingStartTime;
             reservationCheckOutTime.value = bookingEndTime;
             reservationEventStartTime.value = selectedEventStartTime;
