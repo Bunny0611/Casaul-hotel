@@ -100,7 +100,7 @@
                 <p class="dining-featured-kicker">CASAUL SIGNATURE</p>
                 <h2>Made for memorable moments</h2>
                 <p>Discover our carefully selected dishes, prepared with fresh ingredients and the warm hospitality of Casaul Hotel.</p>
-                <a href="{{ route('reservation') }}" class="dining-featured-button">EXPLORE OUR MENU <span aria-hidden="true">→</span></a>
+                <a href="{{ route('reservation') }}#dining-tab" class="dining-featured-button">EXPLORE OUR MENU <span aria-hidden="true">→</span></a>
             </div>
 
             <div class="dining-featured-ornament" aria-hidden="true"></div>

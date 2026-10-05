@@ -105,7 +105,7 @@
                         <figcaption>Crafted with Care</figcaption>
                     </figure>
                     <figure>
-                        <img src="{{ asset('image/chefb.jpg') }}" alt="Freshly prepared sushi platter from the Casaul Hotel menu" loading="lazy">
+                        <img src="{{ asset('image/hmboutus.jpg') }}" alt="Casaul Hotel hospitality team" loading="lazy">
                         <figcaption>A Passion for Every Plate</figcaption>
                     </figure>
                 </div>
@@ -152,7 +152,7 @@
                 </article>
             </div>
 
-            <a class="about-explore-btn" href="{{ route('reservation') }}">EXPLORE CASAUL <span aria-hidden="true">→</span></a>
+            <a class="about-explore-btn" href="{{ route('home') }}">EXPLORE CASAUL <span aria-hidden="true">→</span></a>
         </section>
 
     <section class="about-cta" aria-label="Booking call to action">

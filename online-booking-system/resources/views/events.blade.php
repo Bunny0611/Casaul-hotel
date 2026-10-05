@@ -10,8 +10,8 @@
             <p class="events-hero-subtitle">Beautiful moments, thoughtfully celebrated at CASAUL HOTEL.</p>
             <p class="events-hero-description">From intimate birthday celebrations to unforgettable wedding receptions, create your special day in a setting designed around you.</p>
             <div class="events-hero-actions">
-                <a href="{{ route('reservation') }}" class="events-button events-button--primary">Plan a Wedding <span aria-hidden="true">&rarr;</span></a>
-                <a href="{{ route('reservation') }}" class="events-button events-button--outline">Plan a Birthday <span aria-hidden="true">&rarr;</span></a>
+                <a href="{{ route('reservation', ['event_type' => 'wedding']) }}#events-tab" class="events-button events-button--primary">Plan a Wedding <span aria-hidden="true">&rarr;</span></a>
+                <a href="{{ route('reservation', ['event_type' => 'birthday']) }}#events-tab" class="events-button events-button--outline">Plan a Birthday <span aria-hidden="true">&rarr;</span></a>
             </div>
         </div>
         <div class="events-hero-image">
@@ -97,7 +97,7 @@
             <p class="events-eyebrow">For Your Special Day</p>
             <h2 id="wedding-promotion-title">Begin Your Forever at CASAUL</h2>
             <p>From elegant wedding receptions to intimate ceremonies, we provide a beautiful setting for your most meaningful moments.</p>
-            <a href="{{ route('reservation') }}" class="events-button events-button--primary">Start Planning Your Wedding <span aria-hidden="true">&rarr;</span></a>
+            <a href="{{ route('reservation', ['event_type' => 'wedding']) }}#events-tab" class="events-button events-button--primary">Start Planning Your Wedding <span aria-hidden="true">&rarr;</span></a>
             <svg class="events-promotion-ornament events-promotion-ornament--right" viewBox="0 0 80 180" fill="none" aria-hidden="true"><path d="M67 177C50 146 56 112 42 82S35 38 47 8M46 46C31 43 22 33 19 19C35 22 44 31 46 46ZM48 79C63 67 69 53 65 38C52 46 47 60 48 79ZM54 109C39 104 29 93 27 77C43 83 53 94 54 109ZM60 138C72 128 77 116 74 103C62 111 58 124 60 138Z" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
     </section>
@@ -107,7 +107,7 @@
             <p class="events-eyebrow">Make It Memorable</p>
             <h2 id="birthday-promotion-title">Celebrate Another Beautiful Year</h2>
             <p>Gather your favorite people, enjoy great food, and celebrate another year in a comfortable and elegant CASAUL HOTEL setting.</p>
-            <a href="{{ route('reservation') }}" class="events-button events-button--primary">Start Planning Your Birthday <span aria-hidden="true">&rarr;</span></a>
+            <a href="{{ route('reservation', ['event_type' => 'birthday']) }}#events-tab" class="events-button events-button--primary">Start Planning Your Birthday <span aria-hidden="true">&rarr;</span></a>
             <svg class="events-promotion-ornament events-promotion-ornament--left" viewBox="0 0 80 180" fill="none" aria-hidden="true"><path d="M13 177C30 146 24 112 38 82S45 38 33 8M34 46C49 43 58 33 61 19C45 22 36 31 34 46ZM32 79C17 67 11 53 15 38C28 46 33 60 32 79ZM26 109C41 104 51 93 53 77C37 83 27 94 26 109ZM20 138C8 128 3 116 6 103C18 111 22 124 20 138Z" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <img src="{{ asset('image/birthday-event.png') }}" alt="Birthday celebration space at Casaul Hotel" loading="lazy">
@@ -118,10 +118,9 @@
         <div class="events-final-copy">
             <p class="events-eyebrow">Ready to Celebrate?</p>
             <h2 id="events-final-title">Let&rsquo;s Make It Special.</h2>
-            <p>Choose your celebration and begin your reservation with CASAUL HOTEL.</p>
+            <p>Explore the event packages available at CASAUL HOTEL.</p>
             <div class="events-final-actions">
-                <a href="{{ route('reservation') }}" class="events-button events-button--final-outline">Wedding Reservation <span aria-hidden="true">&rarr;</span></a>
-                <a href="{{ route('reservation') }}" class="events-button events-button--final-gold">Birthday Reservation <span aria-hidden="true">&rarr;</span></a>
+                <a href="{{ route('reservation') }}#events-tab" class="events-button events-button--final-gold">Explore Event Packages <span aria-hidden="true">&rarr;</span></a>
             </div>
         </div>
         <svg class="events-ornament events-ornament--right" viewBox="0 0 150 190" fill="none" aria-hidden="true"><path d="M130 180C108 139 108 98 123 55M123 55C133 37 134 22 126 10M123 55C105 43 95 28 93 12M114 91C132 84 142 73 145 59M111 111C92 104 79 92 72 75M107 135C124 130 134 119 138 103M102 154C81 148 68 135 62 118" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M127 29C138 30 144 25 145 17C136 14 129 18 127 29ZM102 31C103 20 98 13 89 11C86 20 91 28 102 31ZM133 76C142 69 143 61 138 53C129 59 127 67 133 76ZM86 94C86 83 80 76 71 75C69 85 74 92 86 94ZM128 120C138 114 140 106 136 97C126 103 123 111 128 120ZM77 139C77 128 71 121 61 119C59 129 65 137 77 139Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>

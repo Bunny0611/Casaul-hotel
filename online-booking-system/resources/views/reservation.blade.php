@@ -1559,8 +1559,14 @@
         eventCategoryTabs.forEach(tab => {
             tab.addEventListener('click', () => filterEventCards(tab.dataset.eventFilter || 'birthday'));
         });
-        const initialEventCategory = [...eventCategoryTabs].find(tab => [...document.querySelectorAll('#events-tab .event-package-card')]
-            .some(card => String(card.dataset.eventType || '').trim().toLowerCase() === tab.dataset.eventFilter))?.dataset.eventFilter || 'birthday';
+        const eventPackageCards = [...document.querySelectorAll('#events-tab .event-package-card')];
+        const requestedEventCategory = new URLSearchParams(window.location.search).get('event_type')?.trim().toLowerCase();
+        const initialEventCategory = [...eventCategoryTabs].find(tab =>
+            tab.dataset.eventFilter === requestedEventCategory && eventPackageCards.some(card =>
+                String(card.dataset.eventType || '').trim().toLowerCase() === requestedEventCategory))?.dataset.eventFilter
+            || [...eventCategoryTabs].find(tab => eventPackageCards.some(card =>
+                String(card.dataset.eventType || '').trim().toLowerCase() === tab.dataset.eventFilter))?.dataset.eventFilter
+            || 'birthday';
         filterEventCards(initialEventCategory);
 
         const sumItemTotal = (itemsList) => itemsList.reduce((sum, item) => sum + (Number(item.price || 0) * (Number(item.quantity || 1))), 0);

@@ -81,7 +81,7 @@
     <section class="home-facilities-section" id="home-facilities">
         <header class="home-featured-heading">
             <h2>Hotel Facilities</h2>
-            <a href="{{ route('reservation') }}">Explore All Facilities</a>
+            <a href="{{ route('reservation') }}#facilities-tab">Explore All Facilities</a>
         </header>
         <div class="home-facilities-grid">
             @forelse($facilities as $facility)
