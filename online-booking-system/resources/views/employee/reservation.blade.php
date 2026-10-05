@@ -330,6 +330,15 @@
     .employee-reservation-mobile-cards {
         display: none !important;
     }
+
+    @keyframes notificationReservationHighlight {
+        0%, 78% { background-color: #ffedd5; }
+        100% { background-color: #ffffff; }
+    }
+
+    .reservation-item.notification-reservation-highlight > td {
+        animation: notificationReservationHighlight 3s ease-out both;
+    }
 </style>
 
 <div class="animate-fade-in space-y-6">
@@ -1862,7 +1871,32 @@
             document.querySelector('[data-dining-time-end]').value = event.target.value;
         });
 
-        setActiveReservationTab(new URLSearchParams(window.location.search).get('tab') || 'rooms');
+        const reservationQuery = new URLSearchParams(window.location.search);
+        const targetReservationId = reservationQuery.get('reservation_id');
+        const targetReservationType = reservationQuery.get('reservation_type');
+        const tabByReservationTable = {
+            room_reservations: 'rooms',
+            reservations: reservationQuery.get('tab') || 'rooms',
+            facility_reservations: 'facilities',
+            event_reservations: 'event',
+            dining_reservations: 'dining',
+        };
+        setActiveReservationTab(tabByReservationTable[targetReservationType] || reservationQuery.get('tab') || 'rooms');
+
+        if (targetReservationId && targetReservationType) {
+            const targetRow = [...document.querySelectorAll('.reservation-item')].find((row) =>
+                row.dataset.reservationId === targetReservationId && row.dataset.source === targetReservationType
+            );
+
+            if (targetRow) {
+                document.getElementById('reservationSearch').value = '';
+                document.getElementById('reservationStatusFilter').value = '';
+                filterEmployeeReservations();
+                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetRow.classList.add('notification-reservation-highlight');
+                window.setTimeout(() => targetRow.classList.remove('notification-reservation-highlight'), 3000);
+            }
+        }
     });
 
     function changeReservationStatus(id, status) {

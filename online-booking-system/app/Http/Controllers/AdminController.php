@@ -1234,10 +1234,26 @@ class AdminController extends Controller
             $reservation->setAttribute('related_refunds', $relatedRefunds);
         });
 
-        $roomReservations = $this->paginateReservations($roomReservations->sortByDesc('created_at')->values(), 'rooms_page');
-        $facilitiesReservations = $this->paginateReservations($facilitiesReservations->sortByDesc('created_at')->values(), 'facilities_page');
-        $eventsReservations = $this->paginateReservations($eventsReservations->sortByDesc('created_at')->values(), 'events_page');
-        $diningReservations = $this->paginateReservations($diningReservations->sortByDesc('created_at')->values(), 'dining_page');
+        $targetReservationId = (string) request()->query('reservation_id', '');
+        $targetReservationType = (string) request()->query('reservation_type', '');
+        $orderReservationsForNotification = function ($items) use ($targetReservationId, $targetReservationType) {
+            $items = $items->sortByDesc('created_at')->values();
+            if ($targetReservationId === '' || $targetReservationType === '') {
+                return $items;
+            }
+
+            $targetIndex = $items->search(fn ($item) => $item->getTable() === $targetReservationType
+                && (string) $item->getKey() === $targetReservationId);
+
+            return $targetIndex === false
+                ? $items
+                : $items->prepend($items->pull($targetIndex))->values();
+        };
+
+        $roomReservations = $this->paginateReservations($orderReservationsForNotification($roomReservations), 'rooms_page');
+        $facilitiesReservations = $this->paginateReservations($orderReservationsForNotification($facilitiesReservations), 'facilities_page');
+        $eventsReservations = $this->paginateReservations($orderReservationsForNotification($eventsReservations), 'events_page');
+        $diningReservations = $this->paginateReservations($orderReservationsForNotification($diningReservations), 'dining_page');
         
         $rooms = Room::orderBy('room_number')->get();
         $inventoryItems = InventoryItem::orderBy('name')->get();
@@ -2697,7 +2713,7 @@ class AdminController extends Controller
         $messages = match ($filter) {
             'today' => $messages->filter(fn ($message) => $message->created_at?->isToday()),
             'week' => $messages->filter(fn ($message) => $message->created_at?->greaterThanOrEqualTo(now()->startOfWeek())),
-            'unread' => $messages->where('is_replied', false),
+            'unread' => $messages->where('is_read', false),
             default => $messages,
         };
 
@@ -2719,13 +2735,13 @@ class AdminController extends Controller
                     'room_number' => $roomNumber,
                     'latest_message' => $latestMessage,
                     'messages' => $orderedMessages,
-                    'unread' => $orderedMessages->where('is_replied', false)->count(),
+                    'unread' => $orderedMessages->where('is_read', false)->count(),
                 ];
             })
             ->sortByDesc(fn ($conversation) => $conversation->latest_message->created_at)
             ->values();
         $stats = [
-            'unread' => $messages->where('is_replied', false)->count(),
+            'unread' => $messages->where('is_read', false)->count(),
             'replied' => $messages->where('is_replied', true)->count(),
             'total' => $messages->count(),
         ];
@@ -2734,10 +2750,72 @@ class AdminController extends Controller
             ->first(fn ($conversation) => (string) $conversation->latest_message->id === (string) $selectedMessageId)
             ?->key;
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'filter' => $filter,
+                'stats' => [
+                    'unread' => $messages->where('is_read', false)->count(),
+                    'replied' => $messages->where('is_replied', true)->count(),
+                    'total' => $messages->count(),
+                ],
+                'conversations' => $conversations->map(function ($conversation) {
+                    return [
+                        'key' => $conversation->key,
+                        'name' => $conversation->name,
+                        'email' => $conversation->email,
+                        'room_number' => $conversation->room_number,
+                        'recipient' => $conversation->latest_message->id,
+                        'unread' => $conversation->unread,
+                        'latest_message' => [
+                            'id' => $conversation->latest_message->id,
+                            'message' => $conversation->latest_message->message,
+                            'created_at' => $conversation->latest_message->created_at?->format('M j, Y g:i A'),
+                            'is_replied' => (bool) $conversation->latest_message->is_replied,
+                        ],
+                        'messages' => $conversation->messages->map(function ($message) {
+                            $replies = $message->replies->isNotEmpty()
+                                ? $message->replies
+                                : ($message->admin_reply ? collect([(object) ['reply' => $message->admin_reply, 'replied_at' => $message->replied_at]]) : collect());
+
+                            return [
+                                'id' => $message->id,
+                                'guest' => $message->message,
+                                'sent_at' => $message->created_at?->format('M j, Y g:i A'),
+                                'replies' => $replies->map(fn ($reply) => [
+                                    'reply' => $reply->reply,
+                                    'replied_at' => $reply->replied_at?->format('M j, Y g:i A'),
+                                ])->values(),
+                            ];
+                        })->values(),
+                    ];
+                })->values(),
+                'selectedConversationKey' => $selectedConversationKey,
+            ]);
+        }
+
         return view('employee.messages', array_merge(
             compact('messages', 'conversations', 'stats', 'selectedConversationKey', 'filter'),
             app(StaffMessageInbox::class)->for($request->user())
         ));
+    }
+
+    public function markEmployeeMessagesRead(Request $request)
+    {
+        abort_unless($request->user()?->role === 'employee', 403);
+
+        $validated = $request->validate([
+            'customer_email' => ['required', 'email'],
+        ]);
+
+        $updated = Message::query()
+            ->where('customer_email', $validated['customer_email'])
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
+        return response()->json([
+            'success' => true,
+            'updated' => $updated,
+        ]);
     }
 
     public function employeeGuestRequests()

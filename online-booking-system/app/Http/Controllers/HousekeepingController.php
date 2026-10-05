@@ -10,6 +10,7 @@ use App\Models\Reservation;
 use App\Models\Staff;
 use App\Models\MaintenanceReport;
 use App\Support\StaffMessageInbox;
+use App\Support\StaffNotificationService;
 
 class HousekeepingController extends Controller
 {
@@ -455,6 +456,16 @@ class HousekeepingController extends Controller
 
         $guestRequest->save();
 
+        StaffNotificationService::notifyEmployees(
+            'Housekeeping update',
+            'Guest request #' . $guestRequest->id . ' is now ' . $guestRequest->status . '.',
+            [
+                'reference' => 'housekeeping-request-update:' . $guestRequest->id,
+                'url' => '/employee/guest-requests',
+                'type' => 'request',
+            ]
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Guest request updated successfully',
@@ -618,6 +629,16 @@ class HousekeepingController extends Controller
         } else {
             $room->update(['cleaning_status' => $validated['cleaning_status'] ?? 'clean']);
         }
+
+        StaffNotificationService::notifyHousekeeping(
+            'Room status updated',
+            'Room ' . $room->room_number . ' has been updated to ' . ($validated['cleaning_status'] ?? $validated['room_status'] ?? 'ready') . '.',
+            [
+                'reference' => 'room-status:' . $room->id,
+                'url' => '/housekeeping/room-status-update',
+                'type' => 'housekeeping',
+            ]
+        );
 
         return back()->with(
             'success',

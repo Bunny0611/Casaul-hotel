@@ -10,6 +10,7 @@ use App\Models\Message;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\RoomReservation;
+use App\Support\StaffNotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -101,6 +102,16 @@ class ChatbotController extends Controller
             'message' => $message,
         ]);
 
+        StaffNotificationService::notifyEmployees(
+            'New front desk message',
+            $guest->name . ' sent a new message: ' . Str::limit($message, 120),
+            [
+                'reference' => 'guest-message:' . $frontDeskMessage->id,
+                'url' => '/employee/messages',
+                'type' => 'message',
+            ]
+        );
+
         return [
             'reply' => 'Your message has been sent to the front desk. We will reply as soon as possible. Your conversation history is shown below.' . $this->formatGuestConversation($guest->email),
             'mode' => 'contact_front_desk',
@@ -145,7 +156,7 @@ class ChatbotController extends Controller
             ];
         }
 
-        GuestRequest::create([
+        $guestRequest = GuestRequest::create([
             'guest_id' => $guest->id,
             'room_id' => $reservation->room_id,
             'request_type' => $selectedType,
@@ -157,6 +168,16 @@ class ChatbotController extends Controller
             'reservation_key' => $reservation->id,
             'submitted_at' => now(),
         ]);
+
+        StaffNotificationService::notifyHousekeeping(
+            'Housekeeping request received',
+            $guest->name . ' requested ' . strtolower($selectedType) . ' for room ' . ($reservation->room?->room_number ?? 'N/A') . '.',
+            [
+                'reference' => 'housekeeping-request:' . $guestRequest->id,
+                'url' => '/housekeeping/guest-requests',
+                'type' => 'housekeeping',
+            ]
+        );
 
         return [
             'reply' => 'Your ' . strtolower($selectedType) . ' request has been submitted to housekeeping. You can follow its status from your guest records.',

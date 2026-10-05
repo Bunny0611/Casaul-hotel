@@ -48,6 +48,11 @@
             inset: 0;
         }
 
+        .housekeeping-content-container {
+            container-name: housekeeping-content;
+            container-type: inline-size;
+        }
+
         .housekeeping-shell main .overflow-x-auto,
         .housekeeping-shell main .table-wrapper,
         .housekeeping-shell main .request-table-wrap,
@@ -220,7 +225,7 @@
         }
 
 
-        @media (max-width: 767px) {
+        @container housekeeping-content (max-width: 767px) {
 
             .header {
                 padding-left: 1rem;
@@ -257,7 +262,7 @@
 
         .housekeeping-header-layout {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto auto;
+            grid-template-columns: minmax(0, 1fr) 16rem auto auto;
             align-items: center;
             gap: 0.75rem 1rem;
             width: 100%;
@@ -265,7 +270,8 @@
 
         .housekeeping-header-title { grid-column: 1; min-width: 0; }
         .housekeeping-header-search { grid-column: 2; width: 16rem; }
-        .housekeeping-profile-wrapper { grid-column: 3; }
+        .housekeeping-notifications-wrapper { grid-column: 3; }
+        .housekeeping-profile-wrapper { grid-column: 4; }
         .header .housekeeping-profile-wrapper .profile-dropdown-arrow { font-size: 0.7rem; }
 
         .housekeeping-profile-menu {
@@ -303,8 +309,114 @@
         .housekeeping-profile-menu button:focus-visible { background: #f3f4f6; }
         .housekeeping-profile-menu[hidden] { display: none; }
 
-        @media (max-width: 767px) {
-            .housekeeping-header-layout { grid-template-columns: minmax(0, 1fr) auto; }
+        .notification-bell-button {
+            position: relative;
+            display: inline-flex;
+            width: 2.75rem;
+            height: 2.75rem;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 0.75rem;
+            background: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+        .notification-bell-button:hover { background: rgba(255,255,255,0.26); }
+        .notification-badge {
+            position: absolute;
+            top: -0.2rem;
+            right: -0.2rem;
+            display: flex;
+            min-width: 1.1rem;
+            height: 1.1rem;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ff8c42;
+            border-radius: 9999px;
+            background: #f97316;
+            padding: 0 0.24rem;
+            color: #fff;
+            font-size: 0.62rem;
+            font-weight: 700;
+        }
+        .notification-bell-panel {
+            position: absolute;
+            top: calc(100% + 0.7rem);
+            right: 0;
+            z-index: 60;
+            width: min(23rem, calc(100vw - 1.5rem));
+            overflow: hidden;
+            border: 1px solid rgba(148,163,184,0.35);
+            border-radius: 0.9rem;
+            background: rgba(255,255,255,0.98);
+            box-shadow: 0 18px 60px rgba(15,23,42,0.22);
+            color: #1f2937;
+        }
+        .notification-bell-panel[hidden] { display: none; }
+        .notification-bell-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e5e7eb;
+            background: #fff7ed;
+            padding: 0.8rem 1rem;
+        }
+        .notification-bell-list { max-height: 23rem; overflow-y: auto; }
+        .notification-item {
+            display: block;
+            width: 100%;
+            border: 0;
+            border-bottom: 1px solid #f3f4f6;
+            background: #fff;
+            padding: 0.8rem 0.9rem;
+            text-align: left;
+            cursor: pointer;
+        }
+        .notification-item:hover, .notification-item.unread { background: #fff7ed; }
+        .notification-item .title { margin-bottom: 0.15rem; color: #111827; font-weight: 700; }
+        .notification-item .message { color: #4b5563; font-size: 0.8rem; line-height: 1.45; }
+        .notification-item .meta { margin-top: 0.35rem; color: #6b7280; font-size: 0.7rem; }
+        .notification-empty { padding: 1rem; color: #6b7280; text-align: center; }
+        .notification-toast-container {
+            position: fixed;
+            right: 1.25rem;
+            bottom: 1.25rem;
+            z-index: 70;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            pointer-events: none;
+        }
+        .notification-toast {
+            width: min(22rem, calc(100vw - 2rem));
+            border: 1px solid rgba(148,163,184,0.35);
+            border-left: 4px solid #ff7b42;
+            border-radius: 0.9rem;
+            background: rgba(255,255,255,0.98);
+            padding: 0.8rem 0.8rem 0.55rem;
+            color: #1f2937;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.2);
+            pointer-events: auto;
+            animation: notifySlideIn 0.25s ease-out;
+        }
+        @keyframes notifySlideIn {
+            from { transform: translateX(30px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .notification-toast-header { display: flex; align-items: center; gap: 0.6rem; }
+        .notification-toast .toast-close { margin-left: auto; border: 0; background: transparent; color: #6b7280; font-size: 1.1rem; cursor: pointer; }
+        .notification-toast .toast-title { color: #111827; font-weight: 700; }
+        .notification-toast .toast-message { margin-top: 0.25rem; color: #4b5563; font-size: 0.82rem; line-height: 1.45; }
+        .notification-toast .toast-action { display: inline-flex; align-items: center; justify-content: center; margin-top: 0.7rem; border: 0; border-radius: 9999px; background: #ff7b42; padding: 0.45rem 0.8rem; color: white; font-weight: 600; cursor: pointer; }
+
+        @media (max-width: 520px) {
+            .notification-bell-panel { width: min(23rem, calc(100vw - 1rem)); }
+            .notification-toast-container { right: 0.5rem; bottom: max(0.5rem, env(safe-area-inset-bottom)); left: 0.5rem; }
+            .notification-toast { width: 100%; box-sizing: border-box; }
+        }
+
+        @container housekeeping-content (max-width: 767px) {
+            .housekeeping-header-layout { grid-template-columns: minmax(0, 1fr) auto auto; }
             .housekeeping-header-title { grid-column: 1; }
             .housekeeping-header-search {
                 grid-column: 1 / -1;
@@ -326,7 +438,8 @@
                 right: 0.85rem;
                 transform: translateY(-50%);
             }
-            .housekeeping-profile-wrapper { grid-column: 2; grid-row: 1; }
+            .housekeeping-notifications-wrapper { grid-column: 2; grid-row: 1; }
+            .housekeeping-profile-wrapper { grid-column: 3; grid-row: 1; }
             .housekeeping-profile-trigger { padding: 0.4rem 0.5rem; }
             .header .housekeeping-profile-trigger > .fa-user-circle { font-size: 1.5rem; }
             .housekeeping-profile-trigger span { white-space: nowrap; font-size: 0.75rem; }
@@ -436,7 +549,7 @@
                    pointer-events-none transition-opacity duration-300 md:hidden"
         ></div>
 
-        <div class="flex-1 flex flex-col overflow-hidden md:ml-0">
+        <div class="housekeeping-content-container flex-1 flex flex-col overflow-hidden md:ml-0">
 
     <header
         class="header z-30 text-white
@@ -487,6 +600,19 @@
 
                     </div>
 
+                    <div class="relative housekeeping-notifications-wrapper">
+                        <button id="housekeepingNotificationToggle" type="button" class="notification-bell-button" aria-haspopup="true" aria-expanded="false" aria-controls="housekeepingNotificationPanel">
+                            <i class="fas fa-bell"></i>
+                            <span id="housekeepingNotificationBadge" class="notification-badge hidden">0</span>
+                        </button>
+                        <div id="housekeepingNotificationPanel" class="notification-bell-panel" role="menu" hidden>
+                            <div class="notification-bell-header">
+                                <strong>Notifications</strong>
+                                <button id="housekeepingMarkAllRead" type="button" class="text-xs font-medium text-orange-600 hover:text-orange-700">Mark all as read</button>
+                            </div>
+                            <div id="housekeepingNotificationList" class="notification-bell-list"></div>
+                        </div>
+                    </div>
                     <div class="housekeeping-profile-wrapper relative">
                         <button id="housekeepingProfileToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="housekeepingProfileMenu" class="housekeeping-profile-trigger flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30">
                             <i class="fas fa-user-circle text-2xl"></i>
@@ -533,6 +659,7 @@
 
     </div>
 
+    <div id="notificationToastContainer" class="notification-toast-container"></div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
 
@@ -707,6 +834,183 @@
             const backdrop = document.getElementById('sidebarBackdrop');
             const toggle = document.getElementById('sidebarToggle');
 
+            const notificationToggle = document.getElementById('housekeepingNotificationToggle');
+            const notificationPanel = document.getElementById('housekeepingNotificationPanel');
+            const notificationList = document.getElementById('housekeepingNotificationList');
+            const notificationBadge = document.getElementById('housekeepingNotificationBadge');
+            const markAllReadButton = document.getElementById('housekeepingMarkAllRead');
+            const toastContainer = document.getElementById('notificationToastContainer');
+            const notificationUrl = '{{ route('housekeeping.notifications.index') }}';
+            const markReadUrl = '{{ route('housekeeping.notifications.mark-read', ['id' => '__ID__']) }}';
+            const markAllReadUrl = '{{ route('housekeeping.notifications.mark-all-read') }}';
+            const notificationSeenStorageKey = 'housekeeping-notification-seen-ids';
+            const seenNotificationIds = new Set();
+            let notificationBaselineLoaded = false;
+
+            try {
+                const storedNotificationIds = JSON.parse(sessionStorage.getItem(notificationSeenStorageKey) || '[]');
+                if (Array.isArray(storedNotificationIds)) {
+                    storedNotificationIds.forEach(id => seenNotificationIds.add(String(id)));
+                }
+            } catch (error) {
+                console.warn('Could not restore notification state:', error);
+            }
+
+            function formatRelativeTime(value) {
+                if (!value) return 'just now';
+                const date = new Date(value);
+                const diffMs = Date.now() - date.getTime();
+                const diffMinutes = Math.max(1, Math.round(diffMs / 60000));
+                if (diffMinutes < 60) return diffMinutes + 'm ago';
+                const diffHours = Math.round(diffMinutes / 60);
+                if (diffHours < 24) return diffHours + 'h ago';
+                const diffDays = Math.round(diffHours / 24);
+                return diffDays + 'd ago';
+            }
+
+            function renderNotificationList(items) {
+                if (!notificationList) return;
+                if (!items.length) {
+                    notificationList.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+                    return;
+                }
+
+                notificationList.innerHTML = items.map(item => `
+                    <button type="button" class="notification-item ${item.is_read ? '' : 'unread'}" data-id="${item.id}" data-url="${item.url || ''}">
+                        <div class="flex items-start gap-2">
+                            <i class="${item.icon || 'fas fa-bell'} mt-1 text-orange-500"></i>
+                            <div class="min-w-0 flex-1">
+                                <div class="title">${item.title}</div>
+                                <div class="message">${(item.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                                <div class="meta">${formatRelativeTime(item.created_at)}</div>
+                            </div>
+                        </div>
+                    </button>
+                `).join('');
+
+                notificationList.querySelectorAll('.notification-item').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        const notificationId = button.dataset.id;
+                        const targetUrl = button.dataset.url;
+                        fetch(markReadUrl.replace('__ID__', notificationId), {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                            },
+                        }).catch(() => {});
+
+                        if (targetUrl) {
+                            window.location.href = targetUrl;
+                        }
+                    });
+                });
+            }
+
+            function updateBadge(count) {
+                if (!notificationBadge) return;
+                if (count > 0) {
+                    notificationBadge.textContent = String(count > 99 ? '99+' : count);
+                    notificationBadge.classList.remove('hidden');
+                    return;
+                }
+                notificationBadge.textContent = '0';
+                notificationBadge.classList.add('hidden');
+            }
+
+            function showToast(notification) {
+                if (!toastContainer || !notification) return;
+                const toast = document.createElement('div');
+                toast.className = 'notification-toast';
+                toast.innerHTML = `
+                    <div class="notification-toast-header">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <i class="${notification.icon || 'fas fa-bell'} text-orange-500"></i>
+                            <div class="toast-title">${notification.title}</div>
+                        </div>
+                        <button type="button" class="toast-close" aria-label="Dismiss notification">×</button>
+                    </div>
+                    <div class="toast-message">${(notification.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                    <button type="button" class="toast-action">${notification.action_label || 'View'}</button>
+                `;
+                const closeButton = toast.querySelector('.toast-close');
+                const actionButton = toast.querySelector('.toast-action');
+                closeButton.addEventListener('click', () => toast.remove());
+                actionButton.addEventListener('click', () => {
+                    if (notification.url) {
+                        window.location.href = notification.url;
+                    }
+                    toast.remove();
+                });
+                toastContainer.appendChild(toast);
+                setTimeout(() => toast.remove(), 6000);
+            }
+
+            function loadNotifications() {
+                if (document.visibilityState !== 'visible') return;
+
+                fetch(notificationUrl, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                })
+                    .then(response => response.ok ? response.json() : null)
+                    .then(data => {
+                        if (!data || !Array.isArray(data.data)) return;
+                        const newItems = [];
+                        data.data.forEach(item => {
+                            const id = String(item.id);
+                            const alreadySeen = seenNotificationIds.has(id);
+                            const ageMs = Date.now() - Date.parse(item.created_at || '');
+                            const recentlyCreated = Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= 10 * 60 * 1000;
+                            if (!alreadySeen && !item.is_read && (notificationBaselineLoaded || recentlyCreated)) {
+                                newItems.push(item);
+                            }
+                            seenNotificationIds.add(id);
+                        });
+                        notificationBaselineLoaded = true;
+                        try {
+                            sessionStorage.setItem(notificationSeenStorageKey, JSON.stringify(Array.from(seenNotificationIds).slice(-100)));
+                        } catch (error) {
+                            console.warn('Could not persist notification state:', error);
+                        }
+
+                        updateBadge(data.unread_count ?? data.data.filter(item => !item.is_read).length);
+                        renderNotificationList(data.data);
+                        newItems.reverse().slice(0, 3).forEach(showToast);
+                    })
+                    .catch(error => console.error('Notification refresh failed:', error));
+            }
+
+            if (notificationToggle && notificationPanel) {
+                notificationToggle.addEventListener('click', function () {
+                    const hidden = notificationPanel.hidden;
+                    notificationPanel.hidden = !hidden;
+                    notificationToggle.setAttribute('aria-expanded', String(!notificationPanel.hidden));
+                    if (!notificationPanel.hidden) {
+                        loadNotifications();
+                    }
+                });
+                document.addEventListener('click', function (event) {
+                    if (!notificationToggle.contains(event.target) && !notificationPanel.contains(event.target)) {
+                        notificationPanel.hidden = true;
+                        notificationToggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            }
+
+            if (markAllReadButton) {
+                markAllReadButton.addEventListener('click', function () {
+                    fetch(markAllReadUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        }
+                    }).then(() => loadNotifications());
+                });
+            }
+
             if (!sidebar || !backdrop || !toggle) {
                 return;
             }
@@ -754,6 +1058,10 @@
                 }
 
             });
+
+            loadNotifications();
+            window.setInterval(loadNotifications, 5000);
+            document.addEventListener('visibilitychange', loadNotifications);
 
         });
     </script>

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>CASAUL Hotel Management - Employee</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -96,7 +97,7 @@
 
         .employee-header-layout {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto auto;
+            grid-template-columns: minmax(0, 1fr) 16rem auto auto;
             align-items: center;
             gap: 0.75rem 1rem;
             width: 100%;
@@ -104,7 +105,8 @@
 
         .employee-header-title { grid-column: 1; min-width: 0; }
         .employee-header-search { grid-column: 2; width: 16rem; max-width: 16rem; }
-        .employee-header-profile { grid-column: 3; }
+        .employee-header-notifications { grid-column: 3; }
+        .employee-header-profile { grid-column: 4; }
         .employee-profile-wrapper .profile-dropdown-arrow { font-size: 0.7rem; }
 
         @media (max-width: 768px) {
@@ -187,7 +189,7 @@
                 font-size: 0.75rem;
             }
 
-            .employee-header-layout { grid-template-columns: minmax(0, 1fr) auto; }
+            .employee-header-layout { grid-template-columns: minmax(0, 1fr) auto auto; }
             .employee-header-title { grid-column: 1; }
             .employee-header-search {
                 grid-column: 1 / -1;
@@ -206,7 +208,8 @@
                 border-radius: 0.5rem;
                 box-sizing: border-box;
             }
-            .employee-header-profile { grid-column: 2; grid-row: 1; }
+            .employee-header-notifications { grid-column: 2; grid-row: 1; }
+            .employee-header-profile { grid-column: 3; grid-row: 1; }
             .header-left h2 { font-size: 0.95rem; }
 
             .nav-item span {
@@ -299,6 +302,116 @@
         .employee-profile-menu button:hover,
         .employee-profile-menu button:focus-visible { background: #f3f4f6; }
         .employee-profile-menu[hidden] { display: none; }
+
+        .notification-bell-button {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 0.75rem;
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            transition: all 0.2s ease;
+        }
+
+        .notification-bell-button:hover { background: rgba(255,255,255,0.26); }
+        .notification-bell-button .notification-badge {
+            position: absolute;
+            top: -0.2rem;
+            right: -0.2rem;
+            min-width: 1.1rem;
+            height: 1.1rem;
+            border-radius: 9999px;
+            background: #f97316;
+            color: #fff;
+            font-size: 0.62rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.24rem;
+            border: 2px solid #ff8c42;
+        }
+        .notification-bell-panel {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.7rem);
+            width: min(23rem, calc(100vw - 1.5rem));
+            background: rgba(255,255,255,0.98);
+            border: 1px solid rgba(148,163,184,0.35);
+            border-radius: 0.9rem;
+            box-shadow: 0 18px 60px rgba(15,23,42,0.22);
+            color: #1f2937;
+            overflow: hidden;
+            z-index: 60;
+        }
+        .notification-bell-panel[hidden] { display: none; }
+        .notification-bell-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: #fff7ed;
+        }
+        .notification-bell-list { max-height: 23rem; overflow-y: auto; }
+        .notification-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: #fff;
+            border: none;
+            border-bottom: 1px solid #f3f4f6;
+            padding: 0.8rem 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .notification-item:hover { background: #fff7ed; }
+        .notification-item.unread { background: #fffaf5; }
+        .notification-item .title { font-weight: 700; color: #111827; margin-bottom: 0.15rem; }
+        .notification-item .message { font-size: 0.8rem; color: #4b5563; line-height: 1.45; }
+        .notification-item .meta { font-size: 0.7rem; color: #6b7280; margin-top: 0.35rem; }
+        .notification-empty { padding: 1rem; color: #6b7280; text-align: center; }
+        .notification-toast-container {
+            position: fixed;
+            right: 1.25rem;
+            bottom: 1.25rem;
+            z-index: 70;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            pointer-events: none;
+        }
+        .notification-toast {
+            width: min(22rem, calc(100vw - 2rem));
+            background: rgba(255,255,255,0.98);
+            border: 1px solid rgba(148,163,184,0.35);
+            border-left: 4px solid #ff7b42;
+            border-radius: 0.9rem;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.2);
+            color: #1f2937;
+            padding: 0.8rem 0.8rem 0.55rem;
+            pointer-events: auto;
+            animation: notifySlideIn 0.25s ease-out;
+        }
+        @keyframes notifySlideIn {
+            from { transform: translateX(30px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .notification-toast-header { display: flex; align-items: center; gap: 0.6rem; }
+        .notification-toast .toast-close { margin-left: auto; background: transparent; border: none; color: #6b7280; font-size: 1.1rem; cursor: pointer; }
+        .notification-toast .toast-title { font-weight: 700; color: #111827; }
+        .notification-toast .toast-message { margin-top: 0.25rem; color: #4b5563; font-size: 0.82rem; line-height: 1.45; }
+        .notification-toast .toast-action { margin-top: 0.7rem; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 9999px; background: #ff7b42; color: white; font-weight: 600; padding: 0.45rem 0.8rem; cursor: pointer; }
+
+        @media (max-width: 520px) {
+            .notification-bell-panel { width: min(23rem, calc(100vw - 1rem)); }
+            .notification-toast-container { right: 0.5rem; bottom: max(0.5rem, env(safe-area-inset-bottom)); left: 0.5rem; }
+            .notification-toast { width: 100%; box-sizing: border-box; }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -362,6 +475,19 @@
                     <div class="search-wrapper employee-header-search relative">
                         <input id="headerSearchInput" type="text" placeholder="Search..." class="w-full rounded-lg bg-white/20 px-4 py-2 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-white/50">
                     </div>
+                    <div class="relative employee-header-notifications">
+                        <button id="employeeNotificationToggle" type="button" class="notification-bell-button" aria-haspopup="true" aria-expanded="false" aria-controls="employeeNotificationPanel">
+                            <i class="fas fa-bell"></i>
+                            <span id="employeeNotificationBadge" class="notification-badge hidden">0</span>
+                        </button>
+                        <div id="employeeNotificationPanel" class="notification-bell-panel" role="menu" hidden>
+                            <div class="notification-bell-header">
+                                <strong>Notifications</strong>
+                                <button id="employeeMarkAllRead" type="button" class="text-xs font-medium text-orange-600 hover:text-orange-700">Mark all as read</button>
+                            </div>
+                            <div id="employeeNotificationList" class="notification-bell-list"></div>
+                        </div>
+                    </div>
                     <div class="employee-profile-wrapper employee-header-profile">
                         <button id="employeeProfileToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="employeeProfileMenu" class="profile-box flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 text-white transition-colors hover:bg-white/30">
                             <i class="fas fa-user-circle text-2xl"></i>
@@ -394,6 +520,7 @@
         </div>
     </div>
 
+    <div id="notificationToastContainer" class="notification-toast-container"></div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const sidebar = document.getElementById('sidebar');
@@ -446,6 +573,188 @@
                 });
             }
 
+            const notificationToggle = document.getElementById('employeeNotificationToggle');
+            const notificationPanel = document.getElementById('employeeNotificationPanel');
+            const notificationList = document.getElementById('employeeNotificationList');
+            const notificationBadge = document.getElementById('employeeNotificationBadge');
+            const markAllReadButton = document.getElementById('employeeMarkAllRead');
+            const toastContainer = document.getElementById('notificationToastContainer');
+            const notificationUrl = '{{ route('employee.notifications.index') }}';
+            const markReadUrl = '{{ route('employee.notifications.mark-read', ['id' => '__ID__']) }}';
+            const markAllReadUrl = '{{ route('employee.notifications.mark-all-read') }}';
+            let notificationsCache = [];
+            const notificationSeenStorageKey = 'employee-notification-seen-ids';
+            const seenNotificationIds = new Set();
+            let notificationBaselineLoaded = false;
+
+            try {
+                const storedNotificationIds = JSON.parse(sessionStorage.getItem(notificationSeenStorageKey) || '[]');
+                if (Array.isArray(storedNotificationIds)) {
+                    storedNotificationIds.forEach(id => seenNotificationIds.add(String(id)));
+                }
+            } catch (error) {
+                console.warn('Could not restore notification state:', error);
+            }
+
+            function formatRelativeTime(value) {
+                if (!value) return 'just now';
+                const date = new Date(value);
+                const diffMs = Date.now() - date.getTime();
+                const diffMinutes = Math.max(1, Math.round(diffMs / 60000));
+                if (diffMinutes < 60) return diffMinutes + 'm ago';
+                const diffHours = Math.round(diffMinutes / 60);
+                if (diffHours < 24) return diffHours + 'h ago';
+                const diffDays = Math.round(diffHours / 24);
+                return diffDays + 'd ago';
+            }
+
+            function renderNotificationList(items) {
+                notificationsCache = items;
+                if (!notificationList) return;
+                if (!items.length) {
+                    notificationList.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+                    return;
+                }
+
+                notificationList.innerHTML = items.map(item => `
+                    <button type="button" class="notification-item ${item.is_read ? '' : 'unread'}" data-id="${item.id}" data-url="${item.url || ''}">
+                        <div class="flex items-start gap-2">
+                            <i class="${item.icon || 'fas fa-bell'} mt-1 text-orange-500"></i>
+                            <div class="min-w-0 flex-1">
+                                <div class="title">${item.title}</div>
+                                <div class="message">${(item.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                                <div class="meta">${formatRelativeTime(item.created_at)}</div>
+                            </div>
+                        </div>
+                    </button>
+                `).join('');
+
+                notificationList.querySelectorAll('.notification-item').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        const notificationId = button.dataset.id;
+                        const targetUrl = button.dataset.url;
+                        fetch(markReadUrl.replace('__ID__', notificationId), {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                            },
+                        }).catch(() => {});
+
+                        if (targetUrl) {
+                            window.location.href = targetUrl;
+                        }
+                    });
+                });
+            }
+
+            function updateBadge(count) {
+                if (!notificationBadge) return;
+                if (count > 0) {
+                    notificationBadge.textContent = String(count > 99 ? '99+' : count);
+                    notificationBadge.classList.remove('hidden');
+                    return;
+                }
+                notificationBadge.textContent = '0';
+                notificationBadge.classList.add('hidden');
+            }
+
+            function showToast(notification) {
+                if (!toastContainer || !notification) return;
+                const toast = document.createElement('div');
+                toast.className = 'notification-toast';
+                toast.innerHTML = `
+                    <div class="notification-toast-header">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <i class="${notification.icon || 'fas fa-bell'} text-orange-500"></i>
+                            <div class="toast-title">${notification.title}</div>
+                        </div>
+                        <button type="button" class="toast-close" aria-label="Dismiss notification">×</button>
+                    </div>
+                    <div class="toast-message">${(notification.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                    <button type="button" class="toast-action">${notification.action_label || 'View'}</button>
+                `;
+                const closeButton = toast.querySelector('.toast-close');
+                const actionButton = toast.querySelector('.toast-action');
+                closeButton.addEventListener('click', () => toast.remove());
+                actionButton.addEventListener('click', () => {
+                    if (notification.url) {
+                        window.location.href = notification.url;
+                    }
+                    toast.remove();
+                });
+                toastContainer.appendChild(toast);
+                setTimeout(() => toast.remove(), 6000);
+            }
+
+            function loadNotifications() {
+                if (document.visibilityState !== 'visible') return;
+
+                fetch(notificationUrl, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                })
+                    .then(response => response.ok ? response.json() : null)
+                    .then(data => {
+                        if (!data || !Array.isArray(data.data)) return;
+                        const newItems = [];
+                        data.data.forEach(item => {
+                            const id = String(item.id);
+                            const alreadySeen = seenNotificationIds.has(id);
+                            const ageMs = Date.now() - Date.parse(item.created_at || '');
+                            const recentlyCreated = Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= 10 * 60 * 1000;
+                            if (!alreadySeen && !item.is_read && (notificationBaselineLoaded || recentlyCreated)) {
+                                newItems.push(item);
+                            }
+                            seenNotificationIds.add(id);
+                        });
+                        notificationBaselineLoaded = true;
+                        try {
+                            sessionStorage.setItem(notificationSeenStorageKey, JSON.stringify(Array.from(seenNotificationIds).slice(-100)));
+                        } catch (error) {
+                            console.warn('Could not persist notification state:', error);
+                        }
+
+                        updateBadge(data.unread_count ?? data.data.filter(item => !item.is_read).length);
+                        renderNotificationList(data.data);
+                        newItems.reverse().slice(0, 3).forEach(showToast);
+                    })
+                    .catch(error => console.error('Notification refresh failed:', error));
+            }
+
+            if (notificationToggle && notificationPanel) {
+                notificationToggle.addEventListener('click', function () {
+                    const hidden = notificationPanel.hidden;
+                    notificationPanel.hidden = !hidden;
+                    notificationToggle.setAttribute('aria-expanded', String(!notificationPanel.hidden));
+                    if (!notificationPanel.hidden) {
+                        loadNotifications();
+                    }
+                });
+                document.addEventListener('click', function (event) {
+                    if (!notificationToggle.contains(event.target) && !notificationPanel.contains(event.target)) {
+                        notificationPanel.hidden = true;
+                        notificationToggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            }
+
+            if (markAllReadButton) {
+                markAllReadButton.addEventListener('click', function () {
+                    fetch(markAllReadUrl, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        }
+                    }).then(() => loadNotifications());
+                });
+            }
+
+            loadNotifications();
+            window.setInterval(loadNotifications, 5000);
+            document.addEventListener('visibilitychange', loadNotifications);
         });
     </script>
 </body>

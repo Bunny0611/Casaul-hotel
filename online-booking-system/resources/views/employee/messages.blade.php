@@ -255,7 +255,7 @@
     <div class="employee-channel-switcher" role="tablist" aria-label="Message channels">
         <button type="button" id="employee-guest-tab" class="employee-channel-tab" role="tab" aria-selected="true" aria-controls="employee-guest-channel" onclick="switchEmployeeMessageChannel('guest')">
             <i class="fas fa-user"></i> Guest Inbox
-            @if(($stats['unread'] ?? 0) > 0)<span class="employee-channel-count">{{ $stats['unread'] }}</span>@endif
+            <span id="employee-guest-unread-count" class="employee-channel-count {{ ($stats['unread'] ?? 0) > 0 ? '' : 'hidden' }}">{{ $stats['unread'] ?? 0 }}</span>
         </button>
         <button type="button" id="employee-staff-tab" class="employee-channel-tab" role="tab" aria-selected="false" aria-controls="employee-staff-channel" onclick="switchEmployeeMessageChannel('staff')">
             <i class="fas fa-users"></i> Staff Chat
@@ -271,8 +271,8 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Unread Messages</p>
-                    <p class="mt-2 text-4xl font-bold text-gray-800">{{ $stats['unread'] ?? 0 }}</p>
-                    <p class="mt-2 text-xs text-gray-500">Messages awaiting your response</p>
+                    <p id="employee-unread-stat" class="mt-2 text-4xl font-bold text-gray-800">{{ $stats['unread'] ?? 0 }}</p>
+                    <p class="mt-2 text-xs text-gray-500">Guest messages you haven't opened yet</p>
                 </div>
                 <div class="rounded-lg bg-yellow-100 p-3 text-yellow-600">
                     <i class="fas fa-envelope text-lg"></i>
@@ -285,7 +285,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Replied Messages</p>
-                    <p class="mt-2 text-4xl font-bold text-gray-800">{{ $stats['replied'] ?? 0 }}</p>
+                    <p id="employee-replied-stat" class="mt-2 text-4xl font-bold text-gray-800">{{ $stats['replied'] ?? 0 }}</p>
                     <p class="mt-2 text-xs text-gray-500">Messages you've already responded to</p>
                 </div>
                 <div class="rounded-lg bg-green-100 p-3 text-green-600">
@@ -299,7 +299,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Messages</p>
-                    <p class="mt-2 text-4xl font-bold text-gray-800">{{ $stats['total'] ?? 0 }}</p>
+                    <p id="employee-total-stat" class="mt-2 text-4xl font-bold text-gray-800">{{ $stats['total'] ?? 0 }}</p>
                     <p class="mt-2 text-xs text-gray-500">All guest messages received</p>
                 </div>
                 <div class="rounded-lg bg-blue-100 p-3 text-blue-600">
@@ -336,34 +336,36 @@
                 <h3 class="text-lg font-semibold text-gray-800">Guest Conversations</h3>
             </div>
 
-            @forelse($conversations as $conversation)
-                <button type="button" class="employee-conversation mb-3 {{ $loop->first ? 'is-selected' : '' }}" data-conversation-key="{{ $conversation->key }}" onclick="selectEmployeeConversation('{{ $conversation->key }}')">
-                    <div class="flex items-start gap-3">
-                        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
-                            <i class="fas fa-user text-sm"></i>
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-start justify-between gap-2">
-                                <h6 class="truncate font-semibold text-gray-800">{{ $conversation->name }}</h6>
-                                <span class="flex-shrink-0 text-xs text-gray-500">{{ $conversation->latest_message->created_at?->diffForHumans() }}</span>
+            <div id="employee-guest-conversation-list">
+                @forelse($conversations as $conversation)
+                    <button type="button" class="employee-conversation mb-3 {{ $loop->first ? 'is-selected' : '' }}" data-conversation-key="{{ $conversation->key }}" onclick="selectEmployeeConversation('{{ $conversation->key }}')">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                                <i class="fas fa-user text-sm"></i>
                             </div>
-                            <p class="text-xs text-gray-500">Room {{ $conversation->room_number ?? '—' }}</p>
-                            <p class="employee-conversation-preview mt-1">Latest message: &quot;{{ $conversation->latest_message->message }}&quot;</p>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-start justify-between gap-2">
+                                    <h6 class="truncate font-semibold text-gray-800">{{ $conversation->name }}</h6>
+                                    <span class="flex-shrink-0 text-xs text-gray-500">{{ $conversation->latest_message->created_at?->diffForHumans() }}</span>
+                                </div>
+                                <p class="text-xs text-gray-500">Room {{ $conversation->room_number ?? '—' }}</p>
+                                <p class="employee-conversation-preview mt-1">Latest message: &quot;{{ $conversation->latest_message->message }}&quot;</p>
+                            </div>
+                            @if($conversation->unread > 0)
+                                <span class="flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-500 px-2 text-xs font-semibold text-white">{{ $conversation->unread }}</span>
+                            @endif
                         </div>
-                        @if($conversation->unread > 0)
-                            <span class="flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-500 px-2 text-xs font-semibold text-white">{{ $conversation->unread }}</span>
-                        @endif
+                    </button>
+                @empty
+                    <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-12">
+                        <div class="text-4xl text-gray-400 mb-2">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <p class="text-center text-gray-600 font-medium">No new messages</p>
+                        <p class="text-center text-sm text-gray-500">You're all caught up!</p>
                     </div>
-                </button>
-            @empty
-                <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-12">
-                    <div class="text-4xl text-gray-400 mb-2">
-                        <i class="fas fa-inbox"></i>
-                    </div>
-                    <p class="text-center text-gray-600 font-medium">No new messages</p>
-                    <p class="text-center text-sm text-gray-500">You're all caught up!</p>
-                </div>
-            @endforelse
+                @endforelse
+            </div>
         </div>
 
         <!-- Conversation and Quick Reply -->
@@ -465,7 +467,9 @@
     $employeeConversationData = $conversations->mapWithKeys(function ($conversation) {
         return [$conversation->key => [
             'name' => $conversation->name,
+            'email' => $conversation->email,
             'recipient' => $conversation->latest_message->id,
+            'unread' => $conversation->unread,
             'messages' => $conversation->messages->map(function ($message) {
                 $replies = $message->replies->isNotEmpty()
                     ? $message->replies
@@ -485,9 +489,144 @@
     });
 @endphp
 <script>
-    const employeeConversations = @json($employeeConversationData);
+    let employeeConversations = @json($employeeConversationData);
+    const employeeMessagesUrl = '{{ route('employee.messages', ['filter' => $filter]) }}';
+    const employeeMarkConversationReadUrl = '{{ route('employee.messages.mark-read') }}';
+    let selectedEmployeeConversationKey = @json($selectedConversationKey);
+    let selectedMessagesSnapshot = null;
+    let conversationSnapshot = null;
+    let isRefreshingEmployeeMessages = false;
+    const conversationsBeingMarkedRead = new Set();
+
+    function renderEmployeeConversationList() {
+        const list = document.getElementById('employee-guest-conversation-list');
+        if (!list) return;
+
+        const conversations = Object.values(employeeConversations || {});
+
+        if (!conversations.length) {
+            list.innerHTML = `
+                <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-12">
+                    <div class="text-4xl text-gray-400 mb-2"><i class="fas fa-inbox"></i></div>
+                    <p class="text-center text-gray-600 font-medium">No new messages</p>
+                    <p class="text-center text-sm text-gray-500">You're all caught up!</p>
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = conversations.map((conversation) => `
+            <button type="button" class="employee-conversation mb-3 ${selectedEmployeeConversationKey === conversation.key ? 'is-selected' : ''}" data-conversation-key="${conversation.key}">
+                <div class="flex items-start gap-3">
+                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                        <i class="fas fa-user text-sm"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-start justify-between gap-2">
+                            <h6 class="truncate font-semibold text-gray-800">${escapeEmployeeMessage(conversation.name)}</h6>
+                            <span class="flex-shrink-0 text-xs text-gray-500">${conversation.latest_message?.created_at || ''}</span>
+                        </div>
+                        <p class="text-xs text-gray-500">Room ${conversation.room_number ?? '—'}</p>
+                        <p class="employee-conversation-preview mt-1">Latest message: "${escapeEmployeeMessage(conversation.latest_message?.message || '')}"</p>
+                    </div>
+                    ${conversation.unread > 0 ? `<span class="flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-500 px-2 text-xs font-semibold text-white">${conversation.unread}</span>` : ''}
+                </div>
+            </button>
+        `).join('');
+
+        list.querySelectorAll('.employee-conversation').forEach((button) => {
+            button.addEventListener('click', () => selectEmployeeConversation(button.dataset.conversationKey));
+        });
+    }
+
+    function markEmployeeConversationRead(conversation) {
+        if (!conversation.email || Number(conversation.unread) === 0 || conversationsBeingMarkedRead.has(conversation.key)) {
+            return;
+        }
+
+        conversationsBeingMarkedRead.add(conversation.key);
+        fetch(employeeMarkConversationReadUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                Accept: 'application/json',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ customer_email: conversation.email }),
+        })
+            .then((response) => {
+                if (!response.ok) throw new Error(`Mark-read request returned ${response.status}`);
+                return response.json();
+            })
+            .then((result) => {
+                if (result.success && result.updated > 0) refreshEmployeeConversations();
+            })
+            .catch((error) => console.error('Employee conversation mark-read failed:', error))
+            .finally(() => conversationsBeingMarkedRead.delete(conversation.key));
+    }
+
+    function refreshEmployeeConversations() {
+        if (document.visibilityState !== 'visible' || isRefreshingEmployeeMessages) return;
+        isRefreshingEmployeeMessages = true;
+
+        fetch(employeeMessagesUrl, {
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            cache: 'no-store',
+        })
+            .then((response) => {
+                if (!response.ok) throw new Error(`Inbox refresh returned ${response.status}`);
+                return response.json();
+            })
+            .then((payload) => {
+                if (!Array.isArray(payload.conversations) || !payload.stats) {
+                    throw new Error('Inbox refresh returned an unexpected response');
+                }
+
+                document.getElementById('employee-unread-stat').textContent = payload.stats.unread;
+                document.getElementById('employee-replied-stat').textContent = payload.stats.replied;
+                document.getElementById('employee-total-stat').textContent = payload.stats.total;
+                const unreadCount = document.getElementById('employee-guest-unread-count');
+                unreadCount.textContent = payload.stats.unread;
+                unreadCount.classList.toggle('hidden', Number(payload.stats.unread) === 0);
+
+                const nextSnapshot = JSON.stringify(payload.conversations);
+                if (nextSnapshot === conversationSnapshot) return;
+
+                employeeConversations = payload.conversations.reduce((collection, conversation) => {
+                    collection[conversation.key] = conversation;
+                    return collection;
+                }, {});
+                conversationSnapshot = nextSnapshot;
+
+                if (!selectedEmployeeConversationKey && Object.keys(employeeConversations).length) {
+                    selectedEmployeeConversationKey = Object.keys(employeeConversations)[0];
+                }
+
+                renderEmployeeConversationList();
+
+                const selectedConversation = employeeConversations[selectedEmployeeConversationKey];
+                if (selectedConversation) {
+                    const nextMessagesSnapshot = JSON.stringify(selectedConversation.messages || []);
+                    if (nextMessagesSnapshot !== selectedMessagesSnapshot) {
+                        selectEmployeeConversation(selectedEmployeeConversationKey);
+                    }
+                }
+            })
+            .catch((error) => {
+                console.error('Employee message refresh failed:', error);
+            })
+            .finally(() => {
+                isRefreshingEmployeeMessages = false;
+            });
+    }
 
     function selectEmployeeConversation(key) {
+        selectedEmployeeConversationKey = key;
         const conversation = employeeConversations[key];
         if (!conversation) return;
 
@@ -501,7 +640,7 @@
         document.getElementById('employee-forward-form').hidden = true;
 
         const thread = document.getElementById('employee-chat-thread');
-        thread.innerHTML = conversation.messages.map((message) => `
+        thread.innerHTML = (conversation.messages || []).map((message) => `
             <div class="employee-chat-message guest">
                 <div class="employee-chat-bubble">${escapeEmployeeMessage(message.guest)}</div>
                 <span class="employee-chat-time">Guest · ${message.sent_at || ''}</span>
@@ -510,6 +649,12 @@
             ${(message.replies || []).map((reply) => `<div class="employee-chat-message front-desk"><div class="employee-chat-bubble">${escapeEmployeeMessage(reply.reply)}</div><span class="employee-chat-time">Front Desk · ${reply.replied_at || ''}</span></div>`).join('')}
         `).join('');
         thread.scrollTop = thread.scrollHeight;
+        selectedMessagesSnapshot = JSON.stringify(conversation.messages || []);
+
+        document.querySelectorAll('.employee-conversation').forEach((item) => {
+            item.classList.toggle('is-selected', item.dataset.conversationKey === key);
+        });
+        markEmployeeConversationRead(conversation);
     }
 
     document.getElementById('employee-chat-thread').addEventListener('click', (event) => {
@@ -565,12 +710,19 @@
 
     const initialConversationKey = @json($selectedConversationKey);
     if (initialConversationKey && employeeConversations[initialConversationKey]) {
+        selectedEmployeeConversationKey = initialConversationKey;
         selectEmployeeConversation(initialConversationKey);
     } else if (Object.keys(employeeConversations).length) {
+        selectedEmployeeConversationKey = Object.keys(employeeConversations)[0];
         selectEmployeeConversation(Object.keys(employeeConversations)[0]);
     }
+    renderEmployeeConversationList();
+    conversationSnapshot = JSON.stringify(Object.values(employeeConversations));
     const messageParams = new URLSearchParams(window.location.search);
     const initialChannel = messageParams.get('channel') || (messageParams.has('staff_id') ? 'staff' : 'guest');
     switchEmployeeMessageChannel(initialChannel, false);
+    refreshEmployeeConversations();
+    window.setInterval(refreshEmployeeConversations, 5000);
+    document.addEventListener('visibilitychange', refreshEmployeeConversations);
 </script>
 @endsection
