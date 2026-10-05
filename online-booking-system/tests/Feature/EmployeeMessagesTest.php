@@ -66,6 +66,27 @@ class EmployeeMessagesTest extends TestCase
         $this->assertDatabaseCount('messages', 0);
     }
 
+    public function test_message_notification_target_selects_the_matching_conversation(): void
+    {
+        $employee = Staff::factory()->create(['role' => 'employee']);
+        $message = Message::create([
+            'customer_name' => 'Notification Guest',
+            'customer_email' => 'notification@example.com',
+            'message' => 'Please check my reservation.',
+        ]);
+
+        $this->actingAs($employee)
+            ->get(route('employee.messages', [
+                'filter' => 'all',
+                'message_id' => $message->id,
+            ]))
+            ->assertOk()
+            ->assertSee('const notificationMessageId = ' . $message->id . ';', false)
+            ->assertSee(sha1($message->customer_email), false)
+            ->assertSee('background: #ffe3ad !important', false)
+            ->assertSee('notification-message-highlight', false);
+    }
+
     public function test_employee_can_forward_a_guest_message_to_housekeeping(): void
     {
         $employee = Staff::factory()->create(['role' => 'employee']);

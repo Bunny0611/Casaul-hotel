@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Message;
 use App\Models\MessageReply;
 use App\Models\Staff;
+use App\Support\StaffNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -70,5 +71,27 @@ class AdminNotificationsTest extends TestCase
 
         $this->assertDatabaseCount('messages', 0);
         $this->assertDatabaseCount('message_replies', 0);
+    }
+
+    public function test_admin_sidebar_shows_actual_unread_module_count(): void
+    {
+        $admin = Staff::factory()->create(['role' => 'admin', 'is_active' => true]);
+        StaffNotificationService::notifyAdmins('New reservation', 'A booking needs review.', [
+            'reference' => 'admin-sidebar-reservation:1',
+            'url' => route('admin.reservations'),
+            'type' => 'reservation',
+            'module' => 'reservations',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.notifications'))
+            ->assertOk()
+            ->assertSee('1 unread reservations', false)
+            ->assertSee('class="sidebar-notification-badge"', false);
+
+        $this->getJson(route('admin.notification-feed.index'))
+            ->assertOk()
+            ->assertJsonPath('unread_count', 1)
+            ->assertJsonPath('data.0.title', 'New reservation');
     }
 }

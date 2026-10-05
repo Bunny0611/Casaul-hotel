@@ -55,6 +55,7 @@
 @endphp
 <link rel="stylesheet" href="{{ asset('css/employee-room-status.css') }}">
 <style>
+    .room-status-page [data-room-row].notification-room-highlight > td { background-color: #ffe3ad !important; transition: background-color 0.25s ease; }
     #diningTab:not(.hidden) {
         display: flex;
     }
@@ -94,7 +95,7 @@
     }
 </style>
 
-<div class="room-status-page">
+<div class="room-status-page" data-notification-room-id="{{ $targetRoomId ?? '' }}">
     <section class="room-status-shell" aria-label="Room status overview">
         <div class="page-header">
             <div>

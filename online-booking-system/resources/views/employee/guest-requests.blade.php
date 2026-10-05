@@ -35,6 +35,7 @@
     .request-table-wrap { overflow-x: auto; } .request-table { width: 100%; min-width: 620px; border-collapse: collapse; }
     .request-table th { padding: .8rem .7rem; text-align: left; color: #64748b; background: #fbfcfd; font-size: .72rem; font-weight: 600; text-transform: uppercase; }
     .request-table td { padding: .85rem .7rem; border-top: 1px solid #edf0f3; vertical-align: middle; font-size: .82rem; }
+    .request-item.notification-request-highlight > td { background-color: #ffe3ad !important; transition: background-color 0.25s ease; }
     .request-id { color: #dc2626; font-weight: 700; } .guest-name, .request-name { font-weight: 600; color: #273449; }
     .muted { display: block; margin-top: .2rem; color: #64748b; font-size: .76rem; }
     .badge { display: inline-flex; align-items: center; gap: .3rem; border-radius: 5px; padding: .35rem .5rem; font-size: .74rem; white-space: nowrap; }
@@ -89,7 +90,7 @@
                         $statusClass = $status === 'Completed' ? 'green' : ($status === 'In Progress' ? 'blue' : 'amber');
                         $room = $request->room ?? $request->reservation?->room;
                     @endphp
-                    <tr><td><span class="request-id">REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</span></td><td><span class="guest-name">{{ $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest' }}</span></td><td><span class="request-name">{{ $room?->room_number ?? 'N/A' }}</span></td><td><span class="request-name">{{ $request->request_type }}</span></td><td><span class="guest-name">{{ $request->preferred_time ?? 'Any time' }}</span></td><td><span class="priority {{ strtolower($request->priority) === 'low' ? 'low' : (strtolower($request->priority) === 'medium' ? 'medium' : '') }}">{{ $request->priority }}</span></td><td><span class="muted">{{ optional($request->submitted_at)->format('M d, Y g:i A') }}</span></td><td><span class="badge {{ $statusClass }}">{{ $status }}</span></td><td><a href="{{ route('employee.guest-requests.show', ['id' => $request->id]) }}" class="view-button request-view-button" data-request-id="REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}" data-request-title="{{ $request->request_type }}" data-request-status="{{ $status }}" data-request-time="{{ optional($request->submitted_at)->format('M d, Y g:i A') }}"><i class="fas fa-eye"></i> View</a></td></tr>
+                    <tr id="employee-request-{{ $request->id }}" class="request-item"><td><span class="request-id">REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</span></td><td><span class="guest-name">{{ $request->guest?->name ?? $request->reservation?->guest_name ?? 'Guest' }}</span></td><td><span class="request-name">{{ $room?->room_number ?? 'N/A' }}</span></td><td><span class="request-name">{{ $request->request_type }}</span></td><td><span class="guest-name">{{ $request->preferred_time ?? 'Any time' }}</span></td><td><span class="priority {{ strtolower($request->priority) === 'low' ? 'low' : (strtolower($request->priority) === 'medium' ? 'medium' : '') }}">{{ $request->priority }}</span></td><td><span class="muted">{{ optional($request->submitted_at)->format('M d, Y g:i A') }}</span></td><td><span class="badge {{ $statusClass }}">{{ $status }}</span></td><td><a href="{{ route('employee.guest-requests.show', ['id' => $request->id]) }}" class="view-button request-view-button" data-request-id="REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}" data-request-title="{{ $request->request_type }}" data-request-status="{{ $status }}" data-request-time="{{ optional($request->submitted_at)->format('M d, Y g:i A') }}"><i class="fas fa-eye"></i> View</a></td></tr>
                 @empty
                     <tr><td colspan="9" style="text-align:center;padding:2rem;color:#64748b;"><i class="fas fa-inbox" style="display:block;margin-bottom:.5rem;font-size:1.4rem;"></i>No Employee requests found.</td></tr>
                 @endforelse
@@ -122,5 +123,17 @@
     </div>
 
 </div>
+
+<script>
+    const targetRequestId = new URLSearchParams(window.location.search).get('request_id');
+    if (targetRequestId) {
+        const targetRequest = document.getElementById(`employee-request-${targetRequestId}`);
+        if (targetRequest) {
+            targetRequest.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetRequest.classList.add('notification-request-highlight');
+            window.setTimeout(() => targetRequest.classList.remove('notification-request-highlight'), 3000);
+        }
+    }
+</script>
 
 @endsection

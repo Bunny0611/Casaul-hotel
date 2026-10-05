@@ -80,7 +80,26 @@ class HousekeepingController extends Controller
                 ->where('role', 'housekeeping')->exists(), 422, 'Invalid housekeeping staff.');
         }
 
-        HousekeepingTask::create($validated);
+        $task = HousekeepingTask::create($validated);
+
+        if (!empty($validated['assigned_staff_id'])) {
+            $assignedStaff = Staff::find($validated['assigned_staff_id']);
+            if ($assignedStaff) {
+                StaffNotificationService::notifyUsers(
+                    $assignedStaff,
+                    'New housekeeping task assigned',
+                    'A ' . $validated['priority'] . ' priority task was assigned for room ' . Room::find($validated['room_id'])?->room_number . '.',
+                    [
+                        'reference' => 'housekeeping-task:' . $task->id,
+                        'url' => route('housekeeping.assigned-rooms'),
+                        'type' => 'task',
+                        'module' => 'tasks',
+                        'related_id' => $task->id,
+                        'related_type' => HousekeepingTask::class,
+                    ]
+                );
+            }
+        }
 
         return redirect()->route('housekeeping.assigned-rooms')->with('success', 'Cleaning task assigned.');
     }
@@ -114,33 +133,42 @@ class HousekeepingController extends Controller
 
     public function roomStatusUpdate(Request $request)
     {
+        $targetRoomId = $request->integer('room_id') ?: null;
         $search = trim((string) $request->query('search', ''));
         $roomType = trim((string) $request->query('room_type', ''));
         $roomStatus = trim((string) $request->query('room_status', ''));
         $cleaningStatus = trim((string) $request->query('cleaning_status', ''));
 
         $baseRooms = Room::orderBy('room_number')->get();
+        $targetRoomIndex = $targetRoomId
+            ? $baseRooms->search(fn ($room) => (int) $room->id === $targetRoomId)
+            : false;
+        $targetPage = $targetRoomIndex === false ? null : intdiv($targetRoomIndex, 5) + 1;
 
-        $roomsQuery = Room::query();
+        if ($targetRoomId) {
+            $rooms = $baseRooms;
+        } else {
+            $roomsQuery = Room::query();
 
-        if ($search !== '') {
-            $roomsQuery->where('room_number', 'like', "%{$search}%");
-        }
+            if ($search !== '') {
+                $roomsQuery->where('room_number', 'like', "%{$search}%");
+            }
 
-        if ($roomType !== '' && $roomType !== 'All') {
-            $roomsQuery->where('room_type', $roomType);
-        }
+            if ($roomType !== '' && $roomType !== 'All') {
+                $roomsQuery->where('room_type', $roomType);
+            }
 
-        if ($cleaningStatus !== '' && $cleaningStatus !== 'All') {
-            $roomsQuery->where('cleaning_status', $cleaningStatus);
-        }
+            if ($cleaningStatus !== '' && $cleaningStatus !== 'All') {
+                $roomsQuery->where('cleaning_status', $cleaningStatus);
+            }
 
-        $rooms = $roomsQuery->orderBy('room_number')->get();
+            $rooms = $roomsQuery->orderBy('room_number')->get();
 
-        if ($roomStatus !== '' && $roomStatus !== 'All') {
-            $rooms = $rooms->filter(function ($room) use ($roomStatus) {
-                return $this->resolveRoomStatusLabel($room) === $roomStatus;
-            })->values();
+            if ($roomStatus !== '' && $roomStatus !== 'All') {
+                $rooms = $rooms->filter(function ($room) use ($roomStatus) {
+                    return $this->resolveRoomStatusLabel($room) === $roomStatus;
+                })->values();
+            }
         }
 
         $roomTypes = $baseRooms
@@ -186,7 +214,9 @@ class HousekeepingController extends Controller
             'search',
             'roomType',
             'roomStatus',
-            'cleaningStatus'
+            'cleaningStatus',
+            'targetRoomId',
+            'targetPage'
         ));
     }
 
@@ -461,8 +491,13 @@ class HousekeepingController extends Controller
             'Guest request #' . $guestRequest->id . ' is now ' . $guestRequest->status . '.',
             [
                 'reference' => 'housekeeping-request-update:' . $guestRequest->id,
-                'url' => '/employee/guest-requests',
+                'url' => route('employee.guest-requests', [
+                    'search' => 'REQ-' . str_pad($guestRequest->id, 4, '0', STR_PAD_LEFT),
+                    'request_id' => $guestRequest->id,
+                ]),
                 'type' => 'request',
+                'related_id' => $guestRequest->id,
+                'related_type' => GuestRequest::class,
             ]
         );
 
@@ -630,13 +665,47 @@ class HousekeepingController extends Controller
             $room->update(['cleaning_status' => $validated['cleaning_status'] ?? 'clean']);
         }
 
+        $updatedStatus = $validated['cleaning_status'] ?? $validated['room_status'] ?? 'ready';
         StaffNotificationService::notifyHousekeeping(
             'Room status updated',
-            'Room ' . $room->room_number . ' has been updated to ' . ($validated['cleaning_status'] ?? $validated['room_status'] ?? 'ready') . '.',
+            'Room ' . $room->room_number . ' has been updated to ' . $updatedStatus . '.',
             [
-                'reference' => 'room-status:' . $room->id,
-                'url' => '/housekeeping/room-status-update',
+                'url' => '/housekeeping/room-status-update?room_id=' . $room->id,
                 'type' => 'housekeeping',
+                'module' => 'rooms',
+                'related_id' => $room->id,
+                'related_type' => Room::class,
+                'icon' => 'fas fa-bed',
+                'action_label' => 'View Room',
+            ]
+        );
+
+        StaffNotificationService::notifyEmployees(
+            'Room status updated',
+            'Housekeeping updated Room ' . $room->room_number . ' to ' . $updatedStatus . '.',
+            [
+                'url' => '/employee/room-status?room_id=' . $room->id,
+                'type' => 'housekeeping',
+                'module' => 'rooms',
+                'related_id' => $room->id,
+                'related_type' => Room::class,
+                'icon' => 'fas fa-bed',
+                'action_label' => 'View Room',
+            ]
+        );
+
+        StaffNotificationService::notifyAdmins(
+            'Room status updated',
+            'Room ' . $room->room_number . ' was updated to ' . $updatedStatus . '.',
+            [
+                'reference' => 'admin-room-status:' . $room->id . ':' . now()->timestamp,
+                'url' => route('admin.rooms'),
+                'type' => 'housekeeping',
+                'module' => 'rooms',
+                'related_id' => $room->id,
+                'related_type' => Room::class,
+                'icon' => 'fas fa-bed',
+                'action_label' => 'View Room',
             ]
         );
 

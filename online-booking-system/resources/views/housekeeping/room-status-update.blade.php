@@ -132,13 +132,14 @@
     ];
 
     $perPage = 5;
-    $currentPage = max(1, (int) request()->query('page', 1));
+    $currentPage = max(1, (int) ($targetPage ?? request()->query('page', 1)));
     $totalPages = max(1, (int) ceil($rooms->count() / $perPage));
     $currentPage = min($currentPage, $totalPages);
     $pagedRooms = $rooms->slice(($currentPage - 1) * $perPage, $perPage)->values();
 @endphp
 
 <style>
+.room-table tbody tr.notification-room-highlight > td { background-color:#ffe3ad !important; transition:background-color .25s ease; }
 .room-status-page { width:100%; max-width:1500px; margin:0 auto; padding:18px 18px 0; color:#24313b; font-family:"Segoe UI", sans-serif; height:100%; }
 .room-status-main { flex:1 1 auto; min-width:0; background:#f2f3f1; border:1px solid #dfe3df; border-radius:18px; box-shadow:0 10px 22px rgba(24,34,41,0.03); padding:20px 20px 0; }
 .room-status-aside {
@@ -736,7 +737,7 @@
                                 $cleaningClass = 'in_progress';
                             }
                         @endphp
-                        <tr>
+                        <tr id="room-row-{{ $room->id }}" class="{{ (int) $targetRoomId === (int) $room->id ? 'notification-room-target notification-room-highlight' : '' }}">
                             <td>
                                 <div class="room-cell">
                                     <span class="room-icon"><i class="fas fa-door-open"></i></span>
@@ -886,6 +887,21 @@
 </div>
 
 <script>
+const roomHighlightStorageKey = 'housekeeping-notification-highlight-room-id';
+const persistedNotificationRoomId = sessionStorage.getItem(roomHighlightStorageKey);
+const notificationRoomId = @json($targetRoomId) || persistedNotificationRoomId;
+if (notificationRoomId) {
+    const notificationRoomRow = document.getElementById(`room-row-${notificationRoomId}`);
+    if (notificationRoomRow) {
+        notificationRoomRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        notificationRoomRow.classList.add('notification-room-highlight');
+        window.setTimeout(() => {
+            notificationRoomRow.classList.remove('notification-room-highlight');
+            sessionStorage.removeItem(roomHighlightStorageKey);
+        }, 3000);
+    }
+}
+
 const roomStatusPage = document.getElementById('roomStatusPage');
 const toggleStatusButton = document.getElementById('toggleStatusPanel');
 const statusLegendPanel = document.getElementById('statusLegendPanel');
