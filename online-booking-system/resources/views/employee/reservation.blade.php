@@ -331,13 +331,9 @@
         display: none !important;
     }
 
-    @keyframes notificationReservationHighlight {
-        0%, 78% { background-color: #ffedd5; }
-        100% { background-color: #ffffff; }
-    }
-
     .reservation-item.notification-reservation-highlight > td {
-        animation: notificationReservationHighlight 3s ease-out both;
+        background-color: #ffe3ad !important;
+        transition: background-color 0.25s ease;
     }
 </style>
 
@@ -1872,16 +1868,19 @@
         });
 
         const reservationQuery = new URLSearchParams(window.location.search);
-        const targetReservationId = reservationQuery.get('reservation_id');
-        const targetReservationType = reservationQuery.get('reservation_type');
+        const persistedReservationId = sessionStorage.getItem('employee-notification-highlight-reservation-id');
+        const persistedReservationType = sessionStorage.getItem('employee-notification-highlight-reservation-type');
+        const persistedReservationTab = sessionStorage.getItem('employee-notification-highlight-reservation-tab');
+        const targetReservationId = reservationQuery.get('reservation_id') || persistedReservationId;
+        const targetReservationType = reservationQuery.get('reservation_type') || persistedReservationType;
         const tabByReservationTable = {
             room_reservations: 'rooms',
-            reservations: reservationQuery.get('tab') || 'rooms',
+            reservations: reservationQuery.get('tab') || persistedReservationTab || 'rooms',
             facility_reservations: 'facilities',
             event_reservations: 'event',
             dining_reservations: 'dining',
         };
-        setActiveReservationTab(tabByReservationTable[targetReservationType] || reservationQuery.get('tab') || 'rooms');
+        setActiveReservationTab(tabByReservationTable[targetReservationType] || reservationQuery.get('tab') || persistedReservationTab || 'rooms');
 
         if (targetReservationId && targetReservationType) {
             const targetRow = [...document.querySelectorAll('.reservation-item')].find((row) =>
@@ -1894,7 +1893,12 @@
                 filterEmployeeReservations();
                 targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 targetRow.classList.add('notification-reservation-highlight');
-                window.setTimeout(() => targetRow.classList.remove('notification-reservation-highlight'), 3000);
+                window.setTimeout(() => {
+                    targetRow.classList.remove('notification-reservation-highlight');
+                    sessionStorage.removeItem('employee-notification-highlight-reservation-id');
+                    sessionStorage.removeItem('employee-notification-highlight-reservation-type');
+                    sessionStorage.removeItem('employee-notification-highlight-reservation-tab');
+                }, 3000);
             }
         }
     });

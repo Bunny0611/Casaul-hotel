@@ -67,15 +67,73 @@
 
         .admin-header-layout {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto auto;
+            grid-template-columns: minmax(0, 1fr) auto auto auto;
             align-items: center;
             gap: 0.75rem 1rem;
         }
 
         .admin-header-title { grid-column: 1; }
         .admin-header-search { grid-column: 2; }
-        .admin-header-profile { grid-column: 3; }
+        .admin-header-notifications { grid-column: 3; }
+        .admin-header-profile { grid-column: 4; }
         .admin-header-profile .profile-dropdown-arrow { font-size: 0.7rem; }
+
+        .admin-notification-toggle {
+            position: relative;
+            display: inline-flex;
+            width: 2.75rem;
+            height: 2.75rem;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 0.5rem;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .admin-notification-badge {
+            position: absolute;
+            top: -0.2rem;
+            right: -0.2rem;
+            display: inline-flex;
+            min-width: 1.05rem;
+            height: 1.05rem;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.2rem;
+            border: 2px solid #ff7b42;
+            border-radius: 9999px;
+            background: #dc2626;
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .admin-notification-panel {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            z-index: 60;
+            width: min(23rem, calc(100vw - 1.5rem));
+            overflow: hidden;
+            border: 1px solid rgba(148,163,184,0.35);
+            border-radius: 0.75rem;
+            background: #fff;
+            color: #1f2937;
+            box-shadow: 0 18px 60px rgba(15,23,42,0.22);
+        }
+
+        .admin-notification-panel[hidden] { display: none; }
+        .admin-notification-header { display:flex; align-items:center; justify-content:space-between; gap:0.75rem; padding:0.8rem 1rem; border-bottom:1px solid #e5e7eb; background:#fff7ed; }
+        .admin-notification-list { max-height:23rem; overflow-y:auto; }
+        .admin-notification-item { display:block; width:100%; padding:0.8rem 0.9rem; border:0; border-bottom:1px solid #f3f4f6; background:#fff; text-align:left; cursor:pointer; }
+        .admin-notification-item:hover, .admin-notification-item.unread { background:#fff7ed; }
+        .admin-notification-item strong { display:block; color:#111827; }
+        .admin-notification-item span { display:block; margin-top:0.2rem; color:#4b5563; font-size:0.8rem; line-height:1.4; }
+        .admin-notification-item small { display:block; margin-top:0.3rem; color:#6b7280; font-size:0.7rem; }
+        .admin-notification-empty { padding:1rem; color:#6b7280; text-align:center; }
 
         .admin-profile-menu {
             position: absolute;
@@ -150,6 +208,24 @@
             width: 1.5rem;
             flex-shrink: 0;
         }
+
+        .sidebar-notification-badge {
+            display: inline-flex;
+            min-width: 1.15rem;
+            height: 1.15rem;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            padding: 0 0.25rem;
+            border-radius: 9999px;
+            background: #dc2626;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .sidebar-notification-badge[hidden] { display: none; }
         
         .animate-fade-in {
             animation: fadeIn 0.5s ease-in-out;
@@ -166,7 +242,8 @@
             }
 
             .admin-header-layout {
-                grid-template-columns: minmax(0, 1fr) auto;
+                grid-template-columns: minmax(0, 1fr) auto auto;
+                column-gap: 0.5rem;
             }
 
             .admin-header-search {
@@ -175,9 +252,11 @@
             }
 
             .admin-header-profile {
-                grid-column: 2;
+                grid-column: 3;
                 grid-row: 1;
             }
+
+            .admin-header-notifications { grid-column: 2; grid-row: 1; }
 
             .header-search {
                 width: 100%;
@@ -236,6 +315,7 @@
                 <p class="text-sm text-gray-300 mt-1">Hotel Management</p>
             </div>
             
+            @php($sidebarNotificationCounts = \App\Support\StaffNotificationService::unreadSidebarCounts(auth()->user()))
             <nav class="mt-6 flex flex-col px-3">
                 <a href="{{ route('admin.dashboard') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin') || request()->is('admin/') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt w-6"></i>
@@ -244,6 +324,7 @@
                 <a href="{{ route('admin.reservations') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/reservations') ? 'active' : '' }}">
                     <i class="fas fa-calendar-check w-6"></i>
                     <span>Reservations</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="reservations" data-module-label="reservations" aria-label="{{ $sidebarNotificationCounts['reservations'] }} unread reservations" @if($sidebarNotificationCounts['reservations'] === 0) hidden @endif>{{ $sidebarNotificationCounts['reservations'] > 9 ? '9+' : ($sidebarNotificationCounts['reservations'] ?: '') }}</span>
                 </a>
                 <a href="{{ route('admin.calendar') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/calendar') ? 'active' : '' }}">
                     <i class="fas fa-calendar-alt w-6"></i>
@@ -252,10 +333,12 @@
                 <a href="{{ route('admin.refunds') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/refunds') ? 'active' : '' }}">
                     <i class="fas fa-rotate-left w-6"></i>
                     <span>Refund History</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="refunds" data-module-label="refunds" aria-label="{{ $sidebarNotificationCounts['refunds'] }} unread refunds" @if($sidebarNotificationCounts['refunds'] === 0) hidden @endif>{{ $sidebarNotificationCounts['refunds'] > 9 ? '9+' : ($sidebarNotificationCounts['refunds'] ?: '') }}</span>
                 </a>
                 <a href="{{ route('admin.rooms') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/rooms') ? 'active' : '' }}">
                     <i class="fas fa-bed w-6"></i>
                     <span>Rooms</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="rooms" data-module-label="room updates" aria-label="{{ $sidebarNotificationCounts['rooms'] }} unread room updates" @if($sidebarNotificationCounts['rooms'] === 0) hidden @endif>{{ $sidebarNotificationCounts['rooms'] > 9 ? '9+' : ($sidebarNotificationCounts['rooms'] ?: '') }}</span>
                 </a>
                 <a href="{{ route('admin.manage-account') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/manage-account') ? 'active' : '' }}">
                     <i class="fas fa-user-cog w-6"></i>
@@ -264,6 +347,7 @@
                 <a href="{{ route('admin.messages') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/messages') ? 'active' : '' }}">
                     <i class="fas fa-comments w-6"></i>
                     <span>Messages</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="messages" data-module-label="messages" aria-label="{{ $sidebarNotificationCounts['messages'] }} unread messages" @if($sidebarNotificationCounts['messages'] === 0) hidden @endif>{{ $sidebarNotificationCounts['messages'] > 9 ? '9+' : ($sidebarNotificationCounts['messages'] ?: '') }}</span>
                 </a>
                 <a href="{{ route('admin.reports') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/reports') ? 'active' : '' }}">
                     <i class="fas fa-chart-bar w-6"></i>
@@ -272,6 +356,7 @@
                 <a href="{{ route('admin.notifications') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/notifications') ? 'active' : '' }}">
                     <i class="fas fa-bell w-6"></i>
                     <span>Notifications</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="notifications" data-module-label="notifications" aria-label="{{ $sidebarNotificationCounts['notifications'] }} unread notifications" @if($sidebarNotificationCounts['notifications'] === 0) hidden @endif>{{ $sidebarNotificationCounts['notifications'] > 9 ? '9+' : ($sidebarNotificationCounts['notifications'] ?: '') }}</span>
                 </a>
                 <a href="{{ route('admin.settings') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/settings') ? 'active' : '' }}">
                     <i class="fas fa-cog w-6"></i>
@@ -300,6 +385,19 @@
                     <div class="relative header-search admin-header-search w-full sm:w-64">
                         <input id="adminHeaderSearch" type="search" placeholder="Search..." aria-label="Search this page" autocomplete="off" class="bg-white/20 text-white placeholder-gray-200 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 w-full">
                         <i class="fas fa-search absolute right-3 top-3 text-gray-200"></i>
+                    </div>
+                    <div class="admin-header-notifications relative">
+                        <button id="adminNotificationToggle" type="button" class="admin-notification-toggle" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="adminNotificationPanel">
+                            <i class="fas fa-bell"></i>
+                            <span id="adminNotificationBadge" class="admin-notification-badge" hidden>0</span>
+                        </button>
+                        <div id="adminNotificationPanel" class="admin-notification-panel" role="menu" hidden>
+                            <div class="admin-notification-header">
+                                <strong>Notifications</strong>
+                                <button id="adminMarkAllNotificationsRead" type="button" class="text-xs font-medium text-orange-600 hover:text-orange-700">Mark all as read</button>
+                            </div>
+                            <div id="adminNotificationList" class="admin-notification-list"></div>
+                        </div>
                     </div>
                     <div class="admin-header-profile relative">
                         <button id="adminProfileToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="adminProfileMenu" class="flex items-center justify-center gap-2 rounded-lg bg-white/20 px-3 py-2 text-sm text-white transition-colors hover:bg-white/30 sm:text-base">
@@ -386,6 +484,107 @@
                         profileToggle.focus();
                     }
                 });
+            }
+
+            const notificationToggle = document.getElementById('adminNotificationToggle');
+            const notificationBadge = document.getElementById('adminNotificationBadge');
+            const notificationPanel = document.getElementById('adminNotificationPanel');
+            const notificationList = document.getElementById('adminNotificationList');
+            const notificationFeedUrl = @json(route('admin.notification-feed.index'));
+            const markNotificationReadUrl = @json(route('admin.notification-feed.mark-read', ['id' => '__ID__']));
+            const markAllNotificationsReadUrl = @json(route('admin.notification-feed.mark-all-read'));
+
+            function updateNotificationBadge(count) {
+                const unreadCount = Number(count) || 0;
+                notificationBadge.hidden = unreadCount === 0;
+                notificationBadge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+                notificationToggle.setAttribute('aria-label', unreadCount ? `${unreadCount} unread notifications` : 'Notifications');
+            }
+
+            function updateSidebarNotificationBadges(counts) {
+                if (!counts) return;
+
+                document.querySelectorAll('[data-sidebar-module]').forEach((badge) => {
+                    const count = Number(counts[badge.dataset.sidebarModule]) || 0;
+                    badge.hidden = count === 0;
+                    badge.textContent = count > 9 ? '9+' : (count ? String(count) : '');
+                    badge.setAttribute('aria-label', `${count} unread ${badge.dataset.moduleLabel}`);
+                });
+            }
+
+            async function loadAdminNotifications() {
+                try {
+                    const response = await fetch(notificationFeedUrl, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+                    if (!response.ok) return;
+                    const result = await response.json();
+                    updateNotificationBadge(result.unread_count);
+                    updateSidebarNotificationBadges(result.module_counts);
+                    notificationList.replaceChildren();
+
+                    if (!result.data.length) {
+                        const empty = document.createElement('div');
+                        empty.className = 'admin-notification-empty';
+                        empty.textContent = 'No notifications yet.';
+                        notificationList.append(empty);
+                        return;
+                    }
+
+                    result.data.forEach((item) => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = `admin-notification-item${item.is_read ? '' : ' unread'}`;
+                        const title = document.createElement('strong');
+                        title.textContent = item.title || 'Notification';
+                        const message = document.createElement('span');
+                        message.textContent = item.message || '';
+                        const created = document.createElement('small');
+                        created.textContent = item.created_at ? new Date(item.created_at).toLocaleString() : '';
+                        button.append(title, message, created);
+                        button.addEventListener('click', async () => {
+                            try {
+                                const response = await fetch(markNotificationReadUrl.replace('__ID__', encodeURIComponent(item.id)), {
+                                    method: 'POST',
+                                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' },
+                                    credentials: 'same-origin',
+                                });
+                                if (!response.ok) return;
+                                const state = await response.json();
+                                updateNotificationBadge(state.unread_count);
+                                if (item.url) window.location.assign(item.url);
+                                else loadAdminNotifications();
+                            } catch (error) {
+                                console.error('Admin notification could not be marked read:', error);
+                            }
+                        });
+                        notificationList.append(button);
+                    });
+                } catch (error) {
+                    console.error('Admin notifications could not be loaded:', error);
+                }
+            }
+
+            if (notificationToggle && notificationPanel && notificationList) {
+                notificationToggle.addEventListener('click', () => {
+                    notificationPanel.hidden = !notificationPanel.hidden;
+                    notificationToggle.setAttribute('aria-expanded', String(!notificationPanel.hidden));
+                    if (!notificationPanel.hidden) loadAdminNotifications();
+                });
+                document.addEventListener('click', (event) => {
+                    if (!notificationToggle.contains(event.target) && !notificationPanel.contains(event.target)) {
+                        notificationPanel.hidden = true;
+                        notificationToggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                document.getElementById('adminMarkAllNotificationsRead')?.addEventListener('click', async () => {
+                    const response = await fetch(markAllNotificationsReadUrl, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' },
+                        credentials: 'same-origin',
+                    });
+                    if (response.ok) loadAdminNotifications();
+                });
+                loadAdminNotifications();
+                window.setInterval(loadAdminNotifications, 30000);
             }
 
             const searchInput = document.getElementById('adminHeaderSearch');

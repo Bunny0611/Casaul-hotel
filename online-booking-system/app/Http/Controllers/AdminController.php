@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ReservationCancelled;
 use App\Mail\ReservationConfirmed;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -39,6 +40,7 @@ use App\Support\ReservationPricing;
 use App\Support\RoomAvailability;
 use App\Support\GuestOrigin;
 use App\Support\ComprehensiveReportExcelExporter;
+use App\Support\StaffNotificationService;
 use Illuminate\Support\Str;
 
 class AdminController extends Controller
@@ -1672,8 +1674,10 @@ class AdminController extends Controller
 
         $refundMessage = null;
         $confirmedReservation = null;
+        $cancelledReservation = null;
+        $housekeepingCheckout = null;
 
-        DB::transaction(function () use ($id, $validated, &$refundMessage, &$confirmedReservation) {
+        DB::transaction(function () use ($id, $validated, &$refundMessage, &$confirmedReservation, &$cancelledReservation, &$housekeepingCheckout) {
             $reservationType = match ($validated['category'] ?? null) {
                 'rooms' => 'room',
                 'event' => 'event',
@@ -1701,6 +1705,10 @@ class AdminController extends Controller
 
             abort_if(!$reservation, 404, 'Reservation not found');
 
+            $wasCheckedIn = $reservation->status === 'checked-in';
+            $shouldSendCancellationEmail = $validated['status'] === 'cancelled'
+                && $reservation->status !== 'cancelled'
+                && filled($reservation->guest_email);
             $wasPendingConfirmation = $reservation->status !== 'confirmed'
                 && $validated['status'] === 'confirmed';
 
@@ -1761,6 +1769,13 @@ class AdminController extends Controller
             }
 
             $reservation->update(['status' => $validated['status']]);
+
+            if ($shouldSendCancellationEmail) {
+                $cancelledReservation = $reservation->fresh();
+                if (method_exists($cancelledReservation, 'room')) {
+                    $cancelledReservation->loadMissing('room');
+                }
+            }
 
             if ($wasPendingConfirmation && $reservation->guest_email) {
                 $confirmedReservation = $reservation->fresh();
@@ -1841,6 +1856,15 @@ class AdminController extends Controller
                         'status' => 'available',
                         'cleaning_status' => 'dirty',
                     ]);
+
+                    if ($wasCheckedIn && $validated['status'] === 'completed') {
+                        $housekeepingCheckout = [
+                            'room_id' => $reservation->room->id,
+                            'room_number' => $reservation->room->room_number,
+                            'reservation_id' => $reservation->id,
+                            'reservation_model' => get_class($reservation),
+                        ];
+                    }
                 }
             }
 
@@ -1864,9 +1888,30 @@ class AdminController extends Controller
             }
         });
 
+        if ($housekeepingCheckout) {
+            StaffNotificationService::notifyHousekeeping(
+                'Vacant dirty room needs cleaning',
+                'Room ' . $housekeepingCheckout['room_number'] . ' is vacant and dirty after guest checkout.',
+                [
+                    'reference' => 'room-checkout-cleaning:' . $housekeepingCheckout['reservation_model'] . ':' . $housekeepingCheckout['reservation_id'],
+                    'url' => '/housekeeping/room-status-update?room_id=' . $housekeepingCheckout['room_id'],
+                    'type' => 'housekeeping',
+                    'related_id' => $housekeepingCheckout['room_id'],
+                    'related_type' => Room::class,
+                    'icon' => 'fas fa-broom',
+                    'action_label' => 'View Room',
+                ]
+            );
+        }
+
         if ($confirmedReservation) {
             Mail::to($confirmedReservation->guest_email)
                 ->send(new ReservationConfirmed($confirmedReservation));
+        }
+
+        if ($cancelledReservation) {
+            Mail::to($cancelledReservation->guest_email)
+                ->send(new ReservationCancelled($cancelledReservation));
         }
 
         if ($request->expectsJson()) {
@@ -2745,10 +2790,13 @@ class AdminController extends Controller
             'replied' => $messages->where('is_replied', true)->count(),
             'total' => $messages->count(),
         ];
-        $selectedMessageId = session('employee_message_recipient');
-        $selectedConversationKey = $conversations
-            ->first(fn ($conversation) => (string) $conversation->latest_message->id === (string) $selectedMessageId)
-            ?->key;
+        $targetMessageId = $request->integer('message_id') ?: null;
+        $selectedMessageId = $targetMessageId ?: session('employee_message_recipient');
+        $selectedConversationKey = $targetMessageId
+            ? $conversations->first(fn ($conversation) => $conversation->messages->contains('id', $targetMessageId))?->key
+            : $conversations
+                ->first(fn ($conversation) => (string) $conversation->latest_message->id === (string) $selectedMessageId)
+                ?->key;
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -2794,7 +2842,7 @@ class AdminController extends Controller
         }
 
         return view('employee.messages', array_merge(
-            compact('messages', 'conversations', 'stats', 'selectedConversationKey', 'filter'),
+            compact('messages', 'conversations', 'stats', 'selectedConversationKey', 'filter', 'targetMessageId'),
             app(StaffMessageInbox::class)->for($request->user())
         ));
     }

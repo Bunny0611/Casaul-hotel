@@ -75,7 +75,7 @@ Route::middleware(['auth:guest', 'verified', 'role:guest'])->group(function () {
 });
 
 // --- Employee Portal ---
-Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee'])->group(function () {
+Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee', 'staff.module-read'])->group(function () {
     Route::redirect('/', '/employee/dashboard')->name('index');
     Route::get('/dashboard', [AdminController::class, 'employeeDashboard'])->name('dashboard');
     Route::get('/calendar', [AdminController::class, 'employeeCalendar'])->name('calendar');
@@ -211,7 +211,12 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     })->name('checkin');
     Route::get('/room-status', function () {
         $allRooms = \App\Models\Room::orderBy('room_number')->get();
-        $rooms = \App\Models\Room::orderBy('room_number')->paginate(10);
+        $targetRoomId = request()->integer('room_id') ?: null;
+        $targetRoomIndex = $targetRoomId
+            ? $allRooms->search(fn ($room) => (int) $room->id === $targetRoomId)
+            : false;
+        $targetPage = $targetRoomIndex === false ? null : intdiv($targetRoomIndex, 10) + 1;
+        $rooms = \App\Models\Room::orderBy('room_number')->paginate(10, ['*'], 'page', $targetPage);
         $activeRoomReservations = RoomReservation::query()
             ->whereIn('status', ['pending', 'confirmed', 'checked-in'])
             ->whereDate('check_out', '>=', today())
@@ -303,7 +308,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
             $table->status = $isReservedNow ? 'Reserved' : 'Available';
         });
 
-        return view('employee.room-status', compact('allRooms', 'rooms', 'reservations', 'inventoryItems', 'facilities', 'events', 'diningTables', 'dining', 'diningSchedules'));
+        return view('employee.room-status', compact('allRooms', 'rooms', 'reservations', 'inventoryItems', 'facilities', 'events', 'diningTables', 'dining', 'diningSchedules', 'targetRoomId'));
     })->name('room-status');
     Route::patch('/rooms/{id}/status', [HousekeepingController::class, 'updateStatus'])->name('rooms.status');
     Route::get('/guest-requests', [AdminController::class, 'employeeGuestRequests'])->name('guest-requests');
@@ -322,7 +327,7 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
 });
 
 // --- Protected Admin Routes (requires authentication) ---
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin', 'staff.module-read'])->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/calendar', [AdminController::class, 'adminCalendar'])->name('calendar');
     Route::get('/rooms', [AdminController::class, 'rooms'])->name('rooms');
@@ -363,6 +368,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::patch('/maintenance-reports/{maintenanceReport}/status', [AdminController::class, 'updateMaintenanceReportStatus'])->name('maintenance-reports.status');
     Route::get('/reports/export-csv', [AdminController::class, 'exportReportsCsv'])->name('reports.export.csv');
     Route::get('/reports/print', [AdminController::class, 'printReports'])->name('reports.print');
+    Route::get('/notification-feed', [NotificationController::class, 'index'])->name('notification-feed.index');
+    Route::post('/notification-feed/mark-read/{id}', [NotificationController::class, 'markRead'])->name('notification-feed.mark-read');
+    Route::post('/notification-feed/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notification-feed.mark-all-read');
     Route::get('/notifications', [AdminController::class, 'notifications'])->name('notifications');
     Route::post('/notifications/read-all', [AdminController::class, 'markAllNotificationsRead'])->name('notifications.read-all');
     Route::delete('/notifications', [AdminController::class, 'clearNotifications'])->name('notifications.clear-all');
@@ -377,7 +385,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
 });
 
 // --- Housekeeping Portal ---
-Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:housekeeping'])->group(function () {
+Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:housekeeping', 'staff.module-read'])->group(function () {
     Route::get('/dashboard', [HousekeepingController::class, 'dashboard'])->name('dashboard');
     Route::patch('/rooms/{id}/cleaning', [HousekeepingController::class, 'updateStatus'])->name('rooms.cleaning');
     Route::get('/assigned-rooms', [HousekeepingController::class, 'assignedRooms'])->name('assigned-rooms');

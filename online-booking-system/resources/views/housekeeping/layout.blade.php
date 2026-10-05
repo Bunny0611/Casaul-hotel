@@ -184,6 +184,24 @@
             flex-shrink: 0;
         }
 
+        .sidebar-notification-badge {
+            display: inline-flex;
+            min-width: 1.15rem;
+            height: 1.15rem;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            padding: 0 0.25rem;
+            border-radius: 9999px;
+            background: #dc2626;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .sidebar-notification-badge[hidden] { display: none; }
+
         .animate-fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
@@ -333,7 +351,7 @@
             justify-content: center;
             border: 2px solid #ff8c42;
             border-radius: 9999px;
-            background: #f97316;
+            background: #dc2626;
             padding: 0 0.24rem;
             color: #fff;
             font-size: 0.62rem;
@@ -410,16 +428,27 @@
         .notification-toast .toast-action { display: inline-flex; align-items: center; justify-content: center; margin-top: 0.7rem; border: 0; border-radius: 9999px; background: #ff7b42; padding: 0.45rem 0.8rem; color: white; font-weight: 600; cursor: pointer; }
 
         @media (max-width: 520px) {
-            .notification-bell-panel { width: min(23rem, calc(100vw - 1rem)); }
+            .notification-bell-panel {
+                position: fixed;
+                top: var(--notification-panel-top, 5rem);
+                right: 0.5rem;
+                left: 0.5rem;
+                display: flex;
+                width: auto;
+                max-height: calc(100dvh - var(--notification-panel-top, 5rem) - env(safe-area-inset-bottom) - 0.5rem);
+                flex-direction: column;
+            }
+            .notification-bell-header { flex: 0 0 auto; }
+            .notification-bell-list { min-height: 0; max-height: none; flex: 1 1 auto; overscroll-behavior: contain; }
             .notification-toast-container { right: 0.5rem; bottom: max(0.5rem, env(safe-area-inset-bottom)); left: 0.5rem; }
-            .notification-toast { width: 100%; box-sizing: border-box; }
+            .notification-toast { width: 100%; max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow-y: auto; box-sizing: border-box; }
         }
 
         @container housekeeping-content (max-width: 767px) {
-            .housekeeping-header-layout { grid-template-columns: minmax(0, 1fr) auto auto; }
-            .housekeeping-header-title { grid-column: 1; }
+            .housekeeping-header-layout { grid-template-columns: minmax(0, 1fr) auto; column-gap: 0.5rem; row-gap: 0.5rem; }
+            .housekeeping-header-title { grid-column: 1; grid-row: 1; gap: 0.5rem; }
             .housekeeping-header-search {
-                grid-column: 1 / -1;
+                grid-column: 1;
                 grid-row: 2;
                 width: 100%;
             }
@@ -438,12 +467,12 @@
                 right: 0.85rem;
                 transform: translateY(-50%);
             }
-            .housekeeping-notifications-wrapper { grid-column: 2; grid-row: 1; }
-            .housekeeping-profile-wrapper { grid-column: 3; grid-row: 1; }
-            .housekeeping-profile-trigger { padding: 0.4rem 0.5rem; }
+            .housekeeping-notifications-wrapper { grid-column: 2; grid-row: 1; justify-self: end; }
+            .housekeeping-profile-wrapper { grid-column: 2; grid-row: 2; justify-self: end; }
+            .housekeeping-profile-trigger { gap: 0.35rem; padding: 0.4rem 0.4rem; }
             .header .housekeeping-profile-trigger > .fa-user-circle { font-size: 1.5rem; }
-            .housekeeping-profile-trigger span { white-space: nowrap; font-size: 0.75rem; }
-            .housekeeping-header-title h2 { overflow: visible; white-space: normal; font-size: 0.875rem; line-height: 1.2; }
+            .housekeeping-profile-trigger span { overflow-wrap: anywhere; white-space: normal; font-size: 0.75rem; line-height: 1.1; }
+            .housekeeping-header-title h2 { overflow: visible; overflow-wrap: anywhere; white-space: normal; font-size: 0.85rem; line-height: 1.15; }
             .housekeeping-greeting-role { display: block; }
         }
     </style>
@@ -474,6 +503,7 @@
 
             </div>
 
+            @php($sidebarNotificationCounts = \App\Support\StaffNotificationService::unreadSidebarCounts(auth()->user()))
             <nav class="mt-20 flex flex-col gap-2 px-3">
 
                 <a
@@ -492,6 +522,7 @@
                 >
                     <i class="fas fa-bed w-6"></i>
                     <span>Assigned Rooms</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="tasks" data-module-label="room tasks" aria-label="{{ $sidebarNotificationCounts['tasks'] }} unread room tasks" @if($sidebarNotificationCounts['tasks'] === 0) hidden @endif>{{ $sidebarNotificationCounts['tasks'] > 9 ? '9+' : ($sidebarNotificationCounts['tasks'] ?: '') }}</span>
                 </a>
 
                 <a
@@ -501,6 +532,7 @@
                 >
                     <i class="fas fa-sync-alt w-6"></i>
                     <span>Room Status Update</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="rooms" data-module-label="room updates" aria-label="{{ $sidebarNotificationCounts['rooms'] }} unread room updates" @if($sidebarNotificationCounts['rooms'] === 0) hidden @endif>{{ $sidebarNotificationCounts['rooms'] > 9 ? '9+' : ($sidebarNotificationCounts['rooms'] ?: '') }}</span>
                 </a>
 
                 <a
@@ -510,6 +542,7 @@
                 >
                     <i class="fas fa-bell w-6"></i>
                     <span>Guest Requests</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="requests" data-module-label="guest requests" aria-label="{{ $sidebarNotificationCounts['requests'] }} unread guest requests" @if($sidebarNotificationCounts['requests'] === 0) hidden @endif>{{ $sidebarNotificationCounts['requests'] > 9 ? '9+' : ($sidebarNotificationCounts['requests'] ?: '') }}</span>
                 </a>
 
                 <a
@@ -519,6 +552,7 @@
                 >
                     <i class="fas fa-comment-dots w-6"></i>
                     <span>Messages</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="messages" data-module-label="messages" aria-label="{{ $sidebarNotificationCounts['messages'] }} unread messages" @if($sidebarNotificationCounts['messages'] === 0) hidden @endif>{{ $sidebarNotificationCounts['messages'] > 9 ? '9+' : ($sidebarNotificationCounts['messages'] ?: '') }}</span>
                 </a>
 
                 <a
@@ -844,6 +878,7 @@
             const markReadUrl = '{{ route('housekeeping.notifications.mark-read', ['id' => '__ID__']) }}';
             const markAllReadUrl = '{{ route('housekeeping.notifications.mark-all-read') }}';
             const notificationSeenStorageKey = 'housekeeping-notification-seen-ids';
+            const notificationHighlightStorageKey = 'housekeeping-notification-highlight-room-id';
             const seenNotificationIds = new Set();
             let notificationBaselineLoaded = false;
 
@@ -856,6 +891,20 @@
                 console.warn('Could not restore notification state:', error);
             }
 
+            function queueRoomHighlight(targetUrl) {
+                if (!targetUrl) return;
+
+                try {
+                    const url = new URL(targetUrl, window.location.origin);
+                    const roomId = url.searchParams.get('room_id');
+                    if (roomId) {
+                        sessionStorage.setItem(notificationHighlightStorageKey, roomId);
+                    }
+                } catch (error) {
+                    console.warn('Could not queue housekeeping room highlight:', error);
+                }
+            }
+
             function formatRelativeTime(value) {
                 if (!value) return 'just now';
                 const date = new Date(value);
@@ -866,6 +915,33 @@
                 if (diffHours < 24) return diffHours + 'h ago';
                 const diffDays = Math.round(diffHours / 24);
                 return diffDays + 'd ago';
+            }
+
+            async function openNotification(notificationId, targetUrl) {
+                try {
+                    const response = await fetch(markReadUrl.replace('__ID__', notificationId), {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                        credentials: 'same-origin',
+                    });
+
+                    if (!response.ok) throw new Error(`Mark-read request returned ${response.status}`);
+                    const result = await response.json();
+                    updateBadge(result.unread_count ?? 0);
+                    notificationList?.querySelectorAll('.notification-item').forEach((item) => {
+                        if (item.dataset.id === String(notificationId)) item.classList.remove('unread');
+                    });
+
+                    if (targetUrl) {
+                        queueRoomHighlight(targetUrl);
+                        window.location.assign(targetUrl);
+                    }
+                } catch (error) {
+                    console.error('Housekeeping notification could not be marked read:', error);
+                }
             }
 
             function renderNotificationList(items) {
@@ -890,19 +966,7 @@
 
                 notificationList.querySelectorAll('.notification-item').forEach(function (button) {
                     button.addEventListener('click', function () {
-                        const notificationId = button.dataset.id;
-                        const targetUrl = button.dataset.url;
-                        fetch(markReadUrl.replace('__ID__', notificationId), {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                'Accept': 'application/json',
-                            },
-                        }).catch(() => {});
-
-                        if (targetUrl) {
-                            window.location.href = targetUrl;
-                        }
+                        openNotification(button.dataset.id, button.dataset.url);
                     });
                 });
             }
@@ -916,6 +980,17 @@
                 }
                 notificationBadge.textContent = '0';
                 notificationBadge.classList.add('hidden');
+            }
+
+            function updateSidebarNotificationBadges(counts) {
+                if (!counts) return;
+
+                document.querySelectorAll('[data-sidebar-module]').forEach((badge) => {
+                    const count = Number(counts[badge.dataset.sidebarModule]) || 0;
+                    badge.hidden = count === 0;
+                    badge.textContent = count > 9 ? '9+' : (count ? String(count) : '');
+                    badge.setAttribute('aria-label', `${count} unread ${badge.dataset.moduleLabel}`);
+                });
             }
 
             function showToast(notification) {
@@ -937,9 +1012,7 @@
                 const actionButton = toast.querySelector('.toast-action');
                 closeButton.addEventListener('click', () => toast.remove());
                 actionButton.addEventListener('click', () => {
-                    if (notification.url) {
-                        window.location.href = notification.url;
-                    }
+                    openNotification(notification.id, notification.url);
                     toast.remove();
                 });
                 toastContainer.appendChild(toast);
@@ -976,6 +1049,7 @@
                         }
 
                         updateBadge(data.unread_count ?? data.data.filter(item => !item.is_read).length);
+                        updateSidebarNotificationBadges(data.module_counts);
                         renderNotificationList(data.data);
                         newItems.reverse().slice(0, 3).forEach(showToast);
                     })
@@ -983,13 +1057,23 @@
             }
 
             if (notificationToggle && notificationPanel) {
+                const positionNotificationPanel = () => {
+                    const headerBottom = notificationToggle.closest('header')?.getBoundingClientRect().bottom
+                        ?? notificationToggle.getBoundingClientRect().bottom;
+                    notificationPanel.style.setProperty('--notification-panel-top', `${headerBottom + 8}px`);
+                };
+
                 notificationToggle.addEventListener('click', function () {
                     const hidden = notificationPanel.hidden;
                     notificationPanel.hidden = !hidden;
                     notificationToggle.setAttribute('aria-expanded', String(!notificationPanel.hidden));
                     if (!notificationPanel.hidden) {
+                        positionNotificationPanel();
                         loadNotifications();
                     }
+                });
+                window.addEventListener('resize', () => {
+                    if (!notificationPanel.hidden) positionNotificationPanel();
                 });
                 document.addEventListener('click', function (event) {
                     if (!notificationToggle.contains(event.target) && !notificationPanel.contains(event.target)) {

@@ -189,10 +189,10 @@
                 font-size: 0.75rem;
             }
 
-            .employee-header-layout { grid-template-columns: minmax(0, 1fr) auto auto; }
-            .employee-header-title { grid-column: 1; }
+            .employee-header-layout { grid-template-columns: minmax(0, 1fr) auto; column-gap: 0.5rem; row-gap: 0.5rem; }
+            .employee-header-title { grid-column: 1; grid-row: 1; gap: 0.5rem; }
             .employee-header-search {
-                grid-column: 1 / -1;
+                grid-column: 1;
                 grid-row: 2;
                 width: 100%;
                 max-width: none;
@@ -208,9 +208,26 @@
                 border-radius: 0.5rem;
                 box-sizing: border-box;
             }
-            .employee-header-notifications { grid-column: 2; grid-row: 1; }
-            .employee-header-profile { grid-column: 3; grid-row: 1; }
-            .header-left h2 { font-size: 0.95rem; }
+            .employee-header-notifications { grid-column: 2; grid-row: 1; justify-self: end; }
+            .employee-header-profile { grid-column: 2; grid-row: 2; justify-self: end; }
+            .employee-header-title h2 {
+                overflow: visible;
+                overflow-wrap: anywhere;
+                text-overflow: clip;
+                white-space: normal;
+                font-size: 0.85rem;
+                line-height: 1.15;
+            }
+            .employee-profile-wrapper .profile-box { gap: 0.35rem; padding: 0.35rem 0.4rem; }
+            .employee-profile-wrapper .profile-box span {
+                max-width: 4.5rem;
+                overflow: visible;
+                overflow-wrap: anywhere;
+                text-overflow: clip;
+                white-space: normal;
+                font-size: 0.75rem;
+                line-height: 1.1;
+            }
 
             .nav-item span {
                 white-space: normal;
@@ -246,6 +263,24 @@
         .nav-item span {
             white-space: nowrap;
         }
+
+        .sidebar-notification-badge {
+            display: inline-flex;
+            min-width: 1.15rem;
+            height: 1.15rem;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            padding: 0 0.25rem;
+            border-radius: 9999px;
+            background: #dc2626;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 700;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .sidebar-notification-badge[hidden] { display: none; }
 
         .animate-fade-in {
             animation: fadeIn 0.5s ease-in-out;
@@ -325,7 +360,7 @@
             min-width: 1.1rem;
             height: 1.1rem;
             border-radius: 9999px;
-            background: #f97316;
+            background: #dc2626;
             color: #fff;
             font-size: 0.62rem;
             font-weight: 700;
@@ -408,9 +443,20 @@
         .notification-toast .toast-action { margin-top: 0.7rem; display: inline-flex; align-items: center; justify-content: center; border: none; border-radius: 9999px; background: #ff7b42; color: white; font-weight: 600; padding: 0.45rem 0.8rem; cursor: pointer; }
 
         @media (max-width: 520px) {
-            .notification-bell-panel { width: min(23rem, calc(100vw - 1rem)); }
+            .notification-bell-panel {
+                position: fixed;
+                top: var(--notification-panel-top, 5rem);
+                right: 0.5rem;
+                left: 0.5rem;
+                display: flex;
+                width: auto;
+                max-height: calc(100dvh - var(--notification-panel-top, 5rem) - env(safe-area-inset-bottom) - 0.5rem);
+                flex-direction: column;
+            }
+            .notification-bell-header { flex: 0 0 auto; }
+            .notification-bell-list { min-height: 0; max-height: none; flex: 1 1 auto; overscroll-behavior: contain; }
             .notification-toast-container { right: 0.5rem; bottom: max(0.5rem, env(safe-area-inset-bottom)); left: 0.5rem; }
-            .notification-toast { width: 100%; box-sizing: border-box; }
+            .notification-toast { width: 100%; max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow-y: auto; box-sizing: border-box; }
         }
     </style>
 </head>
@@ -422,6 +468,7 @@
                 <p class="text-sm text-gray-300 mt-1">Employee Portal</p>
             </div>
 
+            @php($sidebarNotificationCounts = \App\Support\StaffNotificationService::unreadSidebarCounts(auth()->user()))
             <nav class="mt-10 flex flex-col px-3">
                 <a href="{{ route('employee.dashboard') }}" class="nav-item px-5 py-3.5 {{ request()->routeIs('employee.dashboard') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt w-6"></i>
@@ -430,6 +477,7 @@
                 <a href="{{ route('employee.reservation') }}" class="nav-item px-5 py-3.5 {{ request()->routeIs('employee.reservation') ? 'active' : '' }}">
                     <i class="fas fa-calendar-check w-6"></i>
                     <span>Reservation</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="reservations" data-module-label="reservations" aria-label="{{ $sidebarNotificationCounts['reservations'] }} unread reservations" @if($sidebarNotificationCounts['reservations'] === 0) hidden @endif>{{ $sidebarNotificationCounts['reservations'] > 9 ? '9+' : ($sidebarNotificationCounts['reservations'] ?: '') }}</span>
                 </a>
                 <a href="{{ route('employee.calendar') }}" class="nav-item px-5 py-3.5 {{ request()->routeIs('employee.calendar') ? 'active' : '' }}">
                     <i class="fas fa-calendar-alt w-6"></i>
@@ -438,6 +486,7 @@
                 <a href="{{ route('employee.refunds') }}" class="nav-item px-5 py-3.5 {{ request()->routeIs('employee.refunds') ? 'active' : '' }}">
                     <i class="fas fa-rotate-left w-6"></i>
                     <span>Refund History</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="refunds" data-module-label="refunds" aria-label="{{ $sidebarNotificationCounts['refunds'] }} unread refunds" @if($sidebarNotificationCounts['refunds'] === 0) hidden @endif>{{ $sidebarNotificationCounts['refunds'] > 9 ? '9+' : ($sidebarNotificationCounts['refunds'] ?: '') }}</span>
                 </a>
                 <a href="{{ route('employee.checkin') }}" class="nav-item px-5 py-3.5 {{ request()->routeIs('employee.checkin') ? 'active' : '' }}">
                     <i class="fas fa-sign-in-alt w-6"></i>
@@ -446,14 +495,17 @@
                 <a href="{{ route('employee.room-status') }}" class="nav-item px-5 py-3.5 {{ request()->routeIs('employee.room-status') ? 'active' : '' }}">
                     <i class="fas fa-bed w-6"></i>
                     <span>Room Status</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="rooms" data-module-label="room updates" aria-label="{{ $sidebarNotificationCounts['rooms'] }} unread room updates" @if($sidebarNotificationCounts['rooms'] === 0) hidden @endif>{{ $sidebarNotificationCounts['rooms'] > 9 ? '9+' : ($sidebarNotificationCounts['rooms'] ?: '') }}</span>
                 </a>
                 <a href="{{ route('employee.guest-requests') }}" class="nav-item px-5 py-3.5 {{ request()->routeIs('employee.guest-requests') ? 'active' : '' }}">
                     <i class="fas fa-hotel w-6"></i>
                     <span>Guest Requests</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="requests" data-module-label="guest requests" aria-label="{{ $sidebarNotificationCounts['requests'] }} unread guest requests" @if($sidebarNotificationCounts['requests'] === 0) hidden @endif>{{ $sidebarNotificationCounts['requests'] > 9 ? '9+' : ($sidebarNotificationCounts['requests'] ?: '') }}</span>
                 </a>
                 <a href="{{ route('employee.messages') }}" class="nav-item px-5 py-3.5 {{ request()->routeIs('employee.messages') ? 'active' : '' }}">
                     <i class="fas fa-comments w-6"></i>
                     <span>Messages</span>
+                    <span class="sidebar-notification-badge" data-sidebar-module="messages" data-module-label="messages" aria-label="{{ $sidebarNotificationCounts['messages'] }} unread messages" @if($sidebarNotificationCounts['messages'] === 0) hidden @endif>{{ $sidebarNotificationCounts['messages'] > 9 ? '9+' : ($sidebarNotificationCounts['messages'] ?: '') }}</span>
                 </a>
             </nav>
 
@@ -584,6 +636,11 @@
             const markAllReadUrl = '{{ route('employee.notifications.mark-all-read') }}';
             let notificationsCache = [];
             const notificationSeenStorageKey = 'employee-notification-seen-ids';
+            const notificationHighlightStorageKey = 'employee-notification-highlight-room-id';
+            const notificationReservationStorageKey = 'employee-notification-highlight-reservation-id';
+            const notificationReservationTypeStorageKey = 'employee-notification-highlight-reservation-type';
+            const notificationReservationTabStorageKey = 'employee-notification-highlight-reservation-tab';
+            const notificationMessageStorageKey = 'employee-notification-highlight-message-id';
             const seenNotificationIds = new Set();
             let notificationBaselineLoaded = false;
 
@@ -596,6 +653,37 @@
                 console.warn('Could not restore notification state:', error);
             }
 
+            function persistNotificationTarget(targetUrl) {
+                if (!targetUrl) return;
+
+                try {
+                    const url = new URL(targetUrl, window.location.origin);
+                    const roomId = url.searchParams.get('room_id');
+                    const reservationId = url.searchParams.get('reservation_id');
+                    const reservationType = url.searchParams.get('reservation_type');
+                    const reservationTab = url.searchParams.get('tab');
+                    const messageId = url.searchParams.get('message_id');
+
+                    if (roomId) {
+                        sessionStorage.setItem(notificationHighlightStorageKey, roomId);
+                    }
+                    if (reservationId) {
+                        sessionStorage.setItem(notificationReservationStorageKey, reservationId);
+                    }
+                    if (reservationType) {
+                        sessionStorage.setItem(notificationReservationTypeStorageKey, reservationType);
+                    }
+                    if (reservationTab) {
+                        sessionStorage.setItem(notificationReservationTabStorageKey, reservationTab);
+                    }
+                    if (messageId) {
+                        sessionStorage.setItem(notificationMessageStorageKey, messageId);
+                    }
+                } catch (error) {
+                    console.warn('Could not queue employee notification target:', error);
+                }
+            }
+
             function formatRelativeTime(value) {
                 if (!value) return 'just now';
                 const date = new Date(value);
@@ -606,6 +694,33 @@
                 if (diffHours < 24) return diffHours + 'h ago';
                 const diffDays = Math.round(diffHours / 24);
                 return diffDays + 'd ago';
+            }
+
+            async function openNotification(notificationId, targetUrl) {
+                try {
+                    const response = await fetch(markReadUrl.replace('__ID__', notificationId), {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                        credentials: 'same-origin',
+                    });
+
+                    if (!response.ok) throw new Error(`Mark-read request returned ${response.status}`);
+                    const result = await response.json();
+                    updateBadge(result.unread_count ?? 0);
+                    notificationList?.querySelectorAll('.notification-item').forEach((item) => {
+                        if (item.dataset.id === String(notificationId)) item.classList.remove('unread');
+                    });
+
+                    if (targetUrl) {
+                        persistNotificationTarget(targetUrl);
+                        window.location.assign(targetUrl);
+                    }
+                } catch (error) {
+                    console.error('Employee notification could not be marked read:', error);
+                }
             }
 
             function renderNotificationList(items) {
@@ -631,19 +746,7 @@
 
                 notificationList.querySelectorAll('.notification-item').forEach(function (button) {
                     button.addEventListener('click', function () {
-                        const notificationId = button.dataset.id;
-                        const targetUrl = button.dataset.url;
-                        fetch(markReadUrl.replace('__ID__', notificationId), {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                'Accept': 'application/json',
-                            },
-                        }).catch(() => {});
-
-                        if (targetUrl) {
-                            window.location.href = targetUrl;
-                        }
+                        openNotification(button.dataset.id, button.dataset.url);
                     });
                 });
             }
@@ -657,6 +760,17 @@
                 }
                 notificationBadge.textContent = '0';
                 notificationBadge.classList.add('hidden');
+            }
+
+            function updateSidebarNotificationBadges(counts) {
+                if (!counts) return;
+
+                document.querySelectorAll('[data-sidebar-module]').forEach((badge) => {
+                    const count = Number(counts[badge.dataset.sidebarModule]) || 0;
+                    badge.hidden = count === 0;
+                    badge.textContent = count > 9 ? '9+' : (count ? String(count) : '');
+                    badge.setAttribute('aria-label', `${count} unread ${badge.dataset.moduleLabel}`);
+                });
             }
 
             function showToast(notification) {
@@ -678,9 +792,7 @@
                 const actionButton = toast.querySelector('.toast-action');
                 closeButton.addEventListener('click', () => toast.remove());
                 actionButton.addEventListener('click', () => {
-                    if (notification.url) {
-                        window.location.href = notification.url;
-                    }
+                    openNotification(notification.id, notification.url);
                     toast.remove();
                 });
                 toastContainer.appendChild(toast);
@@ -717,6 +829,7 @@
                         }
 
                         updateBadge(data.unread_count ?? data.data.filter(item => !item.is_read).length);
+                        updateSidebarNotificationBadges(data.module_counts);
                         renderNotificationList(data.data);
                         newItems.reverse().slice(0, 3).forEach(showToast);
                     })
@@ -724,13 +837,23 @@
             }
 
             if (notificationToggle && notificationPanel) {
+                const positionNotificationPanel = () => {
+                    const headerBottom = notificationToggle.closest('header')?.getBoundingClientRect().bottom
+                        ?? notificationToggle.getBoundingClientRect().bottom;
+                    notificationPanel.style.setProperty('--notification-panel-top', `${headerBottom + 8}px`);
+                };
+
                 notificationToggle.addEventListener('click', function () {
                     const hidden = notificationPanel.hidden;
                     notificationPanel.hidden = !hidden;
                     notificationToggle.setAttribute('aria-expanded', String(!notificationPanel.hidden));
                     if (!notificationPanel.hidden) {
+                        positionNotificationPanel();
                         loadNotifications();
                     }
+                });
+                window.addEventListener('resize', () => {
+                    if (!notificationPanel.hidden) positionNotificationPanel();
                 });
                 document.addEventListener('click', function (event) {
                     if (!notificationToggle.contains(event.target) && !notificationPanel.contains(event.target)) {

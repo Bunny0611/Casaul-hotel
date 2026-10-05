@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     const rows = Array.from(document.querySelectorAll('[data-room-row]'));
+    const roomHighlightStorageKey = 'employee-notification-highlight-room-id';
+    const persistedTargetRoomId = sessionStorage.getItem(roomHighlightStorageKey);
+    const targetRoomId = document.querySelector('.room-status-page')?.dataset.notificationRoomId || persistedTargetRoomId;
     const searchRoomInput = document.getElementById('search-room-number');
     const searchTypeInput = document.getElementById('search-room-type');
     const statusSelect = document.getElementById('filter-status');
@@ -161,4 +164,21 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     applyFilters();
+
+    if (targetRoomId) {
+        const targetRow = rows.find((row) => row.dataset.roomId === targetRoomId);
+        if (targetRow) {
+            targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetRow.classList.add('notification-room-highlight');
+            window.setTimeout(() => {
+                targetRow.classList.remove('notification-room-highlight');
+                sessionStorage.removeItem(roomHighlightStorageKey);
+            }, 3000);
+            return;
+        }
+    }
+
+    if (persistedTargetRoomId) {
+        sessionStorage.removeItem(roomHighlightStorageKey);
+    }
 });

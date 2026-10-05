@@ -107,8 +107,27 @@ class ChatbotController extends Controller
             $guest->name . ' sent a new message: ' . Str::limit($message, 120),
             [
                 'reference' => 'guest-message:' . $frontDeskMessage->id,
-                'url' => '/employee/messages',
+                'url' => route('employee.messages', [
+                    'filter' => 'all',
+                    'message_id' => $frontDeskMessage->id,
+                ]),
                 'type' => 'message',
+                'module' => 'messages',
+                'related_id' => $frontDeskMessage->id,
+                'related_type' => Message::class,
+            ]
+        );
+
+        StaffNotificationService::notifyAdmins(
+            'New front desk message',
+            $guest->name . ' sent a new message: ' . Str::limit($message, 120),
+            [
+                'reference' => 'admin-guest-message:' . $frontDeskMessage->id,
+                'url' => route('admin.messages'),
+                'type' => 'message',
+                'module' => 'messages',
+                'related_id' => $frontDeskMessage->id,
+                'related_type' => Message::class,
             ]
         );
 
@@ -176,6 +195,22 @@ class ChatbotController extends Controller
                 'reference' => 'housekeeping-request:' . $guestRequest->id,
                 'url' => '/housekeeping/guest-requests',
                 'type' => 'housekeeping',
+                'module' => 'requests',
+                'related_id' => $guestRequest->id,
+                'related_type' => GuestRequest::class,
+            ]
+        );
+
+        StaffNotificationService::notifyAdmins(
+            'New housekeeping request',
+            $guest->name . ' requested ' . strtolower($selectedType) . ' for room ' . ($reservation->room?->room_number ?? 'N/A') . '.',
+            [
+                'reference' => 'admin-housekeeping-request:' . $guestRequest->id,
+                'url' => route('admin.notifications'),
+                'type' => 'request',
+                'module' => 'requests',
+                'related_id' => $guestRequest->id,
+                'related_type' => GuestRequest::class,
             ]
         );
 

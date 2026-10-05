@@ -104,6 +104,12 @@
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
     }
 
+    .employee-chat-message.notification-message-highlight .employee-chat-bubble {
+        background: #ffe3ad !important;
+        color: #374151 !important;
+        transition: background-color 0.25s ease;
+    }
+
     .front-desk .employee-chat-bubble {
         background: #ff6b35;
         color: #fff;
@@ -493,6 +499,8 @@
     const employeeMessagesUrl = '{{ route('employee.messages', ['filter' => $filter]) }}';
     const employeeMarkConversationReadUrl = '{{ route('employee.messages.mark-read') }}';
     let selectedEmployeeConversationKey = @json($selectedConversationKey);
+    const notificationMessageId = @json($targetMessageId) || sessionStorage.getItem('employee-notification-highlight-message-id');
+    let notificationMessageHighlighted = false;
     let selectedMessagesSnapshot = null;
     let conversationSnapshot = null;
     let isRefreshingEmployeeMessages = false;
@@ -641,7 +649,7 @@
 
         const thread = document.getElementById('employee-chat-thread');
         thread.innerHTML = (conversation.messages || []).map((message) => `
-            <div class="employee-chat-message guest">
+            <div class="employee-chat-message guest" data-message-id="${message.id}">
                 <div class="employee-chat-bubble">${escapeEmployeeMessage(message.guest)}</div>
                 <span class="employee-chat-time">Guest · ${message.sent_at || ''}</span>
                 <button type="button" class="employee-forward-button" data-forward-message="${message.id}"><i class="fas fa-share"></i> Forward to staff</button>
@@ -649,6 +657,18 @@
             ${(message.replies || []).map((reply) => `<div class="employee-chat-message front-desk"><div class="employee-chat-bubble">${escapeEmployeeMessage(reply.reply)}</div><span class="employee-chat-time">Front Desk · ${reply.replied_at || ''}</span></div>`).join('')}
         `).join('');
         thread.scrollTop = thread.scrollHeight;
+        if (notificationMessageId && !notificationMessageHighlighted) {
+            const targetMessage = thread.querySelector(`[data-message-id="${notificationMessageId}"]`);
+            if (targetMessage) {
+                targetMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetMessage.classList.add('notification-message-highlight');
+                window.setTimeout(() => {
+                    targetMessage.classList.remove('notification-message-highlight');
+                    sessionStorage.removeItem('employee-notification-highlight-message-id');
+                }, 3000);
+                notificationMessageHighlighted = true;
+            }
+        }
         selectedMessagesSnapshot = JSON.stringify(conversation.messages || []);
 
         document.querySelectorAll('.employee-conversation').forEach((item) => {

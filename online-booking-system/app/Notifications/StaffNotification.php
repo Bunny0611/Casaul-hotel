@@ -27,6 +27,7 @@ class StaffNotification extends Notification
             'url' => $this->payload['url'] ?? null,
             'related_id' => $this->payload['related_id'] ?? null,
             'related_type' => $this->payload['related_type'] ?? null,
+            'module' => $this->payload['module'] ?? null,
             'icon' => $this->payload['icon'] ?? 'fas fa-bell',
             'action_label' => $this->payload['action_label'] ?? 'View',
         ];

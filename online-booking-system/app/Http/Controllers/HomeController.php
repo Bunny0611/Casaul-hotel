@@ -962,8 +962,26 @@ class HomeController extends Controller
                         'reservation_type' => $reservation->getTable(),
                     ]),
                 'type' => 'reservation',
+                'module' => 'reservations',
                     'related_id' => $reservation->getKey(),
                     'related_type' => get_class($reservation),
+            ]
+        );
+
+        StaffNotificationService::notifyAdmins(
+            'New ' . $reservationLabel,
+            $validated['guest_name'] . ' submitted a new ' . $reservationLabel . '.',
+            [
+                'reference' => 'admin-reservation:' . $reservation->getTable() . ':' . $reservation->getKey(),
+                'url' => route('admin.reservations', [
+                    'tab' => $category,
+                    'reservation_id' => $reservation->getKey(),
+                    'reservation_type' => $reservation->getTable(),
+                ]),
+                'type' => 'reservation',
+                'module' => 'reservations',
+                'related_id' => $reservation->getKey(),
+                'related_type' => get_class($reservation),
             ]
         );
 
@@ -1316,13 +1334,14 @@ class HomeController extends Controller
             return redirect()->route('guest.records')->withErrors(['reservation' => 'This reservation cannot be cancelled.']);
         }
 
-        DB::transaction(function () use ($reservation) {
+        $refundId = null;
+        DB::transaction(function () use ($reservation, &$refundId) {
             $wasCheckedIn = $reservation->status === 'checked-in';
             $totalPaid = $this->overallReservationPaid($reservation);
             $refundAmount = round(min(max($totalPaid, 0), max((float) ($reservation->total_amount ?? 0), 0)), 2);
 
             if ($refundAmount > 0) {
-                $reservation->refunds()->create([
+                $refund = $reservation->refunds()->create([
                     'guest_name' => $reservation->guest_name,
                     'original_total' => round((float) $reservation->total_amount, 2),
                     'final_total' => 0,
@@ -1332,6 +1351,7 @@ class HomeController extends Controller
                     'refund_date' => now()->toDateString(),
                     'status' => 'Pending',
                 ]);
+                $refundId = $refund->id;
             }
 
             $reservation->update(['status' => 'cancelled']);
@@ -1345,13 +1365,68 @@ class HomeController extends Controller
             }
         });
 
+        if ($refundId !== null) {
+            $refundPayload = [
+                'reference' => 'refund-request:' . $refundId,
+                'type' => 'refund',
+                'module' => 'refunds',
+                'related_id' => $refundId,
+                'related_type' => \App\Models\Refund::class,
+            ];
+
+            StaffNotificationService::notifyEmployees(
+                'Refund pending review',
+                'A refund for ' . $reservation->guest_name . ' is pending review.',
+                $refundPayload + ['url' => route('employee.refunds')]
+            );
+            StaffNotificationService::notifyAdmins(
+                'Refund pending review',
+                'A refund for ' . $reservation->guest_name . ' is pending review.',
+                $refundPayload + ['url' => route('admin.refunds')]
+            );
+        }
+
         StaffNotificationService::notifyEmployees(
             'Reservation cancelled',
             $reservation->guest_name . ' cancelled a reservation for ' . ($reservation->room?->room_number ?? 'their booking') . '.',
             [
                 'reference' => 'reservation-cancelled:' . $reservation->getKey(),
-                'url' => '/employee/reservation',
+                'url' => route('employee.reservation', [
+                    'tab' => match ($reservation->getTable()) {
+                        'facility_reservations' => 'facilities',
+                        'event_reservations' => 'event',
+                        'dining_reservations' => 'dining',
+                        default => 'rooms',
+                    },
+                    'reservation_id' => $reservation->getKey(),
+                    'reservation_type' => $reservation->getTable(),
+                ]),
                 'type' => 'reservation',
+                'module' => 'reservations',
+                'related_id' => $reservation->getKey(),
+                'related_type' => get_class($reservation),
+            ]
+        );
+
+        StaffNotificationService::notifyAdmins(
+            'Reservation cancelled',
+            $reservation->guest_name . ' cancelled a reservation for ' . ($reservation->room?->room_number ?? 'their booking') . '.',
+            [
+                'reference' => 'admin-reservation-cancelled:' . $reservation->getTable() . ':' . $reservation->getKey(),
+                'url' => route('admin.reservations', [
+                    'tab' => match ($reservation->getTable()) {
+                        'facility_reservations' => 'facilities',
+                        'event_reservations' => 'event',
+                        'dining_reservations' => 'dining',
+                        default => 'rooms',
+                    },
+                    'reservation_id' => $reservation->getKey(),
+                    'reservation_type' => $reservation->getTable(),
+                ]),
+                'type' => 'reservation',
+                'module' => 'reservations',
+                'related_id' => $reservation->getKey(),
+                'related_type' => get_class($reservation),
             ]
         );
 
@@ -1448,6 +1523,7 @@ class HomeController extends Controller
         }
 
         $createdIds = [];
+        $createdEmployeeRequestIds = [];
         foreach ($validItems as $item) {
             $legacyReservationId = $reservation->getAttribute('request_reservation_id');
             $reservationType = $reservation->getAttribute('reservation_type')
@@ -1476,9 +1552,13 @@ class HomeController extends Controller
             ]);
 
             $createdIds[] = $guestRequest->id;
+            if ($item['department'] === 'Employee') {
+                $createdEmployeeRequestIds[] = $guestRequest->id;
+            }
         }
 
         $firstRequestId = $createdIds[0] ?? null;
+        $firstEmployeeRequestId = $createdEmployeeRequestIds[0] ?? null;
 
         $hasHousekeepingRequest = collect($validItems)->contains(fn (array $item) => ($item['department'] ?? '') === 'Housekeeping');
 
@@ -1487,8 +1567,29 @@ class HomeController extends Controller
             $guest->name . ' submitted a guest request requiring staff attention.',
             [
                 'reference' => 'guest-request:' . ($firstRequestId ?? 'new'),
-                'url' => '/employee/guest-requests',
+                'url' => $firstEmployeeRequestId
+                    ? route('employee.guest-requests', [
+                        'search' => 'REQ-' . str_pad($firstEmployeeRequestId, 4, '0', STR_PAD_LEFT),
+                        'request_id' => $firstEmployeeRequestId,
+                    ])
+                    : route('employee.guest-requests'),
                 'type' => 'request',
+                'module' => 'requests',
+                'related_id' => $firstEmployeeRequestId,
+                'related_type' => $firstEmployeeRequestId ? GuestRequest::class : null,
+            ]
+        );
+
+        StaffNotificationService::notifyAdmins(
+            'New guest request',
+            $guest->name . ' submitted a guest request requiring staff attention.',
+            [
+                'reference' => 'admin-guest-request:' . ($firstRequestId ?? 'new'),
+                'url' => route('admin.notifications'),
+                'type' => 'request',
+                'module' => 'requests',
+                'related_id' => $firstRequestId,
+                'related_type' => GuestRequest::class,
             ]
         );
 
@@ -1587,11 +1688,24 @@ class HomeController extends Controller
             'message' => 'required|string',
         ]);
         
-        Message::create([
+        $message = Message::create([
             'customer_name' => $validated['name'],
             'customer_email' => $validated['email'],
             'message' => $validated['message'],
         ]);
+
+        StaffNotificationService::notifyAdmins(
+            'New guest message',
+            $validated['name'] . ' sent a new message.',
+            [
+                'reference' => 'admin-guest-message:' . $message->id,
+                'url' => route('admin.messages'),
+                'type' => 'message',
+                'module' => 'messages',
+                'related_id' => $message->id,
+                'related_type' => Message::class,
+            ]
+        );
         
         return redirect()->back()->with('success', 'Message sent successfully! We will get back to you soon.');
     }
