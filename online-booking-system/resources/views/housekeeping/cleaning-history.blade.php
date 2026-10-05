@@ -23,6 +23,12 @@
     .history-table th { color: #81756f; font-size: .68rem; letter-spacing: .06em; }
     .history-table tbody tr:hover { background: #fbfdfb; }
     .completed-badge { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; padding: .35rem .6rem; background: #def4e6; color: #348152; font-size: .7rem; font-weight: 700; }
+    .history-pagination { display:flex; justify-content:flex-end; padding:12px 16px; border-top:1px solid #e8e1de; background:#fff; }
+    .history-pagination[hidden] { display:none; }
+    .history-pagination-controls { display:inline-flex; align-items:center; gap:8px; }
+    .history-pagination button, .history-pagination .current { display:inline-flex; width:32px; height:32px; align-items:center; justify-content:center; border:1px solid #d9e3eb; border-radius:8px; background:#fff; color:#344d5b; font:inherit; font-size:14px; font-weight:700; }
+    .history-pagination button:disabled { opacity:.4; cursor:not-allowed; }
+    .history-pagination .current { border-color:#dc2626; background:#dc2626; color:#fff; }
     @media (max-width: 700px) { .history-stats { grid-template-columns: 1fr; } .history-hero { align-items: flex-start; } }
 </style>
 <div class="history-page">
@@ -31,4 +37,45 @@
     @if (session('success'))<div class="mb-5 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{{ session('success') }}</div>@endif
     <div class="history-panel"><div class="history-panel-header"><div><h3>Completed Cleaning Records</h3><p>Every completed task remains available for reference.</p></div><span class="history-count">{{ $tasks->count() }} record{{ $tasks->count() === 1 ? '' : 's' }}</span></div><div class="overflow-x-auto"><table class="history-table min-w-[760px] w-full text-left text-sm"><thead class="text-xs uppercase"><tr><th class="p-4">Room</th><th class="p-4">Task</th><th class="p-4">Assigned Staff</th><th class="p-4">Date</th><th class="p-4">Time</th><th class="p-4">Status</th></tr></thead><tbody class="divide-y divide-gray-100">@forelse($tasks as $task)<tr><td class="p-4 font-semibold">{{ $task->room->room_number }}</td><td class="p-4">{{ $task->task }}</td><td class="p-4">{{ $task->assignedStaff?->name ?? 'Unassigned' }}</td><td class="p-4">{{ $task->finished_at?->format('M d, Y') ?? $task->scheduled_date->format('M d, Y') }}</td><td class="p-4">{{ $task->finished_at?->format('g:i A') ?? 'N/A' }}</td><td class="p-4"><span class="completed-badge"><i class="fas fa-check-circle"></i>Completed</span></td></tr>@empty<tr><td colspan="6" class="p-10 text-center text-gray-500">No completed cleaning records.</td></tr>@endforelse</tbody></table></div></div>
 </div>
+<script>
+    const historyTable = document.querySelector('.history-table');
+
+    if (historyTable) {
+        const historyRows = Array.from(historyTable.querySelectorAll('tbody tr')).filter((row) => !row.querySelector('td[colspan]'));
+        const historyPageSize = 5;
+        let currentHistoryPage = 1;
+        const historyPagination = document.createElement('div');
+        historyPagination.className = 'history-pagination';
+        historyPagination.setAttribute('aria-label', 'Cleaning history pages');
+        historyTable.parentElement.insertAdjacentElement('afterend', historyPagination);
+
+        function renderHistoryPage() {
+            const totalPages = Math.max(1, Math.ceil(historyRows.length / historyPageSize));
+            currentHistoryPage = Math.min(currentHistoryPage, totalPages);
+            const firstVisibleRow = (currentHistoryPage - 1) * historyPageSize;
+
+            historyRows.forEach((row, index) => {
+                row.hidden = index < firstVisibleRow || index >= firstVisibleRow + historyPageSize;
+            });
+
+            historyPagination.hidden = historyRows.length <= historyPageSize;
+            historyPagination.innerHTML = `
+                <div class="history-pagination-controls">
+                    <button type="button" data-history-page="${currentHistoryPage - 1}" ${currentHistoryPage === 1 ? 'disabled' : ''} aria-label="Previous page"><i class="fas fa-chevron-left"></i></button>
+                    <span class="current" aria-current="page">${currentHistoryPage}</span>
+                    <button type="button" data-history-page="${currentHistoryPage + 1}" ${currentHistoryPage === totalPages ? 'disabled' : ''} aria-label="Next page"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            `;
+        }
+
+        historyPagination.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-history-page]');
+            if (!button || button.disabled) return;
+            currentHistoryPage = Number(button.dataset.historyPage);
+            renderHistoryPage();
+        });
+
+        renderHistoryPage();
+    }
+</script>
 @endsection

@@ -692,7 +692,7 @@
             <a href="{{ route('housekeeping.room-status-update') }}" class="filter-clear" style="display:inline-flex; align-items:center; justify-content:center; text-decoration:none;"> <i class="fas fa-times"></i> Clear Filters</a>
         </form>
 
-        <div class="room-table-wrap">
+        <div class="room-table-wrap" id="room-status-table">
             <table class="room-table">
                 <thead>
                     <tr>
@@ -775,7 +775,7 @@
 
                 <div class="table-page-controls">
                     @if($currentPage > 1)
-                        <a href="{{ route('housekeeping.room-status-update', array_merge(request()->query(), ['page' => $prevPage])) }}" class="table-page-btn" aria-label="Previous page"><i class="fas fa-chevron-left"></i></a>
+                        <a href="{{ route('housekeeping.room-status-update', array_merge(request()->query(), ['page' => $prevPage])) }}#room-status-table" class="table-page-btn" aria-label="Previous page"><i class="fas fa-chevron-left"></i></a>
                     @else
                         <span class="table-page-btn is-disabled" aria-label="Previous page"><i class="fas fa-chevron-left"></i></span>
                     @endif
@@ -783,7 +783,7 @@
                     <span class="table-page-number">{{ $currentPage }}</span>
 
                     @if($currentPage < $totalPages)
-                        <a href="{{ route('housekeeping.room-status-update', array_merge(request()->query(), ['page' => $nextPage])) }}" class="table-page-btn" aria-label="Next page"><i class="fas fa-chevron-right"></i></a>
+                        <a href="{{ route('housekeeping.room-status-update', array_merge(request()->query(), ['page' => $nextPage])) }}#room-status-table" class="table-page-btn" aria-label="Next page"><i class="fas fa-chevron-right"></i></a>
                     @else
                         <span class="table-page-btn is-disabled" aria-label="Next page"><i class="fas fa-chevron-right"></i></span>
                     @endif

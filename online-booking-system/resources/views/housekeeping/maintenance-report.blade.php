@@ -357,6 +357,34 @@
         overflow-x: auto;
     }
 
+    .maintenance-pagination {
+        display: flex;
+        justify-content: flex-end;
+        padding: 12px 16px;
+        border-top: 1px solid #e7eaf0;
+        background: #fff;
+    }
+
+    .maintenance-pagination[hidden] { display: none; }
+    .maintenance-pagination-controls { display: inline-flex; align-items: center; gap: 8px; }
+    .maintenance-pagination button,
+    .maintenance-pagination .current {
+        display: inline-flex;
+        width: 32px;
+        height: 32px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #d9e3eb;
+        border-radius: 8px;
+        background: #fff;
+        color: #344d5b;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 700;
+    }
+    .maintenance-pagination button:disabled { opacity: .4; cursor: not-allowed; }
+    .maintenance-pagination .current { border-color: #dc2626; background: #dc2626; color: #fff; }
+
     .maintenance-table {
     width: 100%;
     min-width: 950px;
@@ -1574,6 +1602,8 @@
 
             </div>
 
+            <div class="maintenance-pagination" id="maintenancePagination" aria-label="Maintenance report pages" hidden></div>
+
             <div class="mobile-records">
 
                 @if (false)
@@ -2673,6 +2703,23 @@
 
 
     let activeStatusFilter = "all";
+    let currentReportPage = 1;
+    const reportsPerPage = 5;
+    const reportRows = Array.from(document.querySelectorAll(".maintenance-table tbody tr[data-report-status]"));
+    const reportPagination = document.getElementById("maintenancePagination");
+
+    function renderReportPagination(filteredRows) {
+        const totalPages = Math.max(1, Math.ceil(filteredRows.length / reportsPerPage));
+        currentReportPage = Math.min(currentReportPage, totalPages);
+        reportPagination.hidden = filteredRows.length <= reportsPerPage;
+        reportPagination.innerHTML = `
+            <div class="maintenance-pagination-controls">
+                <button type="button" data-report-page="${currentReportPage - 1}" ${currentReportPage === 1 ? "disabled" : ""} aria-label="Previous page"><i class="fas fa-chevron-left"></i></button>
+                <span class="current" aria-current="page">${currentReportPage}</span>
+                <button type="button" data-report-page="${currentReportPage + 1}" ${currentReportPage === totalPages ? "disabled" : ""} aria-label="Next page"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        `;
+    }
 
     function applyReportFilters() {
         const searchValue = document
@@ -2681,18 +2728,35 @@
             .toLowerCase()
             .trim();
 
-        document.querySelectorAll(".maintenance-table tbody tr").forEach(function (row) {
+        const filteredRows = reportRows.filter(function (row) {
             const matchesSearch = row.textContent.toLowerCase().includes(searchValue);
             const rowStatus = row.dataset.reportStatus;
             const matchesStatus = activeStatusFilter === "all" ||
                 (activeStatusFilter === "repairing" && ["repairing", "in progress"].includes(rowStatus)) ||
                 rowStatus === activeStatusFilter;
 
-            row.style.display = matchesSearch && matchesStatus ? "" : "none";
+            return matchesSearch && matchesStatus;
         });
+
+        const firstVisibleRow = (currentReportPage - 1) * reportsPerPage;
+        reportRows.forEach(function (row) { row.style.display = "none"; });
+        filteredRows.slice(firstVisibleRow, firstVisibleRow + reportsPerPage).forEach(function (row) {
+            row.style.display = "";
+        });
+        renderReportPagination(filteredRows);
     }
 
-    document.getElementById("reportSearch").addEventListener("input", applyReportFilters);
+    document.getElementById("reportSearch").addEventListener("input", function () {
+        currentReportPage = 1;
+        applyReportFilters();
+    });
+
+    reportPagination.addEventListener("click", function (event) {
+        const button = event.target.closest("button[data-report-page]");
+        if (!button || button.disabled) return;
+        currentReportPage = Number(button.dataset.reportPage);
+        applyReportFilters();
+    });
 
     document.querySelectorAll("[data-status-filter]").forEach(function (badge) {
         badge.addEventListener("click", function () {
@@ -2700,9 +2764,12 @@
             document.querySelectorAll("[data-status-filter]").forEach(function (item) {
                 item.classList.toggle("active", item === badge);
             });
+            currentReportPage = 1;
             applyReportFilters();
         });
     });
+
+    applyReportFilters();
 
 </script>
 

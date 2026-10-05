@@ -1,6 +1,12 @@
 @extends('housekeeping.layout')
 
 @section('content')
+@php
+	$roomsPerPage = 5;
+	$totalRoomPages = max(1, (int) ceil($rooms->count() / $roomsPerPage));
+	$currentRoomPage = min(max(1, (int) request()->query('page', 1)), $totalRoomPages);
+	$pagedRooms = $rooms->slice(($currentRoomPage - 1) * $roomsPerPage, $roomsPerPage)->values();
+@endphp
 
 <style>
 	.hk-dashboard {
@@ -489,6 +495,35 @@
 		color: #374151;
 	}
 
+	.rooms-pagination {
+		display: flex;
+		justify-content: flex-end;
+		padding: 12px 16px;
+		border-top: 1px solid #e7e5e4;
+		background: #fbfbfa;
+	}
+
+	.rooms-pagination-controls { display: inline-flex; align-items: center; gap: 8px; }
+	.rooms-pagination a,
+	.rooms-pagination .disabled,
+	.rooms-pagination .current {
+		display: inline-flex;
+		width: 32px;
+		height: 32px;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid #d9e3eb;
+		border-radius: 8px;
+		background: #fff;
+		color: #344d5b;
+		font-size: 14px;
+		font-weight: 700;
+		line-height: 1;
+		text-decoration: none;
+	}
+	.rooms-pagination .disabled { opacity: .4; }
+	.rooms-pagination .current { border-color: #dc2626; background: #dc2626; color: #fff; }
+
 	.room-status-badge {
 		display: inline-flex;
 		align-items: center;
@@ -695,7 +730,7 @@
 			</div>
 		</div>
 
-		<div class="table-wrapper">
+		<div class="table-wrapper" id="room-cleaning-table">
 			<table class="rooms-table">
 				<thead>
 					<tr>
@@ -708,7 +743,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					@forelse($rooms as $room)
+					@forelse($pagedRooms as $room)
 						@php
 							$roomStatus = strtolower((string) ($room->status ?? ''));
 							$cleaningStatus = strtolower((string) ($room->cleaning_status ?? ''));
@@ -783,6 +818,27 @@
 				</tbody>
 			</table>
 		</div>
+		@if($totalRoomPages > 1)
+			@php
+				$previousRoomPage = max(1, $currentRoomPage - 1);
+				$nextRoomPage = min($totalRoomPages, $currentRoomPage + 1);
+			@endphp
+			<div class="rooms-pagination">
+				<div class="rooms-pagination-controls">
+					@if($currentRoomPage > 1)
+						<a href="{{ route('housekeeping.dashboard', array_merge(request()->query(), ['page' => $previousRoomPage])) }}#room-cleaning-table" aria-label="Previous room page"><i class="fas fa-chevron-left"></i></a>
+					@else
+						<span class="disabled" aria-label="Previous room page"><i class="fas fa-chevron-left"></i></span>
+					@endif
+					<span class="current" aria-label="Current page">{{ $currentRoomPage }}</span>
+					@if($currentRoomPage < $totalRoomPages)
+						<a href="{{ route('housekeeping.dashboard', array_merge(request()->query(), ['page' => $nextRoomPage])) }}#room-cleaning-table" aria-label="Next room page"><i class="fas fa-chevron-right"></i></a>
+					@else
+						<span class="disabled" aria-label="Next room page"><i class="fas fa-chevron-right"></i></span>
+					@endif
+				</div>
+			</div>
+		@endif
 	</div>
 </div>
 

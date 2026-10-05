@@ -1094,7 +1094,7 @@
                     </button>
                 </div>
 
-                <div class="request-table-wrap" data-scrollbar-control="guest-requests">
+                <div class="request-table-wrap" id="guest-request-table" data-scrollbar-control="guest-requests">
                     <table class="request-table">
                         <thead>
                             <tr>
@@ -1151,7 +1151,7 @@
                     @endphp
                     <div class="pagination">
                         @if($currentPage > 1)
-                            <a href="{{ route('housekeeping.guest-requests', array_merge(request()->query(), ['page' => $previousPage])) }}" aria-label="Previous page"><i class="fas fa-chevron-left"></i></a>
+                            <a href="{{ route('housekeeping.guest-requests', array_merge(request()->query(), ['page' => $previousPage])) }}#guest-request-table" aria-label="Previous page"><i class="fas fa-chevron-left"></i></a>
                         @else
                             <span class="disabled" aria-label="Previous page"><i class="fas fa-chevron-left"></i></span>
                         @endif
@@ -1159,7 +1159,7 @@
                         <span class="current" aria-label="Current page">{{ $currentPage }}</span>
 
                         @if($currentPage < $totalPages)
-                            <a href="{{ route('housekeeping.guest-requests', array_merge(request()->query(), ['page' => $nextPage])) }}" aria-label="Next page"><i class="fas fa-chevron-right"></i></a>
+                            <a href="{{ route('housekeeping.guest-requests', array_merge(request()->query(), ['page' => $nextPage])) }}#guest-request-table" aria-label="Next page"><i class="fas fa-chevron-right"></i></a>
                         @else
                             <span class="disabled" aria-label="Next page"><i class="fas fa-chevron-right"></i></span>
                         @endif
