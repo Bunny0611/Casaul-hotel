@@ -96,16 +96,16 @@
 
             <div class="about-people-gallery" aria-label="Casaul Hotel culinary selections">
                 <figure class="about-people-main">
-                    <img src="{ asset('image/chef.jpg') }}" alt="Freshly prepared dumplings served at Casaul Hotel" loading="lazy">
+                    <img src="{{ asset('image/chef.jpg') }}" alt="Freshly prepared dumplings served at Casaul Hotel" loading="lazy">
                     <figcaption>Our Culinary Team</figcaption>
                 </figure>
                 <div class="about-people-side">
                     <figure>
-                        <img src="{ asset('image/chefa.jpg') }}" alt="Carefully plated chicken entree from the Casaul Hotel menu" loading="lazy">
+                        <img src="{{ asset('image/chefa.jpg') }}" alt="Carefully plated chicken entree from the Casaul Hotel menu" loading="lazy">
                         <figcaption>Crafted with Care</figcaption>
                     </figure>
                     <figure>
-                        <img src="{ asset('image/chefb.jpg') }}" alt="Freshly prepared sushi platter from the Casaul Hotel menu" loading="lazy">
+                        <img src="{{ asset('image/chefb.jpg') }}" alt="Freshly prepared sushi platter from the Casaul Hotel menu" loading="lazy">
                         <figcaption>A Passion for Every Plate</figcaption>
                     </figure>
                 </div>
@@ -142,7 +142,7 @@
 
                 <article class="about-experience-item">
                     <div class="about-experience-image-wrap">
-                        <img src="{{ asset('image/birthday-event.jpg') }}" alt="Wedding celebration at an outdoor venue" loading="lazy">
+                        <img src="{{ asset('image/birthday-event.png') }}" alt="Wedding celebration at an outdoor venue" loading="lazy">
                     </div>
                     <div class="about-experience-meta">
                         <span class="about-experience-number">03</span>
