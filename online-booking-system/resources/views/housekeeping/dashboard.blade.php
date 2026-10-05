@@ -818,7 +818,7 @@
 				</tbody>
 			</table>
 		</div>
-		@if($totalRoomPages > 1)
+		@if($rooms->isNotEmpty())
 			@php
 				$previousRoomPage = max(1, $currentRoomPage - 1);
 				$nextRoomPage = min($totalRoomPages, $currentRoomPage + 1);

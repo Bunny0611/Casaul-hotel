@@ -15,7 +15,7 @@
             </div>
         </div>
         <div class="events-hero-image">
-            <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&amp;fit=crop&amp;w=1800&amp;q=85" alt="Romantic wedding celebration in an elegant outdoor setting">
+            <img src="{{ asset('image/Basic%20Birthday%20Package.png') }}" alt="Basic birthday package at Casaul Hotel">
         </div>
     </section>
 
@@ -27,7 +27,7 @@
         <div class="events-card-grid">
             <article class="events-detail-card" id="wedding-details">
                 <div class="events-detail-image">
-                    <img src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&amp;fit=crop&amp;w=1100&amp;q=85" alt="Elegant wedding reception venue dressed for an intimate celebration" loading="lazy">
+                    <img src="{{ asset('image/Basic%20Wedding%20Package.png') }}" alt="Basic wedding package at Casaul Hotel" loading="lazy">
                     <span class="events-detail-icon" aria-hidden="true"><i class="fas fa-ring"></i></span>
                 </div>
                 <div class="events-detail-copy">
@@ -44,7 +44,7 @@
             </article>
             <article class="events-detail-card" id="birthday-details">
                 <div class="events-detail-image">
-                    <img src="{{ asset('image/birthday-event.png') }}" alt="Colorful birthday celebration with balloons and festive decorations" loading="lazy">
+                    <img src="{{ asset('image/Deluxe%20Birthday%20Package.jpg') }}" alt="Deluxe birthday celebration with a geometric balloon backdrop" loading="lazy">
                     <span class="events-detail-icon" aria-hidden="true"><i class="fas fa-cake-candles"></i></span>
                 </div>
                 <div class="events-detail-copy">
@@ -92,7 +92,7 @@
     </section>
 
     <section class="events-promotion events-promotion--wedding" id="wedding-promotion" aria-labelledby="wedding-promotion-title">
-        <img src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&amp;fit=crop&amp;w=1200&amp;q=85" alt="Candlelit wedding reception table with elegant floral details" loading="lazy">
+        <img src="{{ asset('image/Premium%20Wedding%20Package.jpg') }}" alt="Premium wedding package at Casaul Hotel" loading="lazy">
         <div class="events-promotion-copy">
             <p class="events-eyebrow">For Your Special Day</p>
             <h2 id="wedding-promotion-title">Begin Your Forever at CASAUL</h2>
@@ -110,7 +110,7 @@
             <a href="{{ route('reservation') }}" class="events-button events-button--primary">Start Planning Your Birthday <span aria-hidden="true">&rarr;</span></a>
             <svg class="events-promotion-ornament events-promotion-ornament--left" viewBox="0 0 80 180" fill="none" aria-hidden="true"><path d="M13 177C30 146 24 112 38 82S45 38 33 8M34 46C49 43 58 33 61 19C45 22 36 31 34 46ZM32 79C17 67 11 53 15 38C28 46 33 60 32 79ZM26 109C41 104 51 93 53 77C37 83 27 94 26 109ZM20 138C8 128 3 116 6 103C18 111 22 124 20 138Z" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <img src="https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&amp;fit=crop&amp;w=1200&amp;q=85" alt="Birthday cake and balloons arranged for a festive celebration" loading="lazy">
+        <img src="{{ asset('image/birthday-event.png') }}" alt="Birthday celebration space at Casaul Hotel" loading="lazy">
     </section>
 
     <section class="events-final-cta" aria-labelledby="events-final-title">
