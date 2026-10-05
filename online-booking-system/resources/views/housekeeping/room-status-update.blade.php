@@ -490,7 +490,8 @@
 .cleaning-status.in_progress { background:#faf0d8; color:#98640d; }
 .table-update { display:inline-flex; align-items:center; justify-content:center; min-height:32px; padding:0 12px; border:1px solid #e8d6c7; border-radius:8px; background:#fff9f5; color:#9f4d2b; font-size:12px; font-weight:700; cursor:pointer; }
 .status-list { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
-.status-row { display:flex; align-items:center; gap:10px; color:#485761; font-size:12px; font-weight:600; }
+.status-row { display:grid; grid-template-columns:11px 38px minmax(0, 1fr); align-items:start; gap:8px; min-width:0; color:#485761; font-size:12px; font-weight:600; line-height:1.4; }
+.status-row .status-label { min-width:0; overflow-wrap:anywhere; }
 .legend-dot { width:11px; height:11px; border-radius:50%; display:inline-block; }
 .legend-title { margin:16px 0 12px; color:#263746; font-size:14px; font-weight:700; }
 .legend-note { margin-top:18px; padding:12px 14px; border-radius:12px; background:#f4f7f8; color:#66757f; font-size:12px; line-height:1.55; border:1px solid #e9edf0; }
@@ -539,6 +540,31 @@
 }
 
 @media (max-width:900px) {
+    .room-status-page.has-sidebar {
+        height:auto;
+        flex-direction:column;
+        gap:12px;
+    }
+    .room-status-page.has-sidebar .room-status-main {
+        width:100%;
+        flex:0 0 auto;
+    }
+    .room-status-page.has-sidebar .room-status-aside {
+        width:100%;
+        min-width:0;
+        max-width:100%;
+        flex:0 0 auto;
+    }
+    .room-status-page.has-sidebar .summary-grid {
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+    .room-status-page.has-sidebar .summary-card-label {
+        font-size:12px;
+        line-height:1.1;
+    }
+    .room-status-page.has-sidebar .summary-card-count {
+        font-size:16px;
+    }
     .status-header { flex-direction:column; align-items:flex-start; }
     .status-view-btn { width:100%; justify-content:space-between; }
     .toolbar {
@@ -546,7 +572,7 @@
         grid-template-columns:repeat(2, minmax(0, 1fr));
         gap:10px;
     }
-    .toolbar-search { grid-column:1 / -1; }
+    .toolbar-search { grid-column:1 / -1; width:100%; max-width:none; min-width:0; }
     .toolbar-select, .toolbar .filter-clear, .toolbar a.filter-clear {
         width:100%;
     }
@@ -561,8 +587,8 @@
     .room-status-main { padding:16px 14px 12px; }
     .status-title-wrap h2 { font-size:22px; }
     .status-title-wrap p { font-size:12px; }
-    .summary-grid { grid-template-columns:1fr; }
-    .other-room-grid { grid-template-columns:1fr; }
+    .summary-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .other-room-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
     .toolbar { grid-template-columns:1fr; }
     .toolbar-search, .toolbar-select, .toolbar .filter-clear, .toolbar a.filter-clear {
         grid-column:auto;
@@ -570,9 +596,15 @@
     }
     .filter-clear { min-width:0; }
     .status-view-btn { justify-content:space-between; }
+    .status-list { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px 14px; }
+    .status-row { grid-template-columns:10px minmax(0, 1fr); grid-template-rows:auto auto; align-items:start; gap:2px 6px; font-size:11px; }
+    .status-row > .legend-dot { grid-column:1; grid-row:1; }
+    .status-row > span:nth-child(2) { grid-column:2; grid-row:1; }
+    .status-row .status-label { grid-column:2; grid-row:2; }
     .room-table { min-width:680px; }
     .table-update { padding:0 8px; }
 }
+
 </style>
 
 <div class="room-status-page" id="roomStatusPage">
@@ -762,19 +794,19 @@
     <aside class="room-status-aside" id="statusLegendPanel">
         <div class="legend-title">Room Status Codes</div>
         <div class="status-list">
-            <div class="status-row"><span class="legend-dot" style="background:#2c8653;"></span> OC <span style="margin-left:4px;">Occupied Clean</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#d24b5a;"></span> OD <span style="margin-left:4px;">Occupied Dirty</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#2c8653;"></span> VR <span style="margin-left:4px;">Vacant Ready</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#2c8653;"></span> VC <span style="margin-left:4px;">Vacant Clean</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#b77a18;"></span> VD <span style="margin-left:4px;">Vacant Dirty</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#604bb9;"></span> HSD <span style="margin-left:4px;">House Use Dirty</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#2c8653;"></span> HSUC <span style="margin-left:4px;">House Use Clean</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#604bb9;"></span> OOO <span style="margin-left:4px;">Out of Order</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#4b5864;"></span> BLO <span style="margin-left:4px;">Blocked</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#4b5864;"></span> NS <span style="margin-left:4px;">No Show</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#4b5864;"></span> SO <span style="margin-left:4px;">Slept Out</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#4b5864;"></span> HU <span style="margin-left:4px;">House Use</span></div>
-            <div class="status-row"><span class="legend-dot" style="background:#4b5864;"></span> DND <span style="margin-left:4px;">Do Not Disturb</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#2c8653;"></span><span>OC</span><span class="status-label">Occupied Clean</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#d24b5a;"></span><span>OD</span><span class="status-label">Occupied Dirty</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#2c8653;"></span><span>VR</span><span class="status-label">Vacant Ready</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#2c8653;"></span><span>VC</span><span class="status-label">Vacant Clean</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#b77a18;"></span><span>VD</span><span class="status-label">Vacant Dirty</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#604bb9;"></span><span>HSD</span><span class="status-label">House Use Dirty</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#2c8653;"></span><span>HSUC</span><span class="status-label">House Use Clean</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#604bb9;"></span><span>OOO</span><span class="status-label">Out of Order</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#4b5864;"></span><span>BLO</span><span class="status-label">Blocked</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#4b5864;"></span><span>NS</span><span class="status-label">No Show</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#4b5864;"></span><span>SO</span><span class="status-label">Slept Out</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#4b5864;"></span><span>HU</span><span class="status-label">House Use</span></div>
+            <div class="status-row"><span class="legend-dot" style="background:#4b5864;"></span><span>DND</span><span class="status-label">Do Not Disturb</span></div>
         </div>
         <div class="legend-note">Room status shows the official hotel status code.<br>Cleaning status shows the current housekeeping condition.</div>
     </aside>

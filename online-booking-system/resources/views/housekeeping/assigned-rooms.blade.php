@@ -281,7 +281,7 @@
         }
         .task-form-section-wide { grid-column: auto; }
         .task-form-heading, .task-form-actions { grid-column: 1; }
-        .task-form-actions { flex-direction: column-reverse; justify-content: stretch; }
+        .task-form-actions { flex-direction: column-reverse; justify-content: stretch; padding-right: 1rem; padding-left: 1rem; }
         .task-form-cancel { width: 100%; }
         .task-form-submit { width: 100%; }
         .task-details-grid { grid-template-columns: 1fr; }

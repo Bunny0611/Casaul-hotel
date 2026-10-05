@@ -96,6 +96,15 @@
             background: #6b7280;
         }
 
+        .housekeeping-shell main [data-scrollbar-ready="true"] {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .housekeeping-shell main [data-scrollbar-ready="true"]::-webkit-scrollbar {
+            display: none;
+        }
+
         .hk-table-scrollbar {
             position: relative;
             width: 100%;
@@ -461,7 +470,7 @@
                    transform -translate-x-full transition-transform duration-300
                      md:translate-x-0 md:relative md:flex-shrink-0 md:overflow-y-auto md:static flex flex-col"
         >
-            <div class="p-6">
+            <div class="px-6 pt-6 pb-2">
 
                 <h1 class="text-2xl font-bold tracking-wider">
                     <i class="fas fa-hotel mr-2"></i>
@@ -474,7 +483,7 @@
 
             </div>
 
-            <nav class="mt-20 flex flex-col gap-2 px-3">
+            <nav class="mt-0 flex flex-col gap-2 px-3">
 
                 <a
                     href="{{ route('housekeeping.dashboard') }}"

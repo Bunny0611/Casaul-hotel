@@ -43,6 +43,15 @@
             ];
         })->values()->all();
     }
+
+    $allGuestRequests = $groupedRequests ?? ($requests ?? collect());
+    $perPage = 5;
+    $totalRequests = $allGuestRequests->count();
+    $totalPages = max(1, (int) ceil($totalRequests / $perPage));
+    $currentPage = min(max(1, (int) request()->query('page', 1)), $totalPages);
+    $pagedRequests = $allGuestRequests->slice(($currentPage - 1) * $perPage, $perPage)->values();
+    $showingFrom = $totalRequests > 0 ? (($currentPage - 1) * $perPage) + 1 : 0;
+    $showingTo = min($currentPage * $perPage, $totalRequests);
 @endphp
 
 <style>
@@ -489,7 +498,7 @@
     .request-table-footer {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: flex-end;
         padding: 10px 15px;
         color: #718096;
         font-size: 10px;
@@ -497,8 +506,9 @@
     }
 
     .pagination { display: flex; align-items: center; gap: 8px; }
-    .pagination button { width: 27px; height: 27px; color: #718096; background: #fff; border: 1px solid #e5eaf0; border-radius: 6px; }
+    .pagination button, .pagination a, .pagination .disabled, .pagination .current { width: 27px; height: 27px; display: inline-flex; align-items: center; justify-content: center; color: #718096; background: #fff; border: 1px solid #e5eaf0; border-radius: 6px; text-decoration: none; }
     .pagination .current { color: #fff; background: #dc2626; border-color: #dc2626; }
+    .pagination .disabled { opacity: 0.45; }
 
     .request-side-stack { display: grid; gap: 14px; align-content: stretch; }
     .request-side-stack .request-panel { height: 100%; display: flex; flex-direction: column; border-radius: 15px; }
@@ -862,7 +872,7 @@
         }
 
         .request-table td {
-            padding: 10px;
+            padding: 18px 10px;
             border-right: 1px solid #edf0f2;
             font-size: 11px;
         }
@@ -1097,7 +1107,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($groupedRequests ?? ($requests ?? collect()) as $request)
+                            @forelse($pagedRequests as $request)
                                 <tr>
                                     <td><strong>REQ-{{ str_pad($request->id, 4, '0', STR_PAD_LEFT) }}</strong></td>
                                     <td>
@@ -1135,8 +1145,25 @@
                     </table>
                 </div>
                 <div class="request-table-footer">
-                    <span>Showing {{ $requests->count() ? 1 : 0 }} to {{ $requests->count() }} of {{ $requests->count() }} requests</span>
-                    <div class="pagination"><button type="button" disabled aria-label="Previous page"><i class="fas fa-chevron-left"></i></button><button type="button" disabled aria-label="Current page">{{ $requests->count() ?: 0 }}</button><button type="button" disabled aria-label="Next page"><i class="fas fa-chevron-right"></i></button></div>
+                    @php
+                        $previousPage = max(1, $currentPage - 1);
+                        $nextPage = min($totalPages, $currentPage + 1);
+                    @endphp
+                    <div class="pagination">
+                        @if($currentPage > 1)
+                            <a href="{{ route('housekeeping.guest-requests', array_merge(request()->query(), ['page' => $previousPage])) }}" aria-label="Previous page"><i class="fas fa-chevron-left"></i></a>
+                        @else
+                            <span class="disabled" aria-label="Previous page"><i class="fas fa-chevron-left"></i></span>
+                        @endif
+
+                        <span class="current" aria-label="Current page">{{ $currentPage }}</span>
+
+                        @if($currentPage < $totalPages)
+                            <a href="{{ route('housekeeping.guest-requests', array_merge(request()->query(), ['page' => $nextPage])) }}" aria-label="Next page"><i class="fas fa-chevron-right"></i></a>
+                        @else
+                            <span class="disabled" aria-label="Next page"><i class="fas fa-chevron-right"></i></span>
+                        @endif
+                    </div>
                 </div>
             </div>
 

@@ -984,11 +984,13 @@
         }
 
         .table-wrapper {
-            display: none;
+            display: block;
+            width: 100%;
+            overflow-x: auto;
         }
 
         .mobile-records {
-            display: block;
+            display: none;
         }
     }
 
@@ -1309,7 +1311,7 @@
 
                     <tbody>
 
-                        @foreach ($reports as $report)
+                        @forelse ($reports as $report)
                             <tr data-report-status="{{ strtolower($report->status) }}">
                                 <td>
                                     <div class="room-number">{{ $report->room_number }}</div>
@@ -1325,7 +1327,13 @@
                                 <td><span class="status-badge status-{{ strtolower(str_replace(' ', '-', $report->status)) }}">{{ $report->status }}</span></td>
                                 <td><span class="person-name">{{ $report->reported_by }}</span></td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="7" style="padding: 26px 16px; text-align: center; color: #7b838a; font-size: 13px;">
+                                    No maintenance reports.
+                                </td>
+                            </tr>
+                        @endforelse
 
                         @if (false)
 
@@ -1844,6 +1852,17 @@
                 <form id="maintenanceReportForm" class="modal-body" method="POST" action="{{ route('housekeeping.maintenance-report.store') }}" enctype="multipart/form-data">
                     @csrf
 
+            @if ($errors->any())
+                <div class="form-alert form-alert-error" role="alert">
+                    <p>Please correct the following before submitting:</p>
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="modal-section">
 
                 <h3 class="modal-section-title">
@@ -1906,12 +1925,12 @@
                         </label>
 
                         <select name="category" class="form-control" required>
-                            <option>Electrical</option>
-                            <option>Plumbing</option>
-                            <option>Furniture</option>
-                            <option>Air Conditioning</option>
-                            <option>Bathroom</option>
-                            <option>Other</option>
+                            <option @selected(old('category', 'Electrical') === 'Electrical')>Electrical</option>
+                            <option @selected(old('category') === 'Plumbing')>Plumbing</option>
+                            <option @selected(old('category') === 'Furniture')>Furniture</option>
+                            <option @selected(old('category') === 'Air Conditioning')>Air Conditioning</option>
+                            <option @selected(old('category') === 'Bathroom')>Bathroom</option>
+                            <option @selected(old('category') === 'Other')>Other</option>
                         </select>
 
                     </div>
@@ -1923,10 +1942,10 @@
                         </label>
 
                         <select name="priority" class="form-control" required>
-                            <option>Low</option>
-                            <option>Medium</option>
-                            <option>High</option>
-                            <option>Urgent</option>
+                            <option @selected(old('priority', 'Low') === 'Low')>Low</option>
+                            <option @selected(old('priority') === 'Medium')>Medium</option>
+                            <option @selected(old('priority') === 'High')>High</option>
+                            <option @selected(old('priority') === 'Urgent')>Urgent</option>
                         </select>
 
                     </div>
@@ -1942,7 +1961,7 @@
                             class="form-control"
                             placeholder="Describe the maintenance issue"
                             required
-                        ></textarea>
+                        >{{ old('description') }}</textarea>
 
                     </div>
 
@@ -2603,6 +2622,10 @@
         hideModal("reportModal");
     }
 
+    @if ($errors->any())
+        openReportModal();
+    @endif
+
 
     document.addEventListener("click", function (event) {
 
@@ -2680,13 +2703,6 @@
             applyReportFilters();
         });
     });
-
-    const AUTO_REFRESH_MS = 15000;
-    setInterval(function () {
-        if (!document.hidden) {
-            window.location.reload();
-        }
-    }, AUTO_REFRESH_MS);
 
 </script>
 
