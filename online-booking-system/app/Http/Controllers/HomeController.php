@@ -22,6 +22,7 @@ use App\Models\DiningReservation;
 use App\Models\GuestRequest;
 use App\Support\ReservationPricing;
 use App\Support\RoomAvailability;
+use App\Support\StaffNotificationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -942,6 +943,30 @@ class HomeController extends Controller
             $request->session()->put('reservation_submission_' . $submissionToken, true);
         }
 
+        $reservationLabel = match ($category) {
+            'rooms' => 'room reservation',
+            'event' => 'event reservation',
+            'facilities' => 'facility reservation',
+            'dining' => 'dining reservation',
+            default => 'reservation',
+        };
+
+        StaffNotificationService::notifyEmployees(
+            'New ' . $reservationLabel,
+            $validated['guest_name'] . ' submitted a new ' . $reservationLabel . ' for ' . ($reservation->room?->room_number ?? $validated['guest_name']) . '.',
+            [
+                    'reference' => 'reservation:' . $reservation->getTable() . ':' . $reservation->getKey(),
+                    'url' => route('employee.reservation', [
+                        'tab' => $category,
+                        'reservation_id' => $reservation->getKey(),
+                        'reservation_type' => $reservation->getTable(),
+                    ]),
+                'type' => 'reservation',
+                    'related_id' => $reservation->getKey(),
+                    'related_type' => get_class($reservation),
+            ]
+        );
+
         return redirect()->route('reservation')->with('success', 'Your reservation request has been submitted. We will contact you soon.');
     }
     
@@ -1320,6 +1345,16 @@ class HomeController extends Controller
             }
         });
 
+        StaffNotificationService::notifyEmployees(
+            'Reservation cancelled',
+            $reservation->guest_name . ' cancelled a reservation for ' . ($reservation->room?->room_number ?? 'their booking') . '.',
+            [
+                'reference' => 'reservation-cancelled:' . $reservation->getKey(),
+                'url' => '/employee/reservation',
+                'type' => 'reservation',
+            ]
+        );
+
         return redirect()->route('guest.records')->with('success', 'Your reservation has been cancelled successfully.');
     }
 
@@ -1444,6 +1479,30 @@ class HomeController extends Controller
         }
 
         $firstRequestId = $createdIds[0] ?? null;
+
+        $hasHousekeepingRequest = collect($validItems)->contains(fn (array $item) => ($item['department'] ?? '') === 'Housekeeping');
+
+        StaffNotificationService::notifyEmployees(
+            'New guest request',
+            $guest->name . ' submitted a guest request requiring staff attention.',
+            [
+                'reference' => 'guest-request:' . ($firstRequestId ?? 'new'),
+                'url' => '/employee/guest-requests',
+                'type' => 'request',
+            ]
+        );
+
+        if ($hasHousekeepingRequest) {
+            StaffNotificationService::notifyHousekeeping(
+                'Guest housekeeping request',
+                $guest->name . ' submitted a new housekeeping request.',
+                [
+                    'reference' => 'guest-housekeeping-request:' . ($firstRequestId ?? 'new'),
+                    'url' => '/housekeeping/guest-requests',
+                    'type' => 'housekeeping',
+                ]
+            );
+        }
 
         return redirect()->route('guest.records')
             ->with('request_success', 'Your request has been submitted successfully.')

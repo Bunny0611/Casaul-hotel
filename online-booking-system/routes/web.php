@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HousekeepingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StaffMessageController;
 use App\Models\Message;
@@ -309,11 +310,15 @@ Route::prefix('employee')->name('employee.')->middleware(['auth', 'role:employee
     Route::get('/guest-requests/{id}', [AdminController::class, 'employeeGuestRequest'])->name('guest-requests.show');
     Route::patch('/guest-requests/{id}', [AdminController::class, 'updateEmployeeGuestRequest'])->name('guest-requests.update');
     Route::get('/messages', [AdminController::class, 'employeeMessages'])->name('messages');
+    Route::post('/messages/mark-read', [AdminController::class, 'markEmployeeMessagesRead'])->name('messages.mark-read');
 
     Route::post('/messages', [AdminController::class, 'storeEmployeeMessage'])->name('messages.store');
     Route::post('/messages/{id}/reply', [AdminController::class, 'replyMessage'])->name('messages.reply');
     Route::post('/messages/{id}/forward', [StaffMessageController::class, 'forwardGuestMessage'])->name('messages.forward');
     Route::post('/staff-messages', [StaffMessageController::class, 'store'])->name('staff-messages.store');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-read/{id}', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
 });
 
 // --- Protected Admin Routes (requires authentication) ---
@@ -387,6 +392,9 @@ Route::prefix('housekeeping')->name('housekeeping.')->middleware(['auth', 'role:
     Route::post('/guest-requests/{id}/mark-delivered', [HousekeepingController::class, 'markGuestRequestDelivered'])->name('guest-requests.mark-delivered');
     Route::get('/messages', [HousekeepingController::class, 'messages'])->name('messages');
     Route::post('/staff-messages', [StaffMessageController::class, 'store'])->name('staff-messages.store');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-read/{id}', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
     Route::get('/maintenance-report', [HousekeepingController::class, 'maintenanceReport'])->name('maintenance-report');
     Route::post('/maintenance-report', [HousekeepingController::class, 'storeMaintenanceReport'])->name('maintenance-report.store');
     Route::put('/maintenance-report/{maintenanceReport}', [HousekeepingController::class, 'updateMaintenanceReport'])->name('maintenance-report.update');
