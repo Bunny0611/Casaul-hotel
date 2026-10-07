@@ -353,11 +353,6 @@
                     <i class="fas fa-chart-bar w-6"></i>
                     <span>Reports</span>
                 </a>
-                <a href="{{ route('admin.notifications') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/notifications') ? 'active' : '' }}">
-                    <i class="fas fa-bell w-6"></i>
-                    <span>Notifications</span>
-                    <span class="sidebar-notification-badge" data-sidebar-module="notifications" data-module-label="notifications" aria-label="{{ $sidebarNotificationCounts['notifications'] }} unread notifications" @if($sidebarNotificationCounts['notifications'] === 0) hidden @endif>{{ $sidebarNotificationCounts['notifications'] > 9 ? '9+' : ($sidebarNotificationCounts['notifications'] ?: '') }}</span>
-                </a>
                 <a href="{{ route('admin.settings') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/settings') ? 'active' : '' }}">
                     <i class="fas fa-cog w-6"></i>
                     <span>Settings</span>
@@ -512,6 +507,27 @@
                 });
             }
 
+            function persistNotificationTarget(targetUrl) {
+                if (!targetUrl) return;
+
+                try {
+                    const url = new URL(targetUrl, window.location.origin);
+                    const roomId = url.searchParams.get('room_id');
+                    const reservationId = url.searchParams.get('reservation_id');
+                    const reservationType = url.searchParams.get('reservation_type');
+                    const reservationTab = url.searchParams.get('tab');
+                    const messageId = url.searchParams.get('message_id');
+
+                    if (roomId) sessionStorage.setItem('admin-notification-highlight-room-id', roomId);
+                    if (reservationId) sessionStorage.setItem('admin-notification-highlight-reservation-id', reservationId);
+                    if (reservationType) sessionStorage.setItem('admin-notification-highlight-reservation-type', reservationType);
+                    if (reservationTab) sessionStorage.setItem('admin-notification-highlight-reservation-tab', reservationTab);
+                    if (messageId) sessionStorage.setItem('admin-notification-highlight-message-id', messageId);
+                } catch (error) {
+                    console.warn('Could not queue admin notification target:', error);
+                }
+            }
+
             async function loadAdminNotifications() {
                 try {
                     const response = await fetch(notificationFeedUrl, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
@@ -547,13 +563,19 @@
                                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' },
                                     credentials: 'same-origin',
                                 });
-                                if (!response.ok) return;
-                                const state = await response.json();
-                                updateNotificationBadge(state.unread_count);
-                                if (item.url) window.location.assign(item.url);
-                                else loadAdminNotifications();
+                                if (response.ok) {
+                                    const state = await response.json();
+                                    updateNotificationBadge(state.unread_count);
+                                }
                             } catch (error) {
                                 console.error('Admin notification could not be marked read:', error);
+                            }
+
+                            if (item.url) {
+                                persistNotificationTarget(item.url);
+                                window.location.assign(item.url);
+                            } else {
+                                loadAdminNotifications();
                             }
                         });
                         notificationList.append(button);

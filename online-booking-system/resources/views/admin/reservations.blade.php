@@ -40,6 +40,12 @@
         z-index: 2;
     }
 
+    .reservation-management-page .reservation-item.notification-reservation-highlight {
+        background: #fff7ed !important;
+        box-shadow: inset 0 0 0 2px #fb923c;
+        transition: background-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
     body.dark .reservation-management-page .reservation-actions-column {
         background: #111827;
     }
@@ -962,7 +968,23 @@
         }
 
         const requestedTab = new URLSearchParams(window.location.search).get('tab');
-        activateTab(requestedTab || 'rooms');
+        const highlightedReservationTab = sessionStorage.getItem('admin-notification-highlight-reservation-tab') || 'rooms';
+        activateTab(requestedTab || highlightedReservationTab || 'rooms');
+
+        setTimeout(function () {
+            const highlightedReservationId = sessionStorage.getItem('admin-notification-highlight-reservation-id');
+            if (!highlightedReservationId) return;
+
+            const targetRow = document.querySelector('.reservation-item[data-reservation-id="' + highlightedReservationId + '"]');
+            if (!targetRow) return;
+
+            targetRow.classList.add('notification-reservation-highlight');
+            window.setTimeout(function () {
+                targetRow.classList.remove('notification-reservation-highlight');
+                sessionStorage.removeItem('admin-notification-highlight-reservation-id');
+                sessionStorage.removeItem('admin-notification-highlight-reservation-tab');
+            }, 3000);
+        }, 120);
 
         tabButtons.forEach(function(button) {
             button.addEventListener('click', function () {

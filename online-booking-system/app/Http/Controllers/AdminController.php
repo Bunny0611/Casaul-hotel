@@ -633,6 +633,7 @@ class AdminController extends Controller
     {
         $roomType = strtolower(trim((string) request()->query('room_type', '')));
         $roomSearch = trim((string) request()->query('room_search', ''));
+        $targetRoomId = request()->integer('room_id');
         $roomQuery = Room::orderBy('room_number');
 
         if (in_array($roomType, ['standard', 'deluxe'], true)) {
@@ -646,7 +647,12 @@ class AdminController extends Controller
             });
         }
 
-        $rooms = $roomQuery->paginate(5, ['*'], 'rooms_page')->appends([
+        $targetRoomIndex = $targetRoomId > 0
+            ? (clone $roomQuery)->orderBy('id')->pluck('id')->search(fn ($id) => (int) $id === $targetRoomId)
+            : false;
+        $targetRoomPage = $targetRoomIndex === false ? null : intdiv($targetRoomIndex, 5) + 1;
+
+        $rooms = $roomQuery->orderBy('id')->paginate(5, ['*'], 'rooms_page', $targetRoomPage)->appends([
             'room_type' => $roomType,
             'room_search' => $roomSearch,
         ]);
@@ -1659,6 +1665,58 @@ class AdminController extends Controller
                 $reservation->diningItems()->createMany($diningSelections);
             }
         }
+
+        $reservationLabel = match ($category) {
+            'rooms' => 'room reservation',
+            'event' => 'event reservation',
+            'facilities' => 'facility reservation',
+            'dining' => 'dining reservation',
+            default => 'reservation',
+        };
+
+        StaffNotificationService::notifyEmployees(
+            'New ' . $reservationLabel,
+            $validated['guest_name'] . ' created a new ' . $reservationLabel . '.',
+            [
+                'reference' => 'reservation:' . $reservation->getTable() . ':' . $reservation->getKey(),
+                'url' => route('employee.reservation', [
+                    'tab' => match ($category) {
+                        'facilities' => 'facilities',
+                        'event' => 'event',
+                        'dining' => 'dining',
+                        default => 'rooms',
+                    },
+                    'reservation_id' => $reservation->getKey(),
+                    'reservation_type' => $reservation->getTable(),
+                ]),
+                'type' => 'reservation',
+                'module' => 'reservations',
+                'related_id' => $reservation->getKey(),
+                'related_type' => get_class($reservation),
+            ]
+        );
+
+        StaffNotificationService::notifyAdmins(
+            'New ' . $reservationLabel,
+            $validated['guest_name'] . ' created a new ' . $reservationLabel . '.',
+            [
+                'reference' => 'admin-reservation:' . $reservation->getTable() . ':' . $reservation->getKey(),
+                'url' => route('admin.reservations', [
+                    'tab' => match ($category) {
+                        'facilities' => 'facilities',
+                        'event' => 'event',
+                        'dining' => 'dining',
+                        default => 'rooms',
+                    },
+                    'reservation_id' => $reservation->getKey(),
+                    'reservation_type' => $reservation->getTable(),
+                ]),
+                'type' => 'reservation',
+                'module' => 'reservations',
+                'related_id' => $reservation->getKey(),
+                'related_type' => get_class($reservation),
+            ]
+        );
 
         return $isEmployeeReservation
             ? redirect()->route('employee.reservation')->with('success', 'Reservation created successfully!')
@@ -3370,12 +3428,17 @@ class AdminController extends Controller
 
     public function notifications()
     {
+        $this->ensureAdmin();
+
         $messages = Message::latest()->get();
+
         return view('admin.notifications', compact('messages'));
     }
 
     public function markAllNotificationsRead()
     {
+        $this->ensureAdmin();
+
         Message::query()->where('is_read', false)->update(['is_read' => true]);
 
         return redirect()->route('admin.notifications')->with('success', 'All notifications marked as read.');
@@ -3383,6 +3446,13 @@ class AdminController extends Controller
 
     public function clearNotifications()
     {
+        $this->ensureAdmin();
+
+        $messageIds = Message::query()->pluck('id');
+        if ($messageIds->isNotEmpty()) {
+            MessageReply::query()->whereIn('message_id', $messageIds)->delete();
+        }
+
         $deletedCount = Message::query()->delete();
 
         return redirect()->route('admin.notifications')->with('success', $deletedCount . ' notification(s) deleted.');
