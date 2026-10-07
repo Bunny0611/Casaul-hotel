@@ -30,11 +30,9 @@
         <header class="home-centered-heading"><h2>Experience CASAUL</h2><div class="home-heading-ornament"><span></span><i class="fas fa-star"></i><span></span></div></header>
         <div class="home-experience-grid">
             <a href="{{ route('accommodation') }}" class="home-experience-card"><img src="{{ asset('storage/rooms/1790407370_6ab772cacfc26.png') }}" alt="CASAUL accommodation"><span class="home-experience-icon"><i class="fas fa-bed"></i></span><h3>Accommodation</h3><p>Relax in our thoughtfully designed rooms and enjoy a restful stay.</p><b>Explore Rooms</b></a>
-            <a href="{{ route('dining') }}" class="home-experience-card"><img src="{{ asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}" alt="CASAUL dining experience"><span class="home-experience-icon"><i class="fas fa-utensils"></i></span><h3>Dining</h3><p>Savor delicious cuisine crafted from the finest ingredients.</p><b>View Dining Options</b></a>
-                <a href="{{ route('dining') }}" class="home-experience-card"><img src="{{ secure_asset('image/chefb.jpg') }}" alt="CASAUL dining experience"><span class="home-experience-icon"><i class="fas fa-utensils"></i></span><h3>Dining</h3><p>Savor delicious cuisine crafted from the finest ingredients.</p><b>View Dining Options</b></a>
+            <a href="{{ route('dining') }}" class="home-experience-card"><img src="{{ secure_asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}" alt="CASAUL dining experience"><span class="home-experience-icon"><i class="fas fa-utensils"></i></span><h3>Dining</h3><p>Savor delicious cuisine crafted from the finest ingredients.</p><b>View Dining Options</b></a>
             <a href="{{ route('events') }}" class="home-experience-card"><img src="{{ asset('image/birthday-event.png') }}" alt="Wedding celebration in an elegant outdoor setting" loading="lazy"><span class="home-experience-icon"><i class="fas fa-calendar-alt"></i></span><h3>Events</h3><p>Host unforgettable events with our elegant venues and services.</p><b>Plan Your Event</b></a>
-            <a href="#home-facilities" class="home-experience-card"><img src="{{ asset('image/Horizon-Lounge.jpg') }}" alt="CASAUL Hotel facilities"><span class="home-experience-icon"><i class="fas fa-spa"></i></span><h3>Facilities</h3><p>Enjoy premium facilities designed for your comfort and relaxation.</p><b>Our Facilities</b></a>
-                <a href="#home-facilities" class="home-experience-card"><img src="{{ secure_asset('image/Horizon-Lounge.jpg') }}" alt="CASAUL Hotel facilities"><span class="home-experience-icon"><i class="fas fa-spa"></i></span><h3>Facilities</h3><p>Enjoy premium facilities designed for your comfort and relaxation.</p><b>Our Facilities</b></a>
+            <a href="#home-facilities" class="home-experience-card"><img src="{{ secure_asset('image/Horizon-Lounge.jpg') }}" alt="CASAUL Hotel facilities"><span class="home-experience-icon"><i class="fas fa-spa"></i></span><h3>Facilities</h3><p>Enjoy premium facilities designed for your comfort and relaxation.</p><b>Our Facilities</b></a>
         </div>
     </section>
 
@@ -46,8 +44,7 @@
         <div class="home-dining-grid">
             @foreach($bestSellingDining->take(6) as $category => $meal)
                 <article class="home-dining-card">
-                    <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? secure_asset('storage/' . ltrim($meal->image, '/')) : secure_asset('image/Royal-Suite-room.jpg') }}" alt="{{ $meal->name }}">
-                        <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? secure_asset('storage/' . ltrim($meal->image, '/')) : secure_asset('image/chefb.jpg') }}" alt="{{ $meal->name }}">
+                    <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? secure_asset('storage/' . ltrim($meal->image, '/')) : secure_asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}" alt="{{ $meal->name }}">
                     <div class="home-dining-card-body">
                         <span>{{ $category }}</span>
                         <h3>{{ $meal->name }}</h3>

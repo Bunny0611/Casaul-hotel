@@ -788,9 +788,18 @@
                 <div class="reservation-card-grid">
                     @foreach($events as $event)
                         <article class="reservation-card event-package-card" data-category="event" data-price="{{ $event->price }}" data-pricing-basis="{{ $event->pricing_basis ?? 'Per Event' }}" data-title="{{ $event->name }}" data-event-id="{{ $event->id }}" data-event-type="{{ $event->event_type }}" data-location="{{ $event->location ?? '' }}" data-optional-addons="{{ json_encode($event->optional_addons ?? []) }}" data-capacity="{{ $event->capacity }}" data-available-from="{{ $event->available_from ?: '08:00' }}" data-available-to="{{ $event->available_to ?: '22:00' }}" data-duration-hours="{{ $event->duration_hours ?: 4 }}">
-                            @if($event->image)
-                                <img src="{{ asset('storage/' . ltrim($event->image, '/')) }}" alt="{{ $event->name }}">
-                            @endif
+                            @php
+                                $eventType = strtolower($event->event_type ?? '');
+                                $eventName = strtolower($event->name);
+                                $eventFallbackImage = str_contains($eventType, 'wedding')
+                                    ? (str_contains($eventName, 'premium') ? 'image/Premium%20Wedding%20Package.jpg' : 'image/Basic%20Wedding%20Package.png')
+                                    : (str_contains($eventName, 'deluxe') ? 'image/Deluxe%20Birthday%20Package.jpg' : 'image/Basic%20Birthday%20Package.png');
+                                $eventImagePath = \\Illuminate\\Support\\Str::after(ltrim($event->image ?? '', '/'), 'storage/');
+                                $eventImage = $event->image && \\Illuminate\\Support\\Facades\\Storage::disk('public')->exists($eventImagePath)
+                                    ? secure_asset('storage/' . $eventImagePath)
+                                    : secure_asset($eventFallbackImage);
+                            @endphp
+                            <img src="{{ $eventImage }}" onerror="this.onerror=null;this.src='{{ secure_asset($eventFallbackImage) }}';" alt="{{ $event->name }}">
                             <div class="reservation-card-body event-package-body">
                                 <h4>{{ $event->name }}</h4>
                                 <p class="event-package-price"><span class="price">₱{{ number_format($event->price, 0) }}</span><span>per {{ strtolower(str_replace('Per ', '', $event->pricing_basis ?? 'Event')) }}</span></p>
