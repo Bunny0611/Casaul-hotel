@@ -794,8 +794,8 @@
                                 $eventFallbackImage = str_contains($eventType, 'wedding')
                                     ? (str_contains($eventName, 'premium') ? 'image/Premium%20Wedding%20Package.jpg' : 'image/Basic%20Wedding%20Package.png')
                                     : (str_contains($eventName, 'deluxe') ? 'image/Deluxe%20Birthday%20Package.jpg' : 'image/Basic%20Birthday%20Package.png');
-                                $eventImagePath = \\Illuminate\\Support\\Str::after(ltrim($event->image ?? '', '/'), 'storage/');
-                                $eventImage = $event->image && \\Illuminate\\Support\\Facades\\Storage::disk('public')->exists($eventImagePath)
+                                $eventImagePath = \Illuminate\Support\Str::after(ltrim($event->image ?? '', '/'), 'storage/');
+                                $eventImage = $event->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($eventImagePath)
                                     ? secure_asset('storage/' . $eventImagePath)
                                     : secure_asset($eventFallbackImage);
                             @endphp
