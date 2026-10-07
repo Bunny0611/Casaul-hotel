@@ -75,6 +75,7 @@
                     @forelse($selectedMeals as $meal)
                         <article class="dining-menu-card" data-category="{{ $selectedCategory }}" data-name="{{ $meal->name }}" data-price="{{ $meal->price }}" data-dining-id="{{ $meal->id }}" data-schedule="{{ $meal->diningSchedule?->period ?? '' }}">
                             <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? secure_asset('storage/' . ltrim($meal->image, '/')) : secure_asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}" alt="{{ $meal->name }}" loading="lazy">
+                                <img src="{{ $meal->image && \Illuminate\Support\Facades\Storage::disk('public')->exists($meal->image) ? secure_asset('storage/' . ltrim($meal->image, '/')) : secure_asset('image/chefb.jpg') }}" alt="{{ $meal->name }}" loading="lazy">
                             <div class="dining-menu-card-body">
                                 <h3>{{ $meal->name }}</h3>
                                 <p>{{ $meal->description ?: 'A delicious option crafted for your stay.' }}</p>
@@ -94,6 +95,7 @@
         <section class="dining-featured" aria-label="Casaul signature dining section">
             <div class="dining-featured-image">
                 <img src="{{ secure_asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}" alt="A signature dish from the Casaul Hotel dining menu" loading="lazy">
+                    <img src="{{ secure_asset('image/chefb.jpg') }}" alt="A signature dish from the Casaul Hotel dining menu" loading="lazy">
             </div>
 
             <div class="dining-featured-copy">
@@ -178,6 +180,7 @@
 
                 const image = document.createElement('img');
                 image.src = meal.image || '{{ secure_asset('storage/catalog/1790305703_6ab5e5a7492eb.png') }}';
+                    image.src = meal.image || '{{ secure_asset('image/chefb.jpg') }}';
                 image.alt = meal.name;
 
                 const body = document.createElement('div');
