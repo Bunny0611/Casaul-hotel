@@ -4,7 +4,7 @@
 <main class="home-page">
     <section class="home-hero">
         <video class="home-hero-video" autoplay muted loop playsinline>
-            <source src="{{ asset('image/hero-video.mp4') }}" type="video/mp4">
+            <source src="{{ asset('image/homepagevid.mp4') }}" type="video/mp4">
         </video>
         <div class="home-hero-overlay"></div>
         <div class="home-hero-copy">
