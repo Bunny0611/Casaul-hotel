@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\HasTaxSnapshot;
 
 class RoomReservation extends Model
 {
+    use HasTaxSnapshot;
+
     protected $table = 'room_reservations';
 
     protected $casts = [

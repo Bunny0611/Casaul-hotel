@@ -57,6 +57,11 @@
     .summary-item-price{ font-weight:800; color:#0f172a; }
     .summary-edit-btn{ background:transparent; color:var(--accent); border:none; font-weight:700; cursor:pointer; }
 
+    .summary-tax-breakdown{ display:grid; gap:8px; margin-top:10px; padding-top:12px; border-top:1px solid #e5e7eb; color:#475569; font-size:13px; }
+    .summary-tax-breakdown-row{ display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; column-gap:14px; min-width:0; line-height:1.4; }
+    .summary-tax-breakdown-row span{ min-width:0; overflow-wrap:anywhere; }
+    .summary-tax-breakdown-row strong{ justify-self:end; color:#0f172a; font-size:13px; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; }
+
     .summary-total{ display:flex; justify-content:space-between; align-items:center; padding:18px 0 6px 0; }
     .summary-total strong{ font-size:1.4rem; color:#0f172a; }
 
@@ -365,6 +370,26 @@
     .dining-quantity::-webkit-outer-spin-button, .dining-quantity::-webkit-inner-spin-button { -webkit-appearance:none; appearance:none; margin:0; }
     .dining-card-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; }
     .dining-card-footer .price { display:inline-block; margin:0; color:#111827; }
+
+    #dining-tab .dining-selection-row { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    #dining-tab .dining-selection-row > div { min-width:0; }
+    .dining-category-nav { display:flex; gap:6px; margin:0 0 12px; padding:4px 0 8px; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin; }
+    .dining-category-btn { flex:0 0 auto; min-height:36px; padding:8px 11px; border:1px solid #e1e5ec; border-radius:7px; color:#536077; background:#fff; font-size:11px; font-weight:700; white-space:nowrap; cursor:pointer; }
+    .dining-category-btn.active { border-color:#cc0925; color:#fff; background:#cc0925; }
+    .dining-category-btn:focus-visible { outline:2px solid #cc0925; outline-offset:2px; }
+    .dining-menu-header { min-width:0; margin:0 0 10px; }
+    .dining-menu-header h4 { margin:0; color:#172033; font-size:14px; }
+    #diningMenuGrid,
+    #diningMenuGrid .reservation-card { min-width:0; }
+    #diningMenuGrid .reservation-card-body > p { overflow-wrap:anywhere; }
+    #diningMenuGrid .reservation-card-footer.dining-card-footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+    #diningMenuGrid .reservation-card-footer.dining-card-footer .price { flex:1 1 auto; min-width:0; }
+
+    @media (max-width:700px) {
+        #dining-tab .dining-selection-row { grid-template-columns:minmax(0,1fr); gap:10px; }
+        #dining-tab .field-input { min-width:0; }
+        .dining-category-nav { margin-right:-4px; padding-right:4px; }
+    }
 
     @media (max-width: 980px){ .reservation-hero,.reservation-shell{ max-width:calc(100% - 30px); } .reservation-hero{ grid-template-columns:1fr 300px; } }
     @media (max-width: 700px){ .reservation-hero{ display:block; } .reservation-hero-image{ display:block; height:120px; min-height:0; margin-top:18px; border-radius:0 0 0 35px; } .reservation-shell{ display:block; } .reservation-summary{ margin-top:14px; } .reservation-tabs{ overflow-x:auto; } .tab-btn{ min-width:120px; } .reservation-progress{ padding:12px; gap:7px; } .progress-copy span{ display:none; } .panel-row,.reservation-card-grid{ grid-template-columns:1fr; } .summary-card{ position:static; } }
@@ -973,8 +998,12 @@
                         <button type="button" class="summary-edit-btn" data-target="dining-tab">Edit</button>
                     </div>
                 </article>
+                <div class="summary-tax-breakdown">
+                    <div class="summary-tax-breakdown-row"><span>Subtotal</span><strong id="summarySubtotal">₱0.00</strong></div>
+                    <div id="summaryTaxRow" class="summary-tax-breakdown-row"><span id="summaryTaxLabel">Simulated tax</span><strong id="summaryTaxAmount">₱0.00</strong></div>
+                </div>
                 <div class="summary-total">
-                    <span>Total</span>
+                    <span>Final total</span>
                     <strong id="summaryTotal">₱0</strong>
                 </div>
                 <p class="summary-note">Your reservation details will be submitted as a request. A staff member will contact you to confirm availability.</p>
@@ -1089,7 +1118,9 @@
                     <div class="review-payment-row"><span>Event</span><strong id="confirmEventCharge">₱0</strong></div>
                     <div class="review-payment-row"><span>Dining</span><strong id="confirmDiningCharge">₱0</strong></div>
                     <div class="review-payment-row"><span>Extra person</span><strong id="confirmExtraGuestCharge">₱0</strong></div>
-                    <div class="review-payment-row review-payment-total"><span>Total Amount</span><strong id="confirmTotalAmount">₱0</strong></div>
+                    <div class="review-payment-row"><span>Subtotal</span><strong id="confirmSubtotal">₱0</strong></div>
+                    <div class="review-payment-row" id="confirmTaxRow"><span id="confirmTaxLabel">Simulated tax</span><strong id="confirmTaxAmount">₱0</strong></div>
+                    <div class="review-payment-row review-payment-total"><span>Final total</span><strong id="confirmTotalAmount">₱0</strong></div>
                     <div class="review-payment-row"><span>Payment method</span><strong id="confirmPaymentMethod">Cash / Pay at Hotel</strong></div>
                     <div class="confirm-payment-details-card" id="confirmPaymentDetailsRow" hidden>
                         <div id="confirmPaymentDetails"></div>
@@ -1299,6 +1330,7 @@
     <input type="hidden" name="dining_schedule" id="reservationDiningSchedule">
     <input type="hidden" name="quantity" id="reservationDiningQuantity">
     <input type="hidden" name="facility_id" id="reservationFacilityId">
+    <input type="hidden" name="facility_items" id="reservationFacilityItems" value="[]">
     <input type="hidden" name="facility_quantity" id="reservationFacilityQuantity">
     <input type="hidden" name="facility_duration_hours" id="reservationFacilityDuration">
     <input type="hidden" name="facility_start_time" id="reservationFacilityStartTime">
@@ -1313,6 +1345,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const taxSettings = @json($taxSettings);
         const reservationPage = document.querySelector('.reservation-page');
         const reservationLeft = document.querySelector('.reservation-left');
         const tabs = document.querySelectorAll('.tab-btn');
@@ -1332,6 +1365,10 @@
         const summaryFacilitiesPrice = document.getElementById('summaryFacilitiesPrice');
         const summaryEventPrice = document.getElementById('summaryEventPrice');
         const summaryDiningPrice = document.getElementById('summaryDiningPrice');
+        const summarySubtotal = document.getElementById('summarySubtotal');
+        const summaryTaxRow = document.getElementById('summaryTaxRow');
+        const summaryTaxLabel = document.getElementById('summaryTaxLabel');
+        const summaryTaxAmount = document.getElementById('summaryTaxAmount');
         const summaryTotal = document.getElementById('summaryTotal');
         const summaryEditButtons = document.querySelectorAll('.summary-edit-btn');
         const confirmBtn = document.getElementById('confirmReservationBtn');
@@ -1376,6 +1413,7 @@
         const reservationDiningSchedule = document.getElementById('reservationDiningSchedule');
         const reservationDiningQuantity = document.getElementById('reservationDiningQuantity');
         const reservationFacilityId = document.getElementById('reservationFacilityId');
+        const reservationFacilityItems = document.getElementById('reservationFacilityItems');
         const reservationFacilityQuantity = document.getElementById('reservationFacilityQuantity');
         const reservationFacilityDuration = document.getElementById('reservationFacilityDuration');
         const reservationFacilityStartTime = document.getElementById('reservationFacilityStartTime');
@@ -1454,6 +1492,10 @@
         const confirmEventCharge = document.getElementById('confirmEventCharge');
         const confirmDiningCharge = document.getElementById('confirmDiningCharge');
         const confirmExtraGuestCharge = document.getElementById('confirmExtraGuestCharge');
+        const confirmSubtotal = document.getElementById('confirmSubtotal');
+        const confirmTaxRow = document.getElementById('confirmTaxRow');
+        const confirmTaxLabel = document.getElementById('confirmTaxLabel');
+        const confirmTaxAmount = document.getElementById('confirmTaxAmount');
         const confirmTotalAmount = document.getElementById('confirmTotalAmount');
         const confirmPaymentDetailsRow = document.getElementById('confirmPaymentDetailsRow');
         const confirmPaymentDetails = document.getElementById('confirmPaymentDetails');
@@ -1683,6 +1725,53 @@
             return Math.max(1, nights);
         };
 
+        const roundTaxAmount = amount => Math.round((Number(amount || 0) + Number.EPSILON) * 100) / 100;
+        const calculateTaxBreakdown = () => {
+            const stayNights = getStayNights();
+            const groupedCharges = {
+                room: selectedRoom ? [
+                    { category: 'rooms', amount: roomPrice * stayNights },
+                    { category: 'extra_person', amount: ((selectedAdults * selectedAdultPrice) + (selectedKids * selectedKidPrice)) * stayNights },
+                ] : [],
+                facilities: selectedFacilities.map(item => ({
+                    category: String(item.pricingBasis || '').toLowerCase().includes('vehicle') ? 'parking' : 'services_addons',
+                    amount: getFacilityCharge(item),
+                })),
+                events: selectedEvent.flatMap(item => [
+                    { category: 'events', amount: getEventCharge(item) - (item.addons || []).reduce((sum, addon) => sum + Number(addon.price || 0), 0) },
+                    ...(item.addons || []).map(addon => ({ category: 'services_addons', amount: Number(addon.price || 0) })),
+                ]),
+                dining: selectedDining.map(item => ({ category: 'dining', amount: Number(item.price || 0) * Number(item.quantity || 1) })),
+            };
+            const settings = {
+                enabled: Boolean(taxSettings.enabled),
+                rate: Number(taxSettings.rate || 0),
+                inclusive: Boolean(taxSettings.inclusive),
+                categories: taxSettings.categories || [],
+            };
+            const breakdowns = Object.values(groupedCharges).map(charges => {
+                const subtotal = roundTaxAmount(charges.reduce((sum, charge) => sum + Number(charge.amount || 0), 0));
+                const taxableSubtotal = settings.enabled
+                    ? roundTaxAmount(charges.filter(charge => settings.categories.includes(charge.category)).reduce((sum, charge) => sum + Number(charge.amount || 0), 0))
+                    : 0;
+                const taxableBase = settings.inclusive && settings.rate > 0
+                    ? roundTaxAmount(taxableSubtotal / (1 + settings.rate / 100))
+                    : taxableSubtotal;
+                const taxAmount = settings.inclusive
+                    ? roundTaxAmount(taxableSubtotal - taxableBase)
+                    : roundTaxAmount(taxableBase * settings.rate / 100);
+
+                return { subtotal, taxableBase, taxAmount, total: settings.inclusive ? subtotal : roundTaxAmount(subtotal + taxAmount) };
+            });
+
+            return breakdowns.reduce((total, breakdown) => ({
+                subtotal: roundTaxAmount(total.subtotal + breakdown.subtotal),
+                taxableBase: roundTaxAmount(total.taxableBase + breakdown.taxableBase),
+                taxAmount: roundTaxAmount(total.taxAmount + breakdown.taxAmount),
+                total: roundTaxAmount(total.total + breakdown.total),
+            }), { subtotal: 0, taxableBase: 0, taxAmount: 0, total: 0 });
+        };
+
         const escapeHtml = value => String(value).replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
         const formatCurrencyValue = (value) => {
             const numericValue = Number(value) || 0;
@@ -1828,7 +1917,8 @@
             summaryEventPrice.textContent = `₱${selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0).toLocaleString()}`;
             summaryDiningPrice.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
 
-            const total = calculateTotal();
+            const taxBreakdown = calculateTaxBreakdown();
+            const total = taxBreakdown.total;
             const hasRoomSelection = Boolean(selectedRoom);
             const hasFacilitySelection = selectedFacilities.length > 0;
             const hasEventSelection = selectedEvent.length > 0;
@@ -1927,7 +2017,15 @@
             confirmEventCharge.textContent = `₱${selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0).toLocaleString()}`;
             confirmDiningCharge.textContent = `₱${selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0).toLocaleString()}`;
             confirmExtraGuestCharge.textContent = `₱${extraGuestsTotal.toLocaleString()}`;
-            confirmTotalAmount.textContent = `₱${calculateTotal().toLocaleString()}`;
+            confirmSubtotal.textContent = formatCurrencyValue(taxBreakdown.subtotal);
+            confirmTaxRow.hidden = false;
+            confirmTaxLabel.textContent = taxSettings.enabled
+                ? `${taxSettings.name} (simulated ${Number(taxSettings.rate).toFixed(2)}%)${taxSettings.inclusive ? ' included' : ''}`
+                : `${taxSettings.name} (simulation disabled)`;
+            confirmTaxAmount.textContent = formatCurrencyValue(taxBreakdown.taxAmount);
+            document.querySelectorAll('#confirmTotalAmount').forEach(element => {
+                element.textContent = formatCurrencyValue(taxBreakdown.total);
+            });
             methodPaymentAmounts.forEach(input => {
                 input.placeholder = 'Enter amount';
                 if (input.dataset.userEdited !== 'true') {
@@ -1935,7 +2033,13 @@
                 }
             });
 
-            summaryTotal.textContent = `₱${total.toLocaleString()}`;
+            summarySubtotal.textContent = formatCurrencyValue(taxBreakdown.subtotal);
+            summaryTaxRow.hidden = false;
+            summaryTaxLabel.textContent = taxSettings.enabled
+                ? `${taxSettings.name} (simulated ${Number(taxSettings.rate).toFixed(2)}%)${taxSettings.inclusive ? ' included' : ''}`
+                : `${taxSettings.name} (simulation disabled)`;
+            summaryTaxAmount.textContent = formatCurrencyValue(taxBreakdown.taxAmount);
+            summaryTotal.textContent = formatCurrencyValue(total);
             reservationTotalAmount.value = total;
             reservationCheckIn.value = bookingDate;
             reservationCheckOut.value = bookingEndDate;
@@ -1959,6 +2063,11 @@
             reservationDiningSchedule.value = [...new Set(selectedDining.map(item => item.schedule).filter(Boolean))].join(',');
             reservationDiningQuantity.value = selectedDiningQuantity || '';
             reservationFacilityId.value = selectedFacilities.map(item => item.id).filter(Boolean).join(',');
+            reservationFacilityItems.value = JSON.stringify(selectedFacilities.map(item => ({
+                facility_id: Number(item.id),
+                quantity: Number(item.quantity || 1),
+                duration_hours: Number(item.durationHours || 1),
+            })));
             reservationFacilityQuantity.value = selectedFacilities[0]?.quantity || '';
             reservationFacilityDuration.value = selectedFacilities.find(item => String(item.pricingBasis || '').toLowerCase() === 'per hour')?.durationHours || '';
             reservationFacilityStartTime.value = selectedFacilities[0]?.time || '';
@@ -2073,15 +2182,6 @@
             });
         });
 
-        const calculateTotal = () => {
-            const stayNights = getStayNights();
-            const facilitiesTotal = selectedFacilities.reduce((sum, item) => sum + getFacilityCharge(item), 0);
-            const eventTotal = selectedEvent.reduce((sum, item) => sum + getEventCharge(item), 0);
-            const diningTotal = selectedDining.reduce((sum, item) => sum + ((Number(item.price || 0)) * (Number(item.quantity || 1))), 0);
-            const extraGuestsTotal = ((selectedAdults * selectedAdultPrice) + (selectedKids * selectedKidPrice)) * stayNights;
-            return (roomPrice * stayNights) + facilitiesTotal + eventTotal + diningTotal + extraGuestsTotal;
-        };
-
         function closeEventReservationPopup() {
             eventReservationModal.classList.remove('is-open');
             eventReservationModal.setAttribute('aria-hidden', 'true');
@@ -2177,7 +2277,7 @@
             eventReservationGuestsInput.max = guestInput?.max || activeEventCard.dataset.capacity || '';
             eventReservationVenue.textContent = activeEventCard.dataset.location || 'Default venue';
             renderEventReservationAddons(selectedPackage);
-            eventReservationTotal.textContent = `₱${calculateTotal().toLocaleString()}`;
+            eventReservationTotal.textContent = formatCurrencyValue(calculateTaxBreakdown().total);
         }
 
         function openEventReservationPopup(card) {
@@ -2875,9 +2975,14 @@
             const diningItemCount = selectedDining.reduce((total, item) => total + Number(item.quantity || 1), 0);
             receiptDining.textContent = `${diningItemCount} ${diningItemCount === 1 ? 'item' : 'items'}`;
             receiptDiningTable.textContent = receiptDiningTables.length ? receiptDiningTables.join(', ') : 'None';
-            const totalAmount = Number(String(confirmTotalAmount.textContent).replace(/[^\d.-]/g, '')) || 0;
+            const taxBreakdown = calculateTaxBreakdown();
+            const totalAmount = taxBreakdown.total;
             const meaningfulReceiptItems = receiptItems.filter(([, description, , amount]) => description && Number(String(amount).replace(/[^\d.-]/g, '')) > 0);
-            receiptContent.innerHTML = `<table class="receipt-table"><thead><tr><th>Quantity</th><th>Description</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>${meaningfulReceiptItems.map(([quantity, description, unitPrice, amount]) => `<tr><td>${escapeHtml(quantity)}</td><td>${escapeHtml(description)}</td><td>${escapeHtml(unitPrice)}</td><td>${escapeHtml(amount)}</td></tr>`).join('')}<tr class="receipt-total-row"><td colspan="3">Total</td><td>${escapeHtml(formatCurrencyValue(totalAmount))}</td></tr></tbody></table>`;
+            const taxReceiptLabel = taxSettings.enabled
+                ? `${taxSettings.name} (simulated ${Number(taxSettings.rate).toFixed(2)}%${taxSettings.inclusive ? ', included' : ''})`
+                : `${taxSettings.name} (simulation disabled)`;
+            const taxReceiptRow = `<tr><td colspan="3">${escapeHtml(taxReceiptLabel)}</td><td>${escapeHtml(formatCurrencyValue(taxBreakdown.taxAmount))}</td></tr>`;
+            receiptContent.innerHTML = `<table class="receipt-table"><thead><tr><th>Quantity</th><th>Description</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>${meaningfulReceiptItems.map(([quantity, description, unitPrice, amount]) => `<tr><td>${escapeHtml(quantity)}</td><td>${escapeHtml(description)}</td><td>${escapeHtml(unitPrice)}</td><td>${escapeHtml(amount)}</td></tr>`).join('')}<tr><td colspan="3">Subtotal</td><td>${escapeHtml(formatCurrencyValue(taxBreakdown.subtotal))}</td></tr>${taxReceiptRow}<tr class="receipt-total-row"><td colspan="3">Final total</td><td>${escapeHtml(formatCurrencyValue(totalAmount))}</td></tr></tbody></table>`;
             const paymentInputId = selectedPaymentMethod === 'GCash' ? 'gcashPaymentAmount' : selectedPaymentMethod === 'Maya' ? 'mayaPaymentAmount' : selectedPaymentMethod === 'Credit / Debit Card' ? 'cardPaymentAmount' : selectedPaymentMethod === 'Bank Transfer' ? 'transferAmount' : null;
             const amountPaid = paymentInputId ? getPaymentAmountValue(paymentInputId) : 0;
             const balanceDifference = amountPaid - totalAmount;
@@ -3064,7 +3169,7 @@
             const paymentAmountId = paymentAmountIds[selectedPaymentMethod];
             if (paymentAmountId) {
                 const paidAmount = getPaymentAmountValue(paymentAmountId);
-                const totalAmount = calculateTotal();
+                const totalAmount = calculateTaxBreakdown().total;
                 if (paidAmount <= 0) {
                     return `Please enter the amount paid for ${selectedPaymentMethod}.`;
                 }

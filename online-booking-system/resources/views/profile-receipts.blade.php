@@ -421,6 +421,14 @@
                                     ];
                                 }
                             }
+                            foreach (($reservation->charged_add_ons ?? []) as $charge) {
+                                $reservationReceiptLines[] = [
+                                    'quantity' => (int) ($charge['quantity'] ?? 1),
+                                    'description' => 'Additional service - ' . ($charge['name'] ?? 'Service'),
+                                    'unitPrice' => '₱' . number_format((float) ($charge['unit_price'] ?? 0), 2),
+                                    'amount' => '₱' . number_format((float) ($charge['subtotal'] ?? 0), 2),
+                                ];
+                            }
                             $paymentProofUrl = null;
                             if (preg_match('/(?:^|•)\s*Proof:\s*([^•\s]+)/i', (string) $reservation->payment_details, $paymentProofMatches)) {
                                 $paymentProofPath = $paymentProofMatches[1];
@@ -432,7 +440,7 @@
                             }
                             $receiptCategory = 'all';
                             $categoryReceiptLines = $reservationReceiptLines;
-                            $categoryTotal = collect($categoryReceiptLines)->sum(fn ($line) => (float) str_replace(['₱', ','], '', $line['amount']));
+                            $categoryTotal = (float) ($reservation->tax_summary['total'] ?? $reservation->total_amount ?? collect($categoryReceiptLines)->sum(fn ($line) => (float) str_replace(['₱', ','], '', $line['amount'])));
                             $categoryName = collect($categoryReceiptLines)
                                 ->map(fn ($line) => explode(' - ', $line['description'])[0])
                                 ->unique()
@@ -466,6 +474,7 @@
                                     data-payment-method='@json($reservation->payment_method ?? "")'
                                     data-payment-details='@json($reservation->payment_details ?? "")'
                                     data-payment-proof='@json($paymentProofUrl)'
+                                    data-tax-summary='@json($reservation->tax_summary ?? null)'
                                     data-line-items='@json($categoryReceiptLines)'>View Receipt</button>
                             </td>
                         </tr>
@@ -549,6 +558,7 @@
         const paymentMethod = parseDataValue(button.dataset.paymentMethod, '') || '';
         const paymentDetails = parseDataValue(button.dataset.paymentDetails, '') || '';
         const paymentProof = parseDataValue(button.dataset.paymentProof, '') || '';
+        const taxSummary = parseDataValue(button.dataset.taxSummary, null);
         const escapeHtml = (value) => String(value ?? '')
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -593,6 +603,7 @@
             paymentMethod ? `<p><span>Payment method</span><strong>${escapeHtml(paymentMethod)}</strong></p>` : '',
             paymentDetailRows,
         ].join('');
+        const taxRows = taxSummary ? `<tr><td colspan="3">Subtotal</td><td>${formatMoney(taxSummary.subtotal)}</td></tr><tr><td colspan="3">${escapeHtml(taxSummary.enabled ? `${taxSummary.name} (simulated ${Number(taxSummary.rate).toFixed(2)}%${taxSummary.inclusive ? ', included' : ''})` : `${taxSummary.name} (simulation disabled)`)}</td><td>${formatMoney(taxSummary.tax_amount)}</td></tr>` : '';
 
         receiptContent.innerHTML = `
             <table class="receipt-table">
@@ -611,9 +622,10 @@
                         <td>${formatMoney(item.unitPrice ?? 0)}</td>
                         <td>${formatMoney(item.amount ?? 0)}</td>
                     </tr>`).join('') : ''}
+                    ${taxRows}
                     <tr class="receipt-total-row">
-                        <td colspan="3">Total</td>
-                        <td>${formatMoney(totalValue)}</td>
+                        <td colspan="3">${taxSummary ? 'Final total' : 'Total'}</td>
+                        <td>${formatMoney(taxSummary?.total || totalValue)}</td>
                     </tr>
                 </tbody>
             </table>

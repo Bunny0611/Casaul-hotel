@@ -36,7 +36,9 @@ use App\Models\GuestRequest;
 use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\Guest;
+use App\Models\TaxSetting;
 use App\Support\ReservationPricing;
+use App\Support\ReservationTax;
 use App\Support\RoomAvailability;
 use App\Support\GuestOrigin;
 use App\Support\ComprehensiveReportExcelExporter;
@@ -864,10 +866,11 @@ class AdminController extends Controller
             'dining_type' => ['required', Rule::in(['tables', 'menus', 'schedules'])],
             'name' => ['required', 'string', 'max:255'],
             'menu_category' => ['nullable', 'string', 'max:255'],
+            'availability_period' => ['required_if:dining_type,menus', 'nullable', Rule::in(['breakfast', 'lunch', 'afternoon-snack', 'dinner', 'all-day'])],
             'type' => ['nullable', 'string', 'max:255'],
             'price' => ['nullable', 'numeric', 'min:0'],
-            'available_from' => ['nullable', 'date_format:H:i'],
-            'available_to' => ['nullable', 'date_format:H:i'],
+            'available_from' => ['required_if:dining_type,schedules', 'required_with:available_to', 'nullable', 'date_format:H:i'],
+            'available_to' => ['required_if:dining_type,schedules', 'required_with:available_from', 'nullable', 'date_format:H:i', 'after:available_from'],
             'capacity' => ['nullable', 'integer', 'min:1'],
             'location' => ['nullable', 'string', 'max:255'],
             'max_guests' => ['nullable', 'integer', 'min:1'],
@@ -877,6 +880,13 @@ class AdminController extends Controller
         ]);
 
         $image = $request->hasFile('image') ? $this->handleCatalogImageUpload($request) : null;
+        $menuAvailabilityTimes = [
+            'breakfast' => ['07:00', '10:00'],
+            'lunch' => ['11:00', '14:00'],
+            'afternoon-snack' => ['14:00', '17:00'],
+            'dinner' => ['18:00', '21:00'],
+            'all-day' => [null, null],
+        ];
 
         if ($validated['dining_type'] === 'tables') {
             DiningTable::create([
@@ -895,19 +905,29 @@ class AdminController extends Controller
                 'status' => strtolower($validated['status']),
             ]);
         } else {
+            [$availableFrom, $availableTo] = $menuAvailabilityTimes[$validated['availability_period']];
             DiningMenu::create([
                 'name' => $validated['name'],
                 'category' => $validated['menu_category'] ?? null,
                 'price' => $validated['price'] ?? 0,
                 'status' => strtolower($validated['status']),
-                'available_from' => $validated['available_from'] ?? null,
-                'available_to' => $validated['available_to'] ?? null,
+                'available_from' => $availableFrom,
+                'available_to' => $availableTo,
                 'description' => $validated['description'] ?? null,
                 'image' => $image,
             ]);
         }
 
-        return redirect()->route('admin.rooms', ['tab' => 'dining'])->with('success', 'Dining item added successfully.');
+        $diningTab = match ($validated['dining_type']) {
+            'menus' => 'menu',
+            'schedules' => 'schedule',
+            default => 'tables',
+        };
+
+        return redirect()->route('admin.rooms', [
+            'tab' => 'dining',
+            'dining_tab' => $diningTab,
+        ])->with('success', 'Dining item added successfully.');
     }
 
     public function updateInventoryItem(Request $request, $id)
@@ -929,8 +949,8 @@ class AdminController extends Controller
             'status' => ['required', 'string', 'max:50', Rule::when($request->input('category') === 'event', [Rule::in(['available', 'unavailable'])])],
             'location' => ['nullable', 'string', 'max:255', Rule::when($request->input('category') === 'event', ['required', Rule::in($eventVenueOptions)])],
             'capacity' => ['nullable', 'integer', 'min:1', Rule::when($request->input('category') === 'event', ['required'])],
-            'available_from' => ['required_if:category,event', 'nullable', 'date_format:H:i', Rule::in($eventTimeOptions)],
-            'available_to' => ['required_if:category,event', 'nullable', 'date_format:H:i', 'after:available_from', Rule::in($eventTimeOptions)],
+            'available_from' => ['required_if:category,event', 'nullable', 'date_format:H:i', Rule::when($request->input('category') === 'event', [Rule::in($eventTimeOptions)])],
+            'available_to' => ['required_if:category,event', 'nullable', 'date_format:H:i', Rule::when($request->input('category') === 'event', ['after:available_from', Rule::in($eventTimeOptions)])],
             'duration_hours' => ['nullable', 'integer', 'min:1', 'max:24', Rule::when($request->input('category') === 'event', ['required'])],
             'inclusions' => ['nullable', 'array'],
             'inclusions.*' => ['nullable', 'string', 'max:255'],
@@ -1537,7 +1557,7 @@ class AdminController extends Controller
             'total_amount' => ['required', 'numeric', 'min:0'],
             'payment_method' => ['required', 'in:Cash / Pay at Hotel,GCash,Maya,Credit / Debit Card,Bank Transfer'],
             'payment_details' => ['nullable', 'string', 'max:2000'],
-            'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0'],
             'dining_id' => ['nullable', 'string'],
             'duration_hours' => ['nullable', 'required_if:category,facilities', 'integer', 'min:1', 'max:24'],
             'facility_duration_hours' => ['nullable', 'integer', 'min:1', 'max:24'],
@@ -1604,12 +1624,28 @@ class AdminController extends Controller
             ? ReservationPricing::events(collect([$event]), (int) ($validated['number_of_guests'] ?? 1), $eventDurationHours)
             : 0;
         $diningTotal = ReservationPricing::dining($diningSelections);
-        $validated['total_amount'] = match ($category) {
-            'rooms' => $roomTotal,
-            'facilities' => $facilityTotal,
-            'event' => $eventTotal,
-            'dining' => $diningTotal,
+        $taxSettings = TaxSetting::current()->pricingSettings();
+        $taxCharges = match ($category) {
+            'rooms' => $room ? ReservationPricing::roomChargeComponents(
+                $room,
+                $validated['check_in'],
+                $validated['check_out'],
+                (int) ($validated['number_of_guests'] ?? 1),
+                isset($validated['adult_guests']) ? (int) $validated['adult_guests'] : null,
+                isset($validated['kid_guests']) ? (int) $validated['kid_guests'] : null
+            ) : [],
+            'facilities' => $facility ? ReservationPricing::facilityChargeComponents(
+                collect([$facility]),
+                (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1),
+                $validated['check_in'],
+                $validated['check_out'],
+                (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1)
+            ) : [],
+            'event' => $event ? ReservationPricing::eventChargeComponents(collect([$event]), (int) ($validated['number_of_guests'] ?? 1), $eventDurationHours) : [],
+            'dining' => ReservationPricing::diningChargeComponents($diningSelections),
         };
+        $taxBreakdown = ReservationPricing::taxBreakdown($taxCharges, $taxSettings);
+        $validated['total_amount'] = $taxBreakdown['total'];
 
         $amountPaid = (float) ($validated['amount_paid'] ?? 0);
         if ($amountPaid > (float) $validated['total_amount']) {
@@ -1665,6 +1701,8 @@ class AdminController extends Controller
                 $reservation->diningItems()->createMany($diningSelections);
             }
         }
+
+        ReservationTax::calculateAndStore($reservation, $taxCharges, $taxSettings);
 
         $reservationLabel = match ($category) {
             'rooms' => 'room reservation',
@@ -2031,10 +2069,10 @@ class AdminController extends Controller
                 ? round(
                     (float) $relatedRows->sum(fn ($row) => (float) ($row->total_amount ?? 0))
                     + (float) $chargeableAddOns->sum(function (GuestRequest $guestRequest) {
-                            return round(
+                            return (float) ($guestRequest->taxSnapshot?->total_amount ?? round(
                                 (float) ($guestRequest->unit_price ?? 0) * max((int) ($guestRequest->quantity ?? 1), 1),
                                 2
-                            );
+                            ));
                         }),
                     2
                 )
@@ -2146,9 +2184,18 @@ class AdminController extends Controller
 
         $originalTotal = round((float) ($reservation->total_amount ?? 0), 2);
         $paymentTotals = ['paid' => $this->overallReservationTotals($reservation)['paid']];
-
-        $calculatedTotal = match ($validated['category']) {
-            'rooms' => ReservationPricing::room(
+        $existingTaxSnapshot = $reservation->taxSnapshot;
+        $taxSettings = $existingTaxSnapshot
+            ? [
+                'name' => $existingTaxSnapshot->tax_name,
+                'rate' => (float) $existingTaxSnapshot->tax_rate,
+                'enabled' => $existingTaxSnapshot->tax_enabled,
+                'inclusive' => $existingTaxSnapshot->tax_inclusive,
+                'categories' => $existingTaxSnapshot->categories ?? [],
+            ]
+            : ['name' => 'Simulated VAT', 'rate' => 0, 'enabled' => false, 'inclusive' => false, 'categories' => []];
+        $taxCharges = match ($validated['category']) {
+            'rooms' => ReservationPricing::roomChargeComponents(
                 Room::findOrFail($validated['room_id'] ?? $reservation->room_id),
                 $validated['check_in'],
                 $validated['check_out'],
@@ -2156,7 +2203,7 @@ class AdminController extends Controller
                 array_key_exists('adult_guests', $validated) ? (int) $validated['adult_guests'] : $reservation->adult_guests,
                 array_key_exists('kid_guests', $validated) ? (int) $validated['kid_guests'] : $reservation->kid_guests
             ),
-            'facilities' => ReservationPricing::facilities(
+            'facilities' => ReservationPricing::facilityChargeComponents(
                 collect([Facility::findOrFail($validated['facility_id'] ?? $reservation->facility_id)]),
                 (int) ($validated['facility_quantity'] ?? $reservation->facility_quantity ?? 1),
                 $validated['check_in'],
@@ -2170,17 +2217,23 @@ class AdminController extends Controller
                         $validated['check_out_time'] ?? $reservation->facility_end_time
                     ))
             ),
-            'event' => ReservationPricing::events(
+            'event' => ReservationPricing::eventChargeComponents(
                 collect([Event::findOrFail($validated['event_id'] ?? $reservation->event_id)]),
                 (int) ($validated['number_of_guests'] ?? 1),
                 !empty($validated['event_start_time']) && !empty($validated['event_end_time'])
                     ? max(1, Carbon::parse($validated['event_start_time'])->diffInHours(Carbon::parse($validated['event_end_time'])))
                     : 1
             ),
-            'dining' => ReservationPricing::dining($diningSelections),
+            'dining' => ReservationPricing::diningChargeComponents($diningSelections),
         };
+        if ($validated['category'] === 'event') {
+            foreach ($reservation->selected_addons ?? [] as $addon) {
+                $taxCharges[] = ['category' => 'services_addons', 'amount' => (float) ($addon['price'] ?? 0)];
+            }
+        }
 
-        $validated['total_amount'] = $calculatedTotal;
+        $taxBreakdown = ReservationPricing::taxBreakdown($taxCharges, $taxSettings);
+        $validated['total_amount'] = $taxBreakdown['total'];
 
         if (!empty($validated['dining_id'])) {
             $diningIdList = collect(explode(',', $validated['dining_id']))
@@ -2218,6 +2271,10 @@ class AdminController extends Controller
             });
         } else {
             $reservation->update(array_intersect_key($attributes, array_flip($reservation->getFillable())));
+        }
+
+        if ($existingTaxSnapshot) {
+            ReservationTax::calculateAndStore($reservation, $taxCharges, $taxSettings);
         }
 
         $finalTotal = round((float) ($validated['total_amount'] ?? 0), 2);
@@ -2447,6 +2504,25 @@ class AdminController extends Controller
         }
 
         $unitPrice = round((float) $validated['unit_price'], 2);
+        $chargeSubtotal = round((int) $validated['quantity'] * $unitPrice, 2);
+        $existingTaxSnapshot = $charge?->taxSnapshot;
+        $chargeTaxSettings = $existingTaxSnapshot
+            ? [
+                'name' => $existingTaxSnapshot->tax_name,
+                'rate' => (float) $existingTaxSnapshot->tax_rate,
+                'enabled' => $existingTaxSnapshot->tax_enabled,
+                'inclusive' => $existingTaxSnapshot->tax_inclusive,
+                'categories' => $existingTaxSnapshot->categories ?? [],
+            ]
+            : ($charge
+                ? ['name' => 'Simulated VAT', 'rate' => 0, 'enabled' => false, 'inclusive' => false, 'categories' => []]
+                : TaxSetting::current()->pricingSettings());
+        $chargeTaxCategory = match ($validated['charge_type']) {
+            'dining' => 'dining',
+            'guest_addon' => str_contains(strtolower(trim((string) $facility?->pricing_basis)), 'vehicle') ? 'parking' : 'services_addons',
+            default => 'services_addons',
+        };
+        $chargeTax = [['category' => $chargeTaxCategory, 'amount' => $chargeSubtotal]];
         $attributes = [
             'guest_id' => null,
             'room_id' => $reservation->room_id,
@@ -2456,7 +2532,7 @@ class AdminController extends Controller
             'status' => 'Completed',
             'quantity' => (int) $validated['quantity'],
             'unit_price' => $unitPrice,
-            'subtotal' => round((int) $validated['quantity'] * $unitPrice, 2),
+            'subtotal' => $chargeSubtotal,
             'is_billable' => true,
             'billing_status' => $charge?->billing_status ?? 'pending',
             'reservation_type' => RoomReservation::class,
@@ -2475,21 +2551,36 @@ class AdminController extends Controller
 
         if ($charge) {
             $charge->update($attributes);
-            return $charge->fresh(['diningMenu', 'facility', 'sourceGuestRequest']);
+            $savedCharge = $charge->fresh(['diningMenu', 'facility', 'sourceGuestRequest']);
+            if ($existingTaxSnapshot) {
+                ReservationTax::calculateAndStore($savedCharge, $chargeTax, $chargeTaxSettings);
+            }
+
+            return $savedCharge;
         }
 
-        return GuestRequest::create($attributes)->load(['diningMenu', 'facility', 'sourceGuestRequest']);
+        $savedCharge = GuestRequest::create($attributes)->load(['diningMenu', 'facility', 'sourceGuestRequest']);
+        ReservationTax::calculateAndStore($savedCharge, $chargeTax, $chargeTaxSettings);
+
+        return $savedCharge;
     }
 
     private function formatRoomReservationCharge(GuestRequest $charge): array
     {
+        $subtotal = round((float) $charge->subtotal, 2);
+
         return [
             'id' => $charge->id,
             'charge_type' => $charge->charge_type ?: 'custom',
             'name' => $charge->request_type,
             'quantity' => (int) ($charge->quantity ?? 1),
             'unit_price' => (float) $charge->unit_price,
-            'total' => round((float) $charge->unit_price * max((int) ($charge->quantity ?? 1), 1), 2),
+            'subtotal' => $subtotal,
+            'total' => (float) ($charge->taxSnapshot?->total_amount ?? $subtotal),
+            'tax_amount' => (float) ($charge->taxSnapshot?->tax_amount ?? 0),
+            'tax_name' => $charge->taxSnapshot?->tax_name,
+            'tax_rate' => (float) ($charge->taxSnapshot?->tax_rate ?? 0),
+            'tax_inclusive' => (bool) ($charge->taxSnapshot?->tax_inclusive ?? false),
             'source' => $charge->source ?: ($charge->preferred_time ?: '-'),
             'notes' => $charge->notes ?: $charge->description,
             'source_guest_request_id' => $charge->source_guest_request_id,
@@ -3609,6 +3700,36 @@ class AdminController extends Controller
     public function settings()
     {
         return view('admin.settings');
+    }
+
+    public function taxes()
+    {
+        return view('admin.taxes', [
+            'taxSetting' => TaxSetting::current(),
+            'taxCategories' => TaxSetting::CATEGORIES,
+        ]);
+    }
+
+    public function updateTaxes(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'enabled' => ['nullable', 'boolean'],
+            'inclusive' => ['nullable', 'boolean'],
+            'categories' => ['nullable', 'array'],
+            'categories.*' => ['string', Rule::in(array_keys(TaxSetting::CATEGORIES))],
+        ]);
+
+        TaxSetting::current()->update([
+            'name' => $validated['name'],
+            'rate' => round((float) $validated['rate'], 2),
+            'enabled' => $request->boolean('enabled'),
+            'inclusive' => $request->boolean('inclusive'),
+            'categories' => array_values(array_unique($validated['categories'] ?? [])),
+        ]);
+
+        return back()->with('success', 'Educational tax simulation settings saved. Existing reservation snapshots were not changed.');
     }
 
     public function updateAccount(Request $request)

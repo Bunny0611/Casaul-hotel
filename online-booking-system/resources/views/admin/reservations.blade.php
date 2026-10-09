@@ -137,7 +137,7 @@
             $paid = (float) $bookingRefund->total_paid;
         }
 
-        $chargedAddOns = \App\Models\GuestRequest::with('reservation')
+        $chargedAddOns = \App\Models\GuestRequest::with(['reservation', 'taxSnapshot'])
             ->where('is_billable', true)
             ->where('billing_status', 'posted')
             ->get()
@@ -159,10 +159,43 @@
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'subtotal' => (float) ($guestRequest->subtotal ?? ($unitPrice * $quantity)),
+                    'total' => (float) ($guestRequest->taxSnapshot?->total_amount ?? $guestRequest->subtotal ?? ($unitPrice * $quantity)),
+                    'taxable_base' => (float) ($guestRequest->taxSnapshot?->taxable_base ?? 0),
+                    'tax_amount' => (float) ($guestRequest->taxSnapshot?->tax_amount ?? 0),
+                    'tax_name' => $guestRequest->taxSnapshot?->tax_name,
+                    'tax_rate' => (float) ($guestRequest->taxSnapshot?->tax_rate ?? 0),
+                    'tax_enabled' => (bool) ($guestRequest->taxSnapshot?->tax_enabled ?? false),
+                    'tax_inclusive' => (bool) ($guestRequest->taxSnapshot?->tax_inclusive ?? false),
                 ];
             })
             ->values()
             ->all();
+        $addOnTotal = round((float) collect($chargedAddOns)->sum('total'), 2);
+        if (!$bookingRefund) {
+            $grandTotal = round($grandTotal + $addOnTotal, 2);
+        }
+        $paid = min($paid, $grandTotal);
+        $relatedTaxSnapshots = $relatedRows->map(fn ($row) => $row->taxSnapshot)->filter();
+        $taxSubtotal = round((float) $relatedRows->sum(fn ($row) => (float) ($row->taxSnapshot?->subtotal ?? $row->total_amount ?? 0)) + (float) collect($chargedAddOns)->sum('subtotal'), 2);
+        $taxableBase = round((float) $relatedTaxSnapshots->sum(fn ($snapshot) => (float) $snapshot->taxable_base) + (float) collect($chargedAddOns)->sum('taxable_base'), 2);
+        $taxAmount = round((float) $relatedTaxSnapshots->sum(fn ($snapshot) => (float) $snapshot->tax_amount) + (float) collect($chargedAddOns)->sum('tax_amount'), 2);
+        $taxSnapshotRecord = $relatedTaxSnapshots->first() ?? collect($chargedAddOns)->first(fn ($charge) => !empty($charge['tax_name']));
+        $taxSummary = $taxSnapshotRecord ? [
+            'name' => $taxSnapshotRecord instanceof \App\Models\ReservationTaxSnapshot ? $taxSnapshotRecord->tax_name : $taxSnapshotRecord['tax_name'],
+            'rate' => (float) ($taxSnapshotRecord instanceof \App\Models\ReservationTaxSnapshot ? $taxSnapshotRecord->tax_rate : $taxSnapshotRecord['tax_rate']),
+            'inclusive' => (bool) ($taxSnapshotRecord instanceof \App\Models\ReservationTaxSnapshot ? $taxSnapshotRecord->tax_inclusive : $taxSnapshotRecord['tax_inclusive']),
+            'enabled' => (bool) ($taxSnapshotRecord instanceof \App\Models\ReservationTaxSnapshot ? $taxSnapshotRecord->tax_enabled : $taxSnapshotRecord['tax_enabled']),
+            'subtotal' => $taxSubtotal,
+            'taxable_base' => $taxableBase,
+            'tax_amount' => $taxAmount,
+            'total' => $grandTotal,
+        ] : null;
+        $categorySubtotals = [
+            'Room' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'room_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'rooms')->sum(fn ($row) => (float) ($row->taxSnapshot?->subtotal ?? $row->total_amount ?? 0)),
+            'Facilities' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'facility_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'facilities')->sum(fn ($row) => (float) ($row->taxSnapshot?->subtotal ?? $row->total_amount ?? 0)),
+            'Event' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'event_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'event')->sum(fn ($row) => (float) ($row->taxSnapshot?->subtotal ?? $row->total_amount ?? 0)),
+            'Dining' => (float) $relatedRows->filter(fn ($row) => $row->getTable() === 'dining_reservations' || $row->getTable() === 'reservations' && ($row->category ?? null) === 'dining')->sum(fn ($row) => (float) ($row->taxSnapshot?->subtotal ?? $row->total_amount ?? 0)),
+        ];
         $recordedPayments = $relatedRows->flatMap(fn ($row) => $row->payments->map(function ($payment) {
             return [
                 'amount' => (float) $payment->amount,
@@ -185,7 +218,9 @@
             'reference_number' => $reference ?: 'N/A',
             'payment_proof' => $proof,
             'charged_add_ons' => $chargedAddOns,
-            'add_on_total' => (float) collect($chargedAddOns)->sum('subtotal'),
+            'add_on_total' => $addOnTotal,
+            'tax_summary' => $taxSummary,
+            'category_subtotals' => $categorySubtotals,
             'recorded_payments' => $recordedPayments,
         ];
     };
@@ -245,6 +280,8 @@
             'payment_proof' => $latestPayment?->payment_proof,
             'total_amount' => $reservation->total_amount ?? 0,
             'grand_total' => $overallPayment['grand_total'],
+            'tax_summary' => $overallPayment['tax_summary'],
+            'category_subtotals' => $overallPayment['category_subtotals'],
             'overall_amount_paid' => $overallPayment['amount_paid'],
             'balance_due' => $overallPayment['balance_due'],
             'overall_payment_method' => $overallPayment['payment_method'],
@@ -826,7 +863,7 @@
         const categoryAmounts = reservation.category_amounts || {};
         const chargedAddOns = Array.isArray(reservation.charged_add_ons) ? reservation.charged_add_ons : [];
         const chargedAddOnRows = chargedAddOns.length
-            ? chargedAddOns.map((addOn) => `<div class="flex items-center justify-between gap-4 border-b border-gray-200 py-2 last:border-b-0"><div><div class="text-sm font-semibold text-gray-800">${escapeAdminHtml(addOn.name)}</div><div class="text-xs text-gray-500">${escapeAdminHtml(addOn.quantity)} x ${formatAdminMoney(addOn.unit_price)}</div></div><div class="text-sm font-semibold text-gray-800">${formatAdminMoney(addOn.subtotal)}</div></div>`).join('')
+            ? chargedAddOns.map((addOn) => `<div class="flex items-center justify-between gap-4 border-b border-gray-200 py-2 last:border-b-0"><div><div class="text-sm font-semibold text-gray-800">${escapeAdminHtml(addOn.name)}</div><div class="text-xs text-gray-500">${escapeAdminHtml(addOn.quantity)} x ${formatAdminMoney(addOn.unit_price)}</div></div><div class="text-sm font-semibold text-gray-800">${formatAdminMoney(addOn.total ?? addOn.subtotal)}</div></div>`).join('')
             : '<p class="text-sm text-gray-600">No charged add-ons.</p>';
         detailsSections.push(`<div class="rounded-2xl border border-gray-200 bg-gray-50 p-4"><h4 class="mb-3 text-base font-semibold text-gray-800">Charged Add-On Services</h4><div>${chargedAddOnRows}</div><div class="mt-3 flex items-center justify-between border-t border-gray-300 pt-3 text-sm font-semibold text-gray-800"><span>Add-On Total</span><span>${formatAdminMoney(reservation.add_on_total || 0)}</span></div></div>`);
         const amountEntries = Object.entries(categoryAmountLabels)
@@ -838,6 +875,15 @@
         detailsSections.push(renderAdminDetailsCard('Reservation Amounts', amountEntries.length ? amountEntries : [
             { label: 'Reservation', value: formatAdminMoney(reservation.total_amount || 0) },
         ]));
+        if (reservation.tax_summary) {
+            const taxSummary = reservation.tax_summary;
+            detailsSections.push(renderAdminDetailsCard('Tax Summary (Educational Simulation)', [
+                { label: 'Subtotal', value: formatAdminMoney(taxSummary.subtotal) },
+                { label: 'Taxable Base', value: formatAdminMoney(taxSummary.taxable_base) },
+                { label: taxSummary.enabled ? `${taxSummary.name} (simulated ${Number(taxSummary.rate).toFixed(2)}%)` : `${taxSummary.name} (simulation disabled)`, value: formatAdminMoney(taxSummary.tax_amount) },
+                { label: 'Final Total', value: formatAdminMoney(taxSummary.total) },
+            ]));
+        }
         const paymentDetails = parseAdminPaymentDetails(reservation.payment_details);
         const paymentProofUrl = resolveAdminPaymentProof(reservation.overall_payment_proof || reservation.payment_proof || paymentDetails.proof);
         const refundEntries = Array.isArray(reservation.refunds) ? reservation.refunds : [];
@@ -877,11 +923,19 @@
     function printAdminReservationReceipt(reservation) {
         const category = reservation.category || 'rooms';
         const categoryLabels = { rooms: 'Room', facilities: 'Facility', event: 'Event', dining: 'Dining' };
+        const taxSummary = reservation.tax_summary;
         const categoryAmounts = reservation.category_amounts || {};
-        const amountRows = Object.entries(categoryAmounts)
+        const categorySubtotals = reservation.category_subtotals || {};
+        const amountRows = Object.entries(taxSummary ? categorySubtotals : categoryAmounts)
             .filter(([, amount]) => Number(amount || 0) > 0)
             .map(([label, amount]) => `<tr><td>${escapeAdminHtml(label)}</td><td>${formatAdminMoney(amount)}</td></tr>`)
             .join('');
+        const addOnRows = taxSummary && Array.isArray(reservation.charged_add_ons)
+            ? reservation.charged_add_ons.map((addOn) => `<tr><td>${escapeAdminHtml(addOn.name)}</td><td>${formatAdminMoney(addOn.subtotal)}</td></tr>`).join('')
+            : '';
+        const taxRows = taxSummary
+            ? `<tr><td>Subtotal</td><td>${formatAdminMoney(taxSummary.subtotal)}</td></tr><tr><td>${escapeAdminHtml(taxSummary.enabled ? `${taxSummary.name} (simulated ${Number(taxSummary.rate).toFixed(2)}%${taxSummary.inclusive ? ', included' : ''})` : `${taxSummary.name} (simulation disabled)`)}</td><td>${formatAdminMoney(taxSummary.tax_amount)}</td></tr>`
+            : '';
         const refunds = Array.isArray(reservation.refunds) ? reservation.refunds : [];
         const refundTotal = refunds.reduce((total, refund) => total + Number(refund.amount || 0), 0);
         const refundRows = refunds.map((refund) => `<tr><td>${escapeAdminHtml(refund.category || 'Reservation')} - ${escapeAdminHtml(refund.reason || 'Refund')}</td><td>${formatAdminMoney(refund.amount || 0)}</td></tr>`).join('');
@@ -906,7 +960,7 @@
             </style></head><body><main class="receipt">
                 <header><h1>CASAUL HOTEL</h1><h2>Official Reservation Receipt</h2></header>
                 <div class="meta"><div><strong>Receipt</strong>RES-${escapeAdminHtml(reservation.id || 'N/A')}</div><div><strong>Status</strong>${escapeAdminHtml(reservation.status || 'Completed')}</div><div><strong>Guest</strong>${escapeAdminHtml(reservation.guest_name || 'N/A')}</div><div><strong>Details</strong>${escapeAdminHtml(details)}</div></div>
-                <div class="section"><h3>Charges</h3><table><thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>${amountRows || `<tr><td>${escapeAdminHtml(categoryLabels[category] || 'Reservation')}</td><td>${formatAdminMoney(reservation.total_amount || 0)}</td></tr>`}<tr class="total"><td>Grand Total</td><td>${formatAdminMoney(reservation.grand_total || reservation.total_amount || 0)}</td></tr></tbody></table></div>
+                <div class="section"><h3>Charges</h3><table><thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>${amountRows || `<tr><td>${escapeAdminHtml(categoryLabels[category] || 'Reservation')}</td><td>${formatAdminMoney(reservation.total_amount || 0)}</td></tr>`}${addOnRows}${taxRows}<tr class="total"><td>${taxSummary ? 'Final total' : 'Grand Total'}</td><td>${formatAdminMoney(taxSummary?.total || reservation.grand_total || reservation.total_amount || 0)}</td></tr></tbody></table></div>
                 <div class="section"><h3>Payment</h3><div class="paid"><span>Payment Method</span><strong>${escapeAdminHtml(reservation.overall_payment_method || reservation.payment_method || 'N/A')}</strong></div><div class="paid"><span>Total Paid</span><strong>${formatAdminMoney(reservation.overall_amount_paid || 0)}</strong></div><div class="paid"><span>Balance Due</span><strong>${formatAdminMoney(reservation.balance_due || 0)}</strong></div></div>
                 ${refunds.length ? `<div class="section"><h3>Refunds</h3><table><tbody>${refundRows}<tr class="total"><td>Total Refund</td><td>${formatAdminMoney(refundTotal)}</td></tr></tbody></table></div>` : ''}
                 <div class="footer">Thank you for choosing Casaul Hotel.</div>

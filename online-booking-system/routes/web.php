@@ -381,6 +381,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin', 'staff
     Route::delete('/manage-account/{id}', [AdminController::class, 'destroyUser'])->name('manage-account.destroy');
     Route::match(['post', 'delete'], '/manage-account/bulk-delete', [AdminController::class, 'bulkDestroyUsers'])->name('manage-account.bulkDestroy');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+    Route::get('/taxes', [AdminController::class, 'taxes'])->name('taxes');
+    Route::put('/taxes', [AdminController::class, 'updateTaxes'])->name('taxes.update');
     Route::post('/settings/account', [AdminController::class, 'updateAccount'])->name('settings.account');
 });
 

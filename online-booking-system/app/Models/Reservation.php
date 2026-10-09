@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\HasTaxSnapshot;
 
 class Reservation extends Model
 {
+    use HasTaxSnapshot;
+
     protected $casts = [
         'check_in' => 'date',
         'check_out' => 'date',

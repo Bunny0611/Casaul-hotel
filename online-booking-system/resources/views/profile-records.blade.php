@@ -995,6 +995,16 @@
                                 ])->values(),
                                 'amountPaid' => '₱' . number_format((float) $reservation->amount_paid, 2),
                                 'total' => '₱' . number_format((float) $reservation->total_amount, 2),
+                                'taxSummary' => $reservation->taxSnapshot ? [
+                                    'name' => $reservation->taxSnapshot->tax_name,
+                                    'rate' => (float) $reservation->taxSnapshot->tax_rate,
+                                    'enabled' => (bool) $reservation->taxSnapshot->tax_enabled,
+                                    'inclusive' => (bool) $reservation->taxSnapshot->tax_inclusive,
+                                    'subtotal' => (float) $reservation->taxSnapshot->subtotal,
+                                    'taxableBase' => (float) $reservation->taxSnapshot->taxable_base,
+                                    'taxAmount' => (float) $reservation->taxSnapshot->tax_amount,
+                                    'total' => (float) $reservation->taxSnapshot->total_amount,
+                                ] : null,
                                 'specialRequests' => $reservation->special_requests,
                                 'eventType' => $reservation->event_type,
                                 'diningArea' => $diningArea,
@@ -1044,6 +1054,19 @@
                             });
                             $recordReservationDetails = $reservationDetails;
                             $recordReservationDetails['category'] = $recordCategory;
+                            if ($reservation->taxSnapshot) {
+                                $recordTotal = (float) $reservation->taxSnapshot->total_amount;
+                                $recordReservationDetails['taxSummary'] = [
+                                    'name' => $reservation->taxSnapshot->tax_name,
+                                    'rate' => (float) $reservation->taxSnapshot->tax_rate,
+                                    'enabled' => (bool) $reservation->taxSnapshot->tax_enabled,
+                                    'inclusive' => (bool) $reservation->taxSnapshot->tax_inclusive,
+                                    'subtotal' => (float) $reservation->taxSnapshot->subtotal,
+                                    'taxableBase' => (float) $reservation->taxSnapshot->taxable_base,
+                                    'taxAmount' => (float) $reservation->taxSnapshot->tax_amount,
+                                    'total' => (float) $reservation->taxSnapshot->total_amount,
+                                ];
+                            }
                             $recordReservationDetails['total'] = '₱' . number_format($recordTotal, 2);
                             $recordReservationDetails['receiptLines'] = $recordReceiptLines;
                             if ($recordCategory !== 'rooms') {
@@ -1535,6 +1558,8 @@
             const balanceDue = Math.max(0, totalAmount - amountPaid);
             const formatAmount = amount => `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             const paymentSummary = `<div class="payment-summary-card"><h4>Payment Summary</h4><div class="reservation-amount-grid"><div class="reservation-amount-item"><span>Grand Total</span><strong>${escapeHtml(reservation.total)}</strong></div><div class="reservation-amount-item"><span>Amount Paid</span><strong>${formatAmount(amountPaid)}</strong></div><div class="reservation-amount-item"><span>Balance Due</span><strong>${formatAmount(balanceDue)}</strong></div></div></div>`;
+            const taxSummary = reservation.taxSummary;
+            const taxSummarySection = taxSummary ? `<div class="reservation-detail-section"><h4>Tax Summary (Educational Simulation)</h4><div class="reservation-detail-grid">${field('Subtotal', formatAmount(taxSummary.subtotal))}${field('Taxable base', formatAmount(taxSummary.taxableBase))}${field(taxSummary.enabled ? `${taxSummary.name} (simulated ${Number(taxSummary.rate).toFixed(2)}%)${taxSummary.inclusive ? ' included' : ''}` : `${taxSummary.name} (simulation disabled)`, formatAmount(taxSummary.taxAmount))}${field('Final total', formatAmount(taxSummary.total))}</div></div>` : '';
             const paymentProof = reservation.paymentProof
                 ? `<div class="payment-proof"><span class="payment-proof-label">Payment proof</span><a href="${escapeHtml(reservation.paymentProof)}" target="_blank" rel="noopener"><img src="${escapeHtml(reservation.paymentProof)}" alt="Payment proof"></a></div>`
                 : '<p class="payment-proof-missing">Payment proof image is unavailable.</p>';
@@ -1548,7 +1573,7 @@
                 : reservationCategory === 'dining'
                     ? `${field('Dining area', reservation.diningArea)}${field('Dining schedule', reservation.diningSchedule)}`
                     : '';
-            receiptContent.innerHTML = `<div class="reservation-detail-grid reservation-detail-grid--summary">${field('Status', reservation.status)}${field('Category', reservation.category)}${field('Phone', reservation.guestPhone)}${categoryDetails}</div>${room}${facilities}${events}${dining}${payments}`;
+            receiptContent.innerHTML = `<div class="reservation-detail-grid reservation-detail-grid--summary">${field('Status', reservation.status)}${field('Category', reservation.category)}${field('Phone', reservation.guestPhone)}${categoryDetails}</div>${room}${facilities}${events}${dining}${reservationAmounts}${taxSummarySection}${paymentSummary}${payments}`;
             modal.classList.add('open');
             modal.setAttribute('aria-hidden', 'false');
             return;

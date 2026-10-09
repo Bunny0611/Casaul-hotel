@@ -761,6 +761,62 @@ class AdminReservationTest extends TestCase
         ], $event->fresh()->optional_addons);
     }
 
+    public function test_admin_can_update_breakfast_menu_availability_before_event_hours(): void
+    {
+        $admin = Staff::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin, 'web');
+
+        $this->post(route('admin.dining.store'), [
+            'dining_type' => 'menus',
+            'name' => 'Breakfast Bowl Test',
+            'menu_category' => 'Breakfast',
+            'availability_period' => 'breakfast',
+            'price' => 180,
+            'status' => 'available',
+        ])->assertRedirect(route('admin.rooms', ['tab' => 'dining', 'dining_tab' => 'menu']));
+
+        $menu = \App\Models\DiningMenu::where('name', 'Breakfast Bowl Test')->firstOrFail();
+        $this->assertSame('07:00', $menu->available_from);
+        $this->assertSame('10:00', $menu->available_to);
+
+        $this->put(route('admin.inventory.update', $menu->id), [
+            'category' => 'dining',
+            'name' => 'Breakfast Bowl Test',
+            'menu_category' => 'Breakfast',
+            'price' => 180,
+            'status' => 'available',
+            'available_from' => '07:00',
+            'available_to' => '10:00',
+        ])->assertRedirect(route('admin.rooms', ['tab' => 'dining']));
+
+        $this->assertSame('07:00', $menu->fresh()->available_from);
+        $this->assertSame('10:00', $menu->fresh()->available_to);
+    }
+
+    public function test_admin_returns_to_the_matching_dining_subtab_after_adding_items(): void
+    {
+        $admin = Staff::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin, 'web');
+
+        $this->post(route('admin.dining.store'), [
+            'dining_type' => 'tables',
+            'name' => 'Responsive Test Table',
+            'type' => 'Standard',
+            'capacity' => 4,
+            'location' => 'Main Area',
+            'status' => 'Available',
+        ])->assertRedirect(route('admin.rooms', ['tab' => 'dining', 'dining_tab' => 'tables']));
+
+        $this->post(route('admin.dining.store'), [
+            'dining_type' => 'schedules',
+            'name' => 'Responsive Test Schedule',
+            'available_from' => '07:00',
+            'available_to' => '10:00',
+            'max_guests' => 40,
+            'status' => 'Active',
+        ])->assertRedirect(route('admin.rooms', ['tab' => 'dining', 'dining_tab' => 'schedule']));
+    }
+
     public function test_public_booking_can_create_an_event_reservation(): void
     {
         $guest = Guest::factory()->create([

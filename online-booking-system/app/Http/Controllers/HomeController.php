@@ -19,8 +19,10 @@ use App\Models\RoomReservation;
 use App\Models\EventReservation;
 use App\Models\FacilityReservation;
 use App\Models\DiningReservation;
+use App\Models\TaxSetting;
 use App\Models\GuestRequest;
 use App\Support\ReservationPricing;
+use App\Support\ReservationTax;
 use App\Support\RoomAvailability;
 use App\Support\StaffNotificationService;
 use Carbon\Carbon;
@@ -241,7 +243,9 @@ class HomeController extends Controller
             ])
             ->values();
 
-        return view('reservation', compact('guest', 'rooms', 'facilities', 'events', 'dining', 'diningByCategory', 'diningSchedules', 'diningTables', 'diningReservations'));
+        $taxSettings = TaxSetting::current()->pricingSettings();
+
+        return view('reservation', compact('guest', 'rooms', 'facilities', 'events', 'dining', 'diningByCategory', 'diningSchedules', 'diningTables', 'diningReservations', 'taxSettings'));
     }
 
     public function roomAvailability(Request $request)
@@ -502,7 +506,7 @@ class HomeController extends Controller
             'gcash_payment_proof' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
             'maya_payment_proof' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
             'bank_payment_proof' => ['nullable', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:5120'],
-            'amount_paid' => ['nullable', 'numeric', 'min:0', 'lte:total_amount'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0'],
             'special_requests' => 'nullable|string',
             'dining_id' => 'nullable|string',
             'dining_area' => 'nullable|string|max:100',
@@ -511,6 +515,7 @@ class HomeController extends Controller
             'duration_hours' => 'nullable|integer|min:1|max:24',
             'facility_duration_hours' => 'nullable|integer|min:1|max:24',
             'facility_id' => 'nullable|string',
+            'facility_items' => ['nullable', 'json', 'max:10000'],
             'facility_quantity' => 'nullable|integer|min:1',
             'event_id' => 'nullable|string',
             'event_addons' => ['nullable', 'json', 'max:10000'],
@@ -720,6 +725,35 @@ class HomeController extends Controller
         $diningDate = $validated['dining_date']
             ?? ($diningSelections[0]['dining_date'] ?? $validated['check_in']);
         $facilities = Facility::whereIn('id', $facilityIds)->get();
+        $facilitySelections = json_decode($validated['facility_items'] ?? '[]', true);
+        abort_if(!is_array($facilitySelections), 422, 'The selected facility quantities are invalid.');
+        if ($facilitySelections !== []) {
+            $facilitySelections = collect($facilitySelections)->map(function ($selection) {
+                abort_if(!is_array($selection), 422, 'The selected facility quantities are invalid.');
+                $facilityId = filter_var($selection['facility_id'] ?? null, FILTER_VALIDATE_INT);
+                $quantity = filter_var($selection['quantity'] ?? null, FILTER_VALIDATE_INT);
+                $duration = filter_var($selection['duration_hours'] ?? 1, FILTER_VALIDATE_INT);
+                abort_if($facilityId === false || $quantity === false || $quantity < 1 || $duration === false || $duration < 1 || $duration > 24, 422, 'The selected facility quantities are invalid.');
+
+                return ['facility_id' => $facilityId, 'quantity' => $quantity, 'duration_hours' => $duration];
+            })->values()->all();
+            $submittedFacilityIds = collect($facilitySelections)->pluck('facility_id')->unique()->sort()->values()->all();
+            abort_if($submittedFacilityIds !== $facilityIds->unique()->sort()->values()->all(), 422, 'The selected facility quantities do not match the selected facilities.');
+        } else {
+            $facilitySelections = $facilities->map(fn (Facility $facility) => [
+                'facility_id' => $facility->id,
+                'quantity' => (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1),
+                'duration_hours' => (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1),
+            ])->all();
+        }
+        $facilityTaxCharges = ReservationPricing::facilitySelectionComponents(
+            $facilities,
+            $facilitySelections,
+            $validated['check_in'],
+            $validated['check_out'],
+            (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1),
+            (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1)
+        );
         $events = Event::whereIn('id', $eventIds)->get();
         $room = !empty($validated['room_id']) ? Room::findOrFail($validated['room_id']) : null;
         $roomGuestCount = (int) ($validated['room_number_of_guests'] ?? $validated['number_of_guests']);
@@ -733,26 +767,51 @@ class HomeController extends Controller
                 isset($validated['kid_guests']) ? (int) $validated['kid_guests'] : null
             )
             : 0;
-        $facilityTotal = ReservationPricing::facilities(
-            $facilities,
-            (int) ($validated['facility_quantity'] ?? $validated['quantity'] ?? 1),
-            $validated['check_in'],
-            $validated['check_out'],
-            (int) ($validated['facility_duration_hours'] ?? $validated['duration_hours'] ?? 1)
-        );
+        $facilityTotal = round((float) collect($facilityTaxCharges)->sum('amount'), 2);
         $eventDurationHours = 1;
         if (!empty($validated['duration_hours'])) {
             $eventDurationHours = max(1, (int) $validated['duration_hours']);
         }
         $eventTotal = ReservationPricing::events($events, $validated['number_of_guests'], $eventDurationHours) + $eventAddonTotal;
         $diningTotal = ReservationPricing::dining($diningSelections);
-        $categoryTotal = match ($category) {
-            'rooms' => $roomTotal,
-            'facilities' => $facilityTotal,
-            'event' => $eventTotal,
-            'dining' => $diningTotal,
-        };
+        $taxSettings = TaxSetting::current()->pricingSettings();
+        $roomTaxCharges = $room
+            ? ReservationPricing::roomChargeComponents(
+                $room,
+                $validated['check_in'],
+                $validated['check_out'],
+                $roomGuestCount,
+                isset($validated['adult_guests']) ? (int) $validated['adult_guests'] : null,
+                isset($validated['kid_guests']) ? (int) $validated['kid_guests'] : null
+            )
+            : [];
+        $eventTaxCharges = ReservationPricing::eventChargeComponents($events, (int) $validated['number_of_guests'], $eventDurationHours);
+        foreach ($validated['selected_addons'] ?? [] as $addon) {
+            $eventTaxCharges[] = ['category' => 'services_addons', 'amount' => (float) ($addon['price'] ?? 0)];
+        }
+        $diningTaxCharges = ReservationPricing::diningChargeComponents($diningSelections);
+        $taxChargesByTable = [
+            'room_reservations' => $roomTaxCharges,
+            'facility_reservations' => $facilityTaxCharges,
+            'event_reservations' => $eventTaxCharges,
+            'dining_reservations' => $diningTaxCharges,
+        ];
+        $taxBreakdowns = collect($taxChargesByTable)
+            ->map(fn (array $charges) => ReservationPricing::taxBreakdown($charges, $taxSettings));
+        $bookingTotal = round((float) $taxBreakdowns->sum('total'), 2);
+        $categoryTotal = $taxBreakdowns->get(match ($category) {
+            'rooms' => 'room_reservations',
+            'facilities' => 'facility_reservations',
+            'event' => 'event_reservations',
+            'dining' => 'dining_reservations',
+        })['total'];
         $validated['total_amount'] = $categoryTotal;
+
+        if ((float) ($validated['amount_paid'] ?? 0) > $bookingTotal) {
+            throw ValidationException::withMessages([
+                'amount_paid' => 'The amount paid cannot exceed the calculated reservation total.',
+            ]);
+        }
 
         if ($facilityIds->isNotEmpty()) {
             $validated['facility_id'] = $facilityIds->first();
@@ -852,7 +911,7 @@ class HomeController extends Controller
                     'adult_guests' => $validated['adult_guests'] ?? null,
                     'kid_guests' => $validated['kid_guests'] ?? null,
                     'status' => 'pending',
-                    'total_amount' => $roomTotal,
+                    'total_amount' => $taxBreakdowns['room_reservations']['total'],
                     'payment_method' => $validated['payment_method'],
                     'payment_details' => $validated['payment_details'],
                     'amount_paid' => 0,
@@ -902,7 +961,7 @@ class HomeController extends Controller
                 'quantity' => $validated['quantity'] ?? 1,
                 'dining_id' => $validated['dining_id'] ?? null,
                 'status' => 'pending',
-                'total_amount' => $diningTotal,
+                'total_amount' => $taxBreakdowns['dining_reservations']['total'],
                 'payment_method' => $validated['payment_method'],
                 'payment_details' => $validated['payment_details'],
                 'amount_paid' => 0,
@@ -926,7 +985,7 @@ class HomeController extends Controller
                 'adult_guests' => $validated['adult_guests'] ?? null,
                 'kid_guests' => $validated['kid_guests'] ?? null,
                 'status' => 'pending',
-                'total_amount' => $roomTotal,
+                'total_amount' => $taxBreakdowns['room_reservations']['total'],
                 'payment_method' => $validated['payment_method'],
                 'payment_details' => $validated['payment_details'],
                 'amount_paid' => 0,
@@ -954,13 +1013,21 @@ class HomeController extends Controller
                     'facility_end_time' => $facilityEndTime->format('H:i'),
                     'number_of_guests' => $validated['number_of_guests'],
                     'status' => 'pending',
-                    'total_amount' => $facilityTotal,
+                    'total_amount' => $taxBreakdowns['facility_reservations']['total'],
                     'payment_method' => $validated['payment_method'],
                     'payment_details' => $validated['payment_details'],
                     'amount_paid' => 0,
                     'special_requests' => $validated['special_requests'] ?? null,
                 ]));
             }
+        }
+
+        foreach ($createdReservations as $createdReservation) {
+            ReservationTax::calculateAndStore(
+                $createdReservation,
+                $taxChargesByTable[$createdReservation->getTable()] ?? [],
+                $taxSettings
+            );
         }
 
         if ($submissionToken) {
@@ -1101,22 +1168,22 @@ class HomeController extends Controller
         $guest = Auth::guard('guest')->user();
         abort_unless($guest, 403);
 
-        $reservations = Reservation::with(['room', 'diningItems.diningMenu', 'payments'])
+        $reservations = Reservation::with(['room', 'diningItems.diningMenu', 'payments', 'taxSnapshot'])
             ->where('guest_email', $guest->email)
             ->orderBy('created_at', 'desc')
             ->get();
 
         $categoryReservations = collect([
-            RoomReservation::with(['room', 'payments'])
+            RoomReservation::with(['room', 'payments', 'taxSnapshot'])
                 ->where('guest_email', $guest->email)->get()
                 ->each(fn ($reservation) => $reservation->category = 'rooms'),
-            EventReservation::with(['event', 'diningItems.diningMenu', 'payments'])
+            EventReservation::with(['event', 'diningItems.diningMenu', 'payments', 'taxSnapshot'])
                 ->where('guest_email', $guest->email)->get()
                 ->each(fn ($reservation) => $reservation->category = 'event'),
-            FacilityReservation::with(['facility', 'payments'])
+            FacilityReservation::with(['facility', 'payments', 'taxSnapshot'])
                 ->where('guest_email', $guest->email)->get()
                 ->each(fn ($reservation) => $reservation->category = 'facilities'),
-            DiningReservation::with(['diningItems.diningMenu', 'payments'])
+            DiningReservation::with(['diningItems.diningMenu', 'payments', 'taxSnapshot'])
                 ->where('guest_email', $guest->email)->get()
                 ->each(fn ($reservation) => $reservation->category = 'dining'),
         ])->flatten(1)->map(function ($source) {
@@ -1128,6 +1195,7 @@ class HomeController extends Controller
             $reservation->setRelation('events', $source->relationLoaded('event') && $source->event ? collect([$source->event]) : collect());
             $reservation->setRelation('diningItems', $source->relationLoaded('diningItems') ? $source->getRelation('diningItems') : collect());
             $reservation->setRelation('payments', $source->relationLoaded('payments') ? $source->getRelation('payments') : collect());
+            $reservation->setRelation('taxSnapshot', $source->relationLoaded('taxSnapshot') ? $source->getRelation('taxSnapshot') : null);
 
             return $reservation;
         });
@@ -1191,26 +1259,26 @@ class HomeController extends Controller
         abort_unless($guest, 403);
 
         $receipts = collect([
-            Reservation::with(['room', 'diningItems.diningMenu', 'payments'])
+            Reservation::with(['room', 'diningItems.diningMenu', 'payments', 'taxSnapshot'])
                 ->where('guest_email', $guest->email)
                 ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
                 ->get(),
-            RoomReservation::with(['room', 'payments'])
+            RoomReservation::with(['room', 'payments', 'taxSnapshot'])
                 ->where('guest_email', $guest->email)
                 ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
                 ->get()
                 ->each(fn ($reservation) => $reservation->category = 'rooms'),
-            EventReservation::with(['event', 'diningItems.diningMenu', 'payments'])
+            EventReservation::with(['event', 'diningItems.diningMenu', 'payments', 'taxSnapshot'])
                 ->where('guest_email', $guest->email)
                 ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
                 ->get()
                 ->each(fn ($reservation) => $reservation->category = 'event'),
-            FacilityReservation::with(['facility', 'payments'])
+            FacilityReservation::with(['facility', 'payments', 'taxSnapshot'])
                 ->where('guest_email', $guest->email)
                 ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
                 ->get()
                 ->each(fn ($reservation) => $reservation->category = 'facilities'),
-            DiningReservation::with(['diningItems.diningMenu', 'payments'])
+            DiningReservation::with(['diningItems.diningMenu', 'payments', 'taxSnapshot'])
                 ->where('guest_email', $guest->email)
                 ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
                 ->get()
@@ -1224,28 +1292,29 @@ class HomeController extends Controller
             $reservation->setRelation('events', $source->relationLoaded('event') && $source->event ? collect([$source->event]) : collect());
             $reservation->setRelation('diningItems', $source->relationLoaded('diningItems') ? $source->getRelation('diningItems') : collect());
             $reservation->setRelation('payments', $source->relationLoaded('payments') ? $source->getRelation('payments') : collect());
+            $reservation->setRelation('taxSnapshot', $source->relationLoaded('taxSnapshot') ? $source->getRelation('taxSnapshot') : null);
 
             return $reservation;
         })->sortByDesc('created_at')->values()->map(function (Reservation $reservation) {
-            $matchingRoomReservations = RoomReservation::with('room')
+            $matchingRoomReservations = RoomReservation::with(['room', 'taxSnapshot'])
                 ->where('guest_email', $reservation->guest_email)
                 ->whereDate('check_in', $reservation->check_in)
                 ->whereDate('check_out', $reservation->check_out)
                 ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
                 ->get();
-            $matchingFacilityReservations = FacilityReservation::with('facility')
+            $matchingFacilityReservations = FacilityReservation::with(['facility', 'taxSnapshot'])
                 ->where('guest_email', $reservation->guest_email)
                 ->whereDate('check_in', $reservation->check_in)
                 ->whereDate('check_out', $reservation->check_out)
                 ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
                 ->get();
-            $matchingEventReservations = EventReservation::with('event')
+            $matchingEventReservations = EventReservation::with(['event', 'taxSnapshot'])
                 ->where('guest_email', $reservation->guest_email)
                 ->whereDate('check_in', $reservation->check_in)
                 ->whereDate('check_out', $reservation->check_out)
                 ->whereIn('status', ['confirmed', 'checked-in', 'completed'])
                 ->get();
-            $matchingDiningReservations = DiningReservation::with('diningItems.diningMenu')
+            $matchingDiningReservations = DiningReservation::with(['diningItems.diningMenu', 'taxSnapshot'])
                 ->where('guest_email', $reservation->guest_email)
                 ->whereDate('check_in', $reservation->check_in)
                 ->whereDate('check_out', $reservation->check_out)
@@ -1256,6 +1325,20 @@ class HomeController extends Controller
                 && $matchingFacilityReservations->isEmpty()
                 && $matchingEventReservations->isEmpty()
                 && $matchingDiningReservations->isEmpty()) {
+                if ($reservation->taxSnapshot) {
+                    $snapshot = $reservation->taxSnapshot;
+                    $reservation->setAttribute('tax_summary', [
+                        'name' => $snapshot->tax_name,
+                        'rate' => (float) $snapshot->tax_rate,
+                        'enabled' => (bool) $snapshot->tax_enabled,
+                        'inclusive' => (bool) $snapshot->tax_inclusive,
+                        'subtotal' => (float) $snapshot->subtotal,
+                        'taxable_base' => (float) $snapshot->taxable_base,
+                        'tax_amount' => (float) $snapshot->tax_amount,
+                        'total' => (float) $snapshot->total_amount,
+                    ]);
+                }
+
                 return $reservation;
             }
 
@@ -1269,11 +1352,60 @@ class HomeController extends Controller
                 'diningItems',
                 $matchingDiningReservations->flatMap(fn ($diningReservation) => $diningReservation->diningItems)->values()
             );
-            $reservation->total_amount = $matchingRoomReservations
+            $relatedReservations = $matchingRoomReservations
                 ->concat($matchingFacilityReservations)
                 ->concat($matchingEventReservations)
-                ->concat($matchingDiningReservations)
-                ->sum(fn ($relatedReservation) => (float) $relatedReservation->total_amount);
+                ->concat($matchingDiningReservations);
+            $roomReservationIds = $matchingRoomReservations->pluck('id');
+            $legacyReservationIds = Reservation::query()
+                ->where('guest_email', $reservation->guest_email)
+                ->whereDate('check_in', optional($reservation->check_in)->toDateString())
+                ->select('id');
+            $chargedAddOns = GuestRequest::with('taxSnapshot')
+                ->where('is_billable', true)
+                ->where('billing_status', 'posted')
+                ->where(function ($query) use ($roomReservationIds, $legacyReservationIds) {
+                    $query->where(function ($query) use ($roomReservationIds) {
+                        $query->where('reservation_type', RoomReservation::class)
+                            ->whereIn('reservation_key', $roomReservationIds);
+                    })->orWhereIn('reservation_id', $legacyReservationIds);
+                })
+                ->get()
+                ->map(function (GuestRequest $charge) {
+                    $subtotal = round((float) ($charge->subtotal ?? ((float) $charge->unit_price * max((int) $charge->quantity, 1))), 2);
+
+                    return [
+                        'name' => $charge->request_type,
+                        'quantity' => max((int) ($charge->quantity ?? 1), 1),
+                        'unit_price' => (float) ($charge->unit_price ?? 0),
+                        'subtotal' => $subtotal,
+                        'total' => (float) ($charge->taxSnapshot?->total_amount ?? $subtotal),
+                        'taxable_base' => (float) ($charge->taxSnapshot?->taxable_base ?? 0),
+                        'tax_amount' => (float) ($charge->taxSnapshot?->tax_amount ?? 0),
+                        'tax_name' => $charge->taxSnapshot?->tax_name,
+                        'tax_rate' => (float) ($charge->taxSnapshot?->tax_rate ?? 0),
+                        'tax_enabled' => (bool) ($charge->taxSnapshot?->tax_enabled ?? false),
+                        'tax_inclusive' => (bool) ($charge->taxSnapshot?->tax_inclusive ?? false),
+                    ];
+                });
+            $addOnTotal = round((float) $chargedAddOns->sum('total'), 2);
+            $reservation->setAttribute('charged_add_ons', $chargedAddOns->all());
+            $reservation->total_amount = round((float) $relatedReservations->sum(fn ($relatedReservation) => (float) $relatedReservation->total_amount) + $addOnTotal, 2);
+            $taxSnapshots = $relatedReservations->map(fn ($relatedReservation) => $relatedReservation->taxSnapshot)->filter();
+            $addOnTaxSnapshot = $chargedAddOns->first(fn ($charge) => !empty($charge['tax_name']));
+            $taxSnapshot = $taxSnapshots->first() ?? $addOnTaxSnapshot;
+            if ($taxSnapshot) {
+                $reservation->setAttribute('tax_summary', [
+                    'name' => $taxSnapshot instanceof \App\Models\ReservationTaxSnapshot ? $taxSnapshot->tax_name : $taxSnapshot['tax_name'],
+                    'rate' => (float) ($taxSnapshot instanceof \App\Models\ReservationTaxSnapshot ? $taxSnapshot->tax_rate : $taxSnapshot['tax_rate']),
+                    'enabled' => (bool) ($taxSnapshot instanceof \App\Models\ReservationTaxSnapshot ? $taxSnapshot->tax_enabled : $taxSnapshot['tax_enabled']),
+                    'inclusive' => (bool) ($taxSnapshot instanceof \App\Models\ReservationTaxSnapshot ? $taxSnapshot->tax_inclusive : $taxSnapshot['tax_inclusive']),
+                    'subtotal' => round((float) $relatedReservations->sum(fn ($row) => (float) ($row->taxSnapshot?->subtotal ?? $row->total_amount ?? 0)) + (float) $chargedAddOns->sum('subtotal'), 2),
+                    'taxable_base' => round((float) $taxSnapshots->sum(fn ($snapshot) => (float) $snapshot->taxable_base) + (float) $chargedAddOns->sum('taxable_base'), 2),
+                    'tax_amount' => round((float) $taxSnapshots->sum(fn ($snapshot) => (float) $snapshot->tax_amount) + (float) $chargedAddOns->sum('tax_amount'), 2),
+                    'total' => round((float) $reservation->total_amount, 2),
+                ]);
+            }
 
             return $reservation;
         })->unique(function (Reservation $reservation) {

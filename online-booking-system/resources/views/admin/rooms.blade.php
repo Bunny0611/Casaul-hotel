@@ -919,8 +919,11 @@
 </div>
 
 <div id="addDiningModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
-    <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-6xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
-        <div class="mb-6">
+    <div class="admin-modal-panel relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:p-6">
+        <button type="button" onclick="closeDiningModal()" class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700" aria-label="Close add dining item">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+        <div class="mb-6 pr-10">
             <h3 id="addDiningTitle" class="text-3xl font-bold text-gray-800">Add Menu / Meal</h3>
             <p class="mt-2 text-base text-gray-600">Add the details needed for this dining section.</p>
         </div>
@@ -986,12 +989,23 @@
                     </div>
 
                     <div id="diningScheduleTimeField" class="hidden">
-                        <label class="mb-2 block text-base font-medium text-gray-700">Available Time <span class="text-red-500">*</span></label>
+                        <label class="mb-2 block text-base font-medium text-gray-700">Available Time <span id="diningScheduleTimeRequiredMark" class="text-red-500">*</span></label>
                         <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
                             <input type="time" name="available_from" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                             <span class="text-lg text-gray-500">to</span>
                             <input type="time" name="available_to" class="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
+                    </div>
+
+                    <div id="diningMenuAvailabilityField" class="hidden">
+                        <label class="mb-2 block text-base font-medium text-gray-700">Available Time <span class="text-red-500">*</span></label>
+                        <select name="availability_period" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="breakfast">Breakfast</option>
+                            <option value="lunch">Lunch</option>
+                            <option value="afternoon-snack">Afternoon Snack</option>
+                            <option value="dinner">Dinner</option>
+                            <option value="all-day">Available All Day</option>
+                        </select>
                     </div>
 
                     <div id="diningStatusField">
@@ -1946,7 +1960,7 @@
     }
 
     function configureDiningFieldLayout(type) {
-        const fields = ['diningNameField', 'diningMenuCategoryField', 'diningTypeField', 'diningCapacityField', 'diningLocationField', 'diningPriceField', 'diningImageField', 'diningScheduleTimeField', 'diningMaxGuestsField', 'diningStatusField'];
+        const fields = ['diningNameField', 'diningMenuCategoryField', 'diningTypeField', 'diningCapacityField', 'diningLocationField', 'diningPriceField', 'diningImageField', 'diningScheduleTimeField', 'diningMenuAvailabilityField', 'diningMaxGuestsField', 'diningStatusField'];
         fields.forEach(function (id) {
             const field = document.getElementById(id);
             if (field) {
@@ -1959,7 +1973,7 @@
             ? { diningNameField: 1, diningStatusField: 2, diningTypeField: 3, diningCapacityField: 4, diningLocationField: 5 }
             : type === 'schedules'
                 ? { diningNameField: 1, diningStatusField: 2, diningScheduleTimeField: 3, diningMaxGuestsField: 4 }
-                : { diningNameField: 1, diningStatusField: 2, diningMenuCategoryField: 3, diningPriceField: 4, diningImageField: 5 };
+                : { diningNameField: 1, diningStatusField: 2, diningMenuCategoryField: 3, diningPriceField: 4, diningMenuAvailabilityField: 5, diningImageField: 6 };
 
         Object.keys(layout).forEach(function (id) {
             const field = document.getElementById(id);
@@ -1977,6 +1991,7 @@
         const type = kind === 'table' ? 'tables' : kind === 'schedule' ? 'schedules' : 'menus';
         const isTable = type === 'tables';
         const isSchedule = type === 'schedules';
+        const isMenu = type === 'menus';
         const sectionTitle = isTable ? 'Table / Seating' : isSchedule ? 'Dining Schedule' : 'Menu / Meal';
         configureDiningFieldLayout(type);
         document.getElementById('addDiningTitle').textContent = 'Add ' + sectionTitle;
@@ -1991,12 +2006,14 @@
         document.getElementById('diningPriceField').classList.toggle('hidden', isTable || isSchedule);
         document.getElementById('diningImageField').classList.toggle('hidden', isTable || isSchedule);
         document.getElementById('diningScheduleTimeField').classList.toggle('hidden', !isSchedule);
+        document.getElementById('diningMenuAvailabilityField').classList.toggle('hidden', !isMenu);
         document.getElementById('diningMaxGuestsField').classList.toggle('hidden', !isSchedule);
         form.querySelector('[name="price"]').required = !isTable && !isSchedule;
         form.querySelector('[name="capacity"]').required = isTable;
         form.querySelector('[name="available_from"]').required = isSchedule;
         form.querySelector('[name="available_to"]').required = isSchedule;
-        if (category) category.value = 'Dinner';
+        document.getElementById('diningScheduleTimeRequiredMark').classList.toggle('hidden', !isSchedule);
+        if (category) category.value = 'Breakfast';
     }
 
     function editDiningRow(button) {

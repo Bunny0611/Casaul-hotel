@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\HasTaxSnapshot;
 
 class GuestRequest extends Model
 {
+    use HasTaxSnapshot;
+
     protected $fillable = [
         'guest_id',
         'reservation_id',

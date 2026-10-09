@@ -353,6 +353,10 @@
                     <i class="fas fa-chart-bar w-6"></i>
                     <span>Reports</span>
                 </a>
+                <a href="{{ route('admin.taxes') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/taxes') ? 'active' : '' }}">
+                    <i class="fas fa-receipt w-6"></i>
+                    <span>Taxes</span>
+                </a>
                 <a href="{{ route('admin.settings') }}" class="nav-item w-full flex items-center px-3 py-2.5 transition-all duration-300 {{ request()->is('admin/settings') ? 'active' : '' }}">
                     <i class="fas fa-cog w-6"></i>
                     <span>Settings</span>
