@@ -40,7 +40,6 @@ RUN mkdir -p /run /var/www/.postgresql storage/framework/{cache,data,sessions,vi
     && npm run build \
     && php artisan storage:link \
     && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/build \
-    && mkdir -p /var/www/html/storage/app/public && chown -R 1000:1000 /var/www/html/storage/app/public \
     && chmod 700 /var/www/.postgresql
 
 EXPOSE 8000
