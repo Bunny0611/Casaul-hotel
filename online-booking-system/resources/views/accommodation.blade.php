@@ -64,10 +64,7 @@
                 <article class="accommodation-room-card">
                     @if($index === 0)<span class="accommodation-room-badge">Best Seller</span>@endif
                     @php
-                        $roomStoragePath = str_starts_with((string) $room->image, 'storage/') ? substr($room->image, 8) : $room->image;
-                        $roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath)
-                            ? asset('storage/' . $roomStoragePath)
-                            : asset('image/Royal-Suite-room.jpg');
+                        $roomImage = $room->imageUrl() ?: asset('image/Royal-Suite-room.jpg');
                     @endphp
                     <div class="accommodation-room-image"><img src="{{ $roomImage }}" alt="{{ $room->room_type }}"></div>
                     <div class="accommodation-room-content">

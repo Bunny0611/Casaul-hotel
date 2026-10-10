@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Storage;
 
 class Room extends Model
 {
@@ -21,6 +22,27 @@ class Room extends Model
         'image',
         'capacity',
     ];
+
+    public function imagePath(): ?string
+    {
+        $imagePath = ltrim((string) $this->image, '/');
+        if (str_starts_with($imagePath, 'storage/')) {
+            $imagePath = substr($imagePath, strlen('storage/'));
+        }
+
+        if ($imagePath === '' || !Storage::disk('public')->exists($imagePath)) {
+            return null;
+        }
+
+        return $imagePath;
+    }
+
+    public function imageUrl(): ?string
+    {
+        $imagePath = $this->imagePath();
+
+        return $imagePath ? asset('storage/' . $imagePath) : null;
+    }
 
     public function reservations()
     {

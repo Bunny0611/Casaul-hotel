@@ -46,18 +46,15 @@ class HomeController extends Controller
         if ($rooms->isNotEmpty()) {
             return $rooms
                 ->map(function (Room $room) {
-                    $roomImage = ltrim((string) $room->image, '/');
-                    if (str_starts_with($roomImage, 'storage/')) {
-                        $roomImage = substr($roomImage, 8);
-                    }
+                    $roomImagePath = $room->imagePath();
 
                     return [
                         'slug' => Str::slug($room->room_type ?? 'room'),
                         'name' => $room->room_type ?? 'Room',
                         'price' => '₱' . number_format((float) $room->price, 2),
                         'tagline' => 'Comfortable accommodation for a restful stay.',
-                        'image' => $roomImage && Storage::disk('public')->exists($roomImage)
-                            ? 'storage/' . $roomImage
+                        'image' => $roomImagePath
+                            ? 'storage/' . $roomImagePath
                             : 'image/Royal-Suite-room.jpg',
                         'description' => $room->description ?? 'Enjoy a comfortable room with thoughtful facilities and a welcoming atmosphere.',
                         'features' => ['2 Guests', '1 Bed', 'Wi‑Fi', 'Air conditioning'],

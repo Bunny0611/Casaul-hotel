@@ -711,8 +711,7 @@
                             $kidGuestPrice = (float) ($room->kid_guest_price ?? ($extraGuestPrice / 2));
                             $roomCapacity = max(1, (int) ($room->capacity ?? 2));
                             $roomTypeFilter = str_contains(strtolower($room->room_type), 'standard') ? 'standard' : (str_contains(strtolower($room->room_type), 'deluxe') ? 'deluxe' : 'other');
-                            $roomStoragePath = str_starts_with((string) $room->image, 'storage/') ? substr($room->image, 8) : $room->image;
-                            $roomImage = $roomStoragePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($roomStoragePath) ? secure_asset('storage/' . $roomStoragePath) : null;
+                            $roomImage = $room->imageUrl();
                         ?>
                         <article class="reservation-card" data-category="room" data-room-type="{{ $roomTypeFilter }}" data-price="{{ $room->price }}" data-name="{{ $room->room_type }} • Room {{ $room->room_number }}" data-room-id="{{ $room->id }}" data-room-capacity="{{ $roomCapacity }}" data-extra-guest-price="{{ $extraGuestPrice }}" data-kid-guest-price="{{ $kidGuestPrice }}">
                             @if($roomImage)

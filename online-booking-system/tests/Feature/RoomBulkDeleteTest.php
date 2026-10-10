@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Room;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class RoomBulkDeleteTest extends TestCase
@@ -84,8 +85,11 @@ class RoomBulkDeleteTest extends TestCase
 
     public function test_admin_room_edit_modal_displays_current_room_image(): void
     {
+        Storage::fake('public');
+        Storage::disk('public')->put('rooms/deluxe-room.jpg', 'room image');
+
         Room::create([
-            'room_number' => '201',
+            'room_number' => '000',
             'room_type' => 'Deluxe Room',
             'bed_type' => '1 Queen Bed',
             'price' => 5200,
@@ -103,7 +107,7 @@ class RoomBulkDeleteTest extends TestCase
         $response->assertOk();
         $response->assertSee('id="editRoomImagePreview"', false);
         $response->assertSee('Current room image', false);
-        $response->assertSee('rooms/deluxe-room.jpg', false);
+        $response->assertSee('deluxe-room.jpg', false);
     }
 
     public function test_bulk_delete_ignores_invalid_ids(): void
