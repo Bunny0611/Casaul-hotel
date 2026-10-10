@@ -34,7 +34,7 @@ RUN printf 'upload_max_filesize=8M\npost_max_size=10M\n' > /usr/local/etc/php/co
 COPY . /var/www/html
 
 # Create required framework storage directories first to avoid missing path exceptions during composer install
-RUN mkdir -p /run /var/www/.postgresql storage/framework/{cache,data,sessions,views,testing} storage/logs bootstrap/cache \
+RUN mkdir -p /run /var/www/.postgresql storage/framework/{cache,data,sessions,views,testing} storage/logs storage/app/public/catalog storage/app/public/rooms bootstrap/cache \
     && composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader \
     && npm install --no-fund --no-audit \
     && npm run build \
@@ -45,7 +45,9 @@ RUN mkdir -p /run /var/www/.postgresql storage/framework/{cache,data,sessions,vi
 EXPOSE 8000
 
 # Use a startup script to cache configs using Railway's environment variables, then run PHP-FPM and Nginx concurrently
-CMD php artisan migrate --force \
+CMD mkdir -p storage/app/public/catalog storage/app/public/rooms \
+    && chown -R www-data:www-data storage/app/public \
+    && php artisan migrate --force \
     && php artisan config:clear \
     && php artisan cache:clear \
     && php artisan view:clear \

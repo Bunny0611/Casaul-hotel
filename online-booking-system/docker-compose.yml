@@ -29,7 +29,7 @@ services:
     volumes:
       - .:/var/www/html
     command: >
-      sh -c "mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache &&
+      sh -c "mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/app/public/catalog storage/app/public/rooms bootstrap/cache &&
       php artisan migrate --force &&
       php artisan serve --host=0.0.0.0 --port=8000"
 

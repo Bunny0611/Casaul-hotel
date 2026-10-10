@@ -749,7 +749,7 @@ class AdminController extends Controller
         $file = $request->file('image');
         $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
 
-        return $file->storeAs('', $filename, 'public');
+        return $file->storeAs('rooms', $filename, 'public');
     }
 
     protected function normalizeEventAddons(array $addons): array
